@@ -1,14 +1,20 @@
-
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useToast } from "@/components/ui/use-toast";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Timer, Pause, Play, RefreshCcw, Volume2, VolumeX, CheckCircle2, Clock, Coffee, InfoIcon } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { useIsMobile } from "@/hooks/use-mobile";
+
+// Import notification sound
+const NOTIFICATION_SOUND_URL = '/notification.mp3';
+
+// Flag to track if audio playback was initiated by user interaction
+let userInteractionOccurred = false;
 
 // Default timer settings
 const DEFAULT_SETTINGS = {
@@ -29,8 +35,59 @@ const Pomodoro = () => {
   const [completedPomodoros, setCompletedPomodoros] = useState(0);
   const [isMuted, setIsMuted] = useState(false);
   const [initialTime, setInitialTime] = useState(DEFAULT_SETTINGS.pomodoro);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [isTimerCompleted, setIsTimerCompleted] = useState(false);
+  const [isPlayingSound, setIsPlayingSound] = useState(false);
+  const [nextTimerType, setNextTimerType] = useState<TimerType | null>(null);
   const isMobile = useIsMobile();
   const { toast } = useToast();
+
+  // Create audio element on component mount and set up user interaction tracking
+  useEffect(() => {
+    // Capture the audio reference when the effect runs
+    const currentAudioRef = audioRef.current;
+    
+    // Enable user interaction tracking for audio
+    const handleUserInteraction = () => {
+      userInteractionOccurred = true;
+      // Remove listeners once we've captured user interaction
+      window.removeEventListener('click', handleUserInteraction);
+      window.removeEventListener('keydown', handleUserInteraction);
+      window.removeEventListener('touchstart', handleUserInteraction);
+      console.log("User interaction recorded for audio playback permission");
+    };
+
+    // Add event listeners to track user interaction
+    window.addEventListener('click', handleUserInteraction);
+    window.addEventListener('keydown', handleUserInteraction);
+    window.addEventListener('touchstart', handleUserInteraction);
+    
+    // Initialize audio element with event listeners
+    if (currentAudioRef) {
+      // Track audio element loading
+      currentAudioRef.oncanplaythrough = () => {
+        console.log("Audio file loaded and can be played");
+      };
+      
+      currentAudioRef.onerror = (e) => {
+        console.error("Audio element error:", e);
+      };
+    }
+
+    return () => {
+      // Clean up event listeners
+      window.removeEventListener('click', handleUserInteraction);
+      window.removeEventListener('keydown', handleUserInteraction);
+      window.removeEventListener('touchstart', handleUserInteraction);
+      
+      // Clean up audio element using the captured reference
+      if (currentAudioRef) {
+        currentAudioRef.pause();
+        currentAudioRef.oncanplaythrough = null;
+        currentAudioRef.onerror = null;
+      }
+    };
+  }, []);
 
   // Format time as MM:SS
   const formatTime = (timeInSeconds: number) => {
@@ -39,45 +96,137 @@ const Pomodoro = () => {
     return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
   };
 
-  // Handle timer completion
-  const handleTimerComplete = () => {
-    // Play sound if not muted
-    if (!isMuted) {
-      const audio = new Audio('/notification.mp3');
-      audio.play().catch(e => console.log('Audio play failed:', e));
+  // Play notification sound continuously
+  const playSound = useCallback(() => {
+    if (isMuted) return;
+
+    if (audioRef.current) {
+      // Configure audio to loop
+      audioRef.current.loop = true;
+      audioRef.current.currentTime = 0;
+      
+      // Create visual feedback state regardless of whether sound plays
+      setIsPlayingSound(true);
+      
+      const playPromise = audioRef.current.play();
+      
+      if (playPromise !== undefined) {
+        playPromise.then(() => {
+          console.log("Notification sound started playing");
+        }).catch(error => {
+          console.log("Audio playback failed:", error);
+          
+          // If autoplay is blocked, we still want the visual indicator
+          // to show the timer has completed
+          toast({
+            title: "Sound notification blocked",
+            description: "Click anywhere to enable sound notifications",
+            duration: 3000
+          });
+        });
+      }
     }
+  }, [isMuted, toast]);
 
-    // Show toast notification
-    toast({
-      title: `${timerType === 'pomodoro' ? 'Pomodoro' : 'Break'} completed!`,
-      description: timerType === 'pomodoro' 
-        ? "Great job! Take a break now." 
-        : "Break time is over. Ready to focus?"
-    });
+  // Stop playing sound
+  const stopSound = useCallback(() => {
+    if (!isPlayingSound) return;
+    
+    if (audioRef.current) {
+      try {
+        audioRef.current.pause();
+        audioRef.current.currentTime = 0;
+        audioRef.current.loop = false;
+      } catch (error) {
+        console.error("Failed to stop sound:", error);
+      }
+    }
+    
+    setIsPlayingSound(false);
+  }, [isPlayingSound]);
 
-    // Update completed pomodoros count and determine next timer
+  // Start the next timer automatically
+  const startNextTimer = useCallback((nextType: TimerType, nextDuration: number) => {
+    setTimerType(nextType);
+    setTimer(nextDuration);
+    setInitialTime(nextDuration);
+    setIsRunning(true); // Automatically start the next timer
+  }, []);
+
+  // Handle timer completion
+  const handleTimerComplete = useCallback(() => {
+    // Play sound that will continue until user takes action
+    playSound();
+
+    // Set states for showing the completion dialog
+    setIsTimerCompleted(true);
+
+    // Determine next timer type
+    let nextType: TimerType;
+    let nextTimeDuration: number;
+
     if (timerType === 'pomodoro') {
       const newCount = completedPomodoros + 1;
-      setCompletedPomodoros(newCount);
 
       // After completing set number of pomodoros, take a long break
       if (newCount % DEFAULT_SETTINGS.pomodorosUntilLongBreak === 0) {
-        setTimerType('longBreak');
-        setTimer(DEFAULT_SETTINGS.longBreak);
-        setInitialTime(DEFAULT_SETTINGS.longBreak);
+        nextType = 'longBreak';
+        nextTimeDuration = DEFAULT_SETTINGS.longBreak;
       } else {
-        setTimerType('shortBreak');
-        setTimer(DEFAULT_SETTINGS.shortBreak);
-        setInitialTime(DEFAULT_SETTINGS.shortBreak);
+        nextType = 'shortBreak';
+        nextTimeDuration = DEFAULT_SETTINGS.shortBreak;
       }
+
+      // Store the next timer information (but don't start it yet)
+      setNextTimerType(nextType);
+
+      // Update completed pomodoros count
+      setCompletedPomodoros(newCount);
     } else {
-      // After break, start another pomodoro
-      setTimerType('pomodoro');
-      setTimer(DEFAULT_SETTINGS.pomodoro);
-      setInitialTime(DEFAULT_SETTINGS.pomodoro);
+      // After break, next timer is always a pomodoro
+      setNextTimerType('pomodoro');
     }
+
+    // Stop the current timer
     setIsRunning(false);
-  };
+  }, [completedPomodoros, timerType, playSound]);
+
+  // Handle starting the next timer phase
+  const handleStartNextPhase = useCallback(() => {
+    // Stop the alarm sound
+    stopSound();
+
+    // Close the completion dialog
+    setIsTimerCompleted(false);
+
+    // Set timer type to the next type
+    if (nextTimerType) {
+      const nextType = nextTimerType;
+      setTimerType(nextType);
+
+      // Set the appropriate time for the next phase
+      let nextDuration: number;
+      switch (nextType) {
+        case 'pomodoro':
+          nextDuration = DEFAULT_SETTINGS.pomodoro;
+          break;
+        case 'shortBreak':
+          nextDuration = DEFAULT_SETTINGS.shortBreak;
+          break;
+        case 'longBreak':
+          nextDuration = DEFAULT_SETTINGS.longBreak;
+          break;
+      }
+
+      // Set the timer and begin
+      setTimer(nextDuration);
+      setInitialTime(nextDuration);
+      setIsRunning(true);
+
+      // Reset the next timer type
+      setNextTimerType(null);
+    }
+  }, [nextTimerType, stopSound]);
 
   // Timer tick effect
   useEffect(() => {
@@ -97,7 +246,7 @@ const Pomodoro = () => {
     return () => {
       if (interval) clearInterval(interval);
     };
-  }, [isRunning, timer]);
+  }, [isRunning, timer, handleTimerComplete]);
 
   // Handle timer type change
   const handleTimerTypeChange = (type: TimerType) => {
@@ -124,6 +273,7 @@ const Pomodoro = () => {
   // Toggle timer running state
   const toggleTimer = () => {
     setIsRunning(!isRunning);
+    // No sound should be played when starting the timer
   };
 
   // Reset the current timer
@@ -148,6 +298,15 @@ const Pomodoro = () => {
   // Toggle sound mute
   const toggleMute = () => {
     setIsMuted(!isMuted);
+
+    // Play a test sound when unmuting to confirm sound is working
+    if (isMuted && audioRef.current) {
+      audioRef.current.volume = 0.3; // Lower volume for test sound
+      audioRef.current.play().then(() => {
+        console.log("Test sound played.");
+      }).catch(e => console.log('Test sound failed:', e));
+      audioRef.current.volume = 1.0; // Reset to normal volume
+    }
   };
 
   // Calculate progress percentage
@@ -185,6 +344,87 @@ const Pomodoro = () => {
   return (
     <div className="min-h-screen bg-[#fff6e5] flex flex-col">
       <Navbar />
+
+      {/* Hidden audio element for notification sound */}
+      <audio 
+        ref={audioRef} 
+        src={NOTIFICATION_SOUND_URL} 
+        preload="auto" 
+        className="hidden"
+      />
+      
+      {/* Timer Completion Dialog */}
+      <Dialog open={isTimerCompleted} onOpenChange={(open) => {
+        if (!open) {
+          stopSound();
+          setIsTimerCompleted(false);
+        }
+      }}>
+        <DialogContent className="sm:max-w-md rounded-xl bg-white">
+          <DialogHeader>
+            <DialogTitle className="text-xl text-center font-bold">
+              {timerType === 'pomodoro' 
+                ? "Pomodoro Completed!" 
+                : timerType === 'shortBreak' 
+                  ? "Short Break Ended!" 
+                  : "Long Break Ended!"}
+            </DialogTitle>
+            <DialogDescription className="text-center pt-2 text-base">
+              {nextTimerType === 'pomodoro' 
+                ? "It's time to focus again." 
+                : nextTimerType === 'shortBreak' 
+                  ? "Take a short 5-minute break." 
+                  : "Take a longer break to recharge."}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="flex flex-col items-center justify-center gap-2 my-4">
+            {/* Sound playing animation indicator */}
+            {isPlayingSound && (
+              <div className="flex items-center justify-center gap-1 mb-2">
+                <div className="w-1 h-3 bg-red-500 animate-pulse"></div>
+                <div className="w-1 h-5 bg-red-500 animate-pulse delay-75"></div>
+                <div className="w-1 h-3 bg-red-500 animate-pulse delay-150"></div>
+                <div className="w-1 h-6 bg-red-500 animate-pulse delay-300"></div>
+                <div className="w-1 h-4 bg-red-500 animate-pulse delay-200"></div>
+              </div>
+            )}
+            
+            {nextTimerType === 'pomodoro' ? (
+              <div className="w-16 h-16 rounded-full bg-[#FF5C00] flex items-center justify-center">
+                <Timer className="w-8 h-8 text-white" />
+              </div>
+            ) : nextTimerType === 'shortBreak' ? (
+              <div className="w-16 h-16 rounded-full bg-[#00C6C2] flex items-center justify-center">
+                <Coffee className="w-8 h-8 text-white" />
+              </div>
+            ) : (
+              <div className="w-16 h-16 rounded-full bg-[#8B5CF6] flex items-center justify-center">
+                <Clock className="w-8 h-8 text-white" />
+              </div>
+            )}
+          </div>
+          
+          <DialogFooter className="sm:justify-center">
+            <Button
+              onClick={handleStartNextPhase}
+              className={`w-full py-6 text-lg ${
+                nextTimerType === 'pomodoro'
+                  ? 'bg-[#FF5C00] hover:bg-[#E05000]'
+                  : nextTimerType === 'shortBreak'
+                  ? 'bg-[#00C6C2] hover:bg-[#00B0AC]'
+                  : 'bg-[#8B5CF6] hover:bg-[#7C4DEF]'
+              }`}
+            >
+              {nextTimerType === 'pomodoro' 
+                ? "Start Pomodoro" 
+                : nextTimerType === 'shortBreak' 
+                  ? "Start Short Break" 
+                  : "Start Long Break"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <main className="container mx-auto px-4 py-8 flex-grow">
         <div className="max-w-2xl mx-auto">

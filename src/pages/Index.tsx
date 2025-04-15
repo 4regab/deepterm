@@ -15,8 +15,9 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { useIsMobile } from "@/hooks/use-mobile";
 
 // Local storage key constants
-const API_KEY_STORAGE_KEY = "gemini_api_key";
+const API_KEYS_STORAGE_KEY = "gemini_api_keys";
 const RESULTS_STORAGE_KEY = "extraction_results";
+const MAX_API_KEYS = 10;
 
 const Index = () => {
   const [apiKeyProvided, setApiKeyProvided] = useState(false);
@@ -47,70 +48,93 @@ const Index = () => {
     }
   }, [toast]);
 
+  // Load API keys from environment variables
+  const loadEnvApiKeys = useCallback(() => {
+    const envKeys: string[] = [];
+    for (let i = 1; i <= MAX_API_KEYS; i++) {
+      const key = import.meta.env[`VITE_GEMINI_API_KEY_${i}`] || "";
+      if (key && key.length > 0 && key !== "your_gemini_api_key_here") {
+        envKeys.push(key);
+      }
+    }
+    return envKeys;
+  }, []);
+
   useEffect(() => {
-    // First check for the API key in environment variables
-    const envApiKey = import.meta.env.VITE_GEMINI_API_KEY;
+    // First check for API keys in environment variables
+    const envApiKeys = loadEnvApiKeys();
     
-    if (envApiKey) {
+    if (envApiKeys.length > 0) {
       try {
-        initializeGemini(envApiKey);
+        // Initialize with environment API keys
+        initializeGemini(envApiKeys);
         const isValidKey = checkApiKey();
         if (isValidKey) {
           setApiKeyProvided(true);
-          console.log("Using API key from environment variables");
+          console.log(`Using ${envApiKeys.length} API key(s) from environment variables`);
         } else {
-          console.warn("Environment API key is invalid or empty");
+          console.warn("Environment API key(s) are invalid or empty");
         }
       } catch (error) {
-        console.error("Error initializing with environment API key:", error);
+        console.error("Error initializing with environment API keys:", error);
       }
-    } 
+    }
     
-    // If environment API key is not valid, fall back to local storage
+    // If environment API keys are not valid, fall back to local storage
     if (!apiKeyProvided) {
-      const storedApiKey = localStorage.getItem(API_KEY_STORAGE_KEY);
-      if (storedApiKey) {
-        try {
-          initializeGemini(storedApiKey);
-          const isValidKey = checkApiKey();
-          if (isValidKey) {
-            setApiKeyProvided(true);
-            console.log("Using API key from local storage");
-          } else {
-            console.warn("Stored API key is invalid or empty");
+      try {
+        const storedApiKeys = localStorage.getItem(API_KEYS_STORAGE_KEY);
+        if (storedApiKeys) {
+          const parsedKeys = JSON.parse(storedApiKeys) as string[];
+          
+          if (parsedKeys && parsedKeys.length > 0) {
+            initializeGemini(parsedKeys);
+            const isValidKey = checkApiKey();
+            if (isValidKey) {
+              setApiKeyProvided(true);
+              console.log(`Using ${parsedKeys.length} API key(s) from local storage`);
+            } else {
+              console.warn("Stored API key(s) are invalid or empty");
+            }
           }
-        } catch (error) {
-          console.error("Error initializing with stored API key:", error);
+        } else {
+          console.log("No valid API keys found in environment variables or local storage");
         }
-      } else {
-        console.log("No API key found in environment variables or local storage");
+      } catch (error) {
+        console.error("Error initializing with stored API keys:", error);
       }
     }
     
     loadSavedResults();
-  }, [loadSavedResults, apiKeyProvided]);
+  }, [loadSavedResults, apiKeyProvided, loadEnvApiKeys]);
 
-  const handleApiKeySubmit = (apiKey: string) => {
+  const handleApiKeySubmit = (apiKeys: string[]) => {
     try {
-      initializeGemini(apiKey);
+      initializeGemini(apiKeys);
       if (checkApiKey()) {
         setApiKeyProvided(true);
-        localStorage.setItem(API_KEY_STORAGE_KEY, apiKey);
+        // Save API keys to local storage
+        localStorage.setItem(API_KEYS_STORAGE_KEY, JSON.stringify(apiKeys));
+        
+        const keyMessage = apiKeys.length > 1 
+          ? `${apiKeys.length} API keys set with automatic rotation for reliability.` 
+          : "API key set successfully.";
+          
         toast({
-          title: "API Key set successfully",
-          description: "You can now extract key terms from your text."
+          title: "API Keys configured successfully",
+          description: `You can now extract key terms from your text. ${keyMessage}`
         });
       } else {
         toast({
-          title: "Invalid API key",
-          description: "The API key provided appears to be invalid. Please check and try again.",
+          title: "Invalid API keys",
+          description: "The API keys provided appear to be invalid. Please check and try again.",
           variant: "destructive"
         });
       }
     } catch (error) {
       toast({
-        title: "Error setting API key",
-        description: "Please check your API key and try again.",
+        title: "Error setting API keys",
+        description: "Please check your API keys and try again.",
         variant: "destructive"
       });
     }

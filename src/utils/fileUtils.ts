@@ -22,7 +22,7 @@ export const readFileAsText = (file: File): Promise<string> => {
       reader.onload = () => {
         if (typeof reader.result === 'string') {
           const cleanedText = reader.result
-            .replace(/[\x00-\x09\x0B\x0C\x0E-\x1F\x7F-\x9F]/g, ' ')
+            .replace(/[^\p{L}\p{N}\p{P}\p{Z}\n\r]/gu, ' ')
             .replace(/�/g, ' ');
           
           resolve(cleanedText);
@@ -63,14 +63,14 @@ export const readFileAsText = (file: File): Promise<string> => {
             const content = await page.getTextContent();
             
             const pageText = content.items
-              .map((item: any) => item.str)
+              .map((item) => 'str' in item ? item.str : '')
               .join(' ');
             
             extractedText += pageText + "\n\n";
           }
           
           const cleanedText = extractedText
-            .replace(/[\x00-\x09\x0B\x0C\x0E-\x1F\x7F-\x9F]/g, ' ')
+            .replace(/[^\p{L}\p{N}\p{P}\p{Z}\n\r]/gu, ' ')
             .replace(/�/g, ' ');
           
           resolve(cleanedText);
@@ -103,7 +103,7 @@ export const readFileAsText = (file: File): Promise<string> => {
           });
           
           const cleanedText = result.value
-            .replace(/[\x00-\x09\x0B\x0C\x0E-\x1F\x7F-\x9F]/g, ' ')
+            .replace(/[^\p{L}\p{N}\p{P}\p{Z}\n\r]/gu, ' ')
             .replace(/�/g, ' ');
           
           resolve(cleanedText);
@@ -125,7 +125,7 @@ export const readFileAsText = (file: File): Promise<string> => {
       reader.onload = () => {
         if (typeof reader.result === 'string') {
           const cleanedText = reader.result
-            .replace(/[\x00-\x09\x0B\x0C\x0E-\x1F\x7F-\x9F]/g, ' ')
+            .replace(/[^\p{L}\p{N}\p{P}\p{Z}\n\r]/gu, ' ')
             .replace(/�/g, ' ');
           
           resolve(cleanedText);
@@ -151,47 +151,56 @@ export const exportAsPDF = (result: ExtractionResult) => {
       format: 'letter'
     }) as ExtendedJsPDF;
     
-    const marginLeft = 0.5;
-    const marginRight = 0.5;
-    const marginTop = 0.5;
-    const marginBottom = 0.75;
+    // Page setup and margins
+    const marginLeft = 0.50;
+    const marginRight = 0.50;
+    const marginTop = 0.50;
+    const marginBottom = 0.50;
     const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
     
+    // Column configuration
     const useColumns = true;
-    const columnGap = 0.3;
+    const columnGap = 0.4;
     const contentWidth = pageWidth - (marginLeft + marginRight);
     const columnWidth = useColumns ? (contentWidth - columnGap) / 2 : contentWidth;
     
+    // Position tracking
     let currentPage = 1;
     let currentColumn = 0;
     let xPos = marginLeft;
     let yPos = marginTop;
     
-    const TITLE_FONT_SIZE = 12;
+    // Font sizes
+    const TITLE_FONT_SIZE = 11;
     const HEADING_FONT_SIZE = 11;
     const CONTENT_FONT_SIZE = 10;
-    const SMALL_FONT_SIZE = 8;
+    const SMALL_FONT_SIZE = 10;
     
-    const LINE_HEIGHT = 0.2;
-    const TITLE_LINE_HEIGHT = 0.25;
-    const SECTION_GAP = 0.15;
-    const TERM_SPACING = 0.3;
+    // Spacing - reduced spacing values
+    const LINE_HEIGHT = 0.05; // Reduced from 0.22
+    const TITLE_LINE_HEIGHT = 0.25; // Reduced from 0.35
+    const SECTION_GAP = 0.15; // Reduced from 0.2
+    const TERM_SPACING = 0.15; // Reduced from 0.3
+    const INDENT_SIZE = 0.2;
     
+    // Colors
     const TERM_COLOR = "#000000";
-    const TEXT_COLOR = "#000000";
-    const HIGHLIGHT_COLOR = "#1A1F2C";
+    const TEXT_COLOR = "#333333";
+    const HIGHLIGHT_COLOR = "#000000";
     
+    // Add a footer to each page
     const addFooter = (pageNum: number) => {
       doc.setPage(pageNum);
       doc.setFont("helvetica", "normal");
       doc.setFontSize(SMALL_FONT_SIZE);
-      const footerText = `Page ${pageNum} | Generated on ${new Date().toLocaleDateString()}`;
+      const footerText = `Page ${pageNum} | ${result.title} | Generated on ${new Date().toLocaleDateString()}`;
       const textWidth = doc.getTextWidth(footerText);
       const footerX = (pageWidth - textWidth) / 2;
       doc.text(footerText, footerX, pageHeight - 0.3);
     };
     
+    // Check if we need to move to a new column or page
     const checkColumnAndPage = (requiredSpace = LINE_HEIGHT) => {
       const spaceNeeded = requiredSpace + 0.1;
       
@@ -214,159 +223,213 @@ export const exportAsPDF = (result: ExtractionResult) => {
       return false;
     };
     
+    addFooter(currentPage);
+    
+    // Group terms by category if available
+    const groupedTerms: Record<string, typeof result.keyTerms> = {};
+    result.keyTerms.forEach(term => {
+      const category = term.category || "Main Concepts";
+      if (!groupedTerms[category]) {
+        groupedTerms[category] = [];
+      }
+      groupedTerms[category].push(term);
+    });
+    
+    // Add the title at the beginning of the first column
     if (result.title) {
       doc.setFont("helvetica", "bold");
-      doc.setFontSize(TITLE_FONT_SIZE);
-      doc.setTextColor(HIGHLIGHT_COLOR);
+      doc.setFontSize(TITLE_FONT_SIZE + 2);
+      doc.setTextColor(0, 0, 0);
       
-      if (result.title.toLowerCase().includes("lesson")) {
-        doc.text(result.title, marginLeft, yPos);
-        yPos += TITLE_LINE_HEIGHT;
-      } else {
-        doc.text(`Lesson: ${result.title}`, marginLeft, yPos);
+      const title = result.title.toUpperCase();
+      doc.text(title, xPos, yPos);
+      
+      yPos += TITLE_LINE_HEIGHT;
+      
+      // Add subtitle if extraction mode is available
+      if (result.extractionMode) {
+        const modeName = result.extractionMode === "full" ? "Complete Notes" : 
+                       result.extractionMode === "sentence" ? "One-Sentence Summary" : 
+                       "Key Concepts";
+        
+        doc.setFont("helvetica", "italic");
+        doc.setFontSize(CONTENT_FONT_SIZE);
+        doc.text(`Format: ${modeName}`, xPos, yPos);
         yPos += TITLE_LINE_HEIGHT;
       }
+      
+      // Add a separation line
+      doc.setDrawColor(0, 0, 0);
+      doc.setLineWidth(0.01);
+      doc.line(xPos, yPos, xPos + columnWidth, yPos);
+      yPos += LINE_HEIGHT;
     }
     
-    result.keyTerms.forEach((term, index) => {
-      const termContentHeight = 
-        LINE_HEIGHT +
-        (term.meaning ? term.meaning.length / 90 * LINE_HEIGHT : 0) +
-        (term.subcategories?.length || 0) * LINE_HEIGHT +
-        (term.examples?.length || 0) * LINE_HEIGHT;
+    // Process terms by category
+    Object.entries(groupedTerms).forEach(([category, terms], categoryIndex) => {
+      // Add category header
+      if (categoryIndex > 0) {
+        yPos += SECTION_GAP;
+      }
       
-      const positionChanged = checkColumnAndPage(termContentHeight);
+      checkColumnAndPage(LINE_HEIGHT * 2);
       
       xPos = currentColumn === 0 ? marginLeft : marginLeft + columnWidth + columnGap;
       
+      // Category heading with underline
       doc.setFont("helvetica", "bold");
       doc.setFontSize(HEADING_FONT_SIZE);
-      doc.setTextColor(TERM_COLOR);
-      doc.text(term.term, xPos, yPos);
+      doc.setTextColor(HIGHLIGHT_COLOR);
+      doc.text(category.toUpperCase(), xPos, yPos);
       
-      yPos += LINE_HEIGHT;
+      // Add an underline for the category
+      const categoryWidth = doc.getTextWidth(category.toUpperCase());
+      doc.setLineWidth(0.01);
+      doc.line(xPos, yPos + 0.05, xPos + categoryWidth, yPos + 0.05);
       
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(CONTENT_FONT_SIZE);
-      doc.setTextColor(TEXT_COLOR);
+      yPos += LINE_HEIGHT * 1.2; // Reduced from 1.5
       
-      if (term.meaning && term.meaning.toLowerCase().includes("means")) {
-        const effectiveWidth = columnWidth - 0.1;
-        const meaningLines = doc.splitTextToSize(term.meaning, effectiveWidth);
+      // Process each term in this category
+      terms.forEach((term, index) => {
+        const termContentHeight = 
+          LINE_HEIGHT * 1.2 + // Reduced from 1.5
+          (term.meaning ? term.meaning.length / 70 * LINE_HEIGHT : 0) +
+          (term.subcategories?.length || 0) * LINE_HEIGHT * 1.0 + // Reduced from 1.2
+          (term.examples?.length || 0) * LINE_HEIGHT * 1.0; // Reduced from 1.2
         
-        meaningLines.forEach((line: string) => {
-          doc.text(line, xPos, yPos);
-          yPos += LINE_HEIGHT;
-        });
-      } else {
-        const effectiveWidth = columnWidth - 0.1;
+        const positionChanged = checkColumnAndPage(termContentHeight);
         
-        if (term.meaning) {
-          const formattedMeaning = `- ${term.meaning}`;
-          const meaningLines = doc.splitTextToSize(formattedMeaning, effectiveWidth);
-          
-          meaningLines.forEach((line: string, lineIndex: number) => {
-            if (checkColumnAndPage()) {
-              xPos = currentColumn === 0 ? marginLeft : marginLeft + columnWidth + columnGap;
-            }
-            
-            if (lineIndex === 0) {
-              doc.text(line, xPos, yPos);
-            } else {
-              doc.text(line, xPos, yPos);
-            }
-            
-            yPos += LINE_HEIGHT;
-          });
-        }
-      }
-      
-      if (term.subcategories && term.subcategories.length > 0) {
-        yPos += LINE_HEIGHT * 0.5;
-        
-        term.subcategories.forEach((subcategory) => {
-          if (checkColumnAndPage()) {
-            xPos = currentColumn === 0 ? marginLeft : marginLeft + columnWidth + columnGap;
-          }
-          
-          const effectiveWidth = columnWidth - 0.2;
-          const subLines = doc.splitTextToSize(subcategory, effectiveWidth);
-          
-          subLines.forEach((line: string, lineIndex: number) => {
-            if (checkColumnAndPage()) {
-              xPos = currentColumn === 0 ? marginLeft : marginLeft + columnWidth + columnGap;
-            }
-            
-            if (lineIndex === 0) {
-              doc.text(`• ${line}`, xPos + 0.1, yPos);
-            } else {
-              doc.text(`  ${line}`, xPos + 0.1, yPos);
-            }
-            
-            yPos += LINE_HEIGHT;
-          });
-        });
-      }
-      
-      if (term.examples && term.examples.length > 0) {
-        yPos += LINE_HEIGHT * 0.5;
-        
-        term.examples.forEach((example) => {
-          if (checkColumnAndPage()) {
-            xPos = currentColumn === 0 ? marginLeft : marginLeft + columnWidth + columnGap;
-          }
-          
-          const cleanedExample = example.replace(/^[\s•\-–—*]+/, '').trim();
-          const effectiveWidth = columnWidth - 0.2;
-          const exampleLines = doc.splitTextToSize(`• ${cleanedExample}`, effectiveWidth);
-          
-          exampleLines.forEach((line: string, lineIndex: number) => {
-            if (checkColumnAndPage()) {
-              xPos = currentColumn === 0 ? marginLeft : marginLeft + columnWidth + columnGap;
-            }
-            
-            if (lineIndex === 0) {
-              doc.text(line, xPos + 0.1, yPos);
-            } else {
-              doc.text(`  ${line.substring(2)}`, xPos + 0.1, yPos);
-            }
-            
-            yPos += LINE_HEIGHT;
-          });
-        });
-      }
-      
-      if (term.keywords && term.keywords.length > 0) {
-        yPos += LINE_HEIGHT * 0.5;
-        
-        if (checkColumnAndPage()) {
+        if (positionChanged) {
           xPos = currentColumn === 0 ? marginLeft : marginLeft + columnWidth + columnGap;
         }
         
-        const keywordsText = term.keywords.join(", ");
-        const effectiveWidth = columnWidth - 0.2;
-        const keywordLines = doc.splitTextToSize(keywordsText, effectiveWidth);
+        // Term name (bold)
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(HEADING_FONT_SIZE - 1);
+        doc.setTextColor(TERM_COLOR);
+        doc.text(`${index + 1}. ${term.term}`, xPos, yPos);
         
-        doc.setFont("helvetica", "italic");
-        keywordLines.forEach((line: string) => {
-          if (checkColumnAndPage()) {
-            xPos = currentColumn === 0 ? marginLeft : marginLeft + columnWidth + columnGap;
+        yPos += LINE_HEIGHT;
+        
+        // Term meaning/definition (normal text, indented)
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(CONTENT_FONT_SIZE);
+        doc.setTextColor(TEXT_COLOR);
+        
+        if (term.meaning) {
+          const effectiveWidth = columnWidth - INDENT_SIZE;
+          const meaningLines = doc.splitTextToSize(term.meaning, effectiveWidth);
+          
+          // Set increased line spacing (1.2x) for the content after the term title (reduced from 1.5)
+          const increasedLineHeight = LINE_HEIGHT * 1.2; 
+          
+          meaningLines.forEach((line: string) => {
+            checkColumnAndPage();
+            doc.text(line, xPos + INDENT_SIZE, yPos);
+            yPos += increasedLineHeight;
+          });
+        }
+        
+        // Handle subcategories with lettered bullets (a, b, c...)
+        if (term.subcategories && term.subcategories.length > 0) {
+          yPos += LINE_HEIGHT * 0.2; // Reduced from 0.3
+          
+          if (term.subcategoryTitle) {
+            doc.setFont("helvetica", "italic");
+            checkColumnAndPage();
+            doc.text(term.subcategoryTitle + ":", xPos + INDENT_SIZE, yPos);
+            yPos += LINE_HEIGHT;
+            doc.setFont("helvetica", "normal");
           }
           
-          doc.text(line, xPos + 0.1, yPos);
+          term.subcategories.forEach((subcategory, subIndex) => {
+            checkColumnAndPage();
+            
+            // Use alphabetical bullets (a, b, c...)
+            const bullet = String.fromCharCode(97 + subIndex); // 97 is ASCII for 'a'
+            const bulletText = `${bullet}. `;
+            
+            const effectiveWidth = columnWidth - (INDENT_SIZE * 2 + doc.getTextWidth(bulletText));
+            const subLines = doc.splitTextToSize(subcategory, effectiveWidth);
+            
+            // First line with bullet
+            checkColumnAndPage();
+            doc.text(bulletText, xPos + INDENT_SIZE, yPos);
+            doc.text(subLines[0], xPos + INDENT_SIZE * 2, yPos);
+            yPos += LINE_HEIGHT * 1.2; // Reduced from 1.5
+            
+            // Remaining lines indented
+            for (let i = 1; i < subLines.length; i++) {
+              checkColumnAndPage();
+              doc.text(subLines[i], xPos + INDENT_SIZE * 2, yPos);
+              yPos += LINE_HEIGHT * 1.2; // Reduced from 1.5
+            }
+          });
+        }
+        
+        // Handle examples
+        if (term.examples && term.examples.length > 0) {
+          yPos += LINE_HEIGHT * 0.2; // Reduced from 0.3
+          
+          doc.setFont("helvetica", "italic");
+          checkColumnAndPage();
+          doc.text("Examples:", xPos + INDENT_SIZE, yPos);
+          yPos += LINE_HEIGHT * 1.2; // Reduced from 1.5
+          doc.setFont("helvetica", "normal");
+          
+          term.examples.forEach(example => {
+            const cleanedExample = example.replace(/^[\s•\-–—*]+/, '').trim();
+            
+            const effectiveWidth = columnWidth - (INDENT_SIZE * 2 + doc.getTextWidth("• "));
+            const exampleLines = doc.splitTextToSize(cleanedExample, effectiveWidth);
+            
+            // First line with bullet
+            checkColumnAndPage();
+            doc.text("•", xPos + INDENT_SIZE, yPos);
+            doc.text(exampleLines[0], xPos + INDENT_SIZE * 2, yPos);
+            yPos += LINE_HEIGHT * 1.2; // Reduced from 1.5
+            
+            // Remaining lines indented
+            for (let i = 1; i < exampleLines.length; i++) {
+              checkColumnAndPage();
+              doc.text(exampleLines[i], xPos + INDENT_SIZE * 2, yPos);
+              yPos += LINE_HEIGHT * 1.2; // Reduced from 1.5
+            }
+          });
+        }
+        
+        // Keywords if available (in keywords mode)
+        if (term.keywords && term.keywords.length > 0) {
+          yPos += LINE_HEIGHT * 0.2; // Reduced from 0.3
+          
+          checkColumnAndPage();
+          doc.setFont("helvetica", "italic");
+          doc.text("Keywords:", xPos + INDENT_SIZE, yPos);
           yPos += LINE_HEIGHT;
-        });
-        doc.setFont("helvetica", "normal");
-      }
-      
-      yPos += TERM_SPACING;
+          
+          const keywordsText = term.keywords.join(", ");
+          const effectiveWidth = columnWidth - INDENT_SIZE * 2;
+          const keywordLines = doc.splitTextToSize(keywordsText, effectiveWidth);
+          
+          keywordLines.forEach((line: string) => {
+            checkColumnAndPage();
+            doc.setFont("helvetica", "normal");
+            doc.text(line, xPos + INDENT_SIZE * 2, yPos);
+            yPos += LINE_HEIGHT;
+          });
+        }
+        
+        // Add space between terms
+        yPos += TERM_SPACING;
+      });
     });
     
+    // Add footer to all pages
     for (let i = 1; i <= doc.getNumberOfPages(); i++) {
       addFooter(i);
     }
     
-    const filename = `${result.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_extracted_terms.pdf`;
+    const filename = `${result.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_lesson_notes.pdf`;
     doc.save(filename);
   } catch (error) {
     console.error("Error generating PDF:", error);

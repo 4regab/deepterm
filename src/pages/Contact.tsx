@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -7,6 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/ui/use-toast";
 import Navbar from "@/components/Navbar";
+import Footer from "@/components/Footer";
 import { Mail, Phone, MapPin } from "lucide-react";
 
 const Contact = () => {
@@ -34,10 +34,10 @@ const Contact = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen bg-slate-50 flex flex-col">
       <Navbar />
       
-      <main className="container mx-auto px-4 py-8">
+      <main className="container mx-auto px-4 py-8 flex-grow">
         <Card className="max-w-3xl mx-auto">
           <CardHeader>
             <CardTitle className="text-2xl font-heading">Contact Us</CardTitle>
@@ -54,7 +54,7 @@ const Contact = () => {
                     <Mail className="h-5 w-5 text-neo-accent mr-3 mt-0.5" />
                     <div>
                       <h3 className="font-medium">Email</h3>
-                      <p className="text-gray-600">support@deepterm.com</p>
+                      <p className="text-gray-600">4regab@gmail.com</p>
                     </div>
                   </div>
                   
@@ -127,11 +127,7 @@ const Contact = () => {
         </Card>
       </main>
       
-      <footer className="bg-white border-t mt-auto py-4">
-        <div className="container mx-auto px-4 text-center text-gray-500 text-sm">
-          <p>© {new Date().getFullYear()} DeepTerm. All rights reserved.</p>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 };

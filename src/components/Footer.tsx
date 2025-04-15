@@ -13,7 +13,7 @@ const Footer = () => {
               <p className="font-bold text-xl">DeepTerm</p>
             </div>
             <p className="text-gray-700">
-              Boost your productivity with our specialized AI tools.
+              Boost your productivity with our Pomodoro and Notes tool.
             </p>
             
             <p className="text-gray-600 text-sm mt-4">
@@ -45,7 +45,7 @@ const Footer = () => {
                 <Mail className="h-4 w-4" />
                 <span>Email Us</span>
               </a>
-              <a href="https://github.com/4regab" target="_blank" rel="noopener noreferrer" className="text-gray-700 hover:text-[#FF5C00] transition-colors flex items-center gap-2">
+              <a href="https://4regab.me" target="_blank" rel="noopener noreferrer" className="text-gray-700 hover:text-[#FF5C00] transition-colors flex items-center gap-2">
                 <Github className="h-4 w-4" />
                 <span>4regab</span>
               </a>
