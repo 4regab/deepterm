@@ -9,6 +9,10 @@ export const initializeGemini = (key: string) => {
   apiKey = key || import.meta.env.VITE_GEMINI_API_KEY || "";
 };
 
+export const checkApiKey = (): boolean => {
+  return !!apiKey && apiKey.length > 0 && apiKey !== "your_gemini_api_key_here";
+};
+
 export type ExtractionMode = "full" | "sentence" | "keywords";
 
 // Maximum text length to process in one request
@@ -18,8 +22,8 @@ export const extractKeyTerms = async (
   text: string, 
   mode: ExtractionMode = "full"
 ): Promise<ExtractionResult> => {
-  if (!apiKey) {
-    throw new Error("API key not provided. Please initialize with an API key first.");
+  if (!checkApiKey()) {
+    throw new Error("API key not provided or invalid. Please initialize with a valid API key first.");
   }
 
   try {
