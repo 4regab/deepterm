@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useToast } from "@/components/ui/use-toast";
 import { ExtractionResult } from "@/types";
-import { extractKeyTerms, initializeGemini, ExtractionMode } from "@/services/geminiService";
+import { extractKeyTerms, initializeGemini, ExtractionMode, checkApiKey } from "@/services/geminiService";
 import TextInput from "@/components/TextInput";
 import ResultsDisplay from "@/components/ResultsDisplay";
 import ApiKeyInput from "@/components/ApiKeyInput";
@@ -54,19 +54,31 @@ const Index = () => {
     if (envApiKey) {
       try {
         initializeGemini(envApiKey);
-        setApiKeyProvided(true);
-        console.log("Using API key from environment variables");
+        const isValidKey = checkApiKey();
+        if (isValidKey) {
+          setApiKeyProvided(true);
+          console.log("Using API key from environment variables");
+        } else {
+          console.warn("Environment API key is invalid or empty");
+        }
       } catch (error) {
         console.error("Error initializing with environment API key:", error);
       }
-    } else {
-      // Fall back to local storage if no environment variable is found
+    } 
+    
+    // If environment API key is not valid, fall back to local storage
+    if (!apiKeyProvided) {
       const storedApiKey = localStorage.getItem(API_KEY_STORAGE_KEY);
       if (storedApiKey) {
         try {
           initializeGemini(storedApiKey);
-          setApiKeyProvided(true);
-          console.log("Using API key from local storage");
+          const isValidKey = checkApiKey();
+          if (isValidKey) {
+            setApiKeyProvided(true);
+            console.log("Using API key from local storage");
+          } else {
+            console.warn("Stored API key is invalid or empty");
+          }
         } catch (error) {
           console.error("Error initializing with stored API key:", error);
         }
@@ -76,17 +88,25 @@ const Index = () => {
     }
     
     loadSavedResults();
-  }, [loadSavedResults]);
+  }, [loadSavedResults, apiKeyProvided]);
 
   const handleApiKeySubmit = (apiKey: string) => {
     try {
       initializeGemini(apiKey);
-      setApiKeyProvided(true);
-      localStorage.setItem(API_KEY_STORAGE_KEY, apiKey);
-      toast({
-        title: "API Key set successfully",
-        description: "You can now extract key terms from your text."
-      });
+      if (checkApiKey()) {
+        setApiKeyProvided(true);
+        localStorage.setItem(API_KEY_STORAGE_KEY, apiKey);
+        toast({
+          title: "API Key set successfully",
+          description: "You can now extract key terms from your text."
+        });
+      } else {
+        toast({
+          title: "Invalid API key",
+          description: "The API key provided appears to be invalid. Please check and try again.",
+          variant: "destructive"
+        });
+      }
     } catch (error) {
       toast({
         title: "Error setting API key",
