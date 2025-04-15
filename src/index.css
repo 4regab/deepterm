@@ -1,0 +1,238 @@
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 48 100% 97%;
+    --foreground: 0 0% 12%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 12%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 12%;
+
+    --primary: 23 100% 50%;
+    --primary-foreground: 0 0% 12%;
+
+    --secondary: 160 84% 39%;
+    --secondary-foreground: 0 0% 100%;
+
+    --muted: 48 30% 96%;
+    --muted-foreground: 0 0% 40%;
+
+    --accent: 48 100% 50%;
+    --accent-foreground: 0 0% 12%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 0 0% 90%;
+    --input: 0 0% 90%;
+    --ring: 0 0% 3.9%;
+
+    --radius: 8px;
+
+    --sidebar-background: 48 30% 96%;
+    --sidebar-foreground: 0 0% 12%;
+    --sidebar-primary: 23 100% 50%;
+    --sidebar-primary-foreground: 0 0% 12%;
+    --sidebar-accent: 48 30% 96%;
+    --sidebar-accent-foreground: 0 0% 12%;
+    --sidebar-border: 48 10% 90%;
+    --sidebar-ring: 48 80% 60%;
+  }
+
+  .dark {
+    --background: 0 0% 10%;
+    --foreground: 0 0% 95%;
+
+    --card: 0 0% 15%;
+    --card-foreground: 0 0% 95%;
+
+    --popover: 0 0% 15%;
+    --popover-foreground: 0 0% 95%;
+
+    --primary: 23 100% 50%;
+    --primary-foreground: 0 0% 12%;
+
+    --secondary: 160 84% 39%;
+    --secondary-foreground: 0 0% 100%;
+
+    --muted: 0 0% 20%;
+    --muted-foreground: 0 0% 65%;
+
+    --accent: 48 100% 50%;
+    --accent-foreground: 0 0% 12%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 95%;
+
+    --border: 0 0% 20%;
+    --input: 0 0% 20%;
+    --ring: 0 0% 83.9%;
+
+    --sidebar-background: 0 0% 15%;
+    --sidebar-foreground: 0 0% 95%;
+    --sidebar-primary: 23 100% 50%;
+    --sidebar-primary-foreground: 0 0% 12%;
+    --sidebar-accent: 0 0% 20%;
+    --sidebar-accent-foreground: 0 0% 95%;
+    --sidebar-border: 0 0% 20%;
+    --sidebar-ring: 48 80% 60%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-[#fff6e5] text-[#1a1a1a] font-sans;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-heading font-bold tracking-tight;
+  }
+}
+
+@layer components {
+  .neo-border {
+    @apply border-2 border-[#1a1a1a];
+  }
+  
+  .neo-border-t {
+    @apply border-t-2 border-t-[#1a1a1a];
+  }
+  
+  .neo-box {
+    @apply bg-white neo-border shadow-[4px_4px_0px_#1a1a1a] transition-all rounded-lg;
+  }
+  
+  .neo-box:hover {
+    @apply translate-x-[-2px] translate-y-[-2px] shadow-[6px_6px_0px_#1a1a1a];
+  }
+  
+  .feature-card {
+    @apply p-6 rounded-lg border-2 border-[#1a1a1a] shadow-[4px_4px_0px_#1a1a1a];
+  }
+  
+  .feature-card.blue {
+    @apply bg-[#e6f1ff];
+  }
+  
+  .feature-card.peach {
+    @apply bg-[#ffead6];
+  }
+  
+  .feature-card.mint {
+    @apply bg-[#e6ffe6];
+  }
+  
+  .feature-number {
+    @apply w-10 h-10 flex items-center justify-center text-lg font-bold 
+           bg-white border-2 border-[#1a1a1a] rounded-lg mb-4;
+  }
+  
+  .cta-button {
+    @apply inline-flex items-center justify-center px-6 py-3 
+           bg-[#FFC225] text-[#1a1a1a] font-bold text-lg
+           border-2 border-[#1a1a1a] rounded-md shadow-[4px_4px_0px_#1a1a1a]
+           hover:shadow-[2px_2px_0px_#1a1a1a] hover:translate-x-[2px] hover:translate-y-[2px]
+           transition-all duration-200;
+  }
+  
+  .secondary-button {
+    @apply inline-flex items-center justify-center px-6 py-3 
+           bg-white text-[#1a1a1a] font-bold text-lg
+           border-2 border-[#1a1a1a] rounded-md shadow-[4px_4px_0px_#1a1a1a]
+           hover:shadow-[2px_2px_0px_#1a1a1a] hover:translate-x-[2px] hover:translate-y-[2px]
+           transition-all duration-200;
+  }
+  
+  .coming-soon-tag {
+    @apply rotate-6 bg-[#FFC225] px-3 py-1 text-sm font-bold border border-[#1a1a1a] 
+           inline-block absolute -top-2 -right-2 shadow-[2px_2px_0px_#1a1a1a];
+  }
+  
+  /* New styles for improved UI */
+  .gradient-heading {
+    @apply bg-gradient-to-r from-[#FF5C00] to-[#FF8A3D] bg-clip-text text-transparent;
+  }
+  
+  .glass-card {
+    @apply bg-white/80 backdrop-blur-sm border border-white/20 rounded-xl shadow-lg;
+  }
+  
+  .btn-primary {
+    @apply bg-gradient-to-r from-[#FFC225] to-[#FFD151] hover:from-[#FFD151] hover:to-[#FFE081] 
+           text-[#1a1a1a] font-bold py-2 px-6 rounded-lg shadow-md transition-all duration-200
+           border-2 border-[#1a1a1a] shadow-[2px_2px_0px_#1a1a1a] hover:shadow-none 
+           hover:translate-x-[2px] hover:translate-y-[2px];
+  }
+  
+  .btn-secondary {
+    @apply bg-white hover:bg-gray-50 text-[#1a1a1a] font-bold py-2 px-6 rounded-lg shadow-md 
+           transition-all duration-200 border-2 border-[#1a1a1a] shadow-[2px_2px_0px_#1a1a1a] 
+           hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px];
+  }
+  
+  .input-focus {
+    @apply focus:ring-2 focus:ring-[#FFC225] focus:border-[#FFC225] focus:outline-none;
+  }
+  
+  /* Mobile responsive utilities */
+  .mobile-container {
+    @apply px-4 sm:px-6 md:px-8;
+  }
+  
+  .mobile-stack {
+    @apply flex flex-col sm:flex-row;
+  }
+  
+  .mobile-full-width {
+    @apply w-full sm:w-auto;
+  }
+  
+  .mobile-text-center {
+    @apply text-center md:text-left;
+  }
+  
+  .mobile-p-smaller {
+    @apply p-4 sm:p-6;
+  }
+  
+  /* Touch-friendly adjustments */
+  .touch-target {
+    @apply min-h-[44px] min-w-[44px];
+  }
+  
+  .touch-padding {
+    @apply py-3 px-4;
+  }
+  
+  /* Neo-brutalist enhancements */
+  .neo-shadow-hover {
+    @apply shadow-[4px_4px_0px_#1a1a1a] hover:shadow-[6px_6px_0px_#1a1a1a] 
+           hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all duration-200;
+  }
+  
+  .neo-card {
+    @apply bg-white neo-border rounded-lg overflow-hidden shadow-[4px_4px_0px_#1a1a1a]
+           hover:shadow-[6px_6px_0px_#1a1a1a] hover:translate-x-[-2px] hover:translate-y-[-2px]
+           transition-all duration-200;
+  }
+  
+  .border-3 {
+    @apply border-[3px];
+  }
+}
