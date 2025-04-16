@@ -26,13 +26,13 @@ const Home = () => {
                 </h1>
                 
                 <p className="text-xl text-gray-700 mb-10 max-w-2xl mx-auto">
-                  Our specialized tools help you focus better and extract knowledge efficiently from any content.
+                  Our specialized tools help you focus better and extract notes efficiently from any source materials.
                 </p>
                 
                 <div className="flex flex-wrap gap-5 justify-center">
                   <Link to="/extractor">
                     <Button size="lg" className="group h-14 text-lg">
-                      <span>Try Key Term Extractor</span>
+                      <span>Try Transes Maker</span>
                       <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
                     </Button>
                   </Link>
@@ -106,7 +106,7 @@ const Home = () => {
                   <div className="mr-5 p-4 bg-[#ffead6] rounded-md border-2 border-[#1a1a1a] shadow-neo">
                     <FileText className="h-8 w-8 text-[#FF5C00]" />
                   </div>
-                  <h3 className="text-2xl font-bold font-heading">Key Term Extractor</h3>
+                  <h3 className="text-2xl font-bold font-heading">Transes Maker</h3>
                 </div>
                 
                 <div className="bg-[#fff9ee] neo-border p-4 mb-6 rounded-lg">
@@ -118,7 +118,7 @@ const Home = () => {
                 <ul className="mb-8 text-gray-700 space-y-4 flex-grow">
                   <li className="flex items-start gap-3">
                     <CheckCircle className="h-6 w-6 text-[#FF5C00] flex-shrink-0 mt-0.5" />
-                    <span className="text-lg">Automatically identifies key terms and concepts</span>
+                    <span className="text-lg">Automatically creates organized transes from your content</span>
                   </li>
                   <li className="flex items-start gap-3">
                     <CheckCircle className="h-6 w-6 text-[#FF5C00] flex-shrink-0 mt-0.5" />

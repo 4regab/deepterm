@@ -341,6 +341,36 @@ const Pomodoro = () => {
   const { bgColor, iconColor, borderColor } = getTimerTypeStyles();
   const progress = calculateProgress();
 
+  // Show timer in browser tab title only when timer is running
+  useEffect(() => {
+    let label = '';
+    switch (timerType) {
+      case 'pomodoro':
+        label = 'Focus';
+        break;
+      case 'shortBreak':
+        label = 'Short Break';
+        break;
+      case 'longBreak':
+        label = 'Long Break';
+        break;
+    }
+    
+    if (isTimerCompleted) {
+      document.title = `${label} done! | Pomodoro Timer`;
+    } else if (isRunning) {
+      // Only show the timer in the tab title when it's actually running
+      document.title = `${formatTime(timer)} (${label}) | Pomodoro Timer`;
+    } else {
+      // When timer is paused or not started, just show the default title
+      document.title = 'Pomodoro Timer';
+    }
+    
+    return () => {
+      document.title = 'Pomodoro Timer';
+    };
+  }, [timer, timerType, isTimerCompleted, isRunning]);
+
   return (
     <div className="min-h-screen bg-[#fff6e5] flex flex-col">
       <Navbar />

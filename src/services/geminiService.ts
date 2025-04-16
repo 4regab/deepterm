@@ -9,12 +9,25 @@ let currentKeyIndex = 0;
 // Initialize API keys from environment variables
 const loadApiKeysFromEnv = () => {
   apiKeys = [];
+  
+  // Debug environment variables in production
+  console.log("Environment variables available:", Object.keys(import.meta.env).filter(key => key.startsWith('VITE_')));
+  
+  // First try the main API key
+  const mainKey = import.meta.env.VITE_GEMINI_API_KEY || "";
+  if (mainKey && mainKey.length > 0 && mainKey !== "your_gemini_api_key_here") {
+    console.log("Found main VITE_GEMINI_API_KEY");
+    apiKeys.push(mainKey);
+  }
+  
+  // Then check numbered keys
   for (let i = 1; i <= MAX_API_KEYS; i++) {
     const key = import.meta.env[`VITE_GEMINI_API_KEY_${i}`] || "";
     if (key && key.length > 0 && key !== "your_gemini_api_key_here") {
       apiKeys.push(key);
     }
   }
+  
   console.log(`Loaded ${apiKeys.length} API keys from environment variables`);
   currentKeyIndex = 0;
 };
@@ -182,11 +195,12 @@ export const extractKeyTerms = async (
         ######## CRITICALLY IMPORTANT INSTRUCTIONS ########
         1. *******MOST CRITICAL INSTRUCTION*******: You MUST ANALYZE and EXTRACT terms from THE VERY LAST PAGE and ALL ENDING PORTIONS of the document
         2. Pay EXTRA ATTENTION to sections at the END of the document - these are THE MOST IMPORTANT SECTIONS
-        3. ALWAYS check if there are "Benefits", "Advantages", "Conclusion" sections near the end - THESE MUST BE INCLUDED
+        3. ALWAYS check if there are "Benefits", "Advantages", "Conclusion" sections near the end if available. MUST BE INCLUDED
         4. YOU MUST PROCESS EVERY SINGLE WORD AND EXTRACT TERMS FROM THE ABSOLUTE END OF THE DOCUMENT
         5. YOUR PERFORMANCE WILL BE JUDGED PRIMARILY ON HOW WELL YOU EXTRACT FROM THE LAST 25% OF THE TEXT
         6. DO NOT stop processing before reaching the end of the document
         7. MANDATORY: Ensure that all sections until the end are ALWAYS extracted completely
+        8. Ignore references.
         
         Determine a suitable title/topic for this text.
         

@@ -151,17 +151,20 @@ export const exportAsPDF = (result: ExtractionResult) => {
       format: 'letter'
     }) as ExtendedJsPDF;
     
-    // Page setup and margins
-    const marginLeft = 0.50;
-    const marginRight = 0.50;
-    const marginTop = 0.50;
-    const marginBottom = 0.50;
+    // Set helvetica as default font (this is the PDF standard font closest to Arial)
+    doc.setFont('helvetica');
+    
+    // Page setup and margins - minimized for transes notes style
+    const marginLeft = 0.30;
+    const marginRight = 0.30;
+    const marginTop = 0.30;
+    const marginBottom = 0.30;
     const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
     
-    // Column configuration
+    // Column configuration - optimized for space efficiency
     const useColumns = true;
-    const columnGap = 0.4;
+    const columnGap = 0.25; // Reduced gap between columns
     const contentWidth = pageWidth - (marginLeft + marginRight);
     const columnWidth = useColumns ? (contentWidth - columnGap) / 2 : contentWidth;
     
@@ -171,18 +174,18 @@ export const exportAsPDF = (result: ExtractionResult) => {
     let xPos = marginLeft;
     let yPos = marginTop;
     
-    // Font sizes
-    const TITLE_FONT_SIZE = 11;
-    const HEADING_FONT_SIZE = 11;
+    // Font sizes - consistent size 10
+    const TITLE_FONT_SIZE = 10;
+    const HEADING_FONT_SIZE = 10;
     const CONTENT_FONT_SIZE = 10;
     const SMALL_FONT_SIZE = 10;
     
-    // Spacing - reduced spacing values
-    const LINE_HEIGHT = 0.05; // Reduced from 0.22
-    const TITLE_LINE_HEIGHT = 0.25; // Reduced from 0.35
-    const SECTION_GAP = 0.15; // Reduced from 0.2
-    const TERM_SPACING = 0.15; // Reduced from 0.3
-    const INDENT_SIZE = 0.2;
+    // Spacing - adjusted to prevent text overlap
+    const LINE_HEIGHT = 0.15; // Increased from 0.03 to prevent text overlap
+    const TITLE_LINE_HEIGHT = 0.25;
+    const SECTION_GAP = 0.20;
+    const TERM_SPACING = 0.20; 
+    const INDENT_SIZE = 0.15;
     
     // Colors
     const TERM_COLOR = "#000000";
@@ -238,7 +241,7 @@ export const exportAsPDF = (result: ExtractionResult) => {
     // Add the title at the beginning of the first column
     if (result.title) {
       doc.setFont("helvetica", "bold");
-      doc.setFontSize(TITLE_FONT_SIZE + 2);
+      doc.setFontSize(TITLE_FONT_SIZE);
       doc.setTextColor(0, 0, 0);
       
       const title = result.title.toUpperCase();
@@ -252,8 +255,8 @@ export const exportAsPDF = (result: ExtractionResult) => {
                        result.extractionMode === "sentence" ? "One-Sentence Summary" : 
                        "Key Concepts";
         
-        doc.setFont("helvetica", "italic");
-        doc.setFontSize(CONTENT_FONT_SIZE);
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(CONTENT_FONT_SIZE); 
         doc.text(`Format: ${modeName}`, xPos, yPos);
         yPos += TITLE_LINE_HEIGHT;
       }
@@ -277,7 +280,7 @@ export const exportAsPDF = (result: ExtractionResult) => {
       xPos = currentColumn === 0 ? marginLeft : marginLeft + columnWidth + columnGap;
       
       // Category heading with underline
-      doc.setFont("helvetica", "bold");
+      doc.setFont("helvetica", "normal");
       doc.setFontSize(HEADING_FONT_SIZE);
       doc.setTextColor(HIGHLIGHT_COLOR);
       doc.text(category.toUpperCase(), xPos, yPos);
@@ -303,9 +306,9 @@ export const exportAsPDF = (result: ExtractionResult) => {
           xPos = currentColumn === 0 ? marginLeft : marginLeft + columnWidth + columnGap;
         }
         
-        // Term name (bold)
-        doc.setFont("helvetica", "bold");
-        doc.setFontSize(HEADING_FONT_SIZE - 1);
+        // Term name (normal, not bold)
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(HEADING_FONT_SIZE);
         doc.setTextColor(TERM_COLOR);
         doc.text(`${index + 1}. ${term.term}`, xPos, yPos);
         
@@ -335,11 +338,11 @@ export const exportAsPDF = (result: ExtractionResult) => {
           yPos += LINE_HEIGHT * 0.2; // Reduced from 0.3
           
           if (term.subcategoryTitle) {
-            doc.setFont("helvetica", "italic");
+            doc.setFont("arial", "normal");
             checkColumnAndPage();
             doc.text(term.subcategoryTitle + ":", xPos + INDENT_SIZE, yPos);
             yPos += LINE_HEIGHT;
-            doc.setFont("helvetica", "normal");
+            doc.setFont("arial", "normal");
           }
           
           term.subcategories.forEach((subcategory, subIndex) => {
@@ -371,11 +374,11 @@ export const exportAsPDF = (result: ExtractionResult) => {
         if (term.examples && term.examples.length > 0) {
           yPos += LINE_HEIGHT * 0.2; // Reduced from 0.3
           
-          doc.setFont("helvetica", "italic");
+          doc.setFont("arial", "normal");
           checkColumnAndPage();
           doc.text("Examples:", xPos + INDENT_SIZE, yPos);
           yPos += LINE_HEIGHT * 1.2; // Reduced from 1.5
-          doc.setFont("helvetica", "normal");
+          doc.setFont("arial", "normal");
           
           term.examples.forEach(example => {
             const cleanedExample = example.replace(/^[\s•\-–—*]+/, '').trim();
@@ -403,7 +406,7 @@ export const exportAsPDF = (result: ExtractionResult) => {
           yPos += LINE_HEIGHT * 0.2; // Reduced from 0.3
           
           checkColumnAndPage();
-          doc.setFont("helvetica", "italic");
+          doc.setFont("arial", "normal");
           doc.text("Keywords:", xPos + INDENT_SIZE, yPos);
           yPos += LINE_HEIGHT;
           
@@ -413,7 +416,7 @@ export const exportAsPDF = (result: ExtractionResult) => {
           
           keywordLines.forEach((line: string) => {
             checkColumnAndPage();
-            doc.setFont("helvetica", "normal");
+            doc.setFont("arial", "normal");
             doc.text(line, xPos + INDENT_SIZE * 2, yPos);
             yPos += LINE_HEIGHT;
           });

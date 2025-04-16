@@ -254,9 +254,9 @@ const Index = () => {
           </div> : <>
             <div className="text-center mb-8">
               <h1 className="text-3xl md:text-5xl font-bold font-heading mb-3 text-neo-black tracking-tight">
-                <span className="bg-neo-accent text-neo-black px-2 py-1 neo-border shadow-neo">Key Term Extractor</span>
+                <span className="bg-neo-accent text-neo-black px-2 py-1 neo-border shadow-neo">Transes Maker</span>
               </h1>
-              <p className="text-neo-black text-lg max-w-xl mx-auto font-medium">Extract key terms and definitions from your text with AI-powered analysis</p>
+              <p className="text-neo-black text-lg max-w-xl mx-auto font-medium">Create organized transes from your text with AI-powered analysis</p>
             </div>
             
             <div className="flex justify-center mb-8">
@@ -370,7 +370,7 @@ const Index = () => {
                           </div>
                           <h4 className="font-bold text-neo-black">Keywords Only</h4>
                         </div>
-                        <p className="text-sm text-neo-black">Extract just the key terms and phrases</p>
+                        <p className="text-sm text-neo-black">Create transes with just key terms and phrases</p>
                       </div>
                     </div>
                   </CardContent>
@@ -394,7 +394,7 @@ const Index = () => {
                             <ol className="list-decimal pl-5 space-y-2 text-neo-black">
                               <li>Choose an extraction mode above</li>
                               <li>Enter your text or upload a document</li>
-                              <li>Click "Extract Key Terms" to analyze</li>
+                              <li>Click "Create Transes" to analyze</li>
                               <li>View the extracted terms and meanings</li>
                               <li>Results are saved automatically</li>
                             </ol>
@@ -410,7 +410,7 @@ const Index = () => {
                         <ol className="list-decimal pl-5 space-y-2 text-neo-black">
                           <li>Choose an extraction mode above</li>
                           <li>Enter your text or upload a document</li>
-                          <li>Click "Extract Key Terms" to analyze</li>
+                          <li>Click "Create Transes" to analyze</li>
                           <li>View the extracted terms and meanings</li>
                           <li>Results are saved automatically</li>
                         </ol>
