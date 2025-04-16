@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ExtractionResult } from "@/types";
 import { exportAsPDF, exportAsCSV, exportAsDocx } from "@/utils/fileUtils";
-import { FileType, FileText, AlignJustify, Edit, List, Zap, Download, AlertTriangle } from "lucide-react";
+import { FileType, FileText, AlignJustify, Edit, List, Zap, Download, AlertTriangle, BrainCog, ExternalLink } from "lucide-react";
 import { useState } from "react";
 import {
   Accordion,
@@ -105,7 +105,7 @@ const ResultsDisplay = ({ result, onReset }: ResultsDisplayProps) => {
     switch (result.extractionMode) {
       case "full":
         return {
-          name: "Full Extraction",
+          name: "Normal Extraction",
           icon: <AlignJustify className="h-4 w-4" />,
           color: "bg-neo-accent text-neo-black"
         };
@@ -321,6 +321,25 @@ const ResultsDisplay = ({ result, onReset }: ResultsDisplayProps) => {
         </div>
         
         <div className="p-4 md:p-6 border-t-2 border-neo-black">
+          <div className="mb-5 p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg neo-border border-2 border-neo-black">
+            <div className="flex items-start gap-3">
+              <BrainCog className="h-10 w-10 text-purple-600 shrink-0 mt-1" />
+              <div>
+                <h3 className="font-semibold text-neo-black text-lg mb-2">Supercharge Your Learning</h3>
+                <p className="text-neo-black text-sm mb-3">
+                  Take these extracted notes to the next level with active recall. Create a quiz using verbatim mode in QuillBro to test your knowledge and improve retention.
+                </p>
+                <a 
+                  href="https://quillbro.live" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 text-sm font-medium text-purple-600 hover:text-purple-800 transition-colors"
+                >
+                  Create a quiz in QuillBro <ExternalLink className="h-3 w-3" />
+                </a>
+              </div>
+            </div>
+          </div>
           <Button 
             variant="outline" 
             onClick={onReset}

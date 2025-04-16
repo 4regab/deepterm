@@ -76,7 +76,7 @@ const ProcessingIndicator = ({ mode }: ProcessingIndicatorProps) => {
   
   const getModeTitle = () => {
     switch (mode) {
-      case "full": return "Full Extraction";
+      case "full": return "Normal Extraction";
       case "sentence": return "One Sentence Definitions";
       case "keywords": return "Keywords Extraction";
       default: return "Custom Extraction";

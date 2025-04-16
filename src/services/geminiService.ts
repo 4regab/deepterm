@@ -130,9 +130,9 @@ export const extractKeyTerms = async (
       // Create a new model instance with the current API key
       const genAI = new GoogleGenerativeAI(currentApiKey);
       const model = genAI.getGenerativeModel({ 
-        model: "gemini-2.5-pro-exp-03-25",
+        model: "gemini-2.0-flash-thinking-exp-01-21", // Use the latest model
         generationConfig: {
-          temperature: 0.1,             // Lower temperature for more deterministic extraction
+          temperature: 0.7,             // Lower temperature for more deterministic extraction
           maxOutputTokens: 100000,      // Maximized output tokens limit
           topP: 0.99,                   // Increased to consider wider range of tokens
           topK: 100,                    // Significantly increased for better coverage
@@ -195,14 +195,14 @@ export const extractKeyTerms = async (
         ######## CRITICALLY IMPORTANT INSTRUCTIONS ########
         1. *******MOST CRITICAL INSTRUCTION*******: You MUST ANALYZE and EXTRACT terms from THE VERY LAST PAGE and ALL ENDING PORTIONS of the document
         2. Pay EXTRA ATTENTION to sections at the END of the document - these are THE MOST IMPORTANT SECTIONS
-        3. ALWAYS check if there are "Benefits", "Advantages", "Conclusion" sections near the end if available. MUST BE INCLUDED
-        4. YOU MUST PROCESS EVERY SINGLE WORD AND EXTRACT TERMS FROM THE ABSOLUTE END OF THE DOCUMENT
-        5. YOUR PERFORMANCE WILL BE JUDGED PRIMARILY ON HOW WELL YOU EXTRACT FROM THE LAST 25% OF THE TEXT
-        6. DO NOT stop processing before reaching the end of the document
-        7. MANDATORY: Ensure that all sections until the end are ALWAYS extracted completely
-        8. Ignore references.
+        3. YOU MUST PROCESS EVERY SINGLE WORD AND EXTRACT TERMS FROM THE ABSOLUTE END OF THE DOCUMENT
+        4. DO NOT stop processing before reaching the end of the document
+        5. MANDATORY: Ensure that all sections until the end are ALWAYS extracted completely
+        6. Ignore references. DO NOT MAKE UP WORDS OR TERMS. ONLY USE TERMS and definitions that are present in the text.
+        7. Do not add any additional information or context that is not present in the text.
+        9. Do not include any personal opinions or interpretations.
         
-        Determine a suitable title/topic for this text.
+        The file name from the original document must be the title.
         
         Format the response as a valid JSON object with the following structure:
         {

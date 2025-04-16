@@ -217,9 +217,6 @@ const TextInput = ({ onSubmit, isLoading }: TextInputProps) => {
               <p className="text-xs text-neo-muted hidden sm:block">
                 Supported formats: TXT, PDF (full support), DOCX (limited support)
               </p>
-              <p className="text-xs text-neo-accent hidden sm:block mt-1">
-                <strong>Keep files under {MAX_TEXT_LENGTH.toLocaleString()} characters for complete results</strong>
-              </p>
             </div>
           </div>
           

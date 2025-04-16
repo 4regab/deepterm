@@ -151,8 +151,8 @@ export const exportAsPDF = (result: ExtractionResult) => {
       format: 'letter'
     }) as ExtendedJsPDF;
     
-    // Set Arial as default font
-    doc.setFont('arial');
+    // Set Helvetica as default font (standard in jsPDF)
+    doc.setFont('helvetica'); 
     
     // Page setup and margins - minimized for transes notes style
     const marginLeft = 0.30;
@@ -178,13 +178,13 @@ export const exportAsPDF = (result: ExtractionResult) => {
     const TITLE_FONT_SIZE = 10;
     const HEADING_FONT_SIZE = 10;
     const CONTENT_FONT_SIZE = 10;
-    const SMALL_FONT_SIZE = 5; // Changed footer size to 5
+    const SMALL_FONT_SIZE = 10 // Changed footer size to 5
     
     // Spacing - adjusted to prevent text overlap
-    const LINE_HEIGHT = 0.15; // Increased from 0.03 to prevent text overlap
+    const LINE_HEIGHT = 0.15;
     const TITLE_LINE_HEIGHT = 0.25;
     const SECTION_GAP = 0.20;
-    const TERM_SPACING = 0.20; 
+    const TERM_SPACING = 0.10; 
     const INDENT_SIZE = 0.15;
     
     // Colors
@@ -195,9 +195,9 @@ export const exportAsPDF = (result: ExtractionResult) => {
     // Add a footer to each page
     const addFooter = (pageNum: number) => {
       doc.setPage(pageNum);
-      doc.setFont("arial", "normal"); // Ensure footer uses Arial
-      doc.setFontSize(SMALL_FONT_SIZE); // Use the defined small font size (5)
-      const footerText = `Page ${pageNum} | ${result.title} | Generated on ${new Date().toLocaleDateString()}`;
+      doc.setFont("helvetica", "normal"); // Ensure footer uses Helvetica
+      doc.setFontSize(5); // Set footer font size directly to 5
+      const footerText = `${pageNum}`;
       const textWidth = doc.getTextWidth(footerText);
       const footerX = (pageWidth - textWidth) / 2;
       doc.text(footerText, footerX, pageHeight - 0.3);
@@ -240,7 +240,7 @@ export const exportAsPDF = (result: ExtractionResult) => {
     
     // Add the title at the beginning of the first column
     if (result.title) {
-      doc.setFont("arial", "bold"); // Use Arial
+      doc.setFont("helvetica", "bold"); // Use Helvetica
       doc.setFontSize(TITLE_FONT_SIZE);
       doc.setTextColor(0, 0, 0);
       
@@ -255,7 +255,7 @@ export const exportAsPDF = (result: ExtractionResult) => {
                        result.extractionMode === "sentence" ? "One-Sentence Summary" : 
                        "Key Concepts";
         
-        doc.setFont("arial", "normal"); // Use Arial
+        doc.setFont("helvetica", "normal"); // Use Helvetica
         doc.setFontSize(CONTENT_FONT_SIZE); 
         doc.text(`Format: ${modeName}`, xPos, yPos);
         yPos += TITLE_LINE_HEIGHT;
@@ -280,7 +280,7 @@ export const exportAsPDF = (result: ExtractionResult) => {
       xPos = currentColumn === 0 ? marginLeft : marginLeft + columnWidth + columnGap;
       
       // Category heading (no underline)
-      doc.setFont("arial", "normal"); // Use Arial
+      doc.setFont("helvetica", "normal"); // Use Helvetica
       doc.setFontSize(HEADING_FONT_SIZE);
       doc.setTextColor(HIGHLIGHT_COLOR);
       doc.text(category.toUpperCase(), xPos, yPos);
@@ -290,7 +290,7 @@ export const exportAsPDF = (result: ExtractionResult) => {
       // Process each term in this category
       terms.forEach((term, index) => {
         const termContentHeight = 
-          LINE_HEIGHT * 1.2 + // Reduced from 1.5
+          LINE_HEIGHT * 1 + // Reduced from 1.5
           (term.meaning ? term.meaning.length / 70 * LINE_HEIGHT : 0) +
           (term.subcategories?.length || 0) * LINE_HEIGHT * 1.0 + // Reduced from 1.2
           (term.examples?.length || 0) * LINE_HEIGHT * 1.0; // Reduced from 1.2
@@ -302,7 +302,7 @@ export const exportAsPDF = (result: ExtractionResult) => {
         }
         
         // Term name (normal, not bold)
-        doc.setFont("arial", "normal"); // Use Arial
+        doc.setFont("helvetica", "normal"); // Use Helvetica
         doc.setFontSize(HEADING_FONT_SIZE);
         doc.setTextColor(TERM_COLOR);
         doc.text(`${index + 1}. ${term.term}`, xPos, yPos);
@@ -310,7 +310,7 @@ export const exportAsPDF = (result: ExtractionResult) => {
         yPos += LINE_HEIGHT;
         
         // Term meaning/definition (normal text, indented)
-        doc.setFont("arial", "normal"); // Use Arial
+        doc.setFont("helvetica", "normal"); // Use Helvetica
         doc.setFontSize(CONTENT_FONT_SIZE);
         doc.setTextColor(TEXT_COLOR);
         
@@ -333,11 +333,11 @@ export const exportAsPDF = (result: ExtractionResult) => {
           yPos += LINE_HEIGHT * 0.2; // Reduced from 0.3
           
           if (term.subcategoryTitle) {
-            doc.setFont("arial", "normal"); // Use Arial
+            doc.setFont("helvetica", "normal"); // Use Helvetica
             checkColumnAndPage();
             doc.text(term.subcategoryTitle + ":", xPos + INDENT_SIZE, yPos);
             yPos += LINE_HEIGHT;
-            doc.setFont("arial", "normal"); // Use Arial
+            doc.setFont("helvetica", "normal"); // Use Helvetica
           }
           
           term.subcategories.forEach((subcategory, subIndex) => {
@@ -369,11 +369,11 @@ export const exportAsPDF = (result: ExtractionResult) => {
         if (term.examples && term.examples.length > 0) {
           yPos += LINE_HEIGHT * 0.2; // Reduced from 0.3
           
-          doc.setFont("arial", "normal"); // Use Arial
+          doc.setFont("helvetica", "normal"); // Use Helvetica
           checkColumnAndPage();
           doc.text("Examples:", xPos + INDENT_SIZE, yPos);
           yPos += LINE_HEIGHT * 1.2; // Reduced from 1.5
-          doc.setFont("arial", "normal"); // Use Arial
+          doc.setFont("helvetica", "normal"); // Use Helvetica
           
           term.examples.forEach(example => {
             const cleanedExample = example.replace(/^[\s•\-–—*]+/, '').trim();
@@ -401,7 +401,7 @@ export const exportAsPDF = (result: ExtractionResult) => {
           yPos += LINE_HEIGHT * 0.2; // Reduced from 0.3
           
           checkColumnAndPage();
-          doc.setFont("arial", "normal"); // Use Arial
+          doc.setFont("helvetica", "normal"); // Use Helvetica
           doc.text("Keywords:", xPos + INDENT_SIZE, yPos);
           yPos += LINE_HEIGHT;
           
@@ -411,7 +411,7 @@ export const exportAsPDF = (result: ExtractionResult) => {
           
           keywordLines.forEach((line: string) => {
             checkColumnAndPage();
-            doc.setFont("arial", "normal"); // Use Arial
+            doc.setFont("helvetica", "normal"); // Use Helvetica
             doc.text(line, xPos + INDENT_SIZE * 2, yPos);
             yPos += LINE_HEIGHT;
           });
