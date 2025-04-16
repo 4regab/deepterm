@@ -5,7 +5,5 @@ export default {
       config: './tailwind.config.ts',
     },
     autoprefixer: {},
-  },
-  // Help the CSS language server understand PostCSS syntax
-  parser: 'postcss-scss',
+  }
 }
