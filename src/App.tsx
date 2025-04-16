@@ -29,10 +29,6 @@ const App = () => {
     cookieUtils.setConsentLevel(cookieUtils.ConsentLevel.ALL);
   };
 
-  const handleAcceptEssentialOnly = () => {
-    cookieUtils.setConsentLevel(cookieUtils.ConsentLevel.ESSENTIAL);
-  };
-
   const handleDeclineCookies = () => {
     cookieUtils.setConsentLevel(cookieUtils.ConsentLevel.DECLINED);
   };
@@ -103,28 +99,11 @@ const App = () => {
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap" }}>
                 <div style={{ marginRight: "16px", flex: "1" }}>
                   <p style={{ margin: "0", padding: "0" }}>
-                    This site uses cookies to enhance your experience.{" "}
+                    This site uses cookies to enhance your experience. {" "}
                     <a href="/privacy-policy" style={{ color: "hsl(160 84% 39%)", textDecoration: "none", fontWeight: "500" }}>
                       Privacy Policy
                     </a>
                   </p>
-                </div>
-                <div style={{ display: "flex", alignItems: "center" }}>
-                  <button
-                    onClick={handleAcceptEssentialOnly}
-                    style={{
-                      background: "transparent",
-                      color: "#1a1a1a",
-                      fontSize: "14px",
-                      padding: "8px 16px",
-                      borderRadius: "0.5rem", /* rounded-lg */
-                      border: "1px solid #e5e5e5",
-                      fontWeight: "500",
-                      cursor: "pointer"
-                    }}
-                  >
-                    Essential Only
-                  </button>
                 </div>
               </div>
             </CookieConsent>

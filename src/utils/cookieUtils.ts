@@ -29,7 +29,7 @@ const ADSENSE_COOKIES = ['_gads', '_gac', '__gads', '__gpi', 'DSID', 'IDE', 'NID
  */
 export const getConsentLevel = (): ConsentLevel => {
   if (!isBrowser) return ConsentLevel.ESSENTIAL;
-  
+
   const consent = window.localStorage.getItem('cookieConsent');
   if (consent === ConsentLevel.ALL || consent === ConsentLevel.ESSENTIAL || consent === ConsentLevel.DECLINED) {
     return consent as ConsentLevel;
@@ -44,17 +44,17 @@ export const getConsentLevel = (): ConsentLevel => {
  */
 export const isCookieTypeAllowed = (type: CookieType): boolean => {
   const consent = getConsentLevel();
-  
+
   // Essential cookies are always allowed
   if (type === CookieType.ESSENTIAL) {
     return true;
   }
-  
+
   // For analytics and advertising, only if ALL cookies are accepted
   if (consent === ConsentLevel.ALL) {
     return true;
   }
-  
+
   return false;
 };
 
@@ -63,7 +63,7 @@ export const isCookieTypeAllowed = (type: CookieType): boolean => {
  */
 export const configureAdsense = (): void => {
   if (!isBrowser) return;
-  
+
   if (window.adsbygoogle) {
     if (isCookieTypeAllowed(CookieType.ADVERTISING)) {
       // Enable ad requests
@@ -86,15 +86,19 @@ export const configureAdsense = (): void => {
  */
 export const setConsentLevel = (level: ConsentLevel): void => {
   if (!isBrowser) return;
-  
-  window.localStorage.setItem('cookieConsent', level);
-  
-  // Configure Google AdSense based on new consent level
-  configureAdsense();
-  
-  // Clear non-essential cookies if consent is not "all"
-  if (level !== ConsentLevel.ALL) {
-    clearNonEssentialCookies();
+
+  try {
+    window.localStorage.setItem('cookieConsent', level);
+
+    // Configure Google AdSense based on new consent level
+    configureAdsense();
+
+    // Clear non-essential cookies if consent is not "all"
+    if (level !== ConsentLevel.ALL) {
+      clearNonEssentialCookies();
+    }
+  } catch (error) {
+    console.error("Error setting consent level:", error); // Log any errors
   }
 };
 
@@ -103,21 +107,21 @@ export const setConsentLevel = (level: ConsentLevel): void => {
  */
 export const clearNonEssentialCookies = (): void => {
   if (!isBrowser) return;
-  
+
   // Get all cookies
   const cookies = document.cookie.split(';').map(cookie => cookie.trim().split('=')[0]);
-  
+
   // List of essential cookies that should not be removed
   const essentialCookies = ['deeptermSessionID', 'deeptermCookieConsent'];
-  
+
   // Remove non-essential cookies
   cookies.forEach(name => {
     if (!essentialCookies.includes(name)) {
       // For advertising cookies, specifically remove them
-      if (ADSENSE_COOKIES.some(adCookie => name.includes(adCookie)) || 
-          name.includes('_ga') || 
-          name.includes('_gid') || 
-          name.includes('_gcl')) {
+      if (ADSENSE_COOKIES.some(adCookie => name.includes(adCookie)) ||
+        name.includes('_ga') ||
+        name.includes('_gid') ||
+        name.includes('_gcl')) {
         document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/;`;
       }
     }
