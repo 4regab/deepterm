@@ -58,7 +58,7 @@ const Navbar = () => {
                   <Link to="/extractor" className="w-full">
                     <Button variant="outline" className="neo-border w-full justify-start font-medium bg-neo-accent2 text-white">
                       <FileText className="h-4 w-4 mr-2" />
-                      Key Term Extractor
+                      Transes Maker
                     </Button>
                   </Link>
                   <Link to="/pomodoro" className="w-full">

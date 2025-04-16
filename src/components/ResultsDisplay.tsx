@@ -202,12 +202,6 @@ const ResultsDisplay = ({ result, onReset }: ResultsDisplayProps) => {
         </div>
       </CardHeader>
       <CardContent className="p-0">
-        <Alert className="m-4 border-2 border-red-500 bg-red-50">
-          <AlertTriangle className="h-4 w-4 text-red-500" />
-          <AlertDescription className="text-sm text-red-700">
-            <strong>Note:</strong> Images with text or scanned PDFs cannot be properly extracted. Please use text-based PDFs or documents for best results.
-          </AlertDescription>
-        </Alert>
         
         <div className="divide-y-2 divide-neo-black">
           {Object.keys(groupedTerms).length > 1 ? (

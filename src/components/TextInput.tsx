@@ -156,9 +156,7 @@ const TextInput = ({ onSubmit, isLoading }: TextInputProps) => {
         <Alert className="mb-5 bg-neo-bg neo-border rounded-lg shadow-neo-sm">
           <AlertCircle className="h-4 w-4 text-neo-accent" />
           <AlertDescription className="text-neo-black text-sm">
-            <strong>IMPORTANT:</strong> This tool has a {MAX_TEXT_LENGTH.toLocaleString()} character limit. 
-            <br />
-            <span className="text-red-500">Warning:</span> Images with text or scanned PDFs cannot be extracted. 
+            <strong className="text-red-500">Important:</strong> Images with text or scanned PDFs cannot be extracted. 
             Please ensure your document contains selectable text.
           </AlertDescription>
         </Alert>
