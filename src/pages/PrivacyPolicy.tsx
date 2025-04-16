@@ -15,7 +15,7 @@ const PrivacyPolicy = () => {
             <CardTitle className="text-2xl font-heading">Privacy Policy</CardTitle>
           </CardHeader>
           <CardContent className="prose max-w-none">
-            <p>Last updated: {new Date().toLocaleDateString()}</p>
+            <p>Last updated: April 16, 2025</p>
             
             <h2>Introduction</h2>
             <p>
@@ -45,17 +45,79 @@ const PrivacyPolicy = () => {
             
             <h2>Cookies</h2>
             <p>
-              We use cookies and similar tracking technologies to track the activity on our Service and we hold certain information. 
-              Cookies are files with a small amount of data which may include an anonymous unique identifier. 
-              You can instruct your browser to refuse all cookies or to indicate when a cookie is being sent.
+              We use cookies and similar tracking technologies to track the activity on our Service and store certain information. 
+              Cookies are small text files that a website stores on your computer or mobile device when you visit the site.
+            </p>
+            
+            <h3>Types of Cookies We Use</h3>
+            <p>The cookies we use can be categorized as follows:</p>
+            <ul>
+              <li>
+                <strong>Essential Cookies:</strong> These cookies are necessary for the website to function properly. They enable core functionality such as security, network management, and account access. You may not opt-out of these cookies.
+              </li>
+              <li>
+                <strong>Analytics Cookies:</strong> These cookies help us understand how visitors interact with our website by collecting and reporting information anonymously. This helps us improve our website's structure and content.
+              </li>
+              <li>
+                <strong>Marketing and Advertising Cookies:</strong> These cookies are used to track visitors across websites. The intention is to display ads that are relevant and engaging for the individual user and thereby more valuable for publishers and third-party advertisers.
+              </li>
+            </ul>
+            
+            <h3>Managing Your Cookie Preferences</h3>
+            <p>
+              When you first visit our website, you will be presented with a cookie consent banner that allows you to:
+            </p>
+            <ul>
+              <li><strong>Accept All Cookies:</strong> This will allow all types of cookies to be placed on your device.</li>
+              <li><strong>Essential Only:</strong> This will only allow essential cookies that are necessary for the website to function properly.</li>
+              <li><strong>Decline All:</strong> This will block all cookies except for essential ones required for the website to function.</li>
+            </ul>
+            <p>
+              You can change your cookie preferences at any time by clearing cookies in your browser, which will trigger the cookie consent banner to appear again when you next visit our site.
+            </p>
+            <p>
+              You can also instruct your browser to refuse all cookies or to indicate when a cookie is being sent. However, if you do not accept cookies, some portions of our website may not function properly.
             </p>
             
             <h2>Google AdSense</h2>
             <p>
-              We use Google AdSense to show advertisements on our website. Google AdSense may use cookies and web beacons to collect data about your visits to this and other websites to provide you relevant advertisements about goods and services that may interest you.
+              We use Google AdSense to show advertisements on our website. Google AdSense is a service provided by Google that uses cookies to serve ads based on a user's prior visits to our website or other websites.
             </p>
             <p>
-              If you would like more information about this practice and to know your choices about not having this information used by Google AdSense, please visit Google's privacy policy: <a href="https://policies.google.com/technologies/ads" target="_blank" rel="noopener noreferrer">https://policies.google.com/technologies/ads</a>
+              Google AdSense may use the following technologies:
+            </p>
+            <ul>
+              <li><strong>Cookies:</strong> To serve and manage ads across the web based on your browsing activity.</li>
+              <li><strong>Web beacons:</strong> Small invisible graphics that may be used to collect information about your browsing.</li>
+              <li><strong>Pixel tags:</strong> Small blocks of code that can do things like read and place cookies, and transmit information to Google.</li>
+              <li><strong>Mobile advertising identifiers:</strong> Software-created identifiers that work similar to cookies on mobile devices.</li>
+            </ul>
+            <p>
+              Google AdSense may collect and process data about:
+            </p>
+            <ul>
+              <li>Information about your device and browser</li>
+              <li>Your IP address</li>
+              <li>Websites you've visited that use Google services</li>
+              <li>Your geographic location</li>
+              <li>The time of your visit</li>
+              <li>In some cases, information about your actions on the website</li>
+            </ul>
+            <p>
+              We have implemented Google AdSense in compliance with its policies, including integrating a cookie consent mechanism that allows you to control whether advertising cookies are used.
+            </p>
+            <p>
+              If you would like more information about personalized advertising practices and to know your choices about not having this information used by Google AdSense, please visit:
+            </p>
+            <ul>
+              <li><a href="https://policies.google.com/technologies/ads" target="_blank" rel="noopener noreferrer">Google's Advertising Policies</a></li>
+              <li><a href="https://www.aboutads.info/" target="_blank" rel="noopener noreferrer">Digital Advertising Alliance</a></li>
+              <li><a href="https://youradchoices.com/" target="_blank" rel="noopener noreferrer">Your Ad Choices</a></li>
+            </ul>
+
+            <h2>Data Security</h2>
+            <p>
+              We have implemented appropriate security measures to prevent your personal data from being accidentally lost, used, or accessed in an unauthorized way. We limit access to your personal data to those employees, agents, contractors, and other third parties who have a business need to know.
             </p>
             
             <h2>Changes to This Privacy Policy</h2>

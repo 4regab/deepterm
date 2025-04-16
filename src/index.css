@@ -1,4 +1,6 @@
 
+/* postcss-css */
+/* language=postcss */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700;800;900&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap');
@@ -175,13 +177,13 @@
   
   .btn-primary {
     @apply bg-gradient-to-r from-[#FFC225] to-[#FFD151] hover:from-[#FFD151] hover:to-[#FFE081] 
-           text-[#1a1a1a] font-bold py-2 px-6 rounded-lg shadow-md transition-all duration-200
+           text-[#1a1a1a] font-bold py-2 px-6 rounded-lg transition-all duration-200
            border-2 border-[#1a1a1a] shadow-[2px_2px_0px_#1a1a1a] hover:shadow-none 
            hover:translate-x-[2px] hover:translate-y-[2px];
   }
   
   .btn-secondary {
-    @apply bg-white hover:bg-gray-50 text-[#1a1a1a] font-bold py-2 px-6 rounded-lg shadow-md 
+    @apply bg-white hover:bg-gray-50 text-[#1a1a1a] font-bold py-2 px-6 rounded-lg 
            transition-all duration-200 border-2 border-[#1a1a1a] shadow-[2px_2px_0px_#1a1a1a] 
            hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px];
   }
