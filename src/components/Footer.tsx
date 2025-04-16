@@ -8,7 +8,7 @@ const Footer = () => {
           <div className="flex flex-col items-center md:items-start mobile-text-center">
             <div className="flex items-center gap-2 mb-4">
               <div className="p-2 bg-[#ffead6] rounded-md neo-border">
-                <Zap className="h-5 w-5 text-neo-accent" strokeWidth={2.5} />
+                <img src="/favicon.ico" alt="Logo" className="h-5 w-5" />
               </div>
               <p className="font-bold text-xl">DeepTerm</p>
             </div>

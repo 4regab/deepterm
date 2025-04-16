@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Link } from "react-router-dom";
 import { FileText, Clock, Menu, X, Zap, Home } from "lucide-react";
@@ -37,7 +36,7 @@ const Navbar = () => {
       <div className="container mx-auto px-4">
         <div className="flex justify-between items-center">
           <Link to="/" className="flex items-center gap-2">
-            <Zap className="h-6 w-6 text-neo-accent" strokeWidth={2.5} />
+            <img src="/favicon.ico" alt="Logo" className="h-7 w-7" />
             <h1 className="text-2xl font-bold font-heading">DeepTerm</h1>
           </Link>
           
