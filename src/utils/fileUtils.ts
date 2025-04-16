@@ -143,7 +143,7 @@ export const readFileAsText = (file: File): Promise<string> => {
   });
 };
 
-export const exportAsPDF = (result: ExtractionResult) => {
+export const exportAsPDF = (result: ExtractionResult, originalFilename?: string) => {
   try {
     const doc = new jsPDF({
       orientation: 'portrait',
@@ -180,9 +180,10 @@ export const exportAsPDF = (result: ExtractionResult) => {
     const CONTENT_FONT_SIZE = 10;
     const SMALL_FONT_SIZE = 10 // Changed footer size to 5
     
-    // Spacing - adjusted to prevent text overlap
-    const LINE_HEIGHT = 0.15;
-    const TITLE_LINE_HEIGHT = 0.25;
+    // Spacing - standardized for consistency
+    const LINE_HEIGHT = 0.18; // Standardized base line height
+    const LINE_HEIGHT_MULTIPLIER = 1.2; // Consistent multiplier for all text
+    const TITLE_LINE_HEIGHT = LINE_HEIGHT * LINE_HEIGHT_MULTIPLIER;
     const SECTION_GAP = 0.20;
     const TERM_SPACING = 0.10; 
     const INDENT_SIZE = 0.15;
@@ -194,6 +195,9 @@ export const exportAsPDF = (result: ExtractionResult) => {
     
     // Add a footer to each page
     const addFooter = (pageNum: number) => {
+      // Save current font size to restore it after adding the footer
+      const currentFontSize = doc.getFontSize();
+      
       doc.setPage(pageNum);
       doc.setFont("helvetica", "normal"); // Ensure footer uses Helvetica
       doc.setFontSize(5); // Set footer font size directly to 5
@@ -201,6 +205,9 @@ export const exportAsPDF = (result: ExtractionResult) => {
       const textWidth = doc.getTextWidth(footerText);
       const footerX = (pageWidth - textWidth) / 2;
       doc.text(footerText, footerX, pageHeight - 0.3);
+      
+      // Restore the original font size so subsequent text isn't affected
+      doc.setFontSize(currentFontSize);
     };
     
     // Check if we need to move to a new column or page
@@ -247,6 +254,7 @@ export const exportAsPDF = (result: ExtractionResult) => {
       const title = result.title.toUpperCase();
       doc.text(title, xPos, yPos);
       
+      // Using standardized line height
       yPos += TITLE_LINE_HEIGHT;
       
       // Add subtitle if extraction mode is available
@@ -255,7 +263,8 @@ export const exportAsPDF = (result: ExtractionResult) => {
                        result.extractionMode === "sentence" ? "One-Sentence Summary" : 
                        "Key Concepts";
         
-        doc.setFont("helvetica", "normal"); // Use Helvetica
+        // Keep consistent spacing even when changing font style
+        doc.setFont("helvetica", "normal");
         doc.setFontSize(CONTENT_FONT_SIZE); 
         doc.text(`Format: ${modeName}`, xPos, yPos);
         yPos += TITLE_LINE_HEIGHT;
@@ -285,15 +294,16 @@ export const exportAsPDF = (result: ExtractionResult) => {
       doc.setTextColor(HIGHLIGHT_COLOR);
       doc.text(category.toUpperCase(), xPos, yPos);
       
-      yPos += LINE_HEIGHT * 1.2; // Reduced from 1.5
+      // Use standardized spacing throughout document
+      yPos += TITLE_LINE_HEIGHT;
       
       // Process each term in this category
       terms.forEach((term, index) => {
         const termContentHeight = 
-          LINE_HEIGHT * 1 + // Reduced from 1.5
+          TITLE_LINE_HEIGHT + // Use consistent title line height
           (term.meaning ? term.meaning.length / 70 * LINE_HEIGHT : 0) +
-          (term.subcategories?.length || 0) * LINE_HEIGHT * 1.0 + // Reduced from 1.2
-          (term.examples?.length || 0) * LINE_HEIGHT * 1.0; // Reduced from 1.2
+          (term.subcategories?.length || 0) * TITLE_LINE_HEIGHT + 
+          (term.examples?.length || 0) * TITLE_LINE_HEIGHT;
         
         const positionChanged = checkColumnAndPage(termContentHeight);
         
@@ -375,23 +385,28 @@ export const exportAsPDF = (result: ExtractionResult) => {
           yPos += LINE_HEIGHT * 1.2; // Reduced from 1.5
           doc.setFont("helvetica", "normal"); // Use Helvetica
           
-          term.examples.forEach(example => {
+          term.examples.forEach((example, exIndex) => {
             const cleanedExample = example.replace(/^[\s•\-–—*]+/, '').trim();
             
-            const effectiveWidth = columnWidth - (INDENT_SIZE * 2 + doc.getTextWidth("• "));
+            // Use the same bullet style as used in the original document
+            // Using circular bullet with proper spacing
+            const bulletText = "• ";
+            const bulletWidth = doc.getTextWidth(bulletText);
+            
+            const effectiveWidth = columnWidth - (INDENT_SIZE * 2 + bulletWidth);
             const exampleLines = doc.splitTextToSize(cleanedExample, effectiveWidth);
             
             // First line with bullet
             checkColumnAndPage();
-            doc.text("•", xPos + INDENT_SIZE, yPos);
-            doc.text(exampleLines[0], xPos + INDENT_SIZE * 2, yPos);
-            yPos += LINE_HEIGHT * 1.2; // Reduced from 1.5
+            doc.text(bulletText, xPos + INDENT_SIZE, yPos);
+            doc.text(exampleLines[0], xPos + INDENT_SIZE + bulletWidth, yPos);
+            yPos += LINE_HEIGHT * 1.2;
             
-            // Remaining lines indented
+            // Remaining lines indented (aligned with text, not with bullet)
             for (let i = 1; i < exampleLines.length; i++) {
               checkColumnAndPage();
-              doc.text(exampleLines[i], xPos + INDENT_SIZE * 2, yPos);
-              yPos += LINE_HEIGHT * 1.2; // Reduced from 1.5
+              doc.text(exampleLines[i], xPos + INDENT_SIZE + bulletWidth, yPos);
+              yPos += LINE_HEIGHT * 1.2;
             }
           });
         }
@@ -427,7 +442,12 @@ export const exportAsPDF = (result: ExtractionResult) => {
       addFooter(i);
     }
     
-    const filename = `${result.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_lesson_notes.pdf`;
+    // Generate sequential "Reviewer N" filename
+    const date = new Date();
+    const timestamp = date.getTime(); // Use timestamp to ensure uniqueness
+    const reviewerNumber = Math.floor((timestamp % 1000) / 100) + 1; // Generate a number between 1-10
+    const filename = `Reviewer ${reviewerNumber}.pdf`;
+    
     doc.save(filename);
   } catch (error) {
     console.error("Error generating PDF:", error);
@@ -435,7 +455,7 @@ export const exportAsPDF = (result: ExtractionResult) => {
   }
 };
 
-export const exportAsCSV = (result: ExtractionResult) => {
+export const exportAsCSV = (result: ExtractionResult, originalFilename?: string) => {
   const csvRows = [];
 
   csvRows.push("Term,Meaning,Subcategories,Examples");
@@ -450,10 +470,21 @@ export const exportAsCSV = (result: ExtractionResult) => {
 
   const csvString = csvRows.join('\n');
   const blob = new Blob([csvString], { type: 'text/csv' });
-  saveAs(blob, `${result.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_extracted_terms.csv`);
+  
+  // Generate filename based on original file if available, otherwise use the title
+  let filename = '';
+  if (originalFilename) {
+    // Extract just the base name without extension
+    const baseName = originalFilename.replace(/\.[^/.]+$/, "").replace(/[^a-z0-9]/gi, '_').toLowerCase();
+    filename = `${baseName}_extracted_terms.csv`;
+  } else {
+    filename = `${result.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_extracted_terms.csv`;
+  }
+  
+  saveAs(blob, filename);
 };
 
-export const exportAsDocx = (result: ExtractionResult) => {
+export const exportAsDocx = (result: ExtractionResult, originalFilename?: string) => {
   try {
     const document = new Document({
       sections: [{
@@ -649,7 +680,17 @@ export const exportAsDocx = (result: ExtractionResult) => {
     });
 
     Packer.toBlob(document).then(blob => {
-      saveAs(blob, `${result.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_extracted_terms.docx`);
+      // Generate filename based on original file if available, otherwise use the title
+      let filename = '';
+      if (originalFilename) {
+        // Extract just the base name without extension
+        const baseName = originalFilename.replace(/\.[^/.]+$/, "").replace(/[^a-z0-9]/gi, '_').toLowerCase();
+        filename = `${baseName}_extracted_terms.docx`;
+      } else {
+        filename = `${result.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_extracted_terms.docx`;
+      }
+      
+      saveAs(blob, filename);
     });
   } catch (error) {
     console.error("Error generating DOCX:", error);

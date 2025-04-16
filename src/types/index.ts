@@ -9,9 +9,11 @@ export interface KeyTerm {
   keywords?: string[];
 }
 
+export type ExtractionMode = "full" | "sentence" | "keywords" | null;
+
 export interface ExtractionResult {
   title: string;
   keyTerms: KeyTerm[];
   timestamp?: string;
-  extractionMode?: "full" | "sentence" | "keywords";
+  extractionMode?: ExtractionMode;
 }

@@ -19,7 +19,7 @@ const Navbar = () => {
       <Link to="/extractor">
         <Button variant="outline" className="neo-border bg-neo-accent2 hover:bg-neo-accent2/90 text-white font-medium flex items-center gap-2 shadow-neo hover:shadow-neo-lg transition-all hover:-translate-y-0.5 hover:-translate-x-0.5">
           <FileText className="h-4 w-4" />
-          <span>Extractor</span>
+          <span>Reviewer Maker</span>
         </Button>
       </Link>
       <Link to="/pomodoro">

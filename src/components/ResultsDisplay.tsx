@@ -18,9 +18,10 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 interface ResultsDisplayProps {
   result: ExtractionResult;
   onReset: () => void;
+  originalFilename?: string;
 }
 
-const ResultsDisplay = ({ result, onReset }: ResultsDisplayProps) => {
+const ResultsDisplay = ({ result, onReset, originalFilename }: ResultsDisplayProps) => {
   const [isExporting, setIsExporting] = useState<string | null>(null);
   const { toast } = useToast();
 
@@ -44,7 +45,7 @@ const ResultsDisplay = ({ result, onReset }: ResultsDisplayProps) => {
   const handleExportPDF = async () => {
     try {
       setIsExporting("pdf");
-      await exportAsPDF(result);
+      await exportAsPDF(result, originalFilename);
       toast({
         title: "PDF Export Successful",
         description: "Your terms have been exported to PDF with proper formatting",
@@ -64,7 +65,7 @@ const ResultsDisplay = ({ result, onReset }: ResultsDisplayProps) => {
   const handleExportCSV = () => {
     try {
       setIsExporting("csv");
-      exportAsCSV(result);
+      exportAsCSV(result, originalFilename);
       toast({
         title: "CSV Export Successful",
         description: "Your terms have been exported to CSV",
@@ -84,7 +85,7 @@ const ResultsDisplay = ({ result, onReset }: ResultsDisplayProps) => {
   const handleExportDocx = async () => {
     try {
       setIsExporting("docx");
-      await exportAsDocx(result);
+      await exportAsDocx(result, originalFilename);
       toast({
         title: "DOCX Export Successful",
         description: "Your terms have been exported to DOCX with proper formatting",
@@ -325,12 +326,12 @@ const ResultsDisplay = ({ result, onReset }: ResultsDisplayProps) => {
             <div className="flex items-start gap-3">
               <BrainCog className="h-10 w-10 text-purple-600 shrink-0 mt-1" />
               <div>
-                <h3 className="font-semibold text-neo-black text-lg mb-2">Supercharge Your Learning</h3>
+                <h3 className="font-semibold text-neo-black text-lg mb-2">Test your knowledge</h3>
                 <p className="text-neo-black text-sm mb-3">
-                  Take these extracted notes to the next level with active recall. Create a quiz using verbatim mode in QuillBro to test your knowledge and improve retention.
+                  Take these extracted notes to create a quiz using verbatim mode in QuillBro to improve retention and understanding.
                 </p>
                 <a 
-                  href="https://quillbro.live" 
+                  href="https://quillbro.live/quiz"
                   target="_blank" 
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-1 text-sm font-medium text-purple-600 hover:text-purple-800 transition-colors"

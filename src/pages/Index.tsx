@@ -25,7 +25,7 @@ const Index = () => {
   const [result, setResult] = useState<ExtractionResult | null>(null);
   const [savedResults, setSavedResults] = useState<ExtractionResult[]>([]);
   const [showSavedResults, setShowSavedResults] = useState(false);
-  const [extractionMode, setExtractionMode] = useState<ExtractionMode>("full");
+  const [extractionMode, setExtractionMode] = useState<ExtractionMode>(null);
   const {
     toast
   } = useToast();
@@ -333,50 +333,57 @@ const Index = () => {
                   </Card>
                 </div>
               </div> : <div className="space-y-6 max-w-3xl mx-auto">
-                <Card className="neo-border bg-white shadow-neo overflow-hidden rounded-lg">
-                  <CardContent className="p-6">
-                    <h3 className="text-xl font-bold mb-6 flex items-center text-neo-black">
-                      <div className="p-2 rounded-lg bg-neo-accent mr-3 neo-border">
-                        <Sparkles className="h-4 w-4 text-neo-black" />
-                      </div>
-                      Choose Extraction Mode
-                    </h3>
-                    
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                      <div className={`p-5 cursor-pointer transition-all rounded-lg neo-border ${extractionMode === "full" ? "border-2 border-neo-black bg-neo-accent shadow-neo-sm" : "border-2 border-neo-black bg-white hover:bg-neo-bg shadow-neo-sm hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px]"}`} onClick={() => handleModeChange("full")}>
-                        <div className="flex items-center mb-3">
-                          <div className={`p-2 rounded-lg neo-border ${extractionMode === "full" ? "bg-white" : "bg-neo-accent"} mr-2`}>
-                            <AlignJustify className="h-4 w-4 text-neo-black" />
-                          </div>
-                          <h4 className="font-bold text-neo-black">Normal Extraction</h4>
+                {extractionMode === null ? (
+                  <Card className="neo-border bg-white shadow-neo overflow-hidden rounded-lg">
+                    <CardContent className="p-6">
+                      <h3 className="text-xl font-bold mb-6 flex items-center text-neo-black">
+                        <div className="p-2 rounded-lg bg-neo-accent mr-3 neo-border">
+                          <Sparkles className="h-4 w-4 text-neo-black" />
                         </div>
-                        <p className="text-sm text-neo-black">Extract complete definitions from text</p>
-                      </div>
+                        Choose Extraction Mode
+                      </h3>
                       
-                      <div className={`p-5 cursor-pointer transition-all rounded-lg neo-border ${extractionMode === "sentence" ? "border-2 border-neo-black bg-neo-accent2 shadow-neo-sm" : "border-2 border-neo-black bg-white hover:bg-neo-bg shadow-neo-sm hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px]"}`} onClick={() => handleModeChange("sentence")}>
-                        <div className="flex items-center mb-3">
-                          <div className={`p-2 rounded-lg neo-border ${extractionMode === "sentence" ? "bg-white" : "bg-neo-accent2"} mr-2`}>
-                            <Edit className="h-4 w-4 text-neo-black" />
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <div className="p-5 cursor-pointer transition-all rounded-lg neo-border border-2 border-neo-black bg-white hover:bg-neo-bg shadow-neo-sm hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px]" onClick={() => handleModeChange("full")}>
+                          <div className="flex items-center mb-3">
+                            <div className="p-2 rounded-lg neo-border bg-neo-accent mr-2">
+                              <AlignJustify className="h-4 w-4 text-neo-black" />
+                            </div>
+                            <h4 className="font-bold text-neo-black">Normal Extraction</h4>
                           </div>
-                          <h4 className="font-bold text-neo-black">One Sentence</h4>
+                          <p className="text-sm text-neo-black">Extract complete definitions from text</p>
                         </div>
-                        <p className="text-sm text-neo-black">Get concise single-sentence definitions</p>
-                      </div>
-                      
-                      <div className={`p-5 cursor-pointer transition-all rounded-lg neo-border ${extractionMode === "keywords" ? "border-2 border-neo-black bg-neo-accent3 shadow-neo-sm" : "border-2 border-neo-black bg-white hover:bg-neo-bg shadow-neo-sm hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px]"}`} onClick={() => handleModeChange("keywords")}>
-                        <div className="flex items-center mb-3">
-                          <div className={`p-2 rounded-lg neo-border ${extractionMode === "keywords" ? "bg-white" : "bg-neo-accent3"} mr-2`}>
-                            <List className="h-4 w-4 text-neo-black" />
+                        
+                        <div className="p-5 cursor-pointer transition-all rounded-lg neo-border border-2 border-neo-black bg-white hover:bg-neo-bg shadow-neo-sm hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px]" onClick={() => handleModeChange("sentence")}>
+                          <div className="flex items-center mb-3">
+                            <div className="p-2 rounded-lg neo-border bg-neo-accent2 mr-2">
+                              <Edit className="h-4 w-4 text-neo-black" />
+                            </div>
+                            <h4 className="font-bold text-neo-black">One Sentence</h4>
                           </div>
-                          <h4 className="font-bold text-neo-black">Keywords Only</h4>
+                          <p className="text-sm text-neo-black">Get concise single-sentence definitions</p>
                         </div>
-                        <p className="text-sm text-neo-black">Create reviewer notes with just key terms and phrases</p>
+                        
+                        <div className="p-5 cursor-pointer transition-all rounded-lg neo-border border-2 border-neo-black bg-white hover:bg-neo-bg shadow-neo-sm hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px]" onClick={() => handleModeChange("keywords")}>
+                          <div className="flex items-center mb-3">
+                            <div className="p-2 rounded-lg neo-border bg-neo-accent3 mr-2">
+                              <List className="h-4 w-4 text-neo-black" />
+                            </div>
+                            <h4 className="font-bold text-neo-black">Keywords Only</h4>
+                          </div>
+                          <p className="text-sm text-neo-black">Create reviewer notes with just key terms and phrases</p>
+                        </div>
                       </div>
-                    </div>
-                  </CardContent>
-                </Card>
-                
-                <TextInput onSubmit={handleTextSubmit} isLoading={isLoading} />
+                    </CardContent>
+                  </Card>
+                ) : (
+                  <TextInput 
+                    onSubmit={handleTextSubmit} 
+                    isLoading={isLoading} 
+                    extractionMode={extractionMode}
+                    onResetMode={() => setExtractionMode(null)}
+                  />
+                )}
                 
                 <Card className="neo-border bg-white shadow-neo overflow-hidden rounded-lg mb-6">
                   <CardContent className={isMobile ? "p-0" : "p-6"}>

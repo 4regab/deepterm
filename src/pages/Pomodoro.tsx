@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Timer, Pause, Play, RefreshCcw, Volume2, VolumeX, CheckCircle2, Clock, Coffee, InfoIcon } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import TodoList from "@/components/TodoList";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 // Import notification sound
@@ -35,6 +36,10 @@ const Pomodoro = () => {
   const [completedPomodoros, setCompletedPomodoros] = useState(0);
   const [isMuted, setIsMuted] = useState(false);
   const [initialTime, setInitialTime] = useState(DEFAULT_SETTINGS.pomodoro);
+  const [isTodoListVisible, setIsTodoListVisible] = useState(() => {
+    const savedState = localStorage.getItem('pomodoro-todos-minimized');
+    return savedState ? !JSON.parse(savedState) : true;
+  });
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [isTimerCompleted, setIsTimerCompleted] = useState(false);
   const [isPlayingSound, setIsPlayingSound] = useState(false);
@@ -457,14 +462,17 @@ const Pomodoro = () => {
       </Dialog>
 
       <main className="container mx-auto px-4 py-8 flex-grow">
-        <div className="max-w-2xl mx-auto">
-          <div className="text-center mb-8">
-            <h1 className="text-4xl font-bold mb-2 relative inline-block">
-              Pomodoro Timer
-              <div className="absolute -bottom-1 left-0 w-full h-2 bg-[#FFC225] -z-10 transform -rotate-1"></div>
-            </h1>
-            <p className="text-gray-700 mt-3">Stay focused and productive with timed work sessions</p>
-          </div>
+        <div className="text-center mb-8">
+          <h1 className="text-4xl font-bold mb-2 relative inline-block">
+            Pomodoro Timer
+            <div className="absolute -bottom-1 left-0 w-full h-2 bg-[#FFC225] -z-10 transform -rotate-1"></div>
+          </h1>
+          <p className="text-gray-700 mt-3">Stay focused and productive with timed work sessions and task management</p>
+        </div>
+        
+        <div className={`grid grid-cols-1 ${isTodoListVisible ? 'lg:grid-cols-3' : 'lg:grid-cols-1'} gap-6 max-w-6xl mx-auto`}>
+          <div className={isTodoListVisible ? 'lg:col-span-2' : 'lg:col-span-1'}>
+            <div className={`${isTodoListVisible ? 'max-w-2xl mx-auto lg:max-w-none' : 'max-w-2xl mx-auto'}`}>
           
           {/* Timer Type Tabs */}
           <Tabs 
@@ -613,7 +621,8 @@ const Pomodoro = () => {
               <p className="mb-4 text-gray-700">
                 The Pomodoro Technique is a time management method developed by Francesco Cirillo
                 in the late 1980s. It uses a timer to break work into intervals, traditionally 
-                25 minutes in length, separated by short breaks.
+                25 minutes in length, separated by short breaks. Combined with our task management tool, 
+                you can track what you're working on during each session.
               </p>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
@@ -647,6 +656,15 @@ const Pomodoro = () => {
               </div>
             </CardContent>
           </Card>
+            </div>
+          </div>
+          
+          {/* Todo List Component - Right side on desktop, below on mobile */}
+          <div className={`flex flex-col ${!isTodoListVisible ? 'lg:absolute lg:right-4 lg:top-24' : ''}`}>
+            <div className="flex-grow">
+              <TodoList onVisibilityChange={setIsTodoListVisible} />
+            </div>
+          </div>
         </div>
       </main>
 

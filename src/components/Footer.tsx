@@ -1,6 +1,6 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import { FileText, Mail, Zap, Github, Clock, Heart } from "lucide-react";
+import { FileText, Mail, Zap, Github, Clock, Heart, InfoIcon } from "lucide-react";
 const Footer = () => {
   return <footer className="bg-white neo-border-t mt-auto py-10">
       <div className="container mx-auto px-4">
@@ -28,6 +28,9 @@ const Footer = () => {
           <div className="flex flex-col items-start text-left">
             <h3 className="font-bold mb-4 text-lg text-[#1a1a1a]">Resources</h3>
             <div className="flex flex-col gap-3">
+              <Link to="/about" className="text-gray-700 hover:text-[#FF5C00] transition-colors flex items-center gap-2">
+                <span>About</span>
+              </Link>
               <Link to="/privacy-policy" className="text-gray-700 hover:text-[#FF5C00] transition-colors">
                 Privacy Policy
               </Link>
