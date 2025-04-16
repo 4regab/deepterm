@@ -1,3 +1,5 @@
+# robots.txt for DeepTerm
+
 User-agent: Googlebot
 Allow: /
 
@@ -12,3 +14,15 @@ Allow: /
 
 User-agent: *
 Allow: /
+Allow: /extractor
+Allow: /pomodoro
+Allow: /about
+Allow: /contact
+Allow: /privacy-policy
+Allow: /terms
+
+# Optimize crawl rate
+Crawl-delay: 10
+
+# Sitemaps
+Sitemap: https://deepterm.com/sitemap.xml
