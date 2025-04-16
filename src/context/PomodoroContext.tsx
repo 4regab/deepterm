@@ -39,24 +39,70 @@ interface PomodoroContextType {
     NOTIFICATION_SOUND_URL: string;
     setIsTimerCompleted: React.Dispatch<React.SetStateAction<boolean>>;
     audioRef: React.RefObject<HTMLAudioElement>;
+    userSettings: {
+        pomodoro: number;
+        shortBreak: number;
+        longBreak: number;
+        pomodorosUntilLongBreak: number;
+    };
+    updateUserSettings: (newSettings: Partial<{
+        pomodoro: number;
+        shortBreak: number;
+        longBreak: number;
+        pomodorosUntilLongBreak: number;
+    }>) => void;
+    isSettingsDialogOpen: boolean;
+    setIsSettingsDialogOpen: React.Dispatch<React.SetStateAction<boolean>>;
+    setTimer: React.Dispatch<React.SetStateAction<number>>;
+    setInitialTime: React.Dispatch<React.SetStateAction<number>>;
 }
 
 const PomodoroContext = createContext<PomodoroContextType | undefined>(undefined);
 
 export const PomodoroProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+    // Load saved user settings from localStorage or use defaults
+    const loadSavedSettings = () => {
+        try {
+            const savedSettings = localStorage.getItem('pomodoro-settings');
+            if (savedSettings) {
+                return JSON.parse(savedSettings);
+            }
+        } catch (error) {
+            console.error("Failed to load saved settings:", error);
+        }
+        return DEFAULT_SETTINGS;
+    };
+
+    // User settings state
+    const [userSettings, setUserSettings] = useState(loadSavedSettings);
+    const [isSettingsDialogOpen, setIsSettingsDialogOpen] = useState(false);
+
     // Timer state
-    const [timer, setTimer] = useState(DEFAULT_SETTINGS.pomodoro);
+    const [timer, setTimer] = useState(userSettings.pomodoro);
     const [timerType, setTimerType] = useState<TimerType>('pomodoro');
     const [isRunning, setIsRunning] = useState(false);
     const [completedPomodoros, setCompletedPomodoros] = useState(0);
     const [isMuted, setIsMuted] = useState(false);
-    const [initialTime, setInitialTime] = useState(DEFAULT_SETTINGS.pomodoro);
+    const [initialTime, setInitialTime] = useState(userSettings.pomodoro);
     const [isTimerCompleted, setIsTimerCompleted] = useState(false);
     const [isPlayingSound, setIsPlayingSound] = useState(false);
     const [nextTimerType, setNextTimerType] = useState<TimerType | null>(null);
 
     const audioRef = useRef<HTMLAudioElement | null>(null);
     const { toast } = useToast();
+
+    // Update user settings and save to localStorage
+    const updateUserSettings = useCallback((newSettings: Partial<typeof userSettings>) => {
+        setUserSettings(prevSettings => {
+            const updatedSettings = { ...prevSettings, ...newSettings };
+            try {
+                localStorage.setItem('pomodoro-settings', JSON.stringify(updatedSettings));
+            } catch (error) {
+                console.error("Failed to save settings:", error);
+            }
+            return updatedSettings;
+        });
+    }, []);
 
     // Create audio element on component mount and set up user interaction tracking
     useEffect(() => {
@@ -179,7 +225,7 @@ export const PomodoroProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             const newCount = completedPomodoros + 1;
 
             // After completing set number of pomodoros, take a long break
-            if (newCount % DEFAULT_SETTINGS.pomodorosUntilLongBreak === 0) {
+            if (newCount % userSettings.pomodorosUntilLongBreak === 0) {
                 nextType = 'longBreak';
             } else {
                 nextType = 'shortBreak';
@@ -197,7 +243,7 @@ export const PomodoroProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
         // Stop the current timer
         setIsRunning(false);
-    }, [completedPomodoros, timerType, playSound]);
+    }, [completedPomodoros, timerType, playSound, userSettings.pomodorosUntilLongBreak]);
 
     // Handle starting the next timer phase
     const handleStartNextPhase = useCallback(() => {
@@ -216,13 +262,13 @@ export const PomodoroProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             let nextDuration: number;
             switch (nextType) {
                 case 'pomodoro':
-                    nextDuration = DEFAULT_SETTINGS.pomodoro;
+                    nextDuration = userSettings.pomodoro;
                     break;
                 case 'shortBreak':
-                    nextDuration = DEFAULT_SETTINGS.shortBreak;
+                    nextDuration = userSettings.shortBreak;
                     break;
                 case 'longBreak':
-                    nextDuration = DEFAULT_SETTINGS.longBreak;
+                    nextDuration = userSettings.longBreak;
                     break;
             }
 
@@ -234,7 +280,7 @@ export const PomodoroProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             // Reset the next timer type
             setNextTimerType(null);
         }
-    }, [nextTimerType, stopSound]);
+    }, [nextTimerType, stopSound, userSettings]);
 
     // Timer tick effect
     useEffect(() => {
@@ -254,27 +300,33 @@ export const PomodoroProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         return () => {
             if (interval) clearInterval(interval);
         };
-    }, [isRunning, timer, handleTimerComplete]);
-
-    // Handle timer type change
+    }, [isRunning, timer, handleTimerComplete]);    // Handle timer type change
     const handleTimerTypeChange = (type: TimerType) => {
-        setIsRunning(false);
+        if (type === timerType) return; // Don't do anything if it's the same type
+
+        // Change the timer type
         setTimerType(type);
 
-        // Set the appropriate time based on the selected timer type
+        // Always set the appropriate initial time for the selected timer type
+        let newInitialTime;
         switch (type) {
             case 'pomodoro':
-                setTimer(DEFAULT_SETTINGS.pomodoro);
-                setInitialTime(DEFAULT_SETTINGS.pomodoro);
+                newInitialTime = userSettings.pomodoro;
                 break;
             case 'shortBreak':
-                setTimer(DEFAULT_SETTINGS.shortBreak);
-                setInitialTime(DEFAULT_SETTINGS.shortBreak);
+                newInitialTime = userSettings.shortBreak;
                 break;
             case 'longBreak':
-                setTimer(DEFAULT_SETTINGS.longBreak);
-                setInitialTime(DEFAULT_SETTINGS.longBreak);
+                newInitialTime = userSettings.longBreak;
                 break;
+        }
+
+        // Always update the initialTime to show the correct max value
+        setInitialTime(newInitialTime);
+
+        // Only reset the current time if not running
+        if (!isRunning) {
+            setTimer(newInitialTime);
         }
     };
 
@@ -288,16 +340,16 @@ export const PomodoroProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         setIsRunning(false);
         switch (timerType) {
             case 'pomodoro':
-                setTimer(DEFAULT_SETTINGS.pomodoro);
-                setInitialTime(DEFAULT_SETTINGS.pomodoro);
+                setTimer(userSettings.pomodoro);
+                setInitialTime(userSettings.pomodoro);
                 break;
             case 'shortBreak':
-                setTimer(DEFAULT_SETTINGS.shortBreak);
-                setInitialTime(DEFAULT_SETTINGS.shortBreak);
+                setTimer(userSettings.shortBreak);
+                setInitialTime(userSettings.shortBreak);
                 break;
             case 'longBreak':
-                setTimer(DEFAULT_SETTINGS.longBreak);
-                setInitialTime(DEFAULT_SETTINGS.longBreak);
+                setTimer(userSettings.longBreak);
+                setInitialTime(userSettings.longBreak);
                 break;
         }
     };
@@ -305,9 +357,7 @@ export const PomodoroProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     // Toggle mute state
     const toggleMute = () => {
         setIsMuted(!isMuted);
-    };
-
-    const value = {
+    }; const value = {
         timer,
         timerType,
         isRunning,
@@ -327,7 +377,13 @@ export const PomodoroProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         DEFAULT_SETTINGS,
         NOTIFICATION_SOUND_URL,
         setIsTimerCompleted,
-        audioRef
+        audioRef,
+        userSettings,
+        updateUserSettings,
+        isSettingsDialogOpen,
+        setIsSettingsDialogOpen,
+        setTimer,
+        setInitialTime
     };
 
     return (

@@ -4,11 +4,13 @@ import TodoList from "@/components/TodoList";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TimerType, usePomodoroContext } from "@/context/PomodoroContext";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { CheckCircle2, Clock, Coffee, InfoIcon, Pause, Play, RefreshCcw, Timer, Volume2, VolumeX } from "lucide-react";
+import { CheckCircle2, Clock, Coffee, InfoIcon, Pause, Play, RefreshCcw, Settings, Timer, Volume2, VolumeX } from "lucide-react";
 import { useEffect, useState } from "react";
 
 const Pomodoro = () => {
@@ -33,8 +35,22 @@ const Pomodoro = () => {
     NOTIFICATION_SOUND_URL,
     setIsTimerCompleted,
     audioRef,
-    stopSound
+    stopSound,
+    userSettings,
+    updateUserSettings,
+    isSettingsDialogOpen,
+    setIsSettingsDialogOpen,
+    setTimer,
+    setInitialTime
   } = usePomodoroContext();
+
+  // Local state for settings form
+  const [settingsForm, setSettingsForm] = useState({
+    pomodoro: Math.floor(userSettings.pomodoro / 60),
+    shortBreak: Math.floor(userSettings.shortBreak / 60),
+    longBreak: Math.floor(userSettings.longBreak / 60),
+    pomodorosUntilLongBreak: userSettings.pomodorosUntilLongBreak
+  });
 
   // Local state for todo list visibility
   const [isTodoListVisible, setIsTodoListVisible] = useState(() => {
@@ -49,15 +65,77 @@ const Pomodoro = () => {
     localStorage.setItem('pomodoro-todos-minimized', JSON.stringify(!isTodoListVisible));
   }, [isTodoListVisible]);
 
+  // Reset settings form when dialog opens
+  useEffect(() => {
+    if (isSettingsDialogOpen) {
+      setSettingsForm({
+        pomodoro: Math.floor(userSettings.pomodoro / 60),
+        shortBreak: Math.floor(userSettings.shortBreak / 60),
+        longBreak: Math.floor(userSettings.longBreak / 60),
+        pomodorosUntilLongBreak: userSettings.pomodorosUntilLongBreak
+      });
+    }
+  }, [isSettingsDialogOpen, userSettings]);
 
   // Toggle todo list visibility
   const toggleTodoListVisibility = () => {
     setIsTodoListVisible(prev => !prev);
   };
 
-  // No additional local timer logic needed as it's handled by the context
+  // Handle settings form submission
+  const handleSaveSettings = () => {
+    // Validate inputs
+    const pomodoro = Math.max(1, Math.min(120, settingsForm.pomodoro));
+    const shortBreak = Math.max(1, Math.min(30, settingsForm.shortBreak));
+    const longBreak = Math.max(1, Math.min(60, settingsForm.longBreak));
+    const pomodorosUntilLongBreak = Math.max(1, Math.min(10, settingsForm.pomodorosUntilLongBreak));
 
-  // All timer logic is now handled by the PomodoroContext
+    // Convert minutes to seconds
+    const newSettings = {
+      pomodoro: pomodoro * 60,
+      shortBreak: shortBreak * 60,
+      longBreak: longBreak * 60,
+      pomodorosUntilLongBreak
+    };
+
+    // Update context with new settings
+    updateUserSettings(newSettings);
+
+    // Immediately update the current timer if it's not running
+    if (!isRunning) {
+      // Apply appropriate time based on current timer type
+      switch (timerType) {
+        case 'pomodoro':
+          setTimer(newSettings.pomodoro);
+          setInitialTime(newSettings.pomodoro);
+          break;
+        case 'shortBreak':
+          setTimer(newSettings.shortBreak);
+          setInitialTime(newSettings.shortBreak);
+          break;
+        case 'longBreak':
+          setTimer(newSettings.longBreak);
+          setInitialTime(newSettings.longBreak);
+          break;
+      }
+    } else {
+      // If timer is running, just update the initialTime for progress calculation
+      switch (timerType) {
+        case 'pomodoro':
+          setInitialTime(newSettings.pomodoro);
+          break;
+        case 'shortBreak':
+          setInitialTime(newSettings.shortBreak);
+          break;
+        case 'longBreak':
+          setInitialTime(newSettings.longBreak);
+          break;
+      }
+    }
+
+    // Close the dialog
+    setIsSettingsDialogOpen(false);
+  };
 
   // Calculate progress percentage
   const calculateProgress = () => {
@@ -121,6 +199,32 @@ const Pomodoro = () => {
     };
   }, [timer, timerType, isTimerCompleted, isRunning]);
 
+  // Function to display the appropriate timer value for the current timer type
+  const getDisplayTime = () => {
+    if (!isRunning) {
+      // When not running, show the actual timer value
+      return timer;
+    }
+
+    // Calculate elapsed time from the current timer
+    const elapsedSeconds = initialTime - timer;
+
+    // When running, determine which timer to display based on the selected tab
+    switch (timerType) {
+      case 'pomodoro':
+        // Show proper time for pomodoro tab
+        return Math.max(0, userSettings.pomodoro - elapsedSeconds);
+      case 'shortBreak':
+        // Show proper time for short break tab
+        return Math.max(0, userSettings.shortBreak - elapsedSeconds);
+      case 'longBreak':
+        // Show proper time for long break tab
+        return Math.max(0, userSettings.longBreak - elapsedSeconds);
+      default:
+        return timer;
+    }
+  };
+
   return (
     <div className="min-h-screen bg-[#fff6e5] flex flex-col">
       <Navbar />
@@ -152,7 +256,7 @@ const Pomodoro = () => {
               {nextTimerType === 'pomodoro'
                 ? "It's time to focus again."
                 : nextTimerType === 'shortBreak'
-                  ? "Take a short 5-minute break."
+                  ? "Take a short break to refresh."
                   : "Take a longer break to recharge."}
             </DialogDescription>
           </DialogHeader>
@@ -200,6 +304,78 @@ const Pomodoro = () => {
                   ? "Start Short Break"
                   : "Start Long Break"}
             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Settings Dialog */}
+      <Dialog open={isSettingsDialogOpen} onOpenChange={setIsSettingsDialogOpen}>
+        <DialogContent className="sm:max-w-md mx-4 rounded-xl bg-white max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold">Timer Settings</DialogTitle>
+            <DialogDescription>
+              Customize your Pomodoro cycle durations
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="pomodoroMinutes">Pomodoro (minutes)</Label>
+                <Input
+                  id="pomodoroMinutes"
+                  type="number"
+                  min="1"
+                  max="120"
+                  value={settingsForm.pomodoro}
+                  onChange={(e) => setSettingsForm({ ...settingsForm, pomodoro: parseInt(e.target.value) || 1 })}
+                  className="neo-border"
+                />
+              </div>
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="shortBreakMinutes">Short Break (minutes)</Label>
+                <Input
+                  id="shortBreakMinutes"
+                  type="number"
+                  min="1"
+                  max="30"
+                  value={settingsForm.shortBreak}
+                  onChange={(e) => setSettingsForm({ ...settingsForm, shortBreak: parseInt(e.target.value) || 1 })}
+                  className="neo-border"
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="longBreakMinutes">Long Break (minutes)</Label>
+                <Input
+                  id="longBreakMinutes"
+                  type="number"
+                  min="1"
+                  max="60"
+                  value={settingsForm.longBreak}
+                  onChange={(e) => setSettingsForm({ ...settingsForm, longBreak: parseInt(e.target.value) || 1 })}
+                  className="neo-border"
+                />
+              </div>
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="pomodorosUntilLongBreak">Pomodoros until Long Break</Label>
+                <Input
+                  id="pomodorosUntilLongBreak"
+                  type="number"
+                  min="1"
+                  max="10"
+                  value={settingsForm.pomodorosUntilLongBreak}
+                  onChange={(e) => setSettingsForm({ ...settingsForm, pomodorosUntilLongBreak: parseInt(e.target.value) || 1 })}
+                  className="neo-border"
+                />
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter className="flex-col sm:flex-row gap-2">
+            <Button variant="outline" onClick={() => setIsSettingsDialogOpen(false)} className="w-full sm:w-auto">Cancel</Button>
+            <Button onClick={handleSaveSettings} className="w-full sm:w-auto">Save Changes</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -263,12 +439,23 @@ const Pomodoro = () => {
                         {timerType === 'pomodoro' ? 'Focus Time' : timerType === 'shortBreak' ? 'Short Break' : 'Long Break'}
                       </span>
                     </div>
-                    <button
-                      onClick={toggleMute}
-                      className={`p-2 rounded-md ${bgColor} hover:opacity-90 transition-opacity shadow-neo-sm neo-border`}
-                    >
-                      {isMuted ? <VolumeX className="w-5 h-5 text-white" /> : <Volume2 className="w-5 h-5 text-white" />}
-                    </button>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => setIsSettingsDialogOpen(true)}
+                        className="px-3 py-2 flex items-center gap-1 rounded-md bg-white hover:bg-gray-100 transition-colors shadow-neo-sm neo-border"
+                        aria-label="Customize timer settings"
+                      >
+                        <Settings className="w-4 h-4 text-[#1a1a1a]" />
+                        <span className="text-sm hidden sm:inline">Customize</span>
+                      </button>
+                      <button
+                        onClick={toggleMute}
+                        className={`p-2 rounded-md ${bgColor} hover:opacity-90 transition-opacity shadow-neo-sm neo-border`}
+                        aria-label={isMuted ? "Unmute notification sound" : "Mute notification sound"}
+                      >
+                        {isMuted ? <VolumeX className="w-5 h-5 text-white" /> : <Volume2 className="w-5 h-5 text-white" />}
+                      </button>
+                    </div>
                   </div>
 
                   {/* Neo-brutalist Timer Display */}
@@ -282,8 +469,8 @@ const Pomodoro = () => {
 
                     {/* Timer Display */}
                     <div className="flex flex-col items-center justify-center">
-                      <div className="font-mono text-6xl font-bold mb-4 text-[#1a1a1a] neo-border px-8 py-6 rounded-lg bg-white shadow-neo">
-                        {formatTime(timer)}
+                      <div className="font-mono text-5xl sm:text-6xl font-bold mb-4 text-[#1a1a1a] neo-border px-4 sm:px-8 py-4 sm:py-6 rounded-lg bg-white shadow-neo">
+                        {formatTime(getDisplayTime())}
                       </div>
                       <span className="text-sm text-gray-700 font-medium px-4 py-2 bg-white rounded-full neo-border">
                         {isRunning ? 'Time remaining' : timer === initialTime ? 'Ready to start' : 'Paused'}
@@ -332,8 +519,8 @@ const Pomodoro = () => {
                   </div>
 
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4">
-                    {Array.from({ length: DEFAULT_SETTINGS.pomodorosUntilLongBreak }).map((_, i) => {
-                      const isCompleted = i < completedPomodoros % DEFAULT_SETTINGS.pomodorosUntilLongBreak;
+                    {Array.from({ length: userSettings.pomodorosUntilLongBreak }).map((_, i) => {
+                      const isCompleted = i < completedPomodoros % userSettings.pomodorosUntilLongBreak;
                       return (
                         <div
                           key={i}
@@ -347,7 +534,7 @@ const Pomodoro = () => {
                   </div>
 
                   <div className="text-sm text-gray-600 bg-[#FFF9EB] p-2 rounded-md neo-border inline-block">
-                    <p className="font-medium">Cycle: {Math.ceil(completedPomodoros / DEFAULT_SETTINGS.pomodorosUntilLongBreak) || 1}</p>
+                    <p className="font-medium">Cycle: {Math.ceil(completedPomodoros / userSettings.pomodorosUntilLongBreak) || 1}</p>
                   </div>
                 </CardContent>
               </Card>
@@ -375,10 +562,10 @@ const Pomodoro = () => {
                       </h4>
                       <ol className="list-decimal pl-5 space-y-1 text-gray-700">
                         <li>Choose a task to work on</li>
-                        <li>Start the Pomodoro (25 minutes)</li>
+                        <li>Start the Pomodoro (customizable)</li>
                         <li>Work until the timer rings</li>
-                        <li>Take a short break (5 minutes)</li>
-                        <li>After 4 pomodoros, take a longer break (15-30 minutes)</li>
+                        <li>Take a short break (customizable)</li>
+                        <li>After {userSettings.pomodorosUntilLongBreak} pomodoros, take a longer break (customizable)</li>
                       </ol>
                     </div>
 
