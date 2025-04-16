@@ -14,17 +14,17 @@ const Home = () => {
       <Helmet>
         <title>DeepTerm - AI-Powered Productivity Tools & Pomodoro Timer</title>
         <meta name="description" content="Boost your productivity with DeepTerm's AI-powered tools. Extract organized notes from documents and stay focused with our Pomodoro timer." />
-        <link rel="canonical" href="https://deepterm.com/" />
+        <link rel="canonical" href="https://deepterm.tech/" />
         <meta property="og:type" content="website" />
-        <meta property="og:url" content="https://deepterm.com/" />
-        <meta property="og:title" content="DeepTerm - AI-Powered Productivity Tools" />
+        <meta property="og:url" content="https://deepterm.tech/" />
+        <meta property="og:title" content="DeepTerm - Pomodoro with To Do" />
         <meta property="og:description" content="Boost your productivity with AI-powered tools to create organized notes from your content and stay focused with our Pomodoro timer." />
-        <meta property="og:image" content="https://deepterm.com/og-image.jpg" />
+        <meta property="og:image" content="https://deepterm.tech/og-image.jpg" />
         <meta property="twitter:card" content="summary_large_image" />
-        <meta property="twitter:url" content="https://deepterm.com/" />
-        <meta property="twitter:title" content="DeepTerm - AI-Powered Productivity Tools" />
+        <meta property="twitter:url" content="https://deepterm.tech/" />
+        <meta property="twitter:title" content="DeepTerm - Pomodoro with To Do" />
         <meta property="twitter:description" content="Boost your productivity with AI-powered tools to create organized notes from your content and stay focused with our Pomodoro timer." />
-        <meta property="twitter:image" content="https://deepterm.com/og-image.jpg" />
+        <meta property="twitter:image" content="https://deepterm.tech/og-image.jpg" />
       </Helmet>
       <div className="min-h-screen bg-[#fff6e5] flex flex-col">
         <Navbar />
