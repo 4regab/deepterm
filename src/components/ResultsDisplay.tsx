@@ -1,19 +1,19 @@
 
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ExtractionResult } from "@/types";
-import { exportAsPDF, exportAsCSV, exportAsDocx } from "@/utils/fileUtils";
-import { FileType, FileText, AlignJustify, Edit, List, Zap, Download, AlertTriangle, BrainCog, ExternalLink } from "lucide-react";
-import { useState } from "react";
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { Badge } from "@/components/ui/badge";
-import { useToast } from "@/components/ui/use-toast";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useToast } from "@/components/ui/use-toast";
+import { ExtractionResult } from "@/types";
+import { exportAsCSV, exportAsDocx, exportAsPDF } from "@/utils/fileUtils";
+import { AlertTriangle, AlignJustify, BrainCog, Download, Edit, ExternalLink, FileText, FileType, List, Zap } from "lucide-react";
+import { useState } from "react";
 
 interface ResultsDisplayProps {
   result: ExtractionResult;
@@ -25,8 +25,15 @@ const ResultsDisplay = ({ result, onReset, originalFilename }: ResultsDisplayPro
   const [isExporting, setIsExporting] = useState<string | null>(null);
   const { toast } = useToast();
 
-  if (!result || !result.keyTerms.length) {
-    return null;
+  if (!result || !result.keyTerms || !result.keyTerms.length) {
+    return (
+      <Alert variant="destructive" className="mb-6">
+        <AlertDescription className="flex items-center gap-2">
+          <AlertTriangle className="h-4 w-4" />
+          No extraction results found. There might have been an issue with the API response.
+        </AlertDescription>
+      </Alert>
+    );
   }
 
   // Group terms by category if available
@@ -81,7 +88,7 @@ const ResultsDisplay = ({ result, onReset, originalFilename }: ResultsDisplayPro
       setIsExporting(null);
     }
   };
-  
+
   const handleExportDocx = async () => {
     try {
       setIsExporting("docx");
@@ -152,9 +159,9 @@ const ResultsDisplay = ({ result, onReset, originalFilename }: ResultsDisplayPro
           </div>
         </div>
         <div className="flex flex-wrap gap-2 mt-3 sm:mt-0">
-          <Button 
-            variant="outline" 
-            size="sm" 
+          <Button
+            variant="outline"
+            size="sm"
             className="flex items-center gap-1 text-xs rounded-full neo-border text-neo-black bg-white hover:bg-neo-bg shadow-neo-sm hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all"
             onClick={handleExportPDF}
             disabled={isExporting !== null}
@@ -168,9 +175,9 @@ const ResultsDisplay = ({ result, onReset, originalFilename }: ResultsDisplayPro
               </>
             )}
           </Button>
-          <Button 
-            variant="outline" 
-            size="sm" 
+          <Button
+            variant="outline"
+            size="sm"
             className="flex items-center gap-1 text-xs rounded-full neo-border text-neo-black bg-white hover:bg-neo-bg shadow-neo-sm hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all"
             onClick={handleExportDocx}
             disabled={isExporting !== null}
@@ -184,9 +191,9 @@ const ResultsDisplay = ({ result, onReset, originalFilename }: ResultsDisplayPro
               </>
             )}
           </Button>
-          <Button 
-            variant="outline" 
-            size="sm" 
+          <Button
+            variant="outline"
+            size="sm"
             className="flex items-center gap-1 text-xs rounded-full neo-border text-neo-black bg-white hover:bg-neo-bg shadow-neo-sm hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all"
             onClick={handleExportCSV}
             disabled={isExporting !== null}
@@ -203,7 +210,7 @@ const ResultsDisplay = ({ result, onReset, originalFilename }: ResultsDisplayPro
         </div>
       </CardHeader>
       <CardContent className="p-0">
-        
+
         <div className="divide-y-2 divide-neo-black">
           {Object.keys(groupedTerms).length > 1 ? (
             Object.entries(groupedTerms).map(([category, terms], categoryIndex) => (
@@ -211,14 +218,14 @@ const ResultsDisplay = ({ result, onReset, originalFilename }: ResultsDisplayPro
                 <h3 className="font-semibold text-lg mb-4 text-neo-black">{category}</h3>
                 <Accordion type="multiple" className="space-y-3">
                   {terms.map((item, index) => (
-                    <AccordionItem key={index} value={`item-${categoryIndex}-${index}`} 
+                    <AccordionItem key={index} value={`item-${categoryIndex}-${index}`}
                       className="neo-border bg-white overflow-hidden rounded-lg shadow-neo-sm">
                       <AccordionTrigger className="py-3 px-4 hover:bg-neo-bg font-medium text-neo-black">
                         <span className="text-base text-left">{item.term}</span>
                       </AccordionTrigger>
                       <AccordionContent className="p-4 border-t-2 border-neo-black bg-white">
                         <p className="text-neo-black text-sm">{item.meaning}</p>
-                        
+
                         {item.subcategories && item.subcategories.length > 0 && (
                           <div className="mt-4 pt-3 border-t-2 border-neo-black">
                             <p className="text-sm font-medium text-neo-black mb-2">{item.subcategoryTitle || "Types"}:</p>
@@ -229,7 +236,7 @@ const ResultsDisplay = ({ result, onReset, originalFilename }: ResultsDisplayPro
                             </ol>
                           </div>
                         )}
-                        
+
                         {item.examples && item.examples.length > 0 && (
                           <div className="mt-4 pt-3 border-t-2 border-neo-black">
                             <p className="text-sm font-medium text-neo-black mb-2">Examples:</p>
@@ -238,7 +245,7 @@ const ResultsDisplay = ({ result, onReset, originalFilename }: ResultsDisplayPro
                                 const cleanedExample = example
                                   .replace(/^[\s•\-–—*]+/, '')
                                   .trim();
-                                
+
                                 return (
                                   <li key={exIndex} className="text-sm text-neo-black">
                                     {cleanedExample}
@@ -267,14 +274,14 @@ const ResultsDisplay = ({ result, onReset, originalFilename }: ResultsDisplayPro
             <div className="p-4 md:p-6">
               <Accordion type="multiple" className="space-y-3">
                 {result.keyTerms.map((item, index) => (
-                  <AccordionItem key={index} value={`item-${index}`} 
+                  <AccordionItem key={index} value={`item-${index}`}
                     className="neo-border bg-white overflow-hidden rounded-lg shadow-neo-sm">
                     <AccordionTrigger className="py-3 px-4 hover:bg-neo-bg font-medium text-neo-black">
                       <span className="text-base text-left">{item.term}</span>
                     </AccordionTrigger>
                     <AccordionContent className="p-4 border-t-2 border-neo-black bg-white">
                       <p className="text-neo-black text-sm">{item.meaning}</p>
-                      
+
                       {item.subcategories && item.subcategories.length > 0 && (
                         <div className="mt-4 pt-3 border-t-2 border-neo-black">
                           <p className="text-sm font-medium text-neo-black mb-2">{item.subcategoryTitle || "Types"}:</p>
@@ -285,7 +292,7 @@ const ResultsDisplay = ({ result, onReset, originalFilename }: ResultsDisplayPro
                           </ol>
                         </div>
                       )}
-                      
+
                       {item.examples && item.examples.length > 0 && (
                         <div className="mt-4 pt-3 border-t-2 border-neo-black">
                           <p className="text-sm font-medium text-neo-black mb-2">Examples:</p>
@@ -294,7 +301,7 @@ const ResultsDisplay = ({ result, onReset, originalFilename }: ResultsDisplayPro
                               const cleanedExample = example
                                 .replace(/^[\s•\-–—*]+/, '')
                                 .trim();
-                              
+
                               return (
                                 <li key={exIndex} className="text-sm text-neo-black">
                                   {cleanedExample}
@@ -320,7 +327,7 @@ const ResultsDisplay = ({ result, onReset, originalFilename }: ResultsDisplayPro
             </div>
           )}
         </div>
-        
+
         <div className="p-4 md:p-6 border-t-2 border-neo-black">
           <div className="mb-5 p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg neo-border border-2 border-neo-black">
             <div className="flex items-start gap-3">
@@ -330,9 +337,9 @@ const ResultsDisplay = ({ result, onReset, originalFilename }: ResultsDisplayPro
                 <p className="text-neo-black text-sm mb-3">
                   Take these extracted notes to create a quiz using verbatim mode in QuillBro to improve retention and understanding.
                 </p>
-                <a 
+                <a
                   href="https://quillbro.live/quiz"
-                  target="_blank" 
+                  target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-1 text-sm font-medium text-purple-600 hover:text-purple-800 transition-colors"
                 >
@@ -341,8 +348,8 @@ const ResultsDisplay = ({ result, onReset, originalFilename }: ResultsDisplayPro
               </div>
             </div>
           </div>
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             onClick={onReset}
             className="text-neo-black bg-white hover:bg-neo-bg neo-border shadow-neo-sm hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all rounded-lg"
           >
