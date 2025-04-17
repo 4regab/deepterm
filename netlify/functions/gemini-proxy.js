@@ -25,7 +25,9 @@ exports.handler = async (event, context) => {
                 }),
                 headers: { 'Content-Type': 'application/json' }
             };
-        }        // Get API key from Netlify environment variables (must be set in Netlify dashboard)
+        }
+
+        // Get API key from Netlify environment variables
         const apiKeys = [];
         const envVarNames = [];
 
@@ -92,7 +94,9 @@ exports.handler = async (event, context) => {
 
         for (let attempt = 1; attempt <= maxRetries; attempt++) {
             try {
+                console.log(`Attempt ${attempt}: Sending prompt to Gemini API`);
                 result = await model.generateContent(prompt);
+                console.log(`Attempt ${attempt}: Success!`);
                 break; // Exit the retry loop on success
             } catch (err) {
                 console.error(`Attempt ${attempt} failed:`, err.message);
@@ -122,34 +126,81 @@ exports.handler = async (event, context) => {
         const response = result.response;
         const textResponse = response.text();
 
-        // Extract JSON from the response
-        const jsonMatch = textResponse.match(/\{[\s\S]*\}/);
-        if (!jsonMatch) {
-            return {
-                statusCode: 500,
-                body: JSON.stringify({
-                    success: false,
-                    error: "Failed to extract JSON from the response"
-                }),
-                headers: { 'Content-Type': 'application/json' }
-            };
-        }
+        console.log("API Response sample (first 200 chars):", textResponse.substring(0, 200));
+        console.log("API Response sample (last 200 chars):", textResponse.substring(Math.max(0, textResponse.length - 200)));
 
-        const jsonString = jsonMatch[0];
-
-        // Validate JSON before parsing
+        // Define extraction result variable
         let extractionResult;
+
+        // First try to directly parse if the response is already valid JSON
         try {
-            extractionResult = JSON.parse(jsonString);
-        } catch (err) {
-            return {
-                statusCode: 500,
-                body: JSON.stringify({
-                    success: false,
-                    error: "Invalid JSON in the response"
-                }),
-                headers: { 'Content-Type': 'application/json' }
-            };
+            extractionResult = JSON.parse(textResponse);
+            console.log("Successfully parsed response as direct JSON");
+        } catch (jsonParseError) {
+            // If direct parsing fails, try to extract JSON using regex
+            console.log("Direct JSON parsing failed, trying to extract JSON with regex");
+            const jsonMatch = textResponse.match(/\{[\s\S]*\}/);
+
+            if (!jsonMatch) {
+                // Log the error with more context
+                console.error("Failed to extract JSON. Response length:", textResponse.length);
+                console.error("Response format appears invalid");
+
+                // Try to construct a valid response from text if possible
+                if (textResponse.length > 0) {
+                    try {
+                        // Create a simple extraction result from the text
+                        return {
+                            statusCode: 200,
+                            body: JSON.stringify({
+                                success: true,
+                                data: {
+                                    title: "Extracted Content",
+                                    extractionMode: mode,
+                                    keyTerms: [
+                                        {
+                                            term: "API Response",
+                                            meaning: textResponse.substring(0, 500) + (textResponse.length > 500 ? "..." : ""),
+                                            category: "API Result"
+                                        }
+                                    ]
+                                }
+                            }),
+                            headers: { 'Content-Type': 'application/json' }
+                        };
+                    } catch (fallbackError) {
+                        console.error("Fallback extraction failed:", fallbackError);
+                    }
+                }
+
+                return {
+                    statusCode: 500,
+                    body: JSON.stringify({
+                        success: false,
+                        error: "Failed to extract JSON from the response",
+                        responsePreview: textResponse.substring(0, 100) + "..."
+                    }),
+                    headers: { 'Content-Type': 'application/json' }
+                };
+            }
+
+            const jsonString = jsonMatch[0];
+
+            // Validate JSON before parsing
+            try {
+                extractionResult = JSON.parse(jsonString);
+                console.log("Successfully parsed extracted JSON");
+            } catch (err) {
+                return {
+                    statusCode: 500,
+                    body: JSON.stringify({
+                        success: false,
+                        error: "Invalid JSON in the response",
+                        jsonPreview: jsonString.substring(0, 100) + "..."
+                    }),
+                    headers: { 'Content-Type': 'application/json' }
+                };
+            }
         }
 
         // Ensure the extraction mode is set correctly
