@@ -53,7 +53,7 @@ const Index = () => {
   const loadEnvApiKeys = useCallback(() => {
     const envKeys: string[] = [];
     for (let i = 1; i <= MAX_API_KEYS; i++) {
-      const key = import.meta.env[`VITE_GEMINI_API_KEY_${i}`] || "";
+      const key = import.meta.env[`GEMINI_API_KEY_${i}`] || "";
       if (key && key.length > 0 && key !== "your_gemini_api_key_here") {
         envKeys.push(key);
       }
@@ -310,35 +310,42 @@ const Index = () => {
                     Create Your First Extraction
                   </Button>
                 </div> : <div className="grid gap-4">
-                  {savedResults.map((savedResult, index) => <div key={index} className="p-5 neo-border bg-white hover:bg-neo-bg transition-colors flex flex-col sm:flex-row sm:items-center justify-between rounded-lg shadow-neo-sm">
-                    <div className="mb-3 sm:mb-0">
-                      <h3 className="font-semibold text-lg text-neo-black">{savedResult.title}</h3>
-                      <div className="text-sm text-neo-muted flex flex-wrap items-center gap-x-2 mt-1">
-                        <span className="inline-flex items-center">
-                          <Clock className="w-3 h-3 mr-1" />
-                          {savedResult.timestamp ? new Date(savedResult.timestamp).toLocaleDateString() : "Date unknown"}
-                        </span>
-                        <span>•</span>
-                        <span>{savedResult.keyTerms.length} terms</span>
-                        {savedResult.extractionMode && <>
-                          <span>•</span>
-                          <span className="flex items-center">
-                            {getModeIcon(savedResult.extractionMode)}
-                            {getModeTitle(savedResult.extractionMode)}
-                          </span>
-                        </>}
+                  {savedResults.map((savedResult, index) => {
+                    // Ensure keyTerms is an array before accessing length
+                    const keyTermsCount = Array.isArray(savedResult.keyTerms) ? savedResult.keyTerms.length : 0;
+
+                    return (
+                      <div key={index} className="p-5 neo-border bg-white hover:bg-neo-bg transition-colors flex flex-col sm:flex-row sm:items-center justify-between rounded-lg shadow-neo-sm">
+                        <div className="mb-3 sm:mb-0">
+                          <h3 className="font-semibold text-lg text-neo-black">{savedResult.title}</h3>
+                          <div className="text-sm text-neo-muted flex flex-wrap items-center gap-x-2 mt-1">
+                            <span className="inline-flex items-center">
+                              <Clock className="w-3 h-3 mr-1" />
+                              {savedResult.timestamp ? new Date(savedResult.timestamp).toLocaleDateString() : "Date unknown"}
+                            </span>
+                            <span>•</span>
+                            <span>{keyTermsCount} terms</span> {/* Use the safe count */}
+                            {savedResult.extractionMode && <>
+                              <span>•</span>
+                              <span className="flex items-center">
+                                {getModeIcon(savedResult.extractionMode)}
+                                {getModeTitle(savedResult.extractionMode)}
+                              </span>
+                            </>}
+                          </div>
+                        </div>
+                        <div className="flex gap-2">
+                          <Button size="sm" onClick={() => handleSelectResult(savedResult)} className="flex-1 sm:flex-initial bg-neo-accent text-neo-black neo-border shadow-neo-sm hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all rounded-lg">
+                            <Eye className="h-4 w-4 mr-1" />
+                            View
+                          </Button>
+                          <Button size="sm" variant="outline" onClick={() => handleDeleteResult(index)} className="text-red-500 bg-white hover:bg-red-50 flex-1 sm:flex-initial neo-border rounded-lg shadow-neo-sm hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all">
+                            Delete
+                          </Button>
+                        </div>
                       </div>
-                    </div>
-                    <div className="flex gap-2">
-                      <Button size="sm" onClick={() => handleSelectResult(savedResult)} className="flex-1 sm:flex-initial bg-neo-accent text-neo-black neo-border shadow-neo-sm hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all rounded-lg">
-                        <Eye className="h-4 w-4 mr-1" />
-                        View
-                      </Button>
-                      <Button size="sm" variant="outline" onClick={() => handleDeleteResult(index)} className="text-red-500 bg-white hover:bg-red-50 flex-1 sm:flex-initial neo-border rounded-lg shadow-neo-sm hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all">
-                        Delete
-                      </Button>
-                    </div>
-                  </div>)}
+                    );
+                  })}
                 </div>}
               </CardContent>
             </Card>
