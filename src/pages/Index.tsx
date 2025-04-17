@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/components/ui/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { sendSecureGeminiRequest } from "@/services/apiProxyService";
+import { sendSecureGeminiRequest } from "@/services/apiProxyService"; // Added ProxyResponse
 import { ExtractionMode, checkApiKey, initializeGemini } from "@/services/geminiService";
 import { ExtractionResult } from "@/types";
 import { AlignJustify, ArrowLeft, BookOpen, Clock, Edit, Eye, FileText, History, Info, List, Sparkles } from "lucide-react";
@@ -30,6 +30,7 @@ const Index = () => {
   const [savedResults, setSavedResults] = useState<ExtractionResult[]>([]);
   const [showSavedResults, setShowSavedResults] = useState(false);
   const [extractionMode, setExtractionMode] = useState<ExtractionMode>(null);
+  const [extractionError, setExtractionError] = useState<string | null>(null); // State for error message
   const {
     toast
   } = useToast();
@@ -481,6 +482,14 @@ const Index = () => {
               </>}
             </CardContent>
           </Card>
+
+          {/* Display Extraction Error */}
+          {extractionError && (
+            <div className="mt-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded">
+              <p className="font-bold">Error:</p>
+              <p>{extractionError}</p>
+            </div>
+          )}
         </div>}
       </>}
     </main>
