@@ -2,6 +2,10 @@
   publish = "dist"
   command = "npm run build"
 
+# Increase function timeout to 28 seconds
+[functions]
+  timeout = 28
+
 [context.production]
   environment = { VITE_APP_ENV = "production" }
 
