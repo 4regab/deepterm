@@ -2,8 +2,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { useEffect } from "react";
-import CookieConsent from "react-cookie-consent";
+import { useEffect, useState } from "react";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { PomodoroProvider } from "./context/PomodoroContext";
 import About from "./pages/About";
@@ -15,22 +14,40 @@ import Pomodoro from "./pages/Pomodoro";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import Terms from "./pages/Terms";
 import cookieUtils from "./utils/cookieUtils";
+import { Button } from "@/components/ui/button";
+import { Link } from "react-router-dom";
 
 // Create a client
 const queryClient = new QueryClient();
 
 const App = () => {
+  // Track cookie consent state to show/hide the banner
+  const [showCookieBanner, setShowCookieBanner] = useState(true);
+
   // Initialize AdSense based on existing cookie consent when the app loads
   useEffect(() => {
     cookieUtils.configureAdsense();
+    
+    // Check if consent was already given previously
+    const consentLevel = cookieUtils.getConsentLevel();
+    if (consentLevel !== undefined) {
+      setShowCookieBanner(false);
+    }
   }, []);
 
   const handleAcceptAllCookies = () => {
     cookieUtils.setConsentLevel(cookieUtils.ConsentLevel.ALL);
+    setShowCookieBanner(false);
   };
 
   const handleDeclineCookies = () => {
     cookieUtils.setConsentLevel(cookieUtils.ConsentLevel.DECLINED);
+    setShowCookieBanner(false);
+  };
+
+  const handleEssentialOnlyCookies = () => {
+    cookieUtils.setConsentLevel(cookieUtils.ConsentLevel.ESSENTIAL);
+    setShowCookieBanner(false);
   };
 
   return (
@@ -52,61 +69,45 @@ const App = () => {
               <Route path="*" element={<NotFound />} />
             </Routes>
 
-            <CookieConsent
-              location="bottom"
-              buttonText="Accept All"
-              cookieName="deeptermCookieConsent"
-              style={{
-                background: "white",
-                padding: "16px",
-                zIndex: 9999,
-                boxShadow: "0 -1px 4px rgba(0, 0, 0, 0.1)",
-                color: "#1a1a1a",
-                fontSize: "14px",
-                fontFamily: "Inter, sans-serif",
-                maxWidth: "100%",
-                borderTop: "1px solid hsl(48 30% 96%)" /* --muted color */
-              }}
-              buttonStyle={{
-                background: "hsl(23 100% 50%)", /* --primary */
-                color: "#1a1a1a",
-                fontSize: "14px",
-                padding: "8px 16px",
-                borderRadius: "0.5rem", /* rounded-lg */
-                border: "none",
-                fontWeight: "500",
-                cursor: "pointer",
-                marginLeft: "8px"
-              }}
-              expires={365}
-              onAccept={handleAcceptAllCookies}
-              ButtonComponent="button"
-              enableDeclineButton
-              declineButtonText="Decline"
-              declineButtonStyle={{
-                background: "transparent",
-                color: "#1a1a1a",
-                fontSize: "14px",
-                padding: "8px 16px",
-                borderRadius: "0.5rem", /* rounded-lg */
-                border: "1px solid #e5e5e5",
-                fontWeight: "500",
-                cursor: "pointer",
-                marginLeft: "8px"
-              }}
-              onDecline={handleDeclineCookies}
-            >
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap" }}>
-                <div style={{ marginRight: "16px", flex: "1" }}>
-                  <p style={{ margin: "0", padding: "0" }}>
-                    This site uses cookies to enhance your experience. {" "}
-                    <a href="/privacy-policy" style={{ color: "hsl(160 84% 39%)", textDecoration: "none", fontWeight: "500" }}>
-                      Privacy Policy
-                    </a>
-                  </p>
+            {showCookieBanner && (
+              <div className="fixed bottom-0 left-0 right-0 z-50 bg-[#1a1a1a] border-t border-[#333] text-white py-2 px-4 flex flex-col md:flex-row items-center gap-2">
+                <div className="text-sm flex-grow">
+                  <span>We use cookies to enhance your experience and show relevant ads. See our </span>
+                  <Link to="/privacy-policy" className="font-medium text-[#FFC225] hover:underline">
+                    Privacy Policy
+                  </Link>
+                  <span>.</span>
+                </div>
+                <div className="flex gap-2 flex-shrink-0">
+                  {/* Essential Only Button - Outline style */}
+                  <Button 
+                    size="sm"
+                    variant="outline"
+                    className="border-white/40 text-white/80 hover:bg-white/10 hover:text-white"
+                    onClick={handleEssentialOnlyCookies}
+                  >
+                    Essential Only
+                  </Button>
+                  {/* Decline All Button - Outline style */}
+                  <Button 
+                    size="sm"
+                    variant="outline"
+                    className="border-white/40 text-white/80 hover:bg-white/10 hover:text-white"
+                    onClick={handleDeclineCookies}
+                  >
+                    Decline All
+                  </Button>
+                  {/* Accept All Button - Primary accent color */}
+                  <Button 
+                    size="sm"
+                    className="bg-[#FFC225] text-[#1a1a1a] hover:bg-[#FFD151]"
+                    onClick={handleAcceptAllCookies}
+                  >
+                    Accept All
+                  </Button>
                 </div>
               </div>
-            </CookieConsent>
+            )}
           </TooltipProvider>
         </PomodoroProvider>
       </BrowserRouter>
