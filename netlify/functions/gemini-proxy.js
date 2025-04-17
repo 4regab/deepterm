@@ -332,13 +332,29 @@ exports.handler = async (event, context) => {
                     )];
                 }
 
+                // Clean up subcategories - MORE ROBUST CHECK
                 if (term.subcategories && Array.isArray(term.subcategories)) {
-                    term.subcategories = [...new Set(
-                        term.subcategories
-                            // Ensure sub is a truthy string before calling replace/trim
-                            .map(sub => (typeof sub === 'string' && sub) ? sub.replace(/^[\\s•\\-–—*\\d]+[.)]+\\s*/, '').trim() : '')
-                            .filter(sub => sub && sub.length > 0) // Keep the filter for non-empty results
-                    )];
+                    console.log(`Processing subcategories for term "${term.term}":`, JSON.stringify(term.subcategories)); // Log the raw subcategories
+                    const cleanedSubcategories = term.subcategories.map(sub => {
+                        console.log(`  - Processing sub: ${JSON.stringify(sub)}, Type: ${typeof sub}`); // Log each sub-item
+                        if (typeof sub === 'string' && sub.trim().length > 0) {
+                            try {
+                                // Only attempt replace/trim if it's definitely a non-empty string
+                                return sub.replace(/^[\\s•\\-–—*\\d]+[.)]+\\s*/, '').trim();
+                            } catch (e) {
+                                console.error(`Error processing string subcategory '${sub}':`, e);
+                                return ''; // Return empty string on error during processing
+                            }
+                        }
+                        // For non-strings or empty strings, return null to be filtered out later
+                        return null;
+                    }).filter(sub => sub !== null && sub.length > 0); // Filter out nulls and now-empty strings
+
+                    term.subcategories = [...new Set(cleanedSubcategories)];
+                    console.log(`Cleaned subcategories for term "${term.term}":`, JSON.stringify(term.subcategories)); // Log the result
+                } else {
+                    // Ensure term.subcategories is an empty array if it wasn't valid
+                    term.subcategories = [];
                 }
 
                 if (!termMap.has(normalizedTerm)) {
