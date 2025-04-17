@@ -335,9 +335,9 @@ exports.handler = async (event, context) => {
                 if (term.subcategories && Array.isArray(term.subcategories)) {
                     term.subcategories = [...new Set(
                         term.subcategories
-                            // Ensure sub is a string before calling replace/trim
-                            .map(sub => typeof sub === 'string' ? sub.replace(/^[\s•\-–—*\d]+[.)]+\s*/, '').trim() : '')
-                            .filter(sub => sub && sub.length > 0)
+                            // Ensure sub is a truthy string before calling replace/trim
+                            .map(sub => (typeof sub === 'string' && sub) ? sub.replace(/^[\\s•\\-–—*\\d]+[.)]+\\s*/, '').trim() : '')
+                            .filter(sub => sub && sub.length > 0) // Keep the filter for non-empty results
                     )];
                 }
 
