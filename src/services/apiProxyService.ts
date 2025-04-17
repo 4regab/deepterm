@@ -18,7 +18,8 @@ type ProxyRequestConfig = {
     body?: string;
 };
 
-type ProxyResponse = {
+// Export the ProxyResponse type
+export type ProxyResponse = {
     success: boolean;
     data?: any;
     error?: string;
