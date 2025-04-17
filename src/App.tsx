@@ -12,6 +12,7 @@ import NotFound from "./pages/NotFound";
 import Pomodoro from "./pages/Pomodoro";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import Terms from "./pages/Terms";
+import CookieConsentBanner from "./components/CookieConsentBanner"; // Import the banner
 
 // Create a client
 const queryClient = new QueryClient();
@@ -35,6 +36,7 @@ const App = () => {
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
+            <CookieConsentBanner /> {/* Add the banner here */}
           </TooltipProvider>
         </PomodoroProvider>
       </BrowserRouter>
