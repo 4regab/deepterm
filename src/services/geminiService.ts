@@ -1,5 +1,22 @@
-import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from "@google/generative-ai";
+// Import both types and values for proper usage
 import { ExtractionResult } from "@/types";
+import { GoogleGenerativeAI } from "@google/generative-ai";
+
+// Define HarmCategory and HarmBlockThreshold enums for use in the code
+// These match the values from the Google Generative AI package
+enum HarmCategory {
+  HARM_CATEGORY_HARASSMENT = 'HARM_CATEGORY_HARASSMENT',
+  HARM_CATEGORY_HATE_SPEECH = 'HARM_CATEGORY_HATE_SPEECH',
+  HARM_CATEGORY_SEXUALLY_EXPLICIT = 'HARM_CATEGORY_SEXUALLY_EXPLICIT',
+  HARM_CATEGORY_DANGEROUS_CONTENT = 'HARM_CATEGORY_DANGEROUS_CONTENT'
+}
+
+enum HarmBlockThreshold {
+  BLOCK_NONE = 'BLOCK_NONE',
+  BLOCK_LOW_AND_ABOVE = 'BLOCK_LOW_AND_ABOVE',
+  BLOCK_MEDIUM_AND_ABOVE = 'BLOCK_MEDIUM_AND_ABOVE',
+  BLOCK_ONLY_HIGH = 'BLOCK_ONLY_HIGH'
+}
 
 // Support for multiple API keys (up to 10)
 const MAX_API_KEYS = 10;
@@ -15,6 +32,7 @@ const loadApiKeysFromEnv = () => {
       apiKeys.push(key);
     }
   }
+  // Use secure logging that doesn't reveal sensitive information
   console.log(`Loaded ${apiKeys.length} API keys from environment variables`);
   currentKeyIndex = 0;
 };
@@ -27,19 +45,19 @@ export const initializeGemini = (keys: string[]) => {
     console.warn("No API keys provided to initialize");
     return;
   }
-  
+
   // Filter out empty keys
   const validKeys = keys.filter(key => key && key.length > 0 && key !== "your_gemini_api_key_here");
-  
+
   if (validKeys.length === 0) {
     console.warn("No valid API keys provided");
     return;
   }
-  
+
   // Replace existing keys with new ones
   apiKeys = validKeys;
-  console.log(`Initialized with ${apiKeys.length} API keys`);
-  
+  console.log(`Initialized with ${validKeys.length} API key(s)`);
+
   // Reset current key index
   currentKeyIndex = 0;
 };
@@ -57,10 +75,10 @@ const getCurrentApiKey = (): string => {
 // Rotate to the next API key
 const rotateToNextApiKey = (): string => {
   if (apiKeys.length === 0) return "";
-  
+
   currentKeyIndex = (currentKeyIndex + 1) % apiKeys.length;
   const key = apiKeys[currentKeyIndex];
-  console.log(`Rotated to API key ${currentKeyIndex + 1}/${apiKeys.length}`);
+  console.log(`Rotated to API key index ${currentKeyIndex + 1}/${apiKeys.length}`);
   return key;
 };
 
@@ -75,48 +93,51 @@ export type ExtractionMode = "full" | "sentence" | "keywords";
 const MAX_TEXT_LENGTH = 100000;
 
 export const extractKeyTerms = async (
-  text: string, 
+  text: string,
   mode: ExtractionMode = "full"
 ): Promise<ExtractionResult> => {
+  // In a production environment, this function would be entirely replaced by
+  // calls to the secure proxy service, but we're keeping it for backward compatibility
+  // during the transition
   if (!checkApiKey()) {
     throw new Error("No valid API keys available. Please initialize with valid API keys first.");
   }
 
   try {
     console.log(`Processing text for extraction, length: ${text.length}, mode: ${mode}`);
-    
+
     // Check if text exceeds maximum length
     if (text.length > MAX_TEXT_LENGTH) {
       throw new Error(`Text length (${text.length} characters) exceeds the maximum limit of ${MAX_TEXT_LENGTH} characters. Please reduce the size of your input.`);
     }
-    
+
     // Pre-process text to remove any problematic characters
     const cleanedText = text
       .replace(/[^\p{L}\p{N}\p{P}\p{Z}\n\r]/gu, ' ') // Replace control chars with better Unicode pattern
       .replace(/�/g, ' '); // Replace replacement character
-      
+
     // Log a sample to ensure text is clean
     console.log(`Cleaned text sample (first 100 chars): ${cleanedText.substring(0, 100)}...`);
     console.log(`Cleaned text sample (last 100 chars): ${cleanedText.substring(cleanedText.length - 100)}`);
-    
+
     // Enhanced retry mechanism with API key rotation
     let result;
     let allKeysFailed = true;
-    
+
     // Try each API key in sequence until we get a success or run out of keys
     for (let keyAttempt = 0; keyAttempt < apiKeys.length; keyAttempt++) {
       const currentApiKey = getCurrentApiKey();
-      console.log(`Trying API key ${currentKeyIndex + 1}/${apiKeys.length}`);
-      
+      console.log(`Trying API key index ${currentKeyIndex + 1}/${apiKeys.length}`);
+
       if (!currentApiKey) {
         console.error("Current API key is invalid");
         rotateToNextApiKey();
         continue;
       }
-      
+
       // Create a new model instance with the current API key
       const genAI = new GoogleGenerativeAI(currentApiKey);
-      const model = genAI.getGenerativeModel({ 
+      const model = genAI.getGenerativeModel({
         model: "gemini-2.5-pro-exp-03-25",
         generationConfig: {
           temperature: 0.1,             // Lower temperature for more deterministic extraction
@@ -144,10 +165,10 @@ export const extractKeyTerms = async (
           },
         ],
       });
-      
+
       // Adjust the prompt based on extraction mode
       let extractionGuidance = "";
-      
+
       switch (mode) {
         case "sentence":
           extractionGuidance = "For each term, provide ONLY ONE SENTENCE as the definition or explanation. Keep it brief and concise.";
@@ -211,66 +232,67 @@ export const extractKeyTerms = async (
         ${cleanedText}
       `;
 
-      // Log that we're sending the prompt to Gemini
-      console.log(`Sending prompt to Gemini API with key ${currentKeyIndex + 1}`);
-      
+      // Log that we're sending the prompt to Gemini (without exposing sensitive key info)
+      console.log(`Sending prompt to Gemini API with key index ${currentKeyIndex + 1}`);
+
       // Retry logic for the current API key
       const maxRetries = 3;
       let retryCount = 0;
-      
+
       while (retryCount < maxRetries) {
         try {
           result = await model.generateContent(prompt);
-          console.log(`Successfully processed content using API key ${currentKeyIndex + 1} on attempt ${retryCount + 1}`);
-          
+          console.log(`Successfully processed content using API key index ${currentKeyIndex + 1} on attempt ${retryCount + 1}`);
+
           // If we succeed, set the flag and break out of the retry loop
           allKeysFailed = false;
           break;
         } catch (error) {
           retryCount++;
-          console.error(`Error on attempt ${retryCount} with API key ${currentKeyIndex + 1}:`, error);
-          
+          // Avoid logging API key information with errors
+          console.error(`Error on attempt ${retryCount} with API key index ${currentKeyIndex + 1}:`, error.message);
+
           if (retryCount >= maxRetries) {
-            console.log(`API key ${currentKeyIndex + 1} failed after ${maxRetries} attempts`);
+            console.log(`API key index ${currentKeyIndex + 1} failed after ${maxRetries} attempts`);
             break;
           }
-          
+
           // Wait before retrying with exponential backoff
           const backoffTime = 1000 * Math.pow(2, retryCount);
           console.log(`Retrying in ${backoffTime}ms...`);
           await new Promise(resolve => setTimeout(resolve, backoffTime));
         }
       }
-      
+
       // If the current key succeeded, break out of the key rotation loop
       if (!allKeysFailed) {
         break;
       }
-      
+
       // If we reach here, the current key failed all retries, so rotate to the next key
       rotateToNextApiKey();
     }
-    
+
     // If all keys failed, throw an error
     if (allKeysFailed) {
       throw new Error("All API keys failed. Please check your API keys and try again.");
     }
-    
+
     // Extract JSON from the response
     const response = result!.response;
     const textResponse = response.text();
-    
+
     console.log(`Received response from Gemini, length: ${textResponse.length}`);
-    
+
     // Extract JSON from the response
     const jsonMatch = textResponse.match(/\{[\s\S]*\}/);
     if (!jsonMatch) {
       console.error("JSON extraction failed. Response:", textResponse.substring(0, 200));
       throw new Error("Failed to extract JSON from the response");
     }
-    
+
     const jsonString = jsonMatch[0];
-    
+
     // Validate JSON before parsing
     try {
       JSON.parse(jsonString);
@@ -278,60 +300,60 @@ export const extractKeyTerms = async (
       console.error("Invalid JSON received:", jsonString.substring(0, 200));
       throw new Error("Invalid JSON in the response");
     }
-    
+
     const extractionResult: ExtractionResult = JSON.parse(jsonString);
-    
+
     // Ensure the extraction mode is set correctly
     extractionResult.extractionMode = mode;
-    
+
     // Post-process results with cleaning and deduplication
     if (extractionResult.keyTerms && Array.isArray(extractionResult.keyTerms)) {
       // Create Map for tracking unique terms
       const termMap = new Map();
-      
+
       // Process each term for deduplication
       extractionResult.keyTerms.forEach(term => {
         // Normalize the term for deduplication
         const normalizedTerm = term.term.toLowerCase().trim();
-        
+
         // Clean up the term's data
         // Clean examples array
         if (term.examples && Array.isArray(term.examples)) {
           term.examples = term.examples
             .map(example => example.replace(/^[\s•\-–—*]+/, '').trim())
             .filter(ex => ex && ex.length > 0);
-            
+
           // Remove duplicates
           term.examples = Array.from(new Set(term.examples));
         }
-        
+
         // Clean subcategories
         if (term.subcategories && Array.isArray(term.subcategories)) {
           term.subcategories = term.subcategories
             .map(sub => sub.replace(/^[\s•\-–—*\d]+[.)]+\s*/, '').trim())
             .filter(sub => sub && sub.length > 0);
-            
+
           // Remove duplicates
           term.subcategories = Array.from(new Set(term.subcategories));
         }
-        
+
         // Only add the term if not already in the map
         if (!termMap.has(normalizedTerm)) {
           termMap.set(normalizedTerm, term);
         }
       });
-      
+
       // Replace keyTerms with deduplicated set
       extractionResult.keyTerms = Array.from(termMap.values());
     }
-    
+
     console.log(`Successfully extracted ${extractionResult.keyTerms.length} unique key terms`);
-    
+
     // Reset to the first key for the next operation if we had to rotate
     if (currentKeyIndex !== 0) {
       resetApiKeyRotation();
     }
-    
+
     return extractionResult;
   } catch (error) {
     console.error("Error extracting key terms:", error);
@@ -340,7 +362,7 @@ export const extractKeyTerms = async (
 };
 
 export const extractKeyTermsFromFile = async (
-  fileContent: string, 
+  fileContent: string,
   mode: ExtractionMode = "full"
 ): Promise<ExtractionResult> => {
   return extractKeyTerms(fileContent, mode);

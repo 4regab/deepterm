@@ -1,8 +1,7 @@
-import React from "react";
-import { Card, CardContent } from "@/components/ui/card";
-import { FileText, Clock, Target, Lightbulb, Brain, CheckCircle, ExternalLink, Sparkles, BrainCog, Coffee, Timer, ListTodo } from "lucide-react";
-import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import Navbar from "@/components/Navbar";
+import { Card, CardContent } from "@/components/ui/card";
+import { Brain, BrainCog, CheckCircle, FileText, Lightbulb, ListTodo, Target, Timer } from "lucide-react";
 
 const About = () => {
   return (
@@ -36,7 +35,7 @@ const About = () => {
 
               <div className="flex flex-col gap-8 mt-10">
                 <h3 className="text-xl font-bold border-b-2 border-gray-200 pb-2">Our Core Tools</h3>
-                
+
                 <div className="grid md:grid-cols-2 gap-8">
                   {/* Pomodoro Timer Section */}
                   <div className="flex flex-col h-full">
@@ -46,13 +45,13 @@ const About = () => {
                       </div>
                       <h4 className="text-xl font-bold font-heading">Pomodoro Timer</h4>
                     </div>
-                    
+
                     <div className="bg-white neo-border p-4 rounded-lg mb-4">
                       <p className="text-gray-700">
                         Our Pomodoro Timer helps you maintain focus and avoid burnout with structured work sessions and breaks.
                       </p>
                     </div>
-                    
+
                     <div className="space-y-3 flex-grow mb-4">
                       <div className="flex items-start gap-2">
                         <CheckCircle className="h-5 w-5 text-[#2563eb] mt-0.5" />
@@ -71,9 +70,7 @@ const About = () => {
                         <p>Progress tracking and completion history</p>
                       </div>
                     </div>
-                  </div>
-
-                  {/* Reviewer Maker Section */}
+                  </div>                  {/* AI-Powered Key Term Extractor Section */}
                   <div className="flex flex-col h-full">
                     <div className="flex items-center gap-3 mb-4">
                       <div className="p-3 bg-[#FDE1D3] rounded-md border-2 border-[#1a1a1a] shadow-neo">
@@ -81,34 +78,30 @@ const About = () => {
                       </div>
                       <h4 className="text-xl font-bold font-heading">Reviewer Maker</h4>
                     </div>
-                    
+
                     <div className="bg-white neo-border p-4 rounded-lg mb-4">
                       <p className="text-gray-700">
-                        Our AI-powered text analysis tool extracts key information from any document or text, creating organized notes and summaries automatically.
+                        Extracts and organizes key terms, concepts, and definitions from text documents, creating hierarchically structured notes automatically.
                       </p>
                     </div>
-                    
+
                     <div className="space-y-3 flex-grow mb-4">
                       <div className="flex items-start gap-2">
                         <CheckCircle className="h-5 w-5 text-[#FF5C00] mt-0.5" />
-                        <p>Extract key terms and definitions</p>
+                        <p>Multiple extraction modes: full, sentence, or keywords</p>
                       </div>
                       <div className="flex items-start gap-2">
                         <CheckCircle className="h-5 w-5 text-[#FF5C00] mt-0.5" />
-                        <p>Process text from documents or paste directly</p>
+                        <p>Categorizes terms into hierarchical structures</p>
                       </div>
                       <div className="flex items-start gap-2">
                         <CheckCircle className="h-5 w-5 text-[#FF5C00] mt-0.5" />
-                        <p>Multiple extraction modes for different needs</p>
-                      </div>
-                      <div className="flex items-start gap-2">
-                        <CheckCircle className="h-5 w-5 text-[#FF5C00] mt-0.5" />
-                        <p>Export your notes in multiple formats</p>
+                        <p>Export functionality for extracted terms</p>
                       </div>
                     </div>
                   </div>
                 </div>
-                
+
                 {/* To-Do List Section */}
                 <div className="mt-6">
                   <div className="flex items-center gap-3 mb-4">
@@ -117,13 +110,13 @@ const About = () => {
                     </div>
                     <h4 className="text-xl font-bold font-heading">Task Management</h4>
                   </div>
-                  
+
                   <div className="bg-white neo-border p-4 rounded-lg mb-4">
                     <p className="text-gray-700">
                       Our integrated task management system helps you organize your work and stay on track during your Pomodoro sessions.
                     </p>
                   </div>
-                  
+
                   <div className="grid md:grid-cols-2 gap-4">
                     <div className="space-y-3">
                       <div className="flex items-start gap-2">
@@ -152,7 +145,7 @@ const About = () => {
               {/* How to Use Section */}
               <div className="mt-12">
                 <h3 className="text-xl font-bold border-b-2 border-gray-200 pb-2 mb-6">How to Get Started</h3>
-                
+
                 <div className="space-y-6">
                   <div className="flex items-start gap-4">
                     <div className="w-8 h-8 rounded-full bg-[#FF5C00] flex items-center justify-center text-white font-bold flex-shrink-0">
@@ -165,7 +158,7 @@ const About = () => {
                       </p>
                     </div>
                   </div>
-                  
+
                   <div className="flex items-start gap-4">
                     <div className="w-8 h-8 rounded-full bg-[#FF5C00] flex items-center justify-center text-white font-bold flex-shrink-0">
                       2
@@ -177,7 +170,7 @@ const About = () => {
                       </p>
                     </div>
                   </div>
-                  
+
                   <div className="flex items-start gap-4">
                     <div className="w-8 h-8 rounded-full bg-[#FF5C00] flex items-center justify-center text-white font-bold flex-shrink-0">
                       3
@@ -189,7 +182,7 @@ const About = () => {
                       </p>
                     </div>
                   </div>
-                  
+
                   <div className="flex items-start gap-4">
                     <div className="w-8 h-8 rounded-full bg-[#FF5C00] flex items-center justify-center text-white font-bold flex-shrink-0">
                       4
@@ -207,7 +200,7 @@ const About = () => {
               {/* Philosophy Section */}
               <div className="mt-12">
                 <h3 className="text-xl font-bold border-b-2 border-gray-200 pb-2 mb-6">Our Philosophy</h3>
-                
+
                 <div className="grid md:grid-cols-3 gap-6">
                   <div className="bg-white neo-border p-5 rounded-lg">
                     <div className="p-2 bg-[#e6f1ff] rounded-md neo-border mb-3 w-12 h-12 flex items-center justify-center">
@@ -218,7 +211,7 @@ const About = () => {
                       Structured methods to improve concentration and productivity during work sessions with minimal distractions.
                     </p>
                   </div>
-                  
+
                   <div className="bg-white neo-border p-5 rounded-lg">
                     <div className="p-2 bg-[#FDE1D3] rounded-md neo-border mb-3 w-12 h-12 flex items-center justify-center">
                       <Lightbulb className="h-6 w-6 text-[#FF5C00]" />
@@ -228,7 +221,7 @@ const About = () => {
                       Clean, functional interface that's easy to use without any learning curve or unnecessary distractions.
                     </p>
                   </div>
-                  
+
                   <div className="bg-white neo-border p-5 rounded-lg">
                     <div className="p-2 bg-[#FFF9EB] rounded-md neo-border mb-3 w-12 h-12 flex items-center justify-center">
                       <Brain className="h-6 w-6 text-[#FFC225]" />
