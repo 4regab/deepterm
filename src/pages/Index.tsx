@@ -176,14 +176,39 @@ const Index = () => {
 
     setIsLoading(true);
     try {
+      console.log("DEBUG: Sending text to API, length:", text.length);
+      console.log("DEBUG: Mode:", extractionMode || "full");
+      
       // Use the secure proxy service instead of direct API calls
       const response = await sendSecureGeminiRequest({
         prompt: text,
         mode: extractionMode || "full",
       });
 
+      // Verbose debugging
+      console.log("DEBUG: API Response received:", response);
+      console.log("DEBUG: Response success:", response.success);
+      console.log("DEBUG: Response error:", response.error);
+      if (response.data) {
+        console.log("DEBUG: Response data present");
+        console.log("DEBUG: Response title:", response.data.title);
+        console.log("DEBUG: Response keyTerms present:", Boolean(response.data.keyTerms));
+        console.log("DEBUG: Response keyTerms length:", response.data.keyTerms?.length);
+        if (response.data.keyTerms && response.data.keyTerms.length > 0) {
+          console.log("DEBUG: First keyTerm:", response.data.keyTerms[0]);
+        }
+      } else {
+        console.log("DEBUG: No data property in response");
+      }
+
       if (!response.success) {
         throw new Error(response.error || "Failed to process text");
+      }
+
+      // Strict validation of the response data before setting state
+      if (!response.data || !response.data.keyTerms || !Array.isArray(response.data.keyTerms) || response.data.keyTerms.length === 0) {
+        console.error("DEBUG: Invalid response structure:", response);
+        throw new Error("API returned empty or invalid results structure");
       }
 
       // --- Update Rate Limit Data on Success ---
@@ -191,14 +216,16 @@ const Index = () => {
       localStorage.setItem(RATE_LIMIT_STORAGE_KEY, JSON.stringify(updatedTimestamps));
       // --- End Update Rate Limit Data ---
 
-
       const extractionResult = response.data;
       const resultWithTimestamp = {
         ...extractionResult,
         timestamp: new Date().toISOString(),
         extractionMode: extractionMode,
       };
+      
+      console.log("DEBUG: Setting result state with:", resultWithTimestamp);
       setResult(resultWithTimestamp);
+      
       // Ensure savedResults is an array before spreading
       const currentSavedResults = Array.isArray(savedResults) ? savedResults : [];
       const updatedResults = [resultWithTimestamp, ...currentSavedResults];
@@ -209,7 +236,8 @@ const Index = () => {
         description: "Key terms have been extracted and saved.",
       });
     } catch (error) {
-      console.error("Error extracting key terms:", error);
+      console.error("DEBUG: Error extracting key terms:", error);
+      setExtractionError(error instanceof Error ? error.message : "Unknown error processing text");
       toast({
         title: "Error extracting key terms",
         description: error instanceof Error ? error.message : "Please check your text and API key, then try again.",
@@ -398,7 +426,7 @@ const Index = () => {
                   <div className="p-2 rounded-lg bg-neo-accent mr-3 neo-border">
                     <Sparkles className="h-4 w-4 text-neo-black" />
                   </div>
-                  Choose Extraction Mode (This tool is currently not available. Come back later.)
+                  Choose Extraction Mode
                 </h3>
 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
