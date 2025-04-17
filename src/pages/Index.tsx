@@ -426,7 +426,7 @@ const Index = () => {
                   <div className="p-2 rounded-lg bg-neo-accent mr-3 neo-border">
                     <Sparkles className="h-4 w-4 text-neo-black" />
                   </div>
-                  Choose Extraction Mode
+                  Choose Extraction Mode (Tool not working. Come back later.)
                 </h3>
 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
