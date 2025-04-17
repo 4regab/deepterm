@@ -326,7 +326,8 @@ exports.handler = async (event, context) => {
                 if (term.examples && Array.isArray(term.examples)) {
                     term.examples = [...new Set(
                         term.examples
-                            .map(example => example.replace(/^[\s•\-–—*]+/, '').trim())
+                            // Ensure example is a string before calling replace/trim
+                            .map(example => typeof example === 'string' ? example.replace(/^[\s•\-–—*]+/, '').trim() : '')
                             .filter(ex => ex && ex.length > 0)
                     )];
                 }
@@ -334,7 +335,8 @@ exports.handler = async (event, context) => {
                 if (term.subcategories && Array.isArray(term.subcategories)) {
                     term.subcategories = [...new Set(
                         term.subcategories
-                            .map(sub => sub.replace(/^[\s•\-–—*\d]+[.)]+\s*/, '').trim())
+                            // Ensure sub is a string before calling replace/trim
+                            .map(sub => typeof sub === 'string' ? sub.replace(/^[\s•\-–—*\d]+[.)]+\s*/, '').trim() : '')
                             .filter(sub => sub && sub.length > 0)
                     )];
                 }
