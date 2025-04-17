@@ -18,7 +18,10 @@ import { useCallback, useEffect, useState } from "react";
 // Local storage key constants
 const API_KEYS_STORAGE_KEY = "gemini_api_keys";
 const RESULTS_STORAGE_KEY = "extraction_results";
+const RATE_LIMIT_STORAGE_KEY = "extraction_rate_limit_data"; // New key for rate limiting
 const MAX_API_KEYS = 10;
+const MAX_EXTRACTIONS_PER_DAY = 10; // Rate limit constant
+const RATE_LIMIT_WINDOW_MS = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
 
 const Index = () => {
   const [apiKeyProvided, setApiKeyProvided] = useState(false);
@@ -142,38 +145,74 @@ const Index = () => {
   };
 
   const handleTextSubmit = async (text: string) => {
+    // --- Rate Limiting Check ---
+    const now = Date.now();
+    let extractionTimestamps: number[] = [];
+    try {
+      const storedTimestamps = localStorage.getItem(RATE_LIMIT_STORAGE_KEY);
+      if (storedTimestamps) {
+        extractionTimestamps = JSON.parse(storedTimestamps);
+      }
+    } catch (error) {
+      console.error("Error reading rate limit data:", error);
+      // Decide if you want to proceed or block in case of storage error
+    }
+
+    // Filter timestamps to keep only those within the last 24 hours
+    const recentTimestamps = extractionTimestamps.filter(
+      (ts) => now - ts < RATE_LIMIT_WINDOW_MS
+    );
+
+    if (recentTimestamps.length >= MAX_EXTRACTIONS_PER_DAY) {
+      toast({
+        title: "Free Limit Reached", // Updated title
+        description: `You have reached the free limit of ${MAX_EXTRACTIONS_PER_DAY} extractions per 24 hours. Please come back after 24 hours to continue using the tool.`,
+        variant: "destructive",
+      });
+      return; // Stop the function execution
+    }
+    // --- End Rate Limiting Check ---
+
     setIsLoading(true);
     try {
       // Use the secure proxy service instead of direct API calls
       const response = await sendSecureGeminiRequest({
         prompt: text,
-        mode: extractionMode || "full"
+        mode: extractionMode || "full",
       });
 
       if (!response.success) {
         throw new Error(response.error || "Failed to process text");
       }
 
+      // --- Update Rate Limit Data on Success ---
+      const updatedTimestamps = [...recentTimestamps, now];
+      localStorage.setItem(RATE_LIMIT_STORAGE_KEY, JSON.stringify(updatedTimestamps));
+      // --- End Update Rate Limit Data ---
+
+
       const extractionResult = response.data;
       const resultWithTimestamp = {
         ...extractionResult,
         timestamp: new Date().toISOString(),
-        extractionMode: extractionMode
+        extractionMode: extractionMode,
       };
       setResult(resultWithTimestamp);
-      const updatedResults = [resultWithTimestamp, ...savedResults];
+      // Ensure savedResults is an array before spreading
+      const currentSavedResults = Array.isArray(savedResults) ? savedResults : [];
+      const updatedResults = [resultWithTimestamp, ...currentSavedResults];
       setSavedResults(updatedResults);
       localStorage.setItem(RESULTS_STORAGE_KEY, JSON.stringify(updatedResults));
       toast({
         title: "Extraction complete",
-        description: "Key terms have been extracted and saved."
+        description: "Key terms have been extracted and saved.",
       });
     } catch (error) {
       console.error("Error extracting key terms:", error);
       toast({
         title: "Error extracting key terms",
-        description: "Please check your text and API key, then try again.",
-        variant: "destructive"
+        description: error instanceof Error ? error.message : "Please check your text and API key, then try again.",
+        variant: "destructive",
       });
     } finally {
       setIsLoading(false);
