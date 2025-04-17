@@ -2,7 +2,9 @@
   publish = "dist"
   command = "npm run build"
 
-# Removed invalid [functions] block
+# Increase timeout for all functions (can be function-specific if needed)
+[functions]
+  timeout = 60 
 
 [context.production]
   environment = { VITE_APP_ENV = "production" }
@@ -16,4 +18,4 @@
 [[redirects]]
   from = "/*"
   to = "/index.html"
-  status = 200 # Corrected status code
+  status = 200
