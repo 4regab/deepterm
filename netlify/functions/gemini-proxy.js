@@ -154,98 +154,101 @@ ${text}
         // Process JSON response
         let parsedResponse;
         try {
-            // Try to find a JSON object in the response using regex
-            const jsonMatch = responseText.match(/\{[\s\S]*\}/);
-            
-            if (jsonMatch) {
-                parsedResponse = JSON.parse(jsonMatch[0]);
-                
-                // Ensure keyTerms exists and is an array
-                if (!parsedResponse.keyTerms || !Array.isArray(parsedResponse.keyTerms)) {
-                    console.warn("Response missing keyTerms array, creating fallback");
-                    parsedResponse = { 
-                        keyTerms: [
-                            { 
-                                term: "Text Analysis", 
-                                meaning: responseText.substring(0, 200), 
-                                category: "Generated Content" 
-                            }
-                        ] 
-                    };
-                }
-                
-                // Ensure we have at least one valid term
-                if (parsedResponse.keyTerms.length === 0) {
-                    console.warn("keyTerms array is empty, adding fallback term");
-                    parsedResponse.keyTerms.push({
-                        term: "Text Content",
-                        meaning: text.substring(0, 100) + "...",
-                        category: "Document Content"
-                    });
-                }
-                
-                // Validate each term has the required properties
-                parsedResponse.keyTerms = parsedResponse.keyTerms
-                    .filter(term => term && typeof term === 'object')
-                    .map(term => ({
-                        term: term.term || "Unnamed Term",
-                        meaning: term.meaning || "No definition provided",
-                        category: term.category || "Uncategorized",
-                        subcategories: Array.isArray(term.subcategories) ? term.subcategories : [],
-                        examples: Array.isArray(term.examples) ? term.examples : []
-                    }));
-                
-                console.log(`Successfully extracted ${parsedResponse.keyTerms.length} terms`);
+            // --- Start Robust JSON Extraction ---
+            let potentialJsonString = responseText.trim();
+
+            // 1. Check for markdown code fences (```json ... ``` or ``` ... ```)
+            const codeFenceMatch = potentialJsonString.match(/^```(?:json)?\s*([\s\S]*?)\s*```$/);
+            if (codeFenceMatch && codeFenceMatch[1]) {
+                potentialJsonString = codeFenceMatch[1].trim();
+                console.log("Extracted JSON from markdown code fence.");
             } else {
-                console.warn("Failed to find JSON in response, using fallback");
-                // Create a simple term from the raw text as fallback
+                 // 2. If no code fence, try to find the first '{' and last '}'
+                 const firstBrace = potentialJsonString.indexOf('{');
+                 const lastBrace = potentialJsonString.lastIndexOf('}');
+                 if (firstBrace !== -1 && lastBrace > firstBrace) {
+                     potentialJsonString = potentialJsonString.substring(firstBrace, lastBrace + 1);
+                     console.log("Attempting to parse content between first and last braces.");
+                 } else {
+                     console.warn("Could not reliably identify JSON structure in response.");
+                     // Keep potentialJsonString as is, parsing might still work or fail gracefully below
+                 }
+            }
+            // --- End Robust JSON Extraction ---
+
+            // Try to parse the extracted string
+            parsedResponse = JSON.parse(potentialJsonString);
+
+            // Ensure keyTerms exists and is an array
+            if (!parsedResponse.keyTerms || !Array.isArray(parsedResponse.keyTerms)) {
+                console.warn("Response missing keyTerms array or not an array, creating fallback");
                 parsedResponse = { 
                     keyTerms: [
                         { 
-                            term: "Document Content", 
-                            meaning: text.substring(0, 100) + "...",
-                            category: "Content Summary" 
-                        },
-                        {
-                            term: "AI Analysis",
-                            meaning: responseText.substring(0, 200),
-                            category: "Generated Content"
+                            term: "Text Analysis", 
+                            meaning: responseText.substring(0, 200), 
+                            category: "Generated Content" 
                         }
                     ] 
                 };
             }
-            
+
+            // Ensure we have at least one valid term
+            if (parsedResponse.keyTerms.length === 0) {
+                console.warn("keyTerms array is empty, adding fallback term");
+                parsedResponse.keyTerms.push({
+                    term: "Text Content",
+                    meaning: text.substring(0, 100) + "...",
+                    category: "Document Content"
+                });
+            }
+
+            // Validate each term has the required properties
+            parsedResponse.keyTerms = parsedResponse.keyTerms
+                .filter(term => term && typeof term === 'object')
+                .map(term => ({
+                    term: term.term || "Unnamed Term",
+                    meaning: term.meaning || "No definition provided",
+                    category: term.category || "Uncategorized",
+                    subcategories: Array.isArray(term.subcategories) ? term.subcategories : [],
+                    examples: Array.isArray(term.examples) ? term.examples : []
+                }));
+
+            console.log(`Successfully extracted ${parsedResponse.keyTerms.length} terms`);
+
             return {
                 statusCode: 200,
-                body: JSON.stringify({ 
-                    success: true, 
-                    data: parsedResponse 
+                body: JSON.stringify({
+                    success: true,
+                    data: parsedResponse
                 }),
                 headers: { 'Content-Type': 'application/json' }
             };
-            
+
         } catch (jsonError) {
             console.error("JSON parsing error:", jsonError);
-            console.error("Response text that failed parsing:", responseText);
-            
+            console.error("Response text that failed parsing:", responseText); // Log original response
+            console.error("String attempted for parsing:", potentialJsonString); // Log the string we tried to parse
+
             // Return a fallback response with guaranteed structure
             return {
                 statusCode: 200, // Still return 200 with fallback content
-                body: JSON.stringify({ 
-                    success: true, 
-                    data: { 
+                body: JSON.stringify({
+                    success: true, // Indicate success=true but provide fallback
+                    isFallback: true, // Add a flag to indicate fallback data
+                    data: {
                         keyTerms: [
-                            { 
-                                term: "Content Overview", 
-                                meaning: text.substring(0, 100) + "...", 
+                            {
+                                term: "Content Overview",
+                                meaning: text.substring(0, 100) + "...",
                                 category: "Document Content"
                             },
-                            { 
-                                term: "Processing Result", 
-                                meaning: responseText.substring(0, 200), 
-                                category: "Raw Output" 
+                            {
+                                term: "Processing Result",
+                                meaning: responseText.substring(0, 200), // Show raw response snippet
+                                category: "Raw Output"
                             }
-                        ] 
+                        ]
                     }
                 }),
                 headers: { 'Content-Type': 'application/json' }
