@@ -53,7 +53,7 @@ const Index = () => {
   const loadEnvApiKeys = useCallback(() => {
     const envKeys: string[] = [];
     for (let i = 1; i <= MAX_API_KEYS; i++) {
-      const key = import.meta.env[`GEMINI_API_KEY_${i}`] || "";
+      const key = import.meta.env[`VITE_GEMINI_API_KEY_${i}`] || "";
       if (key && key.length > 0 && key !== "your_gemini_api_key_here") {
         envKeys.push(key);
       }
