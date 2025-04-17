@@ -33,11 +33,6 @@ interface KeyTerm {
     examples?: string[];
 }
 
-// Error type for API errors
-interface ApiError extends Error {
-    message: string;
-}
-
 // Export the ProxyResponse type (structure for the final combined result)
 export type ProxyResponse = {
     success: boolean;
@@ -115,9 +110,15 @@ export const sendSecureGeminiRequest = async (options: ProxyRequestOptions): Pro
 
                 const result: ChunkApiResponse = await response.json();
 
-                if (!result.success || !result.data || !result.data.keyTerms) {
+                if (!result.success || !result.data) {
                     console.error(`Client: Unsuccessful or malformed response from proxy for chunk ${i + 1}`, result);
                     throw new Error(result.error || `Proxy returned unsuccessful status for chunk ${i + 1}`);
+                }
+
+                // Handle possible null or undefined keyTerms array
+                if (!result.data.keyTerms) {
+                    result.data.keyTerms = [];
+                    console.warn(`Client: No keyTerms found in response for chunk ${i + 1}`);
                 }
 
                 // Add extracted terms from this chunk to the main list
@@ -167,15 +168,22 @@ export const sendSecureGeminiRequest = async (options: ProxyRequestOptions): Pro
 
         console.log(`Client: Finished processing all chunks. Final term count: ${finalKeyTerms.length}`);
 
-        // 5. Return final combined response
+        // If no key terms were found, handle as an error
+        if (finalKeyTerms.length === 0) {
+            return {
+                success: false,
+                error: "No key terms were found in the text. Please try with different content or a different extraction mode."
+            };
+        }
+
+        // 5. Return final combined response with proper structure
         return {
-            success: overallSuccess,
+            success: true,
             data: {
-                title: "Document Analysis", // Generic title
+                title: determineTitle(finalKeyTerms, prompt.substring(0, 100)),
                 extractionMode: mode,
                 keyTerms: finalKeyTerms,
-            },
-            error: firstError || undefined, // Report the first error encountered
+            }
         };
 
     } catch (error: unknown) {
@@ -187,3 +195,36 @@ export const sendSecureGeminiRequest = async (options: ProxyRequestOptions): Pro
         };
     }
 };
+
+/**
+ * Determine a meaningful title based on extracted terms or default to a generic title
+ */
+function determineTitle(keyTerms: KeyTerm[], promptStart: string): string {
+    // Try to find a good candidate for the title from the key terms
+    const commonCategories = ["Introduction", "Definition", "Overview", "Summary", "Main Concept"];
+    
+    // Look for a term with one of the common categories
+    for (const category of commonCategories) {
+        const matchingTerm = keyTerms.find(term => 
+            term.category && term.category.toLowerCase().includes(category.toLowerCase())
+        );
+        if (matchingTerm) {
+            return matchingTerm.term;
+        }
+    }
+    
+    // If no good category match, look for a term that might be a title
+    const potentialTitleTerm = keyTerms.find(term => 
+        term.term.length > 3 && 
+        term.term.split(' ').length <= 5 && // Not too many words
+        /^[A-Z]/.test(term.term) // Starts with capital letter
+    );
+    
+    if (potentialTitleTerm) {
+        return potentialTitleTerm.term;
+    }
+    
+    // Default title based on first few words of the prompt
+    const defaultTitle = promptStart.split(' ').slice(0, 5).join(' ').trim() + '...';
+    return defaultTitle.length > 10 ? defaultTitle : "Document Analysis";
+}
