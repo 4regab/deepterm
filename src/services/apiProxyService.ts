@@ -5,9 +5,9 @@
  * It now orchestrates chunking and sequential requests on the client-side.
  */
 
-// Constants for text chunking (client-side)
-const MAX_CHUNK_SIZE = 2500; // Match the optimized function
-const CHUNK_OVERLAP = 150;   // Match the optimized function
+// Constants for text chunking (client-side) - smaller chunks to prevent memory issues
+const MAX_CHUNK_SIZE = 1000; // Reduced from 2500 to avoid memory issues
+const CHUNK_OVERLAP = 100;   // Reduced from 150 to save memory
 
 // Types for the proxy service
 type ProxyRequestOptions = {
@@ -24,13 +24,18 @@ type ChunkApiResponse = {
     responsePreview?: string; // For debugging errors
 };
 
-// Define KeyTerm type if not already globally available (adjust based on your actual types/index.ts)
+// Define KeyTerm type if not already globally available
 interface KeyTerm {
     term: string;
     meaning: string;
     category: string;
     subcategories?: string[];
     examples?: string[];
+}
+
+// Error type for API errors
+interface ApiError extends Error {
+    message: string;
 }
 
 // Export the ProxyResponse type (structure for the final combined result)
@@ -56,7 +61,7 @@ function chunkText(text: string): string[] {
     const chunks: string[] = [];
     let startIndex = 0;
     while (startIndex < text.length) {
-        let endIndex = Math.min(startIndex + MAX_CHUNK_SIZE, text.length);
+        const endIndex = Math.min(startIndex + MAX_CHUNK_SIZE, text.length);
         chunks.push(text.substring(startIndex, endIndex));
         startIndex = Math.max(startIndex, endIndex - CHUNK_OVERLAP);
         if (startIndex >= endIndex) startIndex = endIndex; // Prevent infinite loop
@@ -87,19 +92,19 @@ export const sendSecureGeminiRequest = async (options: ProxyRequestOptions): Pro
             console.log(`Client: Sending chunk ${i + 1}/${totalChunks} to proxy...`);
 
             try {
-                // Prepare request for a single chunk
+                // Prepare request for a single chunk - IMPORTANT: Using "prompt" as parameter name to match server expectation
                 const config = {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                     },
                     body: JSON.stringify({
-                        chunk: chunk, // Send the chunk
+                        prompt: chunk, // Send the chunk using "prompt" parameter name
                         mode: mode,
                     }),
                 };
 
-                // Make the call to the simplified Netlify function
+                // Make the call to the Netlify function
                 const response = await fetch('/.netlify/functions/gemini-proxy', config);
 
                 if (!response.ok) {
@@ -119,24 +124,29 @@ export const sendSecureGeminiRequest = async (options: ProxyRequestOptions): Pro
                 allKeyTerms.push(...result.data.keyTerms.filter(term => term && term.term)); // Filter invalid terms
                 console.log(`Client: Received ${result.data.keyTerms.length} terms from chunk ${i + 1}. Total terms: ${allKeyTerms.length}`);
 
-            } catch (chunkError: any) {
+            } catch (chunkError) {
                 console.error(`Client: Failed to process chunk ${i + 1}:`, chunkError);
                 overallSuccess = false;
                 if (!firstError) {
-                    firstError = chunkError.message;
+                    firstError = chunkError instanceof Error ? chunkError.message : String(chunkError);
                 }
                 // Optionally add an error placeholder term
-                allKeyTerms.push({ term: `Chunk ${i + 1} Error`, meaning: chunkError.message, category: "Processing Error" });
-                // Decide whether to continue or stop on first error (currently continues)
+                allKeyTerms.push({ term: `Chunk ${i + 1} Error`, meaning: chunkError instanceof Error ? chunkError.message : String(chunkError), category: "Processing Error" });
+                // Continue with next chunk despite the error
             }
 
             // 3. Report progress
             if (onProgress) {
                 onProgress(i + 1, totalChunks);
             }
+            
+            // Add a delay between requests to avoid rate limiting and reduce server load
+            if (i < totalChunks - 1) {
+                await new Promise(resolve => setTimeout(resolve, 500)); // 500ms delay
+            }
         }
 
-        // 4. Combine results and deduplicate (simple deduplication)
+        // 4. Combine results and deduplicate
         const termMap = new Map<string, KeyTerm>();
         allKeyTerms.forEach(term => {
             if (term && term.term && term.category !== "Processing Error") { // Don't deduplicate error placeholders
@@ -152,8 +162,8 @@ export const sendSecureGeminiRequest = async (options: ProxyRequestOptions): Pro
             }
         });
         const finalKeyTerms = Array.from(termMap.values());
-         // Add back any error placeholders if needed, or handle errors differently
-         finalKeyTerms.push(...allKeyTerms.filter(term => term.category === "Processing Error"));
+        // Add back any error placeholders
+        finalKeyTerms.push(...allKeyTerms.filter(term => term.category === "Processing Error"));
 
         console.log(`Client: Finished processing all chunks. Final term count: ${finalKeyTerms.length}`);
 
@@ -161,18 +171,19 @@ export const sendSecureGeminiRequest = async (options: ProxyRequestOptions): Pro
         return {
             success: overallSuccess,
             data: {
-                title: "Document Analysis", // Generic title, could be improved
+                title: "Document Analysis", // Generic title
                 extractionMode: mode,
                 keyTerms: finalKeyTerms,
             },
             error: firstError || undefined, // Report the first error encountered
         };
 
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error("[Client Orchestration] Critical error:", error);
+        const errorMessage = error instanceof Error ? error.message : "Unknown error";
         return {
             success: false,
-            error: `Client-side orchestration failed: ${error.message}`,
+            error: `Client-side orchestration failed: ${errorMessage}`,
         };
     }
 };
