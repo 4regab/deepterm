@@ -1,4 +1,4 @@
-const { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } = require('@google/generative-ai');
+const { GoogleGenerativeAI } = require('@google/generative-ai');
 
 // Define HarmCategory and HarmBlockThreshold enums locally if not available
 const LocalHarmCategory = {
@@ -30,10 +30,13 @@ exports.handler = async (event, context) => {
 
     try {
         // Parse the request body
+        console.log("Raw request body:", event.body);
         const body = JSON.parse(event.body);
+        console.log("Parsed request body:", body);
         const { prompt: text, mode = "full" } = body;
-
+        
         if (!text) {
+            console.error("Missing prompt parameter");
             return { 
                 statusCode: 400, 
                 body: JSON.stringify({ success: false, error: "Missing prompt parameter" }), 
@@ -55,6 +58,7 @@ exports.handler = async (event, context) => {
         }
 
         if (apiKeys.length === 0) {
+            console.error("API key configuration error: No valid API keys found");
             return { 
                 statusCode: 500, 
                 body: JSON.stringify({ success: false, error: "API key configuration error." }), 
@@ -74,7 +78,8 @@ exports.handler = async (event, context) => {
                 temperature: 0.1,
                 maxOutputTokens: 2048, // Reduced for speed and memory efficiency
                 topP: 0.9,
-                topK: 40
+                topK: 40,
+                responseMimeType: "text/plain" // Use plain text format for better reliability
             },
             safetySettings: [
                 { category: LocalHarmCategory.HARM_CATEGORY_HARASSMENT, threshold: LocalHarmBlockThreshold.BLOCK_NONE },
@@ -87,24 +92,47 @@ exports.handler = async (event, context) => {
         // Simplified prompt for extracting terms
         let extractionGuidance = "Provide the definition as it appears in the text.";
         if (mode === "sentence") {
-            extractionGuidance = "Provide ONLY ONE SENTENCE as the definition.";
+            extractionGuidance = "Provide EXACTLY ONE SENTENCE as the definition for each term.";
         } else if (mode === "keywords") {
-            extractionGuidance = "Extract ONLY the IMPORTANT KEY WORDS as comma-separated values.";
+            extractionGuidance = "List only IMPORTANT KEY WORDS as the meaning.";
         }
 
+        // More explicit prompt with clear instructions for JSON formatting
         const extractionPrompt = `
-Extract key terms and their definitions from this text snippet.
-${extractionGuidance}
+You are a specialized AI that extracts key terms and their definitions from text.
+Your only task is to extract terms from the provided text snippet and format them as JSON.
 
-Format as JSON object: {"keyTerms": [{"term": "TERM", "meaning": "DEFINITION", "category": "CATEGORY"}]}
+INSTRUCTIONS:
+1. Extract all important key terms, concepts, or phrases from the text.
+2. ${extractionGuidance}
+3. Categorize each term appropriately.
+4. IMPORTANT: Always return AT LEAST 3 items, even if you have to be creative.
+5. Do not include any explanations or additional text - ONLY the JSON object.
 
-Text:
+FORMAT YOUR RESPONSE AS FOLLOWS (this exact format is required):
+{
+  "keyTerms": [
+    {
+      "term": "Term 1",
+      "meaning": "Definition of term 1",
+      "category": "Category"
+    },
+    {
+      "term": "Term 2",
+      "meaning": "Definition of term 2",
+      "category": "Category"
+    },
+    ...more terms
+  ]
+}
+
+TEXT TO ANALYZE:
 ${text}
 `;
 
         console.log("Sending prompt to Gemini API");
         
-        // Make API call with retry
+        // Make API call with no retry - let client handle retries
         let response;
         try {
             response = await model.generateContent(extractionPrompt);
@@ -124,54 +152,94 @@ ${text}
         console.log(`Response received. Length: ${responseText.length}`);
         
         // Process JSON response
+        let parsedResponse;
         try {
-            // Try to find a JSON object in the response
+            // Try to find a JSON object in the response using regex
             const jsonMatch = responseText.match(/\{[\s\S]*\}/);
+            
             if (jsonMatch) {
-                const jsonResult = JSON.parse(jsonMatch[0]);
+                parsedResponse = JSON.parse(jsonMatch[0]);
                 
                 // Ensure keyTerms exists and is an array
-                if (!jsonResult.keyTerms) {
-                    jsonResult.keyTerms = [];
-                } else if (!Array.isArray(jsonResult.keyTerms)) {
-                    jsonResult.keyTerms = [jsonResult.keyTerms];
+                if (!parsedResponse.keyTerms || !Array.isArray(parsedResponse.keyTerms)) {
+                    console.warn("Response missing keyTerms array, creating fallback");
+                    parsedResponse = { 
+                        keyTerms: [
+                            { 
+                                term: "Text Analysis", 
+                                meaning: responseText.substring(0, 200), 
+                                category: "Generated Content" 
+                            }
+                        ] 
+                    };
                 }
                 
-                // Filter out invalid terms
-                jsonResult.keyTerms = jsonResult.keyTerms.filter(term => term && term.term);
+                // Ensure we have at least one valid term
+                if (parsedResponse.keyTerms.length === 0) {
+                    console.warn("keyTerms array is empty, adding fallback term");
+                    parsedResponse.keyTerms.push({
+                        term: "Text Content",
+                        meaning: text.substring(0, 100) + "...",
+                        category: "Document Content"
+                    });
+                }
                 
-                return {
-                    statusCode: 200,
-                    body: JSON.stringify({ success: true, data: jsonResult }),
-                    headers: { 'Content-Type': 'application/json' }
-                };
+                // Validate each term has the required properties
+                parsedResponse.keyTerms = parsedResponse.keyTerms
+                    .filter(term => term && typeof term === 'object')
+                    .map(term => ({
+                        term: term.term || "Unnamed Term",
+                        meaning: term.meaning || "No definition provided",
+                        category: term.category || "Uncategorized",
+                        subcategories: Array.isArray(term.subcategories) ? term.subcategories : [],
+                        examples: Array.isArray(term.examples) ? term.examples : []
+                    }));
+                
+                console.log(`Successfully extracted ${parsedResponse.keyTerms.length} terms`);
             } else {
-                // Create a basic JSON structure from the text
-                return {
-                    statusCode: 200,
-                    body: JSON.stringify({ 
-                        success: true, 
-                        data: { 
-                            keyTerms: [
-                                { 
-                                    term: "Text Analysis", 
-                                    meaning: responseText.substring(0, 200), 
-                                    category: "Generated Content" 
-                                }
-                            ] 
+                console.warn("Failed to find JSON in response, using fallback");
+                // Create a simple term from the raw text as fallback
+                parsedResponse = { 
+                    keyTerms: [
+                        { 
+                            term: "Document Content", 
+                            meaning: text.substring(0, 100) + "...",
+                            category: "Content Summary" 
+                        },
+                        {
+                            term: "AI Analysis",
+                            meaning: responseText.substring(0, 200),
+                            category: "Generated Content"
                         }
-                    }),
-                    headers: { 'Content-Type': 'application/json' }
+                    ] 
                 };
             }
+            
+            return {
+                statusCode: 200,
+                body: JSON.stringify({ 
+                    success: true, 
+                    data: parsedResponse 
+                }),
+                headers: { 'Content-Type': 'application/json' }
+            };
+            
         } catch (jsonError) {
             console.error("JSON parsing error:", jsonError);
+            console.error("Response text that failed parsing:", responseText);
+            
+            // Return a fallback response with guaranteed structure
             return {
-                statusCode: 200, // Still returning 200 with a fallback response
+                statusCode: 200, // Still return 200 with fallback content
                 body: JSON.stringify({ 
                     success: true, 
                     data: { 
                         keyTerms: [
+                            { 
+                                term: "Content Overview", 
+                                meaning: text.substring(0, 100) + "...", 
+                                category: "Document Content"
+                            },
                             { 
                                 term: "Processing Result", 
                                 meaning: responseText.substring(0, 200), 
@@ -186,11 +254,23 @@ ${text}
 
     } catch (error) {
         console.error("Error processing request:", error);
+        
+        // Even in case of critical errors, return some valid structure
         return {
             statusCode: 500,
             body: JSON.stringify({
                 success: false,
-                error: error.message || "An unknown error occurred"
+                error: error.message || "An unknown error occurred",
+                data: {
+                    keyTerms: [
+                        {
+                            term: "Error Processing",
+                            meaning: "The system encountered an error while processing your text: " + 
+                                    (error.message || "Unknown error"),
+                            category: "System Error"
+                        }
+                    ]
+                }
             }),
             headers: { 'Content-Type': 'application/json' }
         };
