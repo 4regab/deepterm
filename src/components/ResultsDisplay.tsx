@@ -1,4 +1,3 @@
-
 import {
   Accordion,
   AccordionContent,
@@ -25,7 +24,8 @@ const ResultsDisplay = ({ result, onReset, originalFilename }: ResultsDisplayPro
   const [isExporting, setIsExporting] = useState<string | null>(null);
   const { toast } = useToast();
 
-  if (!result || !result.keyTerms || !result.keyTerms.length) {
+  // Enhanced error check - ensure result and keyTerms are valid
+  if (!result || !result.keyTerms) {
     return (
       <Alert variant="destructive" className="mb-6">
         <AlertDescription className="flex items-center gap-2">
@@ -35,9 +35,22 @@ const ResultsDisplay = ({ result, onReset, originalFilename }: ResultsDisplayPro
       </Alert>
     );
   }
+  
+  // Additional safeguard - ensure keyTerms is an array with length
+  const keyTerms = Array.isArray(result.keyTerms) ? result.keyTerms : [];
+  if (keyTerms.length === 0) {
+    return (
+      <Alert variant="destructive" className="mb-6">
+        <AlertDescription className="flex items-center gap-2">
+          <AlertTriangle className="h-4 w-4" />
+          No key terms were found in the extraction results.
+        </AlertDescription>
+      </Alert>
+    );
+  }
 
   // Group terms by category if available
-  const groupedTerms = result.keyTerms.reduce<Record<string, typeof result.keyTerms>>(
+  const groupedTerms = keyTerms.reduce<Record<string, typeof keyTerms>>(
     (groups, term) => {
       const category = term.category || "Uncategorized";
       if (!groups[category]) {
@@ -150,7 +163,7 @@ const ResultsDisplay = ({ result, onReset, originalFilename }: ResultsDisplayPro
           </div>
           <div className="flex flex-wrap items-center gap-2 mt-2">
             <p className="text-sm text-neo-muted">
-              {result.keyTerms.length} key terms extracted
+              {keyTerms.length} key terms extracted
             </p>
             <Badge className={`flex items-center gap-1 text-xs rounded-full neo-border ${modeInfo.color}`}>
               {modeInfo.icon}
@@ -273,7 +286,7 @@ const ResultsDisplay = ({ result, onReset, originalFilename }: ResultsDisplayPro
           ) : (
             <div className="p-4 md:p-6">
               <Accordion type="multiple" className="space-y-3">
-                {result.keyTerms.map((item, index) => (
+                {keyTerms.map((item, index) => (
                   <AccordionItem key={index} value={`item-${index}`}
                     className="neo-border bg-white overflow-hidden rounded-lg shadow-neo-sm">
                     <AccordionTrigger className="py-3 px-4 hover:bg-neo-bg font-medium text-neo-black">
