@@ -61,7 +61,7 @@ exports.handler = async (event, context) => {
         // Initialize the Gemini model
         const genAI = new GoogleGenerativeAI(apiKey);
         const model = genAI.getGenerativeModel({
-            model: "gemini-2.0-flash-lite",
+            model: "gemini-2.5-pro-exp-03-25",
             generationConfig: {
                 temperature: 0.1,
                 maxOutputTokens: 100000,
@@ -236,6 +236,9 @@ exports.handler = async (event, context) => {
             });
 
             extractionResult.keyTerms = Array.from(termMap.values());
+        }        // Ensure the returned data has the expected structure for ResultsDisplay
+        if (!extractionResult.keyTerms) {
+            extractionResult.keyTerms = [];
         }
 
         return {
