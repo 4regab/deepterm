@@ -25,23 +25,28 @@ exports.handler = async (event, context) => {
                 }),
                 headers: { 'Content-Type': 'application/json' }
             };
-        }
-
-        // Get API key from Netlify environment variables (must be set in Netlify dashboard)
+        }        // Get API key from Netlify environment variables (must be set in Netlify dashboard)
         const apiKeys = [];
+        const envVarNames = [];
+
         for (let i = 1; i <= 10; i++) {
-            const key = process.env[`GEMINI_API_KEY_${i}`];
+            const varName = `GEMINI_API_KEY_${i}`;
+            envVarNames.push(varName);
+            const key = process.env[varName];
             if (key && key.trim() !== '') {
                 apiKeys.push(key);
             }
         }
 
         if (apiKeys.length === 0) {
+            console.error(`No API keys found. Checked environment variables: ${envVarNames.join(', ')}`);
+            console.error(`Available environment variables: ${Object.keys(process.env).filter(key => !key.includes('SECRET')).join(', ')}`);
+
             return {
                 statusCode: 500,
                 body: JSON.stringify({
                     success: false,
-                    error: "API key configuration error"
+                    error: "API key configuration error. Please add GEMINI_API_KEY_1 in Netlify environment variables."
                 }),
                 headers: { 'Content-Type': 'application/json' }
             };
@@ -54,7 +59,7 @@ exports.handler = async (event, context) => {
         // Initialize the Gemini model
         const genAI = new GoogleGenerativeAI(apiKey);
         const model = genAI.getGenerativeModel({
-            model: "gemini-2.5-pro-exp-03-25",
+            model: "gemini-2.0-flash-lite",
             generationConfig: {
                 temperature: 0.1,
                 maxOutputTokens: 100000,
