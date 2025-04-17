@@ -1,146 +1,178 @@
 /**
  * API Proxy Service for DeepTerm
  * 
- * This service handles secure API requests without exposing API keys in client-side code.
- * It uses a server-side proxy approach to protect sensitive credentials.
+ * This service handles secure API requests via a Netlify function.
+ * It now orchestrates chunking and sequential requests on the client-side.
  */
+
+// Constants for text chunking (client-side)
+const MAX_CHUNK_SIZE = 2500; // Match the optimized function
+const CHUNK_OVERLAP = 150;   // Match the optimized function
 
 // Types for the proxy service
 type ProxyRequestOptions = {
-    prompt: string;
+    prompt: string; // Full text prompt
     mode?: string;
-    maxRetries?: number;
+    onProgress?: (progress: number, total: number) => void; // Optional progress callback
 };
 
-type ProxyRequestConfig = {
-    method: string;
-    headers: Record<string, string>;
-    body?: string;
+// Type for the expected response from the simplified Netlify function
+type ChunkApiResponse = {
+    success: boolean;
+    data?: { keyTerms?: KeyTerm[] }; // Expecting { keyTerms: [...] } inside data
+    error?: string;
+    responsePreview?: string; // For debugging errors
 };
 
-// Export the ProxyResponse type
+// Define KeyTerm type if not already globally available (adjust based on your actual types/index.ts)
+interface KeyTerm {
+    term: string;
+    meaning: string;
+    category: string;
+    subcategories?: string[];
+    examples?: string[];
+}
+
+// Export the ProxyResponse type (structure for the final combined result)
 export type ProxyResponse = {
     success: boolean;
-    data?: any;
+    data?: {
+        title: string;
+        extractionMode: string;
+        keyTerms: KeyTerm[];
+    };
     error?: string;
 };
 
 /**
- * Send a secure request to the Gemini API through a server-side proxy
- * @param options - The request options including prompt and extraction mode
- * @returns Promise with the extraction result
+ * Split text into overlapping chunks (client-side version)
+ * @param {string} text - The full text to be chunked
+ * @returns {Array<string>} - Array of text chunks
  */
-export const sendSecureGeminiRequest = async (options: ProxyRequestOptions): Promise<ProxyResponse> => {
-    try {
-        // Prepare request configuration
-        const config: ProxyRequestConfig = {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                prompt: options.prompt,
-                mode: options.mode || 'full',
-                maxRetries: options.maxRetries || 3,
-            }),
-        };    // In development mode, we'll use the client-side approach temporarily
-        // In production, we use the Netlify function
-        if (import.meta.env.DEV) {
-            return await developmentFallback(options);
-        }
-
-        // Make the call to our Netlify serverless function
-        const response = await fetch('/.netlify/functions/gemini-proxy', config);
-
-        if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(`Server responded with ${response.status}: ${errorText}`);
-        }
-
-        const data = await response.json();
-        return {
-            success: true,
-            data
-        };
-    } catch (error: any) {
-        console.error("[Secure API Proxy] Request failed:", error.message);
-        return {
-            success: false,
-            error: error.message
-        };
+function chunkText(text: string): string[] {
+    if (!text || text.length <= MAX_CHUNK_SIZE) {
+        return [text];
     }
-};
+    const chunks: string[] = [];
+    let startIndex = 0;
+    while (startIndex < text.length) {
+        let endIndex = Math.min(startIndex + MAX_CHUNK_SIZE, text.length);
+        chunks.push(text.substring(startIndex, endIndex));
+        startIndex = Math.max(startIndex, endIndex - CHUNK_OVERLAP);
+        if (startIndex >= endIndex) startIndex = endIndex; // Prevent infinite loop
+    }
+    console.log(`Client-side: Text chunked into ${chunks.length} segments`);
+    return chunks;
+}
 
 /**
- * Development-only fallback that simulates the proxy response
- * This should be removed in production and replaced with actual server-side proxy
- * @param options - The request options
- * @returns Promise simulating a proxy response
+ * Send text to Gemini API via Netlify proxy, handling chunking client-side.
+ * @param options - The request options including full prompt, mode, and progress callback
+ * @returns Promise with the combined extraction result
  */
-const developmentFallback = async (options: ProxyRequestOptions): Promise<ProxyResponse> => {
-    console.warn('[Secure API Proxy] Using development fallback - NO ACTUAL PROXY IN PLACE');
-    console.warn('[Secure API Proxy] In production, API keys should be handled server-side only');
+export const sendSecureGeminiRequest = async (options: ProxyRequestOptions): Promise<ProxyResponse> => {
+    const { prompt, mode = 'full', onProgress } = options;
+    const allKeyTerms: KeyTerm[] = [];
+    let overallSuccess = true;
+    let firstError: string | null = null;
 
-    // Import the actual implementation only in development mode
-    // This is a temporary fallback and should be removed in production
     try {
-        const { extractKeyTerms } = await import('./geminiService');
-        const result = await extractKeyTerms(options.prompt, options.mode as any);
+        // 1. Chunk the text
+        const textChunks = chunkText(prompt);
+        const totalChunks = textChunks.length;
+
+        // 2. Process each chunk sequentially
+        for (let i = 0; i < totalChunks; i++) {
+            const chunk = textChunks[i];
+            console.log(`Client: Sending chunk ${i + 1}/${totalChunks} to proxy...`);
+
+            try {
+                // Prepare request for a single chunk
+                const config = {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        chunk: chunk, // Send the chunk
+                        mode: mode,
+                    }),
+                };
+
+                // Make the call to the simplified Netlify function
+                const response = await fetch('/.netlify/functions/gemini-proxy', config);
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error(`Client: Error response from proxy for chunk ${i + 1}: ${response.status}`, errorText);
+                    throw new Error(`Proxy error (Chunk ${i + 1}/${totalChunks}): ${response.status} - ${errorText.substring(0, 100)}`);
+                }
+
+                const result: ChunkApiResponse = await response.json();
+
+                if (!result.success || !result.data || !result.data.keyTerms) {
+                    console.error(`Client: Unsuccessful or malformed response from proxy for chunk ${i + 1}`, result);
+                    throw new Error(result.error || `Proxy returned unsuccessful status for chunk ${i + 1}`);
+                }
+
+                // Add extracted terms from this chunk to the main list
+                allKeyTerms.push(...result.data.keyTerms.filter(term => term && term.term)); // Filter invalid terms
+                console.log(`Client: Received ${result.data.keyTerms.length} terms from chunk ${i + 1}. Total terms: ${allKeyTerms.length}`);
+
+            } catch (chunkError: any) {
+                console.error(`Client: Failed to process chunk ${i + 1}:`, chunkError);
+                overallSuccess = false;
+                if (!firstError) {
+                    firstError = chunkError.message;
+                }
+                // Optionally add an error placeholder term
+                allKeyTerms.push({ term: `Chunk ${i + 1} Error`, meaning: chunkError.message, category: "Processing Error" });
+                // Decide whether to continue or stop on first error (currently continues)
+            }
+
+            // 3. Report progress
+            if (onProgress) {
+                onProgress(i + 1, totalChunks);
+            }
+        }
+
+        // 4. Combine results and deduplicate (simple deduplication)
+        const termMap = new Map<string, KeyTerm>();
+        allKeyTerms.forEach(term => {
+            if (term && term.term && term.category !== "Processing Error") { // Don't deduplicate error placeholders
+                const normalizedTerm = term.term.toLowerCase().trim();
+                if (!termMap.has(normalizedTerm)) {
+                     // Ensure basic structure
+                     term.meaning = term.meaning || "";
+                     term.category = term.category || "Uncategorized";
+                     term.subcategories = term.subcategories || [];
+                     term.examples = term.examples || [];
+                    termMap.set(normalizedTerm, term);
+                }
+            }
+        });
+        const finalKeyTerms = Array.from(termMap.values());
+         // Add back any error placeholders if needed, or handle errors differently
+         finalKeyTerms.push(...allKeyTerms.filter(term => term.category === "Processing Error"));
+
+        console.log(`Client: Finished processing all chunks. Final term count: ${finalKeyTerms.length}`);
+
+        // 5. Return final combined response
         return {
-            success: true,
-            data: result
+            success: overallSuccess,
+            data: {
+                title: "Document Analysis", // Generic title, could be improved
+                extractionMode: mode,
+                keyTerms: finalKeyTerms,
+            },
+            error: firstError || undefined, // Report the first error encountered
         };
+
     } catch (error: any) {
+        console.error("[Client Orchestration] Critical error:", error);
         return {
             success: false,
-            error: error.message
+            error: `Client-side orchestration failed: ${error.message}`,
         };
     }
 };
-
-// Instructions for implementing the server-side proxy:
-/*
-IMPORTANT: For complete security, you need to implement a server-side proxy that:
-1. Receives requests from the client
-2. Adds the API key from secure server-side environment variables
-3. Makes the request to the Gemini API
-4. Returns only the necessary response data to the client
-
-Example server implementation (Node.js/Express):
-
-```javascript
-// Server-side code (not to be included in client)
-const express = require('express');
-const app = express();
-const { GoogleGenerativeAI } = require('@google/generative-ai');
-
-app.use(express.json());
-
-app.post('/api/gemini-proxy', async (req, res) => {
-  try {
-    const { prompt, mode } = req.body;
-    
-    // API key securely stored in server environment variables
-    const apiKey = process.env.GEMINI_API_KEY;
-    
-    const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({
-      model: "gemini-2.5-pro-exp-03-25",
-      // Additional configuration...
-    });
-    
-    const result = await model.generateContent(prompt);
-    const response = result.response.text();
-    
-    // Process and return the result to the client
-    res.json({ result: response });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-app.listen(3000, () => {
-  console.log('Server running on port 3000');
-});
-```
-*/
