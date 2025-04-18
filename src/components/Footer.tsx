@@ -52,10 +52,6 @@ const Footer = () => {
               <span>Email Us</span>
             </a>
             {/* Align link content to start (left) on all screen sizes */}
-            <a href="https://4regab.me" target="_blank" rel="noopener noreferrer" className="text-gray-700 hover:text-[#FF5C00] transition-colors flex items-center justify-start gap-2">
-              <Github className="h-4 w-4" />
-              <span>4regab</span>
-            </a>
           </div>
         </div>
       </div>
