@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
 import { readFileAsText } from "@/utils/fileUtils";
-import { AlertCircle, FileText, Upload, X, ClipboardCopy, Type, FileUp, ArrowLeft } from "lucide-react"; // Added ArrowLeft
+import { AlertCircle, FileText, Upload, X, ClipboardCopy, Type, FileUp, ArrowLeft } from "lucide-react";
 import LoadingSpinner from "./LoadingSpinner";
 import { useToast } from "@/components/ui/use-toast";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -19,11 +19,9 @@ interface TextInputProps {
 const TextInput = ({ onSubmit, isLoading, extractionMode, onResetMode }: TextInputProps) => {
   const [text, setText] = useState("");
   const [file, setFile] = useState<File | null>(null);
-  // Always start with null mode - require explicit user selection
   const [mode, setMode] = useState<'text' | 'file' | null>(null);
   const { toast } = useToast();
 
-  // Maximum character limit before warning the user
   const MAX_TEXT_LENGTH = 100000;
 
   const { getRootProps, getInputProps } = useDropzone({
@@ -37,11 +35,11 @@ const TextInput = ({ onSubmit, isLoading, extractionMode, onResetMode }: TextInp
       if (acceptedFiles.length > 0) {
         const selectedFile = acceptedFiles[0];
         setFile(selectedFile);
-        setMode('file'); // Set mode on drop
+        setMode('file');
 
         try {
           let loadingToast;
-          if (selectedFile.size > 1000000) { // 1MB
+          if (selectedFile.size > 1000000) {
             loadingToast = toast({
               title: "Processing Large File",
               description: "Please wait while we extract the text...",
@@ -74,7 +72,6 @@ const TextInput = ({ onSubmit, isLoading, extractionMode, onResetMode }: TextInp
             });
           }
 
-          // Log file size and content length for debugging
           console.log(`File processed: ${selectedFile.name}, size: ${selectedFile.size} bytes, extracted content length: ${fileContent.length} characters`);
         } catch (error) {
           console.error("Error reading file:", error);
@@ -83,7 +80,6 @@ const TextInput = ({ onSubmit, isLoading, extractionMode, onResetMode }: TextInp
             description: error instanceof Error ? error.message : "Failed to read the file",
             variant: "destructive",
           });
-          // Reset if error occurs during file read
           setFile(null);
           setText("");
           setMode(null);
@@ -96,70 +92,49 @@ const TextInput = ({ onSubmit, isLoading, extractionMode, onResetMode }: TextInp
     if (!text.trim()) {
       toast({
         title: "Missing Content",
-        description: "Please select a mode and enter text or upload a file.", // Updated message
+        description: "Please select a mode and enter text or upload a file.",
         variant: "destructive",
       });
       return;
     }
 
-    // Check if text exceeds maximum length
     if (text.length > MAX_TEXT_LENGTH) {
       toast({
         title: "Text Too Long - Will Be Truncated",
         description: `Your text exceeds the ${MAX_TEXT_LENGTH.toLocaleString()} character limit. Please reduce your text or the end portion WILL NOT be processed.`,
         variant: "destructive",
       });
-      // Do not return here, allow submission but warn
     }
 
-    // Clean text of binary patterns or encoding issues
-    const firstChunk = text.substring(0, 500);
-    const lastChunk = text.substring(text.length - 500);
-
-    const binaryPattern = /[\x00-\x08\x0B\x0C\x0E-\x1F\x7F-\x9F]{10,}/;
-    if (binaryPattern.test(firstChunk) || binaryPattern.test(lastChunk)) {
-      console.warn("Content may contain binary data or encoding issues");
-
-      const cleanedText = text
-        .replace(/[\x00-\x09\x0B\x0C\x0E-\x1F\x7F-\x9F]/g, ' ');
-      
-      console.log(`Cleaned content for processing, original length: ${text.length}, cleaned length: ${cleanedText.length}`);
-
-      onSubmit(cleanedText.substring(0, MAX_TEXT_LENGTH), file?.name); // Pass filename if available
-      return;
-    }
-
-    console.log(`Submitting text for processing, length: ${text.length}`);
-
-    onSubmit(text.substring(0, MAX_TEXT_LENGTH), file?.name); // Pass filename if available
+    proceedWithSubmission();
   };
 
   const handleClearFile = () => {
     setFile(null);
     setText("");
-    setMode(null); // Reset mode
+    setMode(null);
   };
 
   const handleClearText = () => {
     setText("");
-    setMode(null); // Reset mode
+    setMode(null);
   };
 
   const handlePaste = () => {
     navigator.clipboard.readText()
       .then(clipText => {
         setText(clipText);
-        setMode('text'); // Set mode on paste
+        setMode('text');
         toast({
           title: "Text pasted successfully",
           description: `${clipText.length.toLocaleString()} characters pasted from clipboard`,
         });
         if (clipText.length > MAX_TEXT_LENGTH) {
-           toast({
-              title: "Text Too Long - Content Will Be Truncated",
-              description: `Pasted text is ${clipText.length.toLocaleString()} characters. The system can only process ${MAX_TEXT_LENGTH.toLocaleString()} characters. The end of your text WILL NOT be processed.`,
-              variant: "destructive",
-            });
+          toast({
+            title: "Text Too Long - Content Will Be Truncated",
+            description: `Pasted text is ${clipText.length.toLocaleString()} characters. The system can only process ${MAX_TEXT_LENGTH.toLocaleString()} characters. The end of your text WILL NOT be processed.`,
+            variant: "destructive",
+          });
         }
       })
       .catch(err => {
@@ -171,14 +146,28 @@ const TextInput = ({ onSubmit, isLoading, extractionMode, onResetMode }: TextInp
       });
   };
 
-  // Handle going back to mode selection
   const handleBackToModeSelection = () => {
-    // Reset the current mode
     setMode(null);
-    // If we have an extraction mode and a callback to reset it, call it
     if (extractionMode && onResetMode) {
       onResetMode();
     }
+  };
+
+  const proceedWithSubmission = () => {
+    const firstChunk = text.substring(0, 500);
+    const lastChunk = text.substring(text.length - 500);
+
+    const binaryPattern = /[\x00-\x08\x0B\x0C\x0E-\x1F\x7F-\x9F]{10,}/;
+    if (binaryPattern.test(firstChunk) || binaryPattern.test(lastChunk)) {
+      console.warn("Content may contain binary data or encoding issues");
+      const cleanedText = text.replace(/[\x00-\x09\x0B\x0C\x0E-\x1F\x7F-\x9F]/g, ' ');
+      console.log(`Cleaned content for processing, original length: ${text.length}, cleaned length: ${cleanedText.length}`);
+      onSubmit(cleanedText.substring(0, MAX_TEXT_LENGTH), file?.name);
+      return;
+    }
+
+    console.log(`Submitting text for processing, length: ${text.length}`);
+    onSubmit(text.substring(0, MAX_TEXT_LENGTH), file?.name);
   };
 
   return (
@@ -192,10 +181,9 @@ const TextInput = ({ onSubmit, isLoading, extractionMode, onResetMode }: TextInp
           </AlertDescription>
         </Alert>
 
-        {/* Mode Selection */}
         {!mode && (
           <div className="mb-5 flex flex-col sm:flex-row gap-4">
-             <Button
+            <Button
               variant="outline"
               onClick={() => setMode('text')}
               className="flex-1 neo-border bg-white hover:bg-neo-bg shadow-neo-sm hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all py-6 text-base"
@@ -203,7 +191,7 @@ const TextInput = ({ onSubmit, isLoading, extractionMode, onResetMode }: TextInp
               <Type className="h-5 w-5 mr-2" />
               Enter Text
             </Button>
-             <Button
+            <Button
               variant="outline"
               onClick={() => setMode('file')}
               className="flex-1 neo-border bg-white hover:bg-neo-bg shadow-neo-sm hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all py-6 text-base"
@@ -214,7 +202,6 @@ const TextInput = ({ onSubmit, isLoading, extractionMode, onResetMode }: TextInp
           </div>
         )}
 
-        {/* Back Button - Only show if a mode is selected */}
         {mode && (
           <div className="mb-4">
             <Button
@@ -229,7 +216,6 @@ const TextInput = ({ onSubmit, isLoading, extractionMode, onResetMode }: TextInp
           </div>
         )}
 
-        {/* Text Input Area */}
         {mode === 'text' && (
           <div className="mb-5">
             <div className="flex justify-between items-center mb-2">
@@ -237,7 +223,7 @@ const TextInput = ({ onSubmit, isLoading, extractionMode, onResetMode }: TextInp
                 Enter text to analyze
               </label>
               <div className="flex gap-2">
-                 <Button
+                <Button
                   variant="outline"
                   size="sm"
                   onClick={handlePaste}
@@ -246,7 +232,7 @@ const TextInput = ({ onSubmit, isLoading, extractionMode, onResetMode }: TextInp
                   <ClipboardCopy className="h-3 w-3 mr-1" />
                   Paste
                 </Button>
-                 <Button
+                <Button
                   variant="ghost"
                   size="sm"
                   onClick={handleClearText}
@@ -282,7 +268,6 @@ const TextInput = ({ onSubmit, isLoading, extractionMode, onResetMode }: TextInp
           </div>
         )}
 
-        {/* File Upload Area */}
         {mode === 'file' && (
           <div className="mb-5">
             <div className="text-base font-bold mb-2 text-neo-black">Upload a document</div>
@@ -304,14 +289,14 @@ const TextInput = ({ onSubmit, isLoading, extractionMode, onResetMode }: TextInp
                     Supported formats: TXT, PDF (full support), DOCX (limited support)
                   </p>
                 </div>
-                 <Button
-                    variant="link"
-                    size="sm"
-                    onClick={(e) => { e.stopPropagation(); setMode(null); }} // Prevent dropzone activation
-                    className="text-xs text-neo-muted hover:text-neo-black mt-2"
-                  >
-                    Cancel Upload
-                  </Button>
+                <Button
+                  variant="link"
+                  size="sm"
+                  onClick={(e) => { e.stopPropagation(); setMode(null); }}
+                  className="text-xs text-neo-muted hover:text-neo-black mt-2"
+                >
+                  Cancel Upload
+                </Button>
               </div>
             ) : (
               <div className="mt-4">
@@ -330,7 +315,7 @@ const TextInput = ({ onSubmit, isLoading, extractionMode, onResetMode }: TextInp
                     <X className="h-4 w-4" />
                   </Button>
                 </div>
-                 {text.length > 0 && ( // Show character count for uploaded file too
+                {text.length > 0 && (
                   <div className={`text-xs mt-2 text-right flex items-center justify-end ${text.length > MAX_TEXT_LENGTH ? 'text-red-500 font-bold' : 'text-neo-muted'}`}>
                     <div className="flex-grow text-left">
                       {text.length > MAX_TEXT_LENGTH && (
@@ -343,18 +328,17 @@ const TextInput = ({ onSubmit, isLoading, extractionMode, onResetMode }: TextInp
                       </span>
                     </div>
                   </div>
-                 )}
+                )}
               </div>
             )}
           </div>
         )}
 
-        {/* Submit Button - Only show if a mode is selected */}
         {mode && (
           <div className="flex justify-end">
             <Button
               onClick={handleSubmit}
-              disabled={isLoading || !text.trim()} // Simplified disabled logic, warning handles length
+              disabled={isLoading || !text.trim()}
               className="font-bold neo-border bg-neo-accent text-neo-black hover:bg-neo-accent/90 shadow-neo-sm hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all rounded-lg py-2 px-6"
             >
               {isLoading ? (

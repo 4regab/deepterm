@@ -1,112 +1,84 @@
-import { useState } from "react";
-import { Button } from "@/components/ui/button";
+import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Key, Zap, PlusCircle, MinusCircle } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Info } from "lucide-react";
+
+// Storage key to be consistent throughout the application
+export const API_KEY_STORAGE_KEY = 'gemini-api-key';
 
 interface ApiKeyInputProps {
-  onSubmit: (apiKeys: string[]) => void;
+  onSubmit: (apiKey: string) => void;
 }
 
-const ApiKeyInput = ({ onSubmit }: ApiKeyInputProps) => {
-  const [apiKeys, setApiKeys] = useState<string[]>(['']);
-  
+const ApiKeyInput: React.FC<ApiKeyInputProps> = ({ onSubmit }) => {
+  const [apiKey, setApiKey] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+
+  // Check local storage on component mount
+  useEffect(() => {
+    const storedApiKey = localStorage.getItem(API_KEY_STORAGE_KEY);
+    if (storedApiKey) {
+      setApiKey(storedApiKey);
+    }
+  }, []);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const validKeys = apiKeys.filter(key => key.trim().length > 0);
-    if (validKeys.length > 0) {
-      onSubmit(validKeys);
-    }
-  };
-
-  const addApiKeyInput = () => {
-    if (apiKeys.length < 10) {
-      setApiKeys([...apiKeys, '']);
-    }
-  };
-
-  const removeApiKeyInput = (index: number) => {
-    const updatedKeys = [...apiKeys];
-    updatedKeys.splice(index, 1);
-    setApiKeys(updatedKeys.length > 0 ? updatedKeys : ['']);
-  };
-
-  const handleApiKeyChange = (index: number, value: string) => {
-    const updatedKeys = [...apiKeys];
-    updatedKeys[index] = value;
-    setApiKeys(updatedKeys);
+    
+    if (!apiKey.trim()) return;
+    
+    setIsLoading(true);
+    
+    // Store the API key in local storage
+    localStorage.setItem(API_KEY_STORAGE_KEY, apiKey.trim());
+    
+    // Add a small delay to show loading state
+    setTimeout(() => {
+      // Call the onSubmit callback with the API key
+      onSubmit(apiKey.trim());
+      setIsLoading(false);
+    }, 300);
   };
 
   return (
-    <Card className="w-full max-w-md">
-      <CardHeader className="bg-neo-accent bg-opacity-10">
-        <div className="flex items-center gap-2">
-          <Zap className="h-6 w-6 text-neo-accent" strokeWidth={2.5} />
-          <CardTitle className="text-xl font-pixel">GEMINI API Key Required</CardTitle>
-        </div>
-        <CardDescription className="font-mono text-xs">
-          Enter your GEMINI API keys to use the key term extraction functionality.
-          Adding multiple keys enables automatic rotation for uninterrupted service.
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="pt-6">
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {apiKeys.map((apiKey, index) => (
-            <div key={index} className="flex items-center gap-2">
-              <div className="flex-grow">
-                <label className="block text-sm font-medium mb-1">
-                  {index === 0 ? 'Primary API Key' : `API Key ${index + 1}`}
-                </label>
-                <Input
-                  type="password"
-                  placeholder={`Enter your ${index === 0 ? 'primary' : ''} GEMINI API key`}
-                  value={apiKey}
-                  onChange={(e) => handleApiKeyChange(index, e.target.value)}
-                  className="w-full font-mono"
-                />
-              </div>
-              
-              {index > 0 && (
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  className="mt-6 text-red-500 hover:text-red-700 hover:bg-red-50"
-                  onClick={() => removeApiKeyInput(index)}
-                >
-                  <MinusCircle className="h-5 w-5" />
-                </Button>
-              )}
-            </div>
-          ))}
+    <>
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <Input
+          type="password"
+          placeholder="Enter your Gemini API key"
+          value={apiKey}
+          onChange={(e) => setApiKey(e.target.value)}
+          className="neo-border focus:border-neo-accent focus:ring-neo-accent"
+          required 
+        />
+        <Button 
+          type="submit" 
+          disabled={isLoading || !apiKey.trim()}
+          className="w-full bg-neo-accent text-neo-black neo-border shadow-neo-sm hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all"
+        >
+          {isLoading ? "Saving..." : "Save and Continue"}
+        </Button>
+      </form>
 
-          {apiKeys.length < 10 && (
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              className="text-neo-accent hover:text-neo-accent hover:bg-neo-accent/10"
-              onClick={addApiKeyInput}
-            >
-              <PlusCircle className="h-4 w-4 mr-2" />
-              Add Another API Key ({apiKeys.length}/10)
-            </Button>
-          )}
-
-          <p className="text-xs font-mono text-neo-muted mt-1">
-            Your API keys are only stored in your browser's session and are not saved.
-            {apiKeys.length > 1 && " If one key fails, the next key will be used automatically."}
-          </p>
-          
-          <div className="flex justify-end">
-            <Button type="submit" disabled={!apiKeys.some(key => key.trim().length > 0)}>
-              <Key className="mr-2 h-4 w-4" />
-              Continue
-            </Button>
-          </div>
-        </form>
-      </CardContent>
-    </Card>
+      <div className="mt-6 pt-4 border-t border-neo-bg">
+        <h3 className="text-sm font-semibold text-neo-black mb-2 flex items-center">
+          <Info className="w-4 h-4 mr-1.5 text-neo-accent3" />
+          How to get your Gemini API key:
+        </h3>
+        <ol className="list-decimal pl-5 space-y-1 text-xs text-neo-muted">
+          <li>Go to <a href="https://ai.google.dev/studio/apikey" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Google AI Studio</a>.</li>
+          <li>Sign in with your Google account.</li>
+          <li>Click on "Get API key" in the top right</li>
+          <li>Create a key for a new project (or use an existing one).</li>
+          <li>Copy the generated API key.</li>
+          <li>Paste it into the input field above.</li>
+        </ol>
+        <p className="text-xs text-neo-muted mt-2">
+          Your API key is stored only in your browser's local storage.
+          Free tiers are available but usage limits may apply.
+        </p>
+      </div>
+    </>
   );
 };
 

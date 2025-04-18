@@ -12,7 +12,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { ExtractionResult } from "@/types";
 import { exportAsCSV, exportAsDocx, exportAsPDF } from "@/utils/fileUtils";
 import { AlertTriangle, AlignJustify, BrainCog, Download, Edit, ExternalLink, FileText, FileType, List, Zap } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 interface ResultsDisplayProps {
   result: ExtractionResult;
@@ -23,6 +23,20 @@ interface ResultsDisplayProps {
 const ResultsDisplay = ({ result, onReset, originalFilename }: ResultsDisplayProps) => {
   const [isExporting, setIsExporting] = useState<string | null>(null);
   const { toast } = useToast();
+
+  // Update document title when the component mounts or result changes
+  useEffect(() => {
+    if (result && result.title) {
+      document.title = `${result.title} | DeepTerm`;
+    } else {
+      document.title = "Extraction Results | DeepTerm";
+    }
+    
+    // Restore title when component unmounts
+    return () => {
+      document.title = "DeepTerm - AI-Powered Productivity Tools";
+    };
+  }, [result]);
 
   // Enhanced error check - ensure result and keyTerms are valid
   if (!result || !result.keyTerms) {

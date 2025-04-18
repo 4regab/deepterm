@@ -18,73 +18,25 @@ enum HarmBlockThreshold {
   BLOCK_ONLY_HIGH = 'BLOCK_ONLY_HIGH'
 }
 
-// Support for multiple API keys (up to 10)
-const MAX_API_KEYS = 10;
-let apiKeys: string[] = [];
-let currentKeyIndex = 0;
+// Single API key storage
+let apiKey: string = "";
 
-// Initialize API keys from environment variables
-const loadApiKeysFromEnv = () => {
-  apiKeys = [];
-  for (let i = 1; i <= MAX_API_KEYS; i++) {
-    const key = import.meta.env[`VITE_GEMINI_API_KEY_${i}`] || "";
-    if (key && key.length > 0 && key !== "your_gemini_api_key_here") {
-      apiKeys.push(key);
-    }
+// Set user-provided API key
+export const initializeGemini = (key: string): boolean => {
+  if (!key || key.length === 0 || key === "your_gemini_api_key_here") {
+    console.warn("No valid API key provided");
+    apiKey = "";
+    return false;
   }
-  // Use secure logging that doesn't reveal sensitive information
-  console.log(`Loaded ${apiKeys.length} API keys from environment variables`);
-  currentKeyIndex = 0;
+
+  apiKey = key;
+  console.log("API key initialized successfully");
+  return true;
 };
 
-// Load API keys on module initialization
-loadApiKeysFromEnv();
-
-export const initializeGemini = (keys: string[]) => {
-  if (!keys || !keys.length) {
-    console.warn("No API keys provided to initialize");
-    return;
-  }
-
-  // Filter out empty keys
-  const validKeys = keys.filter(key => key && key.length > 0 && key !== "your_gemini_api_key_here");
-
-  if (validKeys.length === 0) {
-    console.warn("No valid API keys provided");
-    return;
-  }
-
-  // Replace existing keys with new ones
-  apiKeys = validKeys;
-  console.log(`Initialized with ${validKeys.length} API key(s)`);
-
-  // Reset current key index
-  currentKeyIndex = 0;
-};
-
+// Check if a valid API key exists
 export const checkApiKey = (): boolean => {
-  return apiKeys.length > 0;
-};
-
-// Get the current API key
-const getCurrentApiKey = (): string => {
-  if (apiKeys.length === 0) return "";
-  return apiKeys[currentKeyIndex];
-};
-
-// Rotate to the next API key
-const rotateToNextApiKey = (): string => {
-  if (apiKeys.length === 0) return "";
-
-  currentKeyIndex = (currentKeyIndex + 1) % apiKeys.length;
-  const key = apiKeys[currentKeyIndex];
-  console.log(`Rotated to API key index ${currentKeyIndex + 1}/${apiKeys.length}`);
-  return key;
-};
-
-// Reset to first API key
-const resetApiKeyRotation = (): void => {
-  currentKeyIndex = 0;
+  return !!apiKey && apiKey.length > 0;
 };
 
 export type ExtractionMode = "full" | "sentence" | "keywords";
@@ -96,11 +48,8 @@ export const extractKeyTerms = async (
   text: string,
   mode: ExtractionMode = "full"
 ): Promise<ExtractionResult> => {
-  // In a production environment, this function would be entirely replaced by
-  // calls to the secure proxy service, but we're keeping it for backward compatibility
-  // during the transition
   if (!checkApiKey()) {
-    throw new Error("No valid API keys available. Please initialize with valid API keys first.");
+    throw new Error("No valid API key available. Please provide a valid API key first.");
   }
 
   try {
@@ -120,70 +69,55 @@ export const extractKeyTerms = async (
     console.log(`Cleaned text sample (first 100 chars): ${cleanedText.substring(0, 100)}...`);
     console.log(`Cleaned text sample (last 100 chars): ${cleanedText.substring(cleanedText.length - 100)}`);
 
-    // Enhanced retry mechanism with API key rotation
-    let result;
-    let allKeysFailed = true;
-
-    // Try each API key in sequence until we get a success or run out of keys
-    for (let keyAttempt = 0; keyAttempt < apiKeys.length; keyAttempt++) {
-      const currentApiKey = getCurrentApiKey();
-      console.log(`Trying API key index ${currentKeyIndex + 1}/${apiKeys.length}`);
-
-      if (!currentApiKey) {
-        console.error("Current API key is invalid");
-        rotateToNextApiKey();
-        continue;
-      }
-
-      // Create a new model instance with the current API key
-      const genAI = new GoogleGenerativeAI(currentApiKey);
-      const model = genAI.getGenerativeModel({
-        model: "gemini-2.0-flash-lite",
-        generationConfig: {
-          temperature: 0.1,             // Lower temperature for more deterministic extraction
-          maxOutputTokens: 100000,      // Maximized output tokens limit
-          topP: 0.99,                   // Increased to consider wider range of tokens
-          topK: 100,                    // Significantly increased for better coverage
+    // Create a new model instance with the current API key
+    const genAI = new GoogleGenerativeAI(apiKey);
+    const model = genAI.getGenerativeModel({
+      model: "gemini-2.0-flash-lite",
+      generationConfig: {
+        temperature: 0.1,             // Lower temperature for more deterministic extraction
+        maxOutputTokens: 100000,      // Maximized output tokens limit
+        topP: 0.99,                   // Increased to consider wider range of tokens
+        topK: 100,                    // Significantly increased for better coverage
+      },
+      // Safety settings set to maximum permissiveness
+      safetySettings: [
+        {
+          category: HarmCategory.HARM_CATEGORY_HARASSMENT,
+          threshold: HarmBlockThreshold.BLOCK_NONE,
         },
-        // Safety settings set to maximum permissiveness
-        safetySettings: [
-          {
-            category: HarmCategory.HARM_CATEGORY_HARASSMENT,
-            threshold: HarmBlockThreshold.BLOCK_NONE,
-          },
-          {
-            category: HarmCategory.HARM_CATEGORY_HATE_SPEECH,
-            threshold: HarmBlockThreshold.BLOCK_NONE,
-          },
-          {
-            category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT,
-            threshold: HarmBlockThreshold.BLOCK_NONE,
-          },
-          {
-            category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
-            threshold: HarmBlockThreshold.BLOCK_NONE,
-          },
-        ],
-      });
+        {
+          category: HarmCategory.HARM_CATEGORY_HATE_SPEECH,
+          threshold: HarmBlockThreshold.BLOCK_NONE,
+        },
+        {
+          category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT,
+          threshold: HarmBlockThreshold.BLOCK_NONE,
+        },
+        {
+          category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
+          threshold: HarmBlockThreshold.BLOCK_NONE,
+        },
+      ],
+    });
 
-      // Adjust the prompt based on extraction mode
-      let extractionGuidance = "";
+    // Adjust the prompt based on extraction mode
+    let extractionGuidance = "";
 
-      switch (mode) {
-        case "sentence":
-          extractionGuidance = "For each term, provide ONLY ONE SENTENCE as the definition or explanation. Keep it brief and concise.";
-          break;
-        case "keywords":
-          extractionGuidance = "For each term, extract ONLY the IMPORTANT KEY WORDS related to it. Start with a dash (-) and then list the keywords separated by commas. Do not include full sentences. Format example: '- keyword1, keyword2, keyword3'. IMPORTANT: EVERY term MUST have at least 3-5 keywords.";
-          break;
-        case "full":
-        default:
-          extractionGuidance = "For each term, provide the EXACT definition or explanation as it appears in the original text";
-          break;
-      }
+    switch (mode) {
+      case "sentence":
+        extractionGuidance = "For each term, provide ONLY ONE SENTENCE as the definition or explanation. Keep it brief and concise.";
+        break;
+      case "keywords":
+        extractionGuidance = "For each term, extract ONLY the IMPORTANT KEY WORDS related to it. Start with a dash (-) and then list the keywords separated by commas. Do not include full sentences. Format example: '- keyword1, keyword2, keyword3'. IMPORTANT: EVERY term MUST have at least 3-5 keywords.";
+        break;
+      case "full":
+      default:
+        extractionGuidance = "For each term, provide the EXACT definition or explanation as it appears in the original text";
+        break;
+    }
 
-      // Enhanced prompt with EXTREME emphasis on processing the ENTIRE text, especially the end
-      const prompt = `
+    // Enhanced prompt with EXTREME emphasis on processing the ENTIRE text, especially the end
+    const prompt = `
         CRITICAL INSTRUCTION: You MUST process the ENTIRE text from beginning to END without skipping ANY content.
         
         Please conduct a thorough analysis of the following text to identify and extract ALL key terms, concepts, definitions, and technical vocabulary, organizing them into categories and hierarchical structures.
@@ -232,50 +166,31 @@ export const extractKeyTerms = async (
         ${cleanedText}
       `;
 
-      // Log that we're sending the prompt to Gemini (without exposing sensitive key info)
-      console.log(`Sending prompt to Gemini API with key index ${currentKeyIndex + 1}`);
+    // Log that we're sending the prompt to Gemini
+    console.log("Sending prompt to Gemini API");
 
-      // Retry logic for the current API key
-      const maxRetries = 3;
-      let retryCount = 0;
+    let result;
+    const maxRetries = 3;
+    let retryCount = 0;
 
-      while (retryCount < maxRetries) {
-        try {
-          result = await model.generateContent(prompt);
-          console.log(`Successfully processed content using API key index ${currentKeyIndex + 1} on attempt ${retryCount + 1}`);
-
-          // If we succeed, set the flag and break out of the retry loop
-          allKeysFailed = false;
-          break;
-        } catch (error) {
-          retryCount++;
-          // Avoid logging API key information with errors
-          console.error(`Error on attempt ${retryCount} with API key index ${currentKeyIndex + 1}:`, error.message);
-
-          if (retryCount >= maxRetries) {
-            console.log(`API key index ${currentKeyIndex + 1} failed after ${maxRetries} attempts`);
-            break;
-          }
-
-          // Wait before retrying with exponential backoff
-          const backoffTime = 1000 * Math.pow(2, retryCount);
-          console.log(`Retrying in ${backoffTime}ms...`);
-          await new Promise(resolve => setTimeout(resolve, backoffTime));
-        }
-      }
-
-      // If the current key succeeded, break out of the key rotation loop
-      if (!allKeysFailed) {
+    while (retryCount < maxRetries) {
+      try {
+        result = await model.generateContent(prompt);
+        console.log(`Successfully processed content on attempt ${retryCount + 1}`);
         break;
+      } catch (error) {
+        retryCount++;
+        console.error(`Error on attempt ${retryCount}:`, error.message);
+
+        if (retryCount >= maxRetries) {
+          throw new Error(`Failed after ${maxRetries} attempts: ${error.message}`);
+        }
+
+        // Wait before retrying with exponential backoff
+        const backoffTime = 1000 * Math.pow(2, retryCount);
+        console.log(`Retrying in ${backoffTime}ms...`);
+        await new Promise(resolve => setTimeout(resolve, backoffTime));
       }
-
-      // If we reach here, the current key failed all retries, so rotate to the next key
-      rotateToNextApiKey();
-    }
-
-    // If all keys failed, throw an error
-    if (allKeysFailed) {
-      throw new Error("All API keys failed. Please check your API keys and try again.");
     }
 
     // Extract JSON from the response
@@ -348,11 +263,6 @@ export const extractKeyTerms = async (
     }
 
     console.log(`Successfully extracted ${extractionResult.keyTerms.length} unique key terms`);
-
-    // Reset to the first key for the next operation if we had to rotate
-    if (currentKeyIndex !== 0) {
-      resetApiKeyRotation();
-    }
 
     return extractionResult;
   } catch (error) {
