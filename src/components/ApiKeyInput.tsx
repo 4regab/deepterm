@@ -66,7 +66,7 @@ const ApiKeyInput: React.FC<ApiKeyInputProps> = ({ onSubmit }) => {
           How to get your Gemini API key:
         </h3>
         <ol className="list-decimal pl-5 space-y-1 text-xs text-neo-muted">
-          <li>Go to <a href="https://ai.google.dev/studio/apikey" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Google AI Studio</a>.</li>
+          <li>Go to <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Google AI Studio</a>.</li>
           <li>Sign in with your Google account.</li>
           <li>Click on "Get API key" in the top right</li>
           <li>Create a key for a new project (or use an existing one).</li>

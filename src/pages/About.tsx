@@ -1,7 +1,7 @@
 import Footer from "@/components/Footer";
 import Navbar from "@/components/Navbar";
 import { Card, CardContent } from "@/components/ui/card";
-import { Brain, BrainCog, CheckCircle, FileText, Lightbulb, ListTodo, Target, Timer } from "lucide-react";
+import { Brain, BrainCog, CheckCircle, FileText, Lightbulb, ListTodo, Target, Timer, Sparkles, Zap } from "lucide-react";
 
 const About = () => {
   return (
@@ -15,7 +15,7 @@ const About = () => {
               About <span className="text-[#FF5C00]">DeepTerm</span>
             </h1>
             <p className="text-xl text-gray-700">
-              Your all-in-one productivity toolkit
+              Your all-in-one AI-powered productivity toolkit
             </p>
           </div>
 
@@ -28,7 +28,7 @@ const About = () => {
                 <div>
                   <h2 className="text-2xl font-bold mb-3">What is DeepTerm?</h2>
                   <p className="text-lg text-gray-700">
-                    DeepTerm is a productivity platform designed to help you work more efficiently and effectively. We combine time management techniques with AI-powered text extraction tools to create a comprehensive productivity solution for students, researchers, professionals, and anyone looking to improve their focus and organization.
+                    DeepTerm is an AI-enhanced productivity platform designed to help you work more efficiently and effectively. We combine time management techniques with advanced AI-powered tools to create a comprehensive productivity solution for students, researchers, professionals, and anyone looking to improve their focus and organization.
                   </p>
                 </div>
               </div>
@@ -48,7 +48,7 @@ const About = () => {
 
                     <div className="bg-white neo-border p-4 rounded-lg mb-4">
                       <p className="text-gray-700">
-                        Our Pomodoro Timer helps you maintain focus and avoid burnout with structured work sessions and breaks.
+                        Our Pomodoro Timer helps you maintain focus and avoid burnout with structured work sessions and breaks, complete with task tracking.
                       </p>
                     </div>
 
@@ -70,7 +70,9 @@ const About = () => {
                         <p>Progress tracking and completion history</p>
                       </div>
                     </div>
-                  </div>                  {/* AI-Powered Key Term Extractor Section */}
+                  </div>
+                  
+                  {/* Reviewer Maker Section */}
                   <div className="flex flex-col h-full">
                     <div className="flex items-center gap-3 mb-4">
                       <div className="p-3 bg-[#FDE1D3] rounded-md border-2 border-[#1a1a1a] shadow-neo">
@@ -81,7 +83,7 @@ const About = () => {
 
                     <div className="bg-white neo-border p-4 rounded-lg mb-4">
                       <p className="text-gray-700">
-                        Extracts and organizes key terms, concepts, and definitions from text documents, creating hierarchically structured notes automatically.
+                        Our AI-powered tool extracts and organizes key terms, concepts, and definitions from text documents, creating hierarchically structured notes automatically.
                       </p>
                     </div>
 
@@ -92,7 +94,11 @@ const About = () => {
                       </div>
                       <div className="flex items-start gap-2">
                         <CheckCircle className="h-5 w-5 text-[#FF5C00] mt-0.5" />
-                        <p>Categorizes terms into hierarchical structures</p>
+                        <p>AI-powered categorization of terms into hierarchical structures</p>
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <CheckCircle className="h-5 w-5 text-[#FF5C00] mt-0.5" />
+                        <p>Context-aware analysis for better understanding</p>
                       </div>
                       <div className="flex items-start gap-2">
                         <CheckCircle className="h-5 w-5 text-[#FF5C00] mt-0.5" />
@@ -136,6 +142,45 @@ const About = () => {
                       <div className="flex items-start gap-2">
                         <CheckCircle className="h-5 w-5 text-[#FFC225] mt-0.5" />
                         <p>Persistent storage between sessions</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* AI Technology Section - New */}
+                <div className="mt-6">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="p-3 bg-[#e6f1ff] rounded-md neo-border">
+                      <Sparkles className="h-5 w-5 text-[#2563eb]" />
+                    </div>
+                    <h4 className="text-xl font-bold font-heading">AI Technology</h4>
+                  </div>
+
+                  <div className="bg-white neo-border p-4 rounded-lg mb-4">
+                    <p className="text-gray-700">
+                      We leverage advanced AI algorithms to power our tools, helping you work smarter and more efficiently.
+                    </p>
+                  </div>
+
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <div className="space-y-3">
+                      <div className="flex items-start gap-2">
+                        <CheckCircle className="h-5 w-5 text-[#2563eb] mt-0.5" />
+                        <p>Natural language processing for content understanding</p>
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <CheckCircle className="h-5 w-5 text-[#2563eb] mt-0.5" />
+                        <p>Context-aware analysis of documents</p>
+                      </div>
+                    </div>
+                    <div className="space-y-3">
+                      <div className="flex items-start gap-2">
+                        <CheckCircle className="h-5 w-5 text-[#2563eb] mt-0.5" />
+                        <p>Automated categorization and organization</p>
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <CheckCircle className="h-5 w-5 text-[#2563eb] mt-0.5" />
+                        <p>Continually improving systems</p>
                       </div>
                     </div>
                   </div>
@@ -218,7 +263,7 @@ const About = () => {
                     </div>
                     <h4 className="text-lg font-bold mb-2">Intuitive Design</h4>
                     <p className="text-gray-700">
-                      Clean, functional interface that's easy to use without any learning curve or unnecessary distractions.
+                      Clean, brutalist interface that's easy to use without any learning curve or unnecessary distractions.
                     </p>
                   </div>
 
@@ -231,6 +276,36 @@ const About = () => {
                       Leveraging AI and proven productivity techniques to help you work smarter, not harder.
                     </p>
                   </div>
+                </div>
+              </div>
+
+              {/* Latest Updates Section - New */}
+              <div className="mt-12">
+                <h3 className="text-xl font-bold border-b-2 border-gray-200 pb-2 mb-6">Latest Updates</h3>
+                
+                <div className="bg-white neo-border p-6 rounded-lg">
+                  <div className="flex items-center gap-3 mb-4">
+                    <Zap className="h-5 w-5 text-[#FF5C00]" />
+                    <h4 className="text-lg font-bold">April 2025 Improvements</h4>
+                  </div>
+                  <ul className="space-y-3">
+                    <li className="flex items-start gap-2">
+                      <CheckCircle className="h-5 w-5 text-[#FF5C00] mt-0.5" />
+                      <p>Enhanced AI capabilities in our Reviewer Maker tool</p>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <CheckCircle className="h-5 w-5 text-[#FF5C00] mt-0.5" />
+                      <p>Improved user interface with better accessibility</p>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <CheckCircle className="h-5 w-5 text-[#FF5C00] mt-0.5" />
+                      <p>Updated task management system integration</p>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <CheckCircle className="h-5 w-5 text-[#FF5C00] mt-0.5" />
+                      <p>Expanded documentation and guided tutorials</p>
+                    </li>
+                  </ul>
                 </div>
               </div>
             </CardContent>

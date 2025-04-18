@@ -39,115 +39,11 @@ const Index = () => {
   const [extractionError, setExtractionError] = useState < string | null > (null); // State for error message
   const [isApiKeyModalOpen, setIsApiKeyModalOpen] = useState(false); // New state for modal
   const [pendingText, setPendingText] = useState < string | null > (null); // New state for interrupted submission
-  const {
-    toast
-  } = useToast();
+  const { toast } = useToast();
   const isMobile = useIsMobile();
 
-  // New effect to handle pending text after API key is provided
-  useEffect(() => {
-    // Only proceed if the key is provided AND there's pending text
-    if (apiKeyProvided && pendingText) {
-      console.log("useEffect: Processing pending text after API key provided");
-      
-      // Use a small timeout to ensure state updates are processed first
-      const timer = setTimeout(() => {
-        // Store text in a local var before clearing state
-        const textToProcess = pendingText;
-        // Clear pending text first to avoid potential loops
-        setPendingText(null);
-        // Then process the text
-        handleTextSubmit(textToProcess);
-      }, 100);
-      
-      // Clean up timer if component unmounts during timeout
-      return () => clearTimeout(timer);
-    }
-  }, [apiKeyProvided, pendingText]);
-
-  const loadSavedResults = useCallback(() => {
-    try {
-      const storedResults = localStorage.getItem(RESULTS_STORAGE_KEY);
-      if (storedResults) {
-        const parsedResults = JSON.parse(storedResults) as ExtractionResult[];
-        setSavedResults(parsedResults);
-      }
-    } catch (error) {
-      console.error("Error loading saved results:", error);
-      toast({
-        title: "Error loading saved results",
-        description: "There was a problem loading your saved results.",
-        variant: "destructive"
-      });
-    }
-  }, [toast]);
-
-  useEffect(() => {
-    // Load API key from local storage
-    try {
-      const storedApiKey = localStorage.getItem(API_KEY_STORAGE_KEY);
-      if (storedApiKey) {
-        const success = initializeGemini(storedApiKey);
-        if (success && checkApiKey()) {
-          setApiKeyProvided(true); // Update internal state
-          console.log("Using API key from local storage");
-        } else {
-          console.warn("Stored API key is invalid or empty");
-          localStorage.removeItem(API_KEY_STORAGE_KEY);
-          setApiKeyProvided(false); // Update internal state
-        }
-      } else {
-        console.log("No API key found in local storage");
-        setApiKeyProvided(false); // Update internal state
-      }
-    } catch (error) {
-      console.error("Error initializing with stored API key:", error);
-      setApiKeyProvided(false); // Update internal state
-    }
-
-    loadSavedResults();
-    // Removed apiKeyProvided from dependency array as it's now just internal state
-  }, [loadSavedResults]);
-
-  // Updated handleApiKeySubmit to accept a single key and handle modal closing
-  const handleApiKeySubmit = (apiKey: string) => {
-    try {
-      const success = initializeGemini(apiKey);
-      if (success && checkApiKey()) {
-        setApiKeyProvided(true);
-        // Save the single API key to local storage
-        localStorage.setItem(API_KEY_STORAGE_KEY, apiKey);
-        setIsApiKeyModalOpen(false); // Close modal on success
-
-        toast({
-          title: "API Key configured successfully",
-          description: "Processing your request..."
-        });
-
-      } else {
-        // Initialization failed (likely invalid key)
-        setApiKeyProvided(false);
-        localStorage.removeItem(API_KEY_STORAGE_KEY); // Ensure invalid key isn't stored
-        // Keep modal open, show error within the modal or via toast
-        toast({
-          title: "Invalid API key",
-          description: "The API key provided appears to be invalid or failed to initialize. Please check and try again.",
-          variant: "destructive"
-        });
-      }
-    } catch (error) {
-      setApiKeyProvided(false);
-      localStorage.removeItem(API_KEY_STORAGE_KEY);
-      // Keep modal open, show error
-      toast({
-        title: "Error setting API key",
-        description: error instanceof Error ? error.message : "Please check your API key and try again.",
-        variant: "destructive"
-      });
-    }
-  };
-
-  const handleTextSubmit = async (text: string) => {
+  // Move handleTextSubmit up here and wrap with useCallback
+  const handleTextSubmit = useCallback(async (text: string) => {
     // --- API Key Check ---
     if (!checkApiKey()) {
       setPendingText(text); // Store the text
@@ -251,6 +147,109 @@ const Index = () => {
       }
     } finally {
       setIsLoading(false);
+    }
+  }, [toast, extractionMode, savedResults, setIsApiKeyModalOpen, setIsLoading, setExtractionError, setApiKeyProvided, setResult, setSavedResults]);
+
+  // New effect to handle pending text after API key is provided
+  useEffect(() => {
+    // Only proceed if the key is provided AND there's pending text
+    if (apiKeyProvided && pendingText) {
+      console.log("useEffect: Processing pending text after API key provided");
+      
+      // Use a small timeout to ensure state updates are processed first
+      const timer = setTimeout(() => {
+        // Store text in a local var before clearing state
+        const textToProcess = pendingText;
+        // Clear pending text first to avoid potential loops
+        setPendingText(null);
+        // Then process the text
+        handleTextSubmit(textToProcess);
+      }, 100);
+      
+      // Clean up timer if component unmounts during timeout
+      return () => clearTimeout(timer);
+    }
+  }, [apiKeyProvided, pendingText, handleTextSubmit]);
+
+  const loadSavedResults = useCallback(() => {
+    try {
+      const storedResults = localStorage.getItem(RESULTS_STORAGE_KEY);
+      if (storedResults) {
+        const parsedResults = JSON.parse(storedResults) as ExtractionResult[];
+        setSavedResults(parsedResults);
+      }
+    } catch (error) {
+      console.error("Error loading saved results:", error);
+      toast({
+        title: "Error loading saved results",
+        description: "There was a problem loading your saved results.",
+        variant: "destructive"
+      });
+    }
+  }, [toast]);
+
+  useEffect(() => {
+    // Load API key from local storage
+    try {
+      const storedApiKey = localStorage.getItem(API_KEY_STORAGE_KEY);
+      if (storedApiKey) {
+        const success = initializeGemini(storedApiKey);
+        if (success && checkApiKey()) {
+          setApiKeyProvided(true); // Update internal state
+          console.log("Using API key from local storage");
+        } else {
+          console.warn("Stored API key is invalid or empty");
+          localStorage.removeItem(API_KEY_STORAGE_KEY);
+          setApiKeyProvided(false); // Update internal state
+        }
+      } else {
+        console.log("No API key found in local storage");
+        setApiKeyProvided(false); // Update internal state
+      }
+    } catch (error) {
+      console.error("Error initializing with stored API key:", error);
+      setApiKeyProvided(false); // Update internal state
+    }
+
+    loadSavedResults();
+    // Removed apiKeyProvided from dependency array as it's now just internal state
+  }, [loadSavedResults]);
+
+  // Updated handleApiKeySubmit to accept a single key and handle modal closing
+  const handleApiKeySubmit = (apiKey: string) => {
+    try {
+      const success = initializeGemini(apiKey);
+      if (success && checkApiKey()) {
+        setApiKeyProvided(true);
+        // Save the single API key to local storage
+        localStorage.setItem(API_KEY_STORAGE_KEY, apiKey);
+        setIsApiKeyModalOpen(false); // Close modal on success
+
+        toast({
+          title: "API Key configured successfully",
+          description: "Processing your request..."
+        });
+
+      } else {
+        // Initialization failed (likely invalid key)
+        setApiKeyProvided(false);
+        localStorage.removeItem(API_KEY_STORAGE_KEY); // Ensure invalid key isn't stored
+        // Keep modal open, show error within the modal or via toast
+        toast({
+          title: "Invalid API key",
+          description: "The API key provided appears to be invalid or failed to initialize. Please check and try again.",
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      setApiKeyProvided(false);
+      localStorage.removeItem(API_KEY_STORAGE_KEY);
+      // Keep modal open, show error
+      toast({
+        title: "Error setting API key",
+        description: error instanceof Error ? error.message : "Please check your API key and try again.",
+        variant: "destructive"
+      });
     }
   };
 
