@@ -142,6 +142,9 @@ export const PomodoroProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const audioRef = useRef<HTMLAudioElement | null>(null);
     const { toast } = useToast();
     const completionProcessed = useRef(false); // Ref to prevent double completion processing
+    const intervalRef = useRef<NodeJS.Timeout | null>(null); // Ref to store interval ID
+    const startTimeRef = useRef<number | null>(null); // Ref to store the timestamp when the timer started/resumed
+    const pauseTimeRef = useRef<number>(userSettings.pomodoro); // Ref to store remaining time when paused
 
     // Track the current page and store it if it's not the Pomodoro page
     useEffect(() => {
@@ -454,7 +457,7 @@ export const PomodoroProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         playAudio().catch(() => {
             setIsPlayingSound(true);
         });
-    }, [isMuted, timerType, toast]);
+    }, [isMuted, timerType, toast, isPlayingSound]);
 
     // Stop playing sound
     const stopSound = useCallback(() => {
@@ -566,6 +569,46 @@ export const PomodoroProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         setIsRunning(false);
     }, [completedPomodoros, timerType, playSound, userSettings, recordPomodoroSession, initialTime]);
 
+    // Handle timer type change
+    const handleTimerTypeChange = useCallback((type: TimerType) => {
+        // Stop the timer if it's running
+        if (isRunning) {
+            setIsRunning(false);
+        }
+        if (intervalRef.current) {
+            clearInterval(intervalRef.current);
+            intervalRef.current = null;
+        }
+
+        // Change the timer type
+        setTimerType(type);
+
+        // Always set the appropriate initial time for the selected timer type
+        let newInitialTime;
+        switch (type) {
+            case 'pomodoro':
+                newInitialTime = userSettings.pomodoro;
+                resetTasksInPomodoro(); // Reset tasks when switching to pomodoro
+                break;
+            case 'shortBreak':
+                newInitialTime = userSettings.shortBreak;
+                break;
+            case 'longBreak':
+                newInitialTime = userSettings.longBreak;
+                break;
+        }
+
+        // Reset the timer to the new initial time
+        setTimer(newInitialTime);
+        setInitialTime(newInitialTime);
+        pauseTimeRef.current = newInitialTime; // Update pause ref
+        completionProcessed.current = false; // Reset completion flag
+        startTimeRef.current = null; // Reset start time
+        setIsTimerCompleted(false); // Ensure completion dialog is closed
+        stopSound(); // Stop any completion sound
+
+    }, [isRunning, userSettings, stopSound, resetTasksInPomodoro]);
+
     // Handle starting the next timer phase
     const handleStartNextPhase = useCallback(() => {
         // Stop the alarm sound
@@ -598,85 +641,133 @@ export const PomodoroProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             // Set the timer and begin
             setTimer(nextDuration);
             setInitialTime(nextDuration);
+            pauseTimeRef.current = nextDuration; // Set pause time for the new phase
             completionProcessed.current = false; // Reset flag for the new timer phase
+            startTimeRef.current = null; // Ensure start time is reset before potentially setting isRunning
 
             // Handle navigation first before changing timer state
             // If this is starting a break, navigate to the Pomodoro page
+            const startTimer = () => {
+                startTimeRef.current = Date.now(); // Set start time *just before* running
+                setIsRunning(true);
+                setNextTimerType(null);
+            };
+
             if ((nextType === 'shortBreak' || nextType === 'longBreak') && location.pathname !== '/pomodoro') {
-                // Store current path for later return
                 setPreviousPagePath(location.pathname);
-                
-                // Perform navigation immediately
                 navigate('/pomodoro');
-                
-                // Small delay to ensure navigation completes before state updates
-                setTimeout(() => {
-                    setIsRunning(true);
-                    setNextTimerType(null);
-                }, 50);
-                
-                return; // Exit early as we're handling state updates after navigation
+                setTimeout(startTimer, 50); // Start timer after navigation
+                return;
             }
-            // If we're starting a new pomodoro after a break and we have a previous page to return to
             else if (nextType === 'pomodoro' && location.pathname === '/pomodoro' && previousPagePath) {
-                // Navigate back to the previous page
                 navigate(previousPagePath);
-                
-                // Small delay to ensure navigation completes before state updates
-                setTimeout(() => {
-                    setIsRunning(true);
-                    setNextTimerType(null);
-                }, 50);
-                
-                return; // Exit early as we're handling state updates after navigation
+                setTimeout(startTimer, 50); // Start timer after navigation
+                return;
             }
-            
-            // For cases where no navigation is needed
-            setIsRunning(true);
-            setNextTimerType(null);
+
+            // Start immediately if no navigation
+            startTimer();
         }
     }, [nextTimerType, stopSound, userSettings, navigate, location.pathname, setPreviousPagePath, resetTasksInPomodoro]);
 
-    // Timer tick effect
+    // Timer tick effect - uses Date.now() for accuracy
     useEffect(() => {
-        let interval: NodeJS.Timeout | null = null;
-        if (isRunning && timer > 0) {
-            // Reset flag when timer starts running (or resumes)
-            completionProcessed.current = false;
+        if (isRunning) {
+            // If startTimeRef is not set, initialize it (handles resuming)
+            if (startTimeRef.current === null) {
+                startTimeRef.current = Date.now();
+                // Ensure pauseTimeRef holds the correct starting value for this run
+                // pauseTimeRef.current = timer; // This is set correctly in toggleTimer/handleStartNextPhase
+            }
 
-            interval = setInterval(() => {
-                setTimer(prevTime => {
-                    if (prevTime <= 1) {
-                        clearInterval(interval!);
-                        // Check flag *before* calling handleTimerComplete
-                        if (!completionProcessed.current) {
-                            completionProcessed.current = true; // Set flag immediately
-                            handleTimerComplete();
-                        }
-                        return 0;
+            // Clear any existing interval before starting a new one
+            if (intervalRef.current) {
+                clearInterval(intervalRef.current);
+            }
+
+            intervalRef.current = setInterval(() => {
+                if (!startTimeRef.current) return; // Should not happen if isRunning is true, but safety check
+
+                const elapsed = Date.now() - startTimeRef.current; // Elapsed time since start/resume
+                // Calculate remaining based on initial pause time (stored in pauseTimeRef) and total elapsed
+                const remainingTime = pauseTimeRef.current - Math.floor(elapsed / 1000);
+
+                if (remainingTime <= 0) {
+                    setTimer(0);
+                    if (intervalRef.current) clearInterval(intervalRef.current);
+                    intervalRef.current = null;
+                    startTimeRef.current = null; // Reset start time
+
+                    if (!completionProcessed.current) {
+                        completionProcessed.current = true;
+                        handleTimerComplete();
                     }
-                    return prevTime - 1;
-                });
-            }, 1000);
+                } else {
+                    // Use functional update to avoid direct dependency on 'timer' state if possible,
+                    // but direct set is okay here as calculation is based on refs and Date.now()
+                    setTimer(remainingTime);
+                }
+            }, 250); // Check more frequently for better responsiveness
+
+        } else {
+            // Clear interval when paused or stopped
+            if (intervalRef.current) {
+                clearInterval(intervalRef.current);
+                intervalRef.current = null;
+            }
+            // DO NOT reset startTimeRef here when pausing, it's needed for resuming accurately.
+            // pauseTimeRef is updated in toggleTimer.
         }
+
+        // Cleanup function
         return () => {
-            if (interval) clearInterval(interval);
+            if (intervalRef.current) {
+                clearInterval(intervalRef.current);
+                intervalRef.current = null;
+            }
         };
-    }, [isRunning, timer, handleTimerComplete]);    
-    
-    // Handle timer type change
-    const handleTimerTypeChange = (type: TimerType) => {
-        if (type === timerType) return; // Don't do anything if it's the same type
+    }, [isRunning, handleTimerComplete, timer]); // Added 'timer' to dependencies to satisfy lint rule
 
-        // Change the timer type
-        setTimerType(type);
+    // Toggle timer running state
+    const toggleTimer = () => {
+        const newIsRunning = !isRunning;
 
-        // Always set the appropriate initial time for the selected timer type
+        if (newIsRunning) {
+            // Starting the timer
+            setIsTimerVisibleInNavbar(true);
+            // Set start time and ensure pauseTimeRef has the current timer value
+            startTimeRef.current = Date.now();
+            pauseTimeRef.current = timer; // Store the time we are starting *from*
+
+            if (timerType === 'pomodoro' && timer === initialTime) {
+                resetTasksInPomodoro();
+            }
+        } else {
+            // Pausing the timer
+            if (intervalRef.current) {
+                clearInterval(intervalRef.current);
+                intervalRef.current = null;
+            }
+            pauseTimeRef.current = timer; // Store remaining time when pausing
+        }
+
+        setIsRunning(newIsRunning);
+    };
+
+    // Reset the current timer
+    const resetTimer = () => {
+        setIsRunning(false); // Stop the timer
+        completionProcessed.current = false; // Reset flag on manual reset
+        startTimeRef.current = null; // Reset start time ref
+        if (intervalRef.current) { // Clear any active interval
+            clearInterval(intervalRef.current);
+            intervalRef.current = null;
+        }
+
         let newInitialTime;
-        switch (type) {
+        switch (timerType) {
             case 'pomodoro':
                 newInitialTime = userSettings.pomodoro;
-                // Reset the task in pomodoro counter when switching to a new pomodoro session
                 resetTasksInPomodoro();
                 break;
             case 'shortBreak':
@@ -686,53 +777,9 @@ export const PomodoroProvider: React.FC<{ children: React.ReactNode }> = ({ chil
                 newInitialTime = userSettings.longBreak;
                 break;
         }
-
-        // Always update the initialTime to show the correct max value
+        setTimer(newInitialTime);
         setInitialTime(newInitialTime);
-
-        // Only reset the current time if not running
-        if (!isRunning) {
-            setTimer(newInitialTime);
-            completionProcessed.current = false; // Reset flag if timer is reset
-        }
-    };
-
-    // Toggle timer running state
-    const toggleTimer = () => {
-        const newIsRunning = !isRunning;
-        setIsRunning(newIsRunning);
-        
-        // Show timer in navbar when running
-        if (newIsRunning) {
-            setIsTimerVisibleInNavbar(true);
-            
-            // If we're starting a new pomodoro session, reset the task counter
-            if (timerType === 'pomodoro' && timer === initialTime) {
-                resetTasksInPomodoro();
-            }
-        }
-    };
-
-    // Reset the current timer
-    const resetTimer = () => {
-        setIsRunning(false);
-        completionProcessed.current = false; // Reset flag on manual reset
-        switch (timerType) {
-            case 'pomodoro':
-                setTimer(userSettings.pomodoro);
-                setInitialTime(userSettings.pomodoro);
-                // Reset the task in pomodoro counter when manually resetting
-                resetTasksInPomodoro();
-                break;
-            case 'shortBreak':
-                setTimer(userSettings.shortBreak);
-                setInitialTime(userSettings.shortBreak);
-                break;
-            case 'longBreak':
-                setTimer(userSettings.longBreak);
-                setInitialTime(userSettings.longBreak);
-                break;
-        }
+        pauseTimeRef.current = newInitialTime; // Reset pause time ref
     };
 
     // Toggle mute state
@@ -752,7 +799,7 @@ export const PomodoroProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         formatTime,
         toggleTimer,
         resetTimer,
-        handleTimerTypeChange,
+        handleTimerTypeChange, // Ensure it's included here
         handleStartNextPhase,
         toggleMute,
         stopSound,
