@@ -72,7 +72,7 @@ export const extractKeyTerms = async (
     // Create a new model instance with the current API key
     const genAI = new GoogleGenerativeAI(apiKey);
     const model = genAI.getGenerativeModel({
-      model: "gemini-2.0-flash-lite",
+      model: "gemini-1.5-flash",
       generationConfig: {
         temperature: 0.1,             // Lower temperature for more deterministic extraction
         maxOutputTokens: 100000,      // Maximized output tokens limit
