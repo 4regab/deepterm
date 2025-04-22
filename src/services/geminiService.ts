@@ -72,7 +72,7 @@ export const extractKeyTerms = async (
     // Create a new model instance with the current API key
     const genAI = new GoogleGenerativeAI(apiKey);
     const model = genAI.getGenerativeModel({
-      model: "gemini-1.5-flash",
+      model: "gemini-2.0-flash-lite",
       generationConfig: {
         temperature: 0.1,             // Lower temperature for more deterministic extraction
         maxOutputTokens: 100000,      // Maximized output tokens limit
@@ -177,20 +177,43 @@ export const extractKeyTerms = async (
       try {
         result = await model.generateContent(prompt);
         console.log(`Successfully processed content on attempt ${retryCount + 1}`);
-        break;
+        break; // Success, exit loop
       } catch (error) {
         retryCount++;
-        console.error(`Error on attempt ${retryCount}:`, error.message);
+        console.error(`Error on attempt ${retryCount}:`, error instanceof Error ? error.message : String(error));
 
-        if (retryCount >= maxRetries) {
-          throw new Error(`Failed after ${maxRetries} attempts: ${error.message}`);
+        // Check if it's a 503 error and if we should retry
+        const isServiceUnavailable = error instanceof Error && error.message.includes('[503]');
+
+        if (isServiceUnavailable && retryCount < maxRetries) {
+          // Wait before retrying with exponential backoff only for 503
+          const backoffTime = 1000 * Math.pow(2, retryCount - 1); // e.g., 1s, 2s, 4s
+          console.log(`Service unavailable (503). Retrying attempt ${retryCount + 1} in ${backoffTime}ms...`);
+          await new Promise(resolve => setTimeout(resolve, backoffTime));
+        } else {
+          // If it's not a 503 error or retries exhausted, prepare to re-throw
+          let finalError = error;
+          if (isServiceUnavailable && retryCount >= maxRetries) {
+              console.error(`Failed after ${maxRetries} attempts due to service unavailability (503).`);
+              finalError = new Error(`Failed after ${maxRetries} attempts due to service unavailability (503). Original error: ${error instanceof Error ? error.message : String(error)}`);
+          } else {
+              console.error(`Non-retryable error or unexpected issue on attempt ${retryCount}.`);
+              // Ensure we're throwing an actual Error object
+              if (!(error instanceof Error)) {
+                finalError = new Error(`An unexpected error occurred: ${String(error)}`);
+              }
+          }
+          // Re-throw the original or wrapped error to be handled upstream
+          throw finalError;
         }
-
-        // Wait before retrying with exponential backoff
-        const backoffTime = 1000 * Math.pow(2, retryCount);
-        console.log(`Retrying in ${backoffTime}ms...`);
-        await new Promise(resolve => setTimeout(resolve, backoffTime));
       }
+    }
+    // If loop finished due to retries exhausted, the error would have been thrown inside.
+    // If we reach here, 'result' must be defined. Add a check for robustness.
+    if (!result) {
+        // This case should theoretically not be reached if the logic above is correct.
+        console.error("Reached end of retry logic without a result or error being thrown.");
+        throw new Error(`Failed to generate content after ${maxRetries} attempts. Unknown state.`);
     }
 
     // Extract JSON from the response
