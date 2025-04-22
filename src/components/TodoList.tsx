@@ -4,6 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { PlusIcon, Trash2, ChevronDown, ChevronUp, ChevronRight, ChevronLeft, ListTodo } from "lucide-react";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { useUserProfile } from "@/hooks/useUserProfile"; // Import the useUserProfile hook
 
 type TodoItem = {
   id: number;
@@ -16,6 +18,9 @@ interface TodoListProps {
 }
 
 export const TodoList: React.FC<TodoListProps> = ({ onVisibilityChange }) => {
+  // Use the user profile context to track task completion
+  const { trackTaskCompleted, trackTaskCreated } = useUserProfile();
+  
   // Get todos from localStorage or use empty array as default
   const [todos, setTodos] = useState<TodoItem[]>(() => {
     const savedTodos = localStorage.getItem('pomodoro-todos');
@@ -28,6 +33,8 @@ export const TodoList: React.FC<TodoListProps> = ({ onVisibilityChange }) => {
     // Default to minimized (true) if not set
     return savedState ? JSON.parse(savedState) : true;
   });
+  
+  const isMobile = useIsMobile();
   
   // Save todos to localStorage whenever they change
   useEffect(() => {
@@ -62,42 +69,69 @@ export const TodoList: React.FC<TodoListProps> = ({ onVisibilityChange }) => {
     
     setTodos([...todos, newTodo]);
     setNewTodoText("");
+    
+    // Track that a new task was created
+    trackTaskCreated();
   };
 
   const toggleTodo = (id: number) => {
+    let taskCompleted = false;
+    let taskText = '';
+    
     setTodos(
-      todos.map(todo => 
-        todo.id === id ? { ...todo, completed: !todo.completed } : todo
-      )
+      todos.map(todo => {
+        if (todo.id === id) {
+          // If the task is being completed (not uncompleted)
+          if (!todo.completed) {
+            taskCompleted = true;
+            taskText = todo.text;
+          }
+          return { ...todo, completed: !todo.completed };
+        }
+        return todo;
+      })
     );
+    
+    // Track task completion in the profile system
+    if (taskCompleted && taskText) {
+      trackTaskCompleted(taskText);
+    }
   };
 
   const deleteTodo = (id: number) => {
     setTodos(todos.filter(todo => todo.id !== id));
   };
 
-  // If todolist is minimized, render a compact sidebar button
+  // If todolist is minimized, render a compact button
   if (isMinimized) {
+    // Apply fixed positioning only on mobile
+    const mobileFixedClasses = isMobile ? "fixed bottom-4 right-4 z-[9999]" : "w-full";
+    const mobileJustify = isMobile ? "justify-end" : "justify-start";
+
     return (
-      <div className="flex justify-end lg:justify-start h-full">
+      <div className={`flex ${mobileJustify} h-full`}>
         <Button
           variant="outline"
           onClick={() => setIsMinimized(false)}
-          className="neo-border shadow-neo-sm bg-white hover:bg-gray-50 transition-colors py-4 px-3 fixed lg:relative"
+          className={`neo-border shadow-neo bg-white hover:bg-gray-50 transition-colors py-4 px-3 ${mobileFixedClasses}`}
           aria-label="Expand task list"
         >
-          <div className="flex flex-col lg:flex-row items-center gap-2">
+          <div className="flex flex-row items-center gap-2">
             <div className="w-8 h-8 flex items-center justify-center rounded-md bg-[#FFC225] neo-border">
               <ListTodo className="h-4 w-4 text-[#1a1a1a]" />
             </div>
-            <span className="text-sm font-medium">
+            <span className="text-sm font-medium hidden sm:inline">
               To do list{todos.filter(todo => !todo.completed).length > 0 && (
                 <span className="ml-1 bg-gray-100 px-2 py-0.5 rounded-full text-xs">
                   {todos.filter(todo => !todo.completed).length}
                 </span>
               )}
             </span>
-            <ChevronLeft className="h-4 w-4 hidden lg:block ml-1" />
+            {isMobile ? (
+              <ChevronUp className="h-4 w-4" />
+            ) : (
+              <ChevronLeft className="h-4 w-4" />
+            )}
           </div>
         </Button>
       </div>
@@ -105,7 +139,7 @@ export const TodoList: React.FC<TodoListProps> = ({ onVisibilityChange }) => {
   }
   
   return (
-    <Card className="neo-box overflow-hidden h-full">
+    <Card className="neo-box overflow-hidden h-full w-[95%] mx-auto max-w-[800px]">
       <CardContent className="p-4 md:p-6">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
@@ -119,7 +153,7 @@ export const TodoList: React.FC<TodoListProps> = ({ onVisibilityChange }) => {
                 <path d="M2 12a10 10 0 0 0 17.54 6.77" />
               </svg>
             </div>
-            <h3 className="text-lg font-bold">Tasks</h3>
+            <h3 className="text-lg font-bold">To Do</h3>
             <span className="text-xs bg-gray-100 px-2 py-1 rounded-full ml-2">
               {todos.filter(todo => !todo.completed).length} remaining
             </span>
@@ -132,7 +166,11 @@ export const TodoList: React.FC<TodoListProps> = ({ onVisibilityChange }) => {
             onClick={() => setIsMinimized(true)}
             aria-label="Minimize task list"
           >
-            <ChevronUp className="h-5 w-5" />
+            {isMobile ? (
+              <ChevronUp className="h-5 w-5" />
+            ) : (
+              <ChevronRight className="h-5 w-5" />
+            )}
           </Button>
         </div>
         
@@ -152,7 +190,7 @@ export const TodoList: React.FC<TodoListProps> = ({ onVisibilityChange }) => {
           </Button>
         </form>
         
-        <div className="space-y-3 max-h-[400px] overflow-y-auto pr-1">
+        <div className="space-y-3 max-h-[60vh] lg:max-h-[400px] overflow-y-auto pr-1">
           {todos.length === 0 ? (
             <p className="text-gray-500 text-center py-4 text-sm">
               Add tasks to track during your Pomodoro sessions

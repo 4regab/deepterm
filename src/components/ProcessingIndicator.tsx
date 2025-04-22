@@ -1,4 +1,3 @@
-
 import { Progress } from "@/components/ui/progress";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ExtractionMode } from "@/services/geminiService";

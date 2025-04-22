@@ -1,4 +1,4 @@
-import { Github, Mail } from "lucide-react";
+import { Coffee, Mail } from "lucide-react"; // Changed Github to Coffee
 import { Link } from "react-router-dom";
 const Footer = () => {
   return <footer className="bg-white neo-border-t mt-auto py-10">
@@ -47,11 +47,15 @@ const Footer = () => {
           <h3 className="font-bold mb-4 text-lg text-[#1a1a1a]">Connect</h3>
           <div className="flex flex-col gap-3">
             {/* Align link content to start (left) on all screen sizes */}
-            <a href="mailto:4regab@gmail.com" className="text-gray-700 hover:text-[#FF5C00] transition-colors flex items-center justify-start gap-2">
+            <a href="mailto:contact@4regab.com" className="text-gray-700 hover:text-[#FF5C00] transition-colors flex items-center justify-start gap-2">
               <Mail className="h-4 w-4" />
               <span>Email Us</span>
             </a>
             {/* Align link content to start (left) on all screen sizes */}
+            <a href="https://ko-fi.com/deepterm" target="_blank" rel="noopener noreferrer" className="text-gray-700 hover:text-[#FF5C00] transition-colors flex items-center justify-start gap-2">
+              <Coffee className="h-4 w-4" /> {/* Changed Github icon to Coffee */}
+              <span>Donate on Ko-fi</span> {/* Changed text */}
+            </a>
           </div>
         </div>
       </div>

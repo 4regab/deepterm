@@ -360,18 +360,6 @@ const ResultsDisplay = ({ result, onReset, originalFilename }: ResultsDisplayPro
             <div className="flex items-start gap-3">
               <BrainCog className="h-10 w-10 text-purple-600 shrink-0 mt-1" />
               <div>
-                <h3 className="font-semibold text-neo-black text-lg mb-2">Test your knowledge</h3>
-                <p className="text-neo-black text-sm mb-3">
-                  Take these extracted notes to create a quiz using verbatim mode in QuillBro to improve retention and understanding.
-                </p>
-                <a
-                  href="https://quillbro.live/quiz"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 text-sm font-medium text-purple-600 hover:text-purple-800 transition-colors"
-                >
-                  Create a quiz in QuillBro <ExternalLink className="h-3 w-3" />
-                </a>
               </div>
             </div>
           </div>
