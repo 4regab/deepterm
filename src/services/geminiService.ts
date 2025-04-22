@@ -371,7 +371,9 @@ export const extractKeyTerms = async (
         // Clean examples array
         if (term.examples && Array.isArray(term.examples)) {
           term.examples = term.examples
-            .map(example => example.replace(/^[\s•\-–—*]+/, '').trim())
+            // Ensure we only process string elements
+            .filter(example => typeof example === 'string')
+            .map(example => (example as string).replace(/^[\s•\-–—*]+/, '').trim())
             .filter(ex => ex && ex.length > 0);
 
           // Remove duplicates
@@ -381,7 +383,9 @@ export const extractKeyTerms = async (
         // Clean subcategories
         if (term.subcategories && Array.isArray(term.subcategories)) {
           term.subcategories = term.subcategories
-            .map(sub => sub.replace(/^[\s•\-–—*\d]+[.)]+\s*/, '').trim())
+            // Ensure we only process string elements
+            .filter(sub => typeof sub === 'string')
+            .map(sub => (sub as string).replace(/^[\s•\-–—*\d]+[.)]+\s*/, '').trim())
             .filter(sub => sub && sub.length > 0);
 
           // Remove duplicates
