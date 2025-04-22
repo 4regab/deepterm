@@ -22,6 +22,20 @@ const PrivacyPolicy = () => {
               Welcome to DeepTerm ("we," "our," or "us"). We respect your privacy and are committed to protecting your personal data. 
               This privacy policy will inform you about how we look after your personal data when you visit our website and tell you about your privacy rights.
             </p>
+
+            <h2>Gemini API Integration</h2>
+            <p>Our service uses Google's Gemini API for text processing. Here's how we handle your data:</p>
+            <ul>
+              <li><strong>API Keys:</strong> Your Gemini API key is stored exclusively in your browser's localStorage. We do not collect, store, or transmit your API key to our servers or databases.</li>
+              <li><strong>Data Processing:</strong> When you use our text processing features:
+                <ul>
+                  <li>Text processing occurs directly between your browser and Google's Gemini API</li>
+                  <li>We do not store your processed content on our servers</li>
+                  <li>Data handling and privacy are subject to Google's Gemini API terms and privacy policy</li>
+                </ul>
+              </li>
+              <li><strong>Data Collection:</strong> We do not collect or store your processed text or extraction results on our servers. All results are stored locally in your browser.</li>
+            </ul>
             
             <h2>Data We Collect</h2>
             <p>We may collect, use, store and transfer different kinds of personal data about you which we have grouped together as follows:</p>

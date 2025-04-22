@@ -3,15 +3,28 @@ import Navbar from "@/components/Navbar";
 import TodoList from "@/components/TodoList";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogClose } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { TimerType, usePomodoroContext } from "@/context/PomodoroContext";
+import { useToast } from "@/components/ui/use-toast";
+import { 
+  DEFAULT_SETTINGS, 
+  NOTIFICATION_SOUND_URL, 
+  StudySession, 
+  TimerType, // Import TimerType directly from here
+  formatDuration, 
+  formatTime, 
+  getFormattedDate 
+} from "@/context/pomodoroUtils";
+import { usePomodoroContext } from "@/hooks/usePomodoroContext"; // Corrected import path
 import { useIsMobile } from "@/hooks/use-mobile";
-import { CheckCircle2, Clock, Coffee, InfoIcon, Pause, Play, RefreshCcw, Settings, Timer, Volume2, VolumeX } from "lucide-react";
+import { CheckCircle2, Clock, Coffee, Flame, InfoIcon, Pause, Play, RefreshCcw, Settings, Timer, Volume2, VolumeX, ChevronRight } from "lucide-react";
 import { useEffect, useState } from "react";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { ChevronDown, ChevronUp } from "lucide-react";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 const Pomodoro = () => {
   // Use global Pomodoro context
@@ -41,7 +54,15 @@ const Pomodoro = () => {
     isSettingsDialogOpen,
     setIsSettingsDialogOpen,
     setTimer,
-    setInitialTime
+    setInitialTime,
+    // Streak related
+    studyStreak,
+    studySessions,
+    isStreakDialogOpen,
+    setIsStreakDialogOpen,
+    totalStudyTimeToday,
+    formatDuration,
+    getFormattedDate
   } = usePomodoroContext();
 
   // Local state for settings form
@@ -57,6 +78,8 @@ const Pomodoro = () => {
     const savedState = localStorage.getItem('pomodoro-todos-minimized');
     return savedState ? !JSON.parse(savedState) : true;
   });
+
+  const [isExpanded, setIsExpanded] = useState(true);
 
   const isMobile = useIsMobile();
 
@@ -75,20 +98,19 @@ const Pomodoro = () => {
         pomodorosUntilLongBreak: userSettings.pomodorosUntilLongBreak
       });
     }
-  }, [isSettingsDialogOpen, userSettings]);
+  }, [isSettingsDialogOpen, userSettings.pomodoro, userSettings.shortBreak, userSettings.longBreak, userSettings.pomodorosUntilLongBreak]);
 
   // Toggle todo list visibility
   const toggleTodoListVisibility = () => {
     setIsTodoListVisible(prev => !prev);
   };
-
   // Handle settings form submission
   const handleSaveSettings = () => {
-    // Validate inputs
-    const pomodoro = Math.max(1, Math.min(120, settingsForm.pomodoro));
-    const shortBreak = Math.max(1, Math.min(30, settingsForm.shortBreak));
-    const longBreak = Math.max(1, Math.min(60, settingsForm.longBreak));
-    const pomodorosUntilLongBreak = Math.max(1, Math.min(10, settingsForm.pomodorosUntilLongBreak));
+    // Validate inputs - ensure values are numbers and within range
+    const pomodoro = Math.max(1, Math.min(999, Number(settingsForm.pomodoro) || 1));
+    const shortBreak = Math.max(1, Math.min(999, Number(settingsForm.shortBreak) || 1));
+    const longBreak = Math.max(1, Math.min(999, Number(settingsForm.longBreak) || 1));
+    const pomodorosUntilLongBreak = Math.max(1, Math.min(99, Number(settingsForm.pomodorosUntilLongBreak) || 1));
 
     // Convert minutes to seconds
     const newSettings = {
@@ -166,6 +188,33 @@ const Pomodoro = () => {
     }
   };
 
+  // Get study sessions grouped by date
+  const getStudySessionsByDate = () => {
+    // Group sessions by date
+    const sessionsByDate = studySessions.reduce<{[date: string]: number}>((acc, session) => {
+      // Get date in YYYY-MM-DD format for grouping
+      const date = new Date(session.date);
+      const dateKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+      
+      // Sum durations for the same date
+      if (!acc[dateKey]) {
+        acc[dateKey] = 0;
+      }
+      acc[dateKey] += session.duration;
+      
+      return acc;
+    }, {});
+
+    // Convert to array and sort by date (newest first)
+    return Object.entries(sessionsByDate)
+      .map(([date, duration]) => ({ 
+        date, 
+        duration,
+        displayDate: getFormattedDate(date)
+      }))
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  };
+
   const { bgColor, iconColor, borderColor } = getTimerTypeStyles();
   const progress = calculateProgress();
 
@@ -197,7 +246,7 @@ const Pomodoro = () => {
     return () => {
       document.title = 'Pomodoro Timer';
     };
-  }, [timer, timerType, isTimerCompleted, isRunning]);
+  }, [timer, timerType, isTimerCompleted, isRunning, formatTime]);
 
   // Function to display the appropriate timer value for the current timer type
   const getDisplayTime = () => {
@@ -236,6 +285,46 @@ const Pomodoro = () => {
         preload="auto"
         className="hidden"
       />
+
+      {/* Study Streak History Dialog */}
+      <Dialog open={isStreakDialogOpen} onOpenChange={setIsStreakDialogOpen}>
+        <DialogContent className="sm:max-w-md rounded-xl bg-white max-h-[80vh]">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold">Study History</DialogTitle>
+            <DialogDescription>
+              Your completed Pomodoro sessions history
+            </DialogDescription>
+          </DialogHeader>
+          
+          <ScrollArea className="h-[50vh] pr-4">
+            <div className="space-y-4">
+              {getStudySessionsByDate().length > 0 ? (
+                getStudySessionsByDate().map((sessionGroup, index) => (
+                  <div key={index} className="py-3 border-b last:border-0">
+                    <div className="flex justify-between items-center">
+                      <h3 className="font-bold">{sessionGroup.displayDate}</h3>
+                      <span className="bg-[#FFF9EB] px-3 py-1 rounded-full text-sm font-medium neo-border">
+                        {formatDuration(sessionGroup.duration)}
+                      </span>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="text-center py-10 text-gray-500">
+                  <p>No study sessions recorded yet.</p>
+                  <p className="mt-2">Complete your first Pomodoro to start tracking!</p>
+                </div>
+              )}
+            </div>
+          </ScrollArea>
+          
+          <DialogFooter className="flex-col sm:flex-row gap-2">
+            <DialogClose asChild>
+              <Button className="w-full sm:w-auto">Close</Button>
+            </DialogClose>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Timer Completion Dialog */}
       <Dialog open={isTimerCompleted} onOpenChange={(open) => {
@@ -314,60 +403,89 @@ const Pomodoro = () => {
           <DialogHeader>
             <DialogTitle className="text-xl font-bold">Timer Settings</DialogTitle>
             <DialogDescription>
-              Customize your Pomodoro cycle durations
+              Enter time in minutes (up to 999)
             </DialogDescription>
           </DialogHeader>
 
-          <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid gap-6 py-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
               <div className="flex flex-col gap-2">
-                <Label htmlFor="pomodoroMinutes">Pomodoro (minutes)</Label>
+                <Label htmlFor="pomodoroMinutes">Focus Time</Label>
                 <Input
                   id="pomodoroMinutes"
-                  type="number"
-                  min="1"
-                  max="120"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
                   value={settingsForm.pomodoro}
-                  onChange={(e) => setSettingsForm({ ...settingsForm, pomodoro: parseInt(e.target.value) || 1 })}
-                  className="neo-border"
+                  onChange={(e) => {
+                    const value = e.target.value === '' ? '' : Math.min(999, parseInt(e.target.value) || 1);
+                    setSettingsForm({ ...settingsForm, pomodoro: Number(value) || 1 });
+                  }}
+                  onBlur={(e) => {
+                    const value = e.target.value === '' ? 1 : Math.min(999, parseInt(e.target.value) || 1);
+                    setSettingsForm({ ...settingsForm, pomodoro: Number(value) });
+                  }}
+                  className="neo-border text-2xl h-14 text-center font-mono [-moz-appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                  placeholder="25"
                 />
               </div>
+
               <div className="flex flex-col gap-2">
-                <Label htmlFor="shortBreakMinutes">Short Break (minutes)</Label>
+                <Label htmlFor="shortBreakMinutes">Short Break</Label>
                 <Input
                   id="shortBreakMinutes"
-                  type="number"
-                  min="1"
-                  max="30"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
                   value={settingsForm.shortBreak}
-                  onChange={(e) => setSettingsForm({ ...settingsForm, shortBreak: parseInt(e.target.value) || 1 })}
-                  className="neo-border"
+                  onChange={(e) => {
+                    const value = e.target.value === '' ? '' : Math.min(999, parseInt(e.target.value) || 1);
+                    setSettingsForm({ ...settingsForm, shortBreak: Number(value) || 1 });
+                  }}
+                  onBlur={(e) => {
+                    const value = e.target.value === '' ? 1 : Math.min(999, parseInt(e.target.value) || 1);
+                    setSettingsForm({ ...settingsForm, shortBreak: Number(value) });
+                  }}
+                  className="neo-border text-2xl h-14 text-center font-mono [-moz-appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                  placeholder="5"
                 />
               </div>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+
               <div className="flex flex-col gap-2">
-                <Label htmlFor="longBreakMinutes">Long Break (minutes)</Label>
+                <Label htmlFor="longBreakMinutes">Long Break</Label>
                 <Input
                   id="longBreakMinutes"
-                  type="number"
-                  min="1"
-                  max="60"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
                   value={settingsForm.longBreak}
-                  onChange={(e) => setSettingsForm({ ...settingsForm, longBreak: parseInt(e.target.value) || 1 })}
-                  className="neo-border"
+                  onChange={(e) => {
+                    const value = e.target.value === '' ? '' : Math.min(999, parseInt(e.target.value) || 1);
+                    setSettingsForm({ ...settingsForm, longBreak: Number(value) || 1 });
+                  }}
+                  onBlur={(e) => {
+                    const value = e.target.value === '' ? 1 : Math.min(999, parseInt(e.target.value) || 1);
+                    setSettingsForm({ ...settingsForm, longBreak: Number(value) });
+                  }}
+                  className="neo-border text-2xl h-14 text-center font-mono [-moz-appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                  placeholder="15"
                 />
               </div>
+
               <div className="flex flex-col gap-2">
-                <Label htmlFor="pomodorosUntilLongBreak">Pomodoros until Long Break</Label>
+                <Label htmlFor="pomodorosUntilLongBreak">Sessions Until Break</Label>
                 <Input
                   id="pomodorosUntilLongBreak"
-                  type="number"
-                  min="1"
-                  max="10"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
                   value={settingsForm.pomodorosUntilLongBreak}
-                  onChange={(e) => setSettingsForm({ ...settingsForm, pomodorosUntilLongBreak: parseInt(e.target.value) || 1 })}
-                  className="neo-border"
+                  onChange={(e) => {
+                    const value = e.target.value === '' ? '' : Math.min(99, parseInt(e.target.value) || 1);
+                    setSettingsForm({ ...settingsForm, pomodorosUntilLongBreak: value });
+                  }}
+                  onBlur={(e) => {
+                    const value = e.target.value === '' ? 1 : Math.min(99, parseInt(e.target.value) || 1);
+                    setSettingsForm({ ...settingsForm, pomodorosUntilLongBreak: value });
+                  }}
+                  className="neo-border text-2xl h-14 text-center font-mono [-moz-appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                  placeholder="4"
                 />
               </div>
             </div>
@@ -382,16 +500,61 @@ const Pomodoro = () => {
 
       <main className="container mx-auto px-4 py-8 flex-grow">
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold mb-2 relative inline-block">
-            Pomodoro Timer
-            <div className="absolute -bottom-1 left-0 w-full h-2 bg-[#FFC225] -z-10 transform -rotate-1"></div>
-          </h1>
-          <p className="text-gray-700 mt-3">Stay focused and productive with timed work sessions and task management</p>
+          <div className="inline-block -rotate-1 p-3 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] border-3 border-black bg-[#FF5C00] mb-3">
+            <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-white">
+              POMODORO TIMER
+            </h1>
+          </div>
+          <div className="block sm:inline-block mt-2 sm:mt-0">
+            <p className="text-[#1A1A1A] text-base sm:text-lg font-bold px-3 py-2 bg-[#FFC225] inline-block border-2 border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]">
+              Stay focused and productive with timed work sessions and task management
+            </p>
+          </div>
         </div>
 
         <div className={`grid grid-cols-1 ${isTodoListVisible ? 'lg:grid-cols-3' : 'lg:grid-cols-1'} gap-6 max-w-6xl mx-auto`}>
           <div className={isTodoListVisible ? 'lg:col-span-2' : 'lg:col-span-1'}>
             <div className={`${isTodoListVisible ? 'max-w-2xl mx-auto lg:max-w-none' : 'max-w-2xl mx-auto'}`}>
+
+              {/* Days Streak Card */}
+              <Card className="mb-8 neo-box overflow-hidden bg-white">
+                <CardContent className="p-6">
+                  <button 
+                    onClick={() => setIsStreakDialogOpen(true)}
+                    className="w-full flex items-center justify-between hover:bg-[#FFF9EB] transition-colors p-2 rounded-md"
+                  >
+                    <div className="flex items-center gap-2">
+                      <div className={`p-2 rounded-md bg-[#FFA726] shadow-neo-sm neo-border`}>
+                        <Flame 
+                          className={`w-5 h-5 ${
+                            studyStreak === 0 
+                              ? 'text-gray-300' // No color when no streak
+                              : studyStreak === 1 
+                                ? 'text-opacity-50 text-white' // 50% color when 1 day streak
+                                : studyStreak === 2 
+                                  ? 'text-opacity-75 text-white' // 75% color when 2 day streak
+                                  : 'text-white' // Full color when 3+ day streak
+                          }`} 
+                        />
+                      </div>
+                      <div className="text-left">
+                        <h3 className="font-bold text-lg">
+                          {studyStreak > 0 ? `${studyStreak} day streak` : 'Start your streak'}
+                        </h3>
+                        <p className="text-sm text-gray-600">
+                          {totalStudyTimeToday > 0 
+                            ? `Today: ${formatDuration(totalStudyTimeToday)}` 
+                            : 'No sessions completed today'}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1 text-gray-500">
+                      <span className="text-sm">View history</span>
+                      <ChevronRight className="w-4 h-4" />
+                    </div>
+                  </button>
+                </CardContent>
+              </Card>
 
               {/* Timer Type Tabs */}
               <Tabs
@@ -539,51 +702,64 @@ const Pomodoro = () => {
                 </CardContent>
               </Card>
 
-              {/* Technique Explanation */}
+              {/* Technique Explanation - Now Collapsible */}
               <Card className="overflow-hidden bg-white neo-box">
-                <CardContent className="p-6">
-                  <div className="flex items-center gap-2 mb-4">
-                    <InfoIcon className="w-5 h-5 text-[#FF5C00]" />
-                    <h3 className="text-xl font-bold">What is the Pomodoro Technique?</h3>
-                  </div>
-
-                  <p className="mb-4 text-gray-700">
-                    The Pomodoro Technique is a time management method developed by Francesco Cirillo
-                    in the late 1980s. It uses a timer to break work into intervals, traditionally
-                    25 minutes in length, separated by short breaks. Combined with our task management tool,
-                    you can track what you're working on during each session.
-                  </p>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
-                    <div className="p-4 bg-[#FFF9EB] rounded-md neo-border shadow-neo-sm">
-                      <h4 className="font-bold mb-2 flex items-center gap-2">
-                        <div className="w-5 h-5 flex items-center justify-center bg-[#FF5C00] rounded-md text-white text-xs font-bold">1</div>
-                        How to use it:
-                      </h4>
-                      <ol className="list-decimal pl-5 space-y-1 text-gray-700">
-                        <li>Choose a task to work on</li>
-                        <li>Start the Pomodoro (customizable)</li>
-                        <li>Work until the timer rings</li>
-                        <li>Take a short break (customizable)</li>
-                        <li>After {userSettings.pomodorosUntilLongBreak} pomodoros, take a longer break (customizable)</li>
-                      </ol>
+                <Collapsible open={isExpanded} onOpenChange={setIsExpanded}>
+                  <CollapsibleTrigger 
+                    className="w-full flex items-center justify-between p-4 hover:bg-gray-50 transition-colors"
+                  >
+                    <div className="flex items-center gap-2">
+                      <InfoIcon className="w-5 h-5 text-[#FF5C00]" />
+                      <h3 className="text-xl font-bold">What is the Pomodoro Technique?</h3>
                     </div>
+                    {isExpanded ? (
+                      <ChevronUp className="w-5 h-5" />
+                    ) : (
+                      <ChevronDown className="w-5 h-5" />
+                    )}
+                  </CollapsibleTrigger>
+                
+                  <CollapsibleContent>
+                    <div className="p-6">
+                      <p className="mb-4 text-gray-700">
+                        The Pomodoro Technique is a time management method developed by Francesco Cirillo
+                        in the late 1980s. It uses a timer to break work into intervals, traditionally
+                        25 minutes in length, separated by short breaks. Combined with our task management tool,
+                        you can track what you're working on during each session.
+                      </p>
 
-                    <div className="p-4 bg-[#FFF9EB] rounded-md neo-border shadow-neo-sm">
-                      <h4 className="font-bold mb-2 flex items-center gap-2">
-                        <div className="w-5 h-5 flex items-center justify-center bg-[#00C6C2] rounded-md text-white text-xs font-bold">2</div>
-                        Benefits:
-                      </h4>
-                      <ul className="list-disc pl-5 space-y-1 text-gray-700">
-                        <li>Improved focus and concentration</li>
-                        <li>Reduced mental fatigue</li>
-                        <li>Increased productivity</li>
-                        <li>Better work/break balance</li>
-                        <li>Enhanced time awareness</li>
-                      </ul>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
+                        <div className="p-4 bg-[#FFF9EB] rounded-md neo-border shadow-neo-sm">
+                          <h4 className="font-bold mb-2 flex items-center gap-2">
+                            <div className="w-5 h-5 flex items-center justify-center bg-[#FF5C00] rounded-md text-white text-xs font-bold">1</div>
+                            How to use it:
+                          </h4>
+                          <ol className="list-decimal pl-5 space-y-1 text-gray-700">
+                            <li>Choose a task to work on</li>
+                            <li>Start the Pomodoro (customizable)</li>
+                            <li>Work until the timer rings</li>
+                            <li>Take a short break (customizable)</li>
+                            <li>After {userSettings.pomodorosUntilLongBreak} pomodoros, take a longer break (customizable)</li>
+                          </ol>
+                        </div>
+
+                        <div className="p-4 bg-[#FFF9EB] rounded-md neo-border shadow-neo-sm">
+                          <h4 className="font-bold mb-2 flex items-center gap-2">
+                            <div className="w-5 h-5 flex items-center justify-center bg-[#00C6C2] rounded-md text-white text-xs font-bold">2</div>
+                            Benefits:
+                          </h4>
+                          <ul className="list-disc pl-5 space-y-1 text-gray-700">
+                            <li>Improved focus and concentration</li>
+                            <li>Reduced mental fatigue</li>
+                            <li>Increased productivity</li>
+                            <li>Better work/break balance</li>
+                            <li>Enhanced time awareness</li>
+                          </ul>
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                </CardContent>
+                  </CollapsibleContent>
+                </Collapsible>
               </Card>
             </div>
           </div>

@@ -199,24 +199,137 @@ export const extractKeyTerms = async (
 
     console.log(`Received response from Gemini, length: ${textResponse.length}`);
 
-    // Extract JSON from the response
-    const jsonMatch = textResponse.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) {
-      console.error("JSON extraction failed. Response:", textResponse.substring(0, 200));
-      throw new Error("Failed to extract JSON from the response");
-    }
-
-    const jsonString = jsonMatch[0];
-
-    // Validate JSON before parsing
+    // Improved JSON extraction with better handling of truncated responses
+    let extractionResult: ExtractionResult;
     try {
-      JSON.parse(jsonString);
+      // First attempt: try to find and parse JSON using regex
+      const jsonMatch = textResponse.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        const jsonString = jsonMatch[0];
+        try {
+          extractionResult = JSON.parse(jsonString);
+        } catch (error) {
+          console.warn("First JSON parse attempt failed, trying to repair:", error);
+          throw error; // Move to repair attempt
+        }
+      } else {
+        // If no JSON object found, try to reconstruct it from a truncated response
+        throw new Error("No JSON object found in response");
+      }
     } catch (error) {
-      console.error("Invalid JSON received:", jsonString.substring(0, 200));
-      throw new Error("Invalid JSON in the response");
-    }
+      console.warn("Using fallback JSON repair mechanism");
+      
+      // Fallback approach: repair truncated JSON
+      try {
+        // Check if the response appears to be truncated JSON
+        if (textResponse.includes('"title"') && textResponse.includes('"keyTerms"')) {
+          // Try to repair the truncated JSON structure
+          let repairAttempt = textResponse;
+          
+          // 1. If we have an opening bracket but not a closing one, add closing brackets
+          const openBraces = (textResponse.match(/\{/g) || []).length;
+          const closeBraces = (textResponse.match(/\}/g) || []).length;
+          
+          if (openBraces > closeBraces) {
+            // Add missing closing braces
+            for (let i = 0; i < openBraces - closeBraces; i++) {
+              repairAttempt += "}";
+            }
+          }
+          
+          // 2. Check for truncated arrays
+          const openBrackets = (repairAttempt.match(/\[/g) || []).length;
+          const closeBrackets = (repairAttempt.match(/\]/g) || []).length;
+          
+          if (openBrackets > closeBrackets) {
+            // This is trickier - we need to find the last open array without close
+            const lastIndexOfOpenBracket = repairAttempt.lastIndexOf('[');
+            const remainingText = repairAttempt.substring(lastIndexOfOpenBracket);
+            
+            if (!remainingText.includes(']')) {
+              // Insert a closing bracket at an appropriate position
+              const cutoff = repairAttempt.lastIndexOf('{');
+              if (cutoff > lastIndexOfOpenBracket) {
+                // Complex case - truncated in the middle of an object in array
+                // Insert before the last found open brace
+                repairAttempt = 
+                  repairAttempt.substring(0, cutoff) + 
+                  ']' + 
+                  repairAttempt.substring(cutoff);
+              } else {
+                // Simple case - just add at end
+                repairAttempt += "]";
+              }
+            }
+          }
+          
+          // 3. Check for truncated properties
+          const lastCommaIndex = repairAttempt.lastIndexOf(',');
+          const lastBraceIndex = repairAttempt.lastIndexOf('}');
+          const lastBracketIndex = repairAttempt.lastIndexOf(']');
+          
+          // If comma is the last character before possible closing brackets, remove it
+          if (lastCommaIndex > lastBraceIndex && lastCommaIndex > lastBracketIndex) {
+            repairAttempt = 
+              repairAttempt.substring(0, lastCommaIndex) + 
+              repairAttempt.substring(lastCommaIndex + 1);
+          }
 
-    const extractionResult: ExtractionResult = JSON.parse(jsonString);
+          // 4. Attempt to fix truncated string values
+          repairAttempt = repairAttempt.replace(/"([^"]*?)(?=\s*[,}\]])/g, '"$1"');
+          
+          console.log("Attempting to parse repaired JSON");
+          
+          try {
+            extractionResult = JSON.parse(repairAttempt);
+            console.log("Successfully repaired and parsed JSON");
+          } catch (repairError) {
+            console.error("JSON repair failed:", repairError);
+            
+            // Last resort: create a minimal valid structure with available data
+            const titleMatch = textResponse.match(/"title"\s*:\s*"([^"]+)"/);
+            const title = titleMatch ? titleMatch[1] : "Extracted Content";
+            
+            extractionResult = {
+              title,
+              extractionMode: mode,
+              keyTerms: []
+            };
+            
+            // Try to extract any complete keyTerm objects
+            const termMatches = textResponse.match(/{[^{}]*"term"\s*:[^{}]*"meaning"\s*:[^{}]*}/g);
+            if (termMatches) {
+              try {
+                const validTerms = termMatches
+                  .map(termJson => {
+                    try {
+                      // Ensure the term JSON is properly formatted
+                      const cleanedTerm = termJson
+                        .replace(/([{,]\s*)([a-zA-Z_]+)(\s*:)/g, '$1"$2"$3')
+                        .replace(/,\s*}/g, '}');
+                      return JSON.parse(cleanedTerm);
+                    } catch (e) {
+                      return null;
+                    }
+                  })
+                  .filter(term => term !== null);
+                  
+                extractionResult.keyTerms = validTerms;
+              } catch (e) {
+                console.error("Failed to extract partial terms:", e);
+              }
+            }
+            
+            console.warn("Created fallback extraction result with minimal structure");
+          }
+        } else {
+          throw new Error("Response doesn't contain expected JSON structure");
+        }
+      } catch (finalError) {
+        console.error("All JSON parsing attempts failed:", finalError);
+        throw new Error("Failed to extract valid JSON from the response");
+      }
+    }
 
     // Ensure the extraction mode is set correctly
     extractionResult.extractionMode = mode;

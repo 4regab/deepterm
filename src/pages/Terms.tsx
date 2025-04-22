@@ -22,6 +22,17 @@ const Terms = () => {
               Welcome to DeepTerm. These Terms of Service ("Terms") govern your use of our website and services. 
               By accessing or using our website, you agree to be bound by these Terms.
             </p>
+
+            <h2>API Keys and Data Processing</h2>
+            <p>
+              When using our services that require a Google Gemini API key:
+            </p>
+            <ul>
+              <li>Your API key is stored locally in your browser's localStorage only.</li>
+              <li>We do not collect, store, or transmit your API key to our servers or databases.</li>
+              <li>All text processing is done directly between your browser and Google's Gemini API services.</li>
+              <li>We do not store or process your submitted content on our servers.</li>
+            </ul>
             
             <h2>Use of Our Services</h2>
             <p>

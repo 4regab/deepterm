@@ -1,320 +1,359 @@
-import Footer from "@/components/Footer";
+import React from "react";
+import { Helmet, HelmetProvider } from "react-helmet-async";
 import Navbar from "@/components/Navbar";
+import Footer from "@/components/Footer";
 import { Card, CardContent } from "@/components/ui/card";
-import { Brain, BrainCog, CheckCircle, FileText, Lightbulb, ListTodo, Target, Timer, Sparkles, Zap } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Link } from "react-router-dom";
+import { FileText, Zap, Clock, Brain, Lightbulb, CheckCircle, ExternalLink, ArrowRight, BookText, GraduationCap, Timer, Settings, MoreHorizontal } from "lucide-react";
 
 const About = () => {
   return (
-    <div className="min-h-screen bg-[#fff6e5] flex flex-col">
-      <Navbar />
-
-      <main className="container mx-auto px-4 py-8 flex-grow">
-        <div className="max-w-4xl mx-auto">
-          <div className="text-center mb-12">
-            <h1 className="text-4xl md:text-5xl font-bold mb-4 font-heading">
-              About <span className="text-[#FF5C00]">DeepTerm</span>
+    <HelmetProvider>
+      <Helmet>
+        <title>About DeepTerm - AI-Powered Learning Tools</title>
+        <meta name="description" content="Learn about DeepTerm's mission to enhance productivity and learning with AI-powered tools for quiz creation, note extraction, and focus improvement." />
+      </Helmet>
+      <div className="min-h-screen bg-[#fff6e5] flex flex-col">
+        <Navbar />
+        
+        <main className="container mx-auto px-4 py-12 flex-grow">
+          {/* Hero Section */}
+          <section className="mb-16 max-w-4xl mx-auto text-center">
+            <div className="inline-flex items-center gap-3 mb-6 px-4 py-2 bg-white neo-border rounded-full shadow-neo">
+              <Zap className="h-5 w-5 text-[#FF5C00]" strokeWidth={2.5} />
+              <span className="text-sm font-bold">About DeepTerm</span>
+            </div>
+            
+            <h1 className="text-4xl md:text-5xl font-bold mb-6 font-heading tracking-tight">
+              Empowering learners with <span className="text-[#9b87f5]">AI-powered</span> tools
             </h1>
-            <p className="text-xl text-gray-700">
-              Your all-in-one AI-powered productivity toolkit
+            
+            <p className="text-xl text-gray-700 mb-8 max-w-3xl mx-auto">
+              DeepTerm combines advanced AI technology with proven productivity methods to help students, educators, and professionals maximize their learning and productivity.
             </p>
-          </div>
-
-          <Card className="neo-border overflow-hidden shadow-neo mb-12">
-            <CardContent className="p-8">
-              <div className="flex items-start gap-4 mb-6">
-                <div className="p-3 bg-[#ffead6] rounded-lg neo-border">
-                  <BrainCog className="h-6 w-6 text-[#FF5C00]" />
-                </div>
-                <div>
-                  <h2 className="text-2xl font-bold mb-3">What is DeepTerm?</h2>
-                  <p className="text-lg text-gray-700">
-                    DeepTerm is an AI-enhanced productivity platform designed to help you work more efficiently and effectively. We combine time management techniques with advanced AI-powered tools to create a comprehensive productivity solution for students, researchers, professionals, and anyone looking to improve their focus and organization.
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex flex-col gap-8 mt-10">
-                <h3 className="text-xl font-bold border-b-2 border-gray-200 pb-2">Our Core Tools</h3>
-
-                <div className="grid md:grid-cols-2 gap-8">
-                  {/* Pomodoro Timer Section */}
-                  <div className="flex flex-col h-full">
-                    <div className="flex items-center gap-3 mb-4">
-                      <div className="p-3 bg-[#f0f7ff] rounded-md border-2 border-[#1a1a1a] shadow-neo">
-                        <Timer className="h-5 w-5 text-[#2563eb]" />
+          </section>
+          
+          {/* Our Mission Section */}
+          <section className="mb-20 max-w-6xl mx-auto">
+            <Card className="neo-box overflow-hidden border-none">
+              <CardContent className="p-8 md:p-12">
+                <div className="grid md:grid-cols-2 gap-10 items-center">
+                  <div>
+                    <h2 className="text-3xl font-bold mb-6">Our Mission</h2>
+                    <p className="text-lg text-gray-700 mb-6">
+                      DeepTerm was created with a simple mission: to make learning more efficient, enjoyable, and accessible for everyone. We believe that AI technology should enhance human capability, not replace it.
+                    </p>
+                    <p className="text-lg text-gray-700">
+                      Our tools are designed to help you extract knowledge, reinforce learning through testing, and maintain focus through structured work sessions—combining the best cognitive science principles with cutting-edge AI technology.
+                    </p>
+                  </div>
+                  <div className="bg-[#f5f2ff] p-8 rounded-2xl border-2 border-[#e5deff]">
+                    <div className="mb-8">
+                      <div className="w-14 h-14 flex items-center justify-center rounded-lg bg-white neo-border mb-4">
+                        <Brain className="h-7 w-7 text-[#9b87f5]" />
                       </div>
-                      <h4 className="text-xl font-bold font-heading">Pomodoro Timer</h4>
-                    </div>
-
-                    <div className="bg-white neo-border p-4 rounded-lg mb-4">
+                      <h3 className="text-xl font-bold mb-2">AI-Powered Tools</h3>
                       <p className="text-gray-700">
-                        Our Pomodoro Timer helps you maintain focus and avoid burnout with structured work sessions and breaks, complete with task tracking.
+                        We leverage AI to transform the way you study, helping you extract meaningful information and create effective study materials from your study materials.
                       </p>
                     </div>
-
-                    <div className="space-y-3 flex-grow mb-4">
-                      <div className="flex items-start gap-2">
-                        <CheckCircle className="h-5 w-5 text-[#2563eb] mt-0.5" />
-                        <p>25-minute focused work intervals</p>
+                    <div>
+                      <div className="w-14 h-14 flex items-center justify-center rounded-lg bg-white neo-border mb-4">
+                        <Lightbulb className="h-7 w-7 text-[#FF5C00]" />
                       </div>
-                      <div className="flex items-start gap-2">
-                        <CheckCircle className="h-5 w-5 text-[#2563eb] mt-0.5" />
-                        <p>Short and long break timers</p>
-                      </div>
-                      <div className="flex items-start gap-2">
-                        <CheckCircle className="h-5 w-5 text-[#2563eb] mt-0.5" />
-                        <p>Integrated task management</p>
-                      </div>
-                      <div className="flex items-start gap-2">
-                        <CheckCircle className="h-5 w-5 text-[#2563eb] mt-0.5" />
-                        <p>Progress tracking and completion history</p>
+                      <h3 className="text-xl font-bold mb-2">Learning Science</h3>
+                      <p className="text-gray-700">
+                        Our tools are based on proven learning principles like active recall, spaced repetition, and focused deep work sessions.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </section>
+          
+          {/* What's New Section */}
+          <section className="mb-20">
+            <div className="text-center mb-12">
+              <h2 className="text-4xl font-bold mb-6 font-heading">What's New at DeepTerm</h2>
+              <p className="text-xl text-gray-700 max-w-3xl mx-auto">
+                We're constantly updating our tools based on user feedback and the latest advancements in AI technology.
+              </p>
+            </div>
+            
+            <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+              {/* Quiz Feature Card */}
+              <Card className="neo-box overflow-hidden border-none">
+                <CardContent className="p-0">
+                  <div className="bg-[#9b87f5] p-4">
+                    <div className="flex justify-between items-center">
+                      <h3 className="text-xl font-bold text-white">Quiz Generator</h3>
+                      <div className="bg-white p-1.5 rounded-md">
+                        <GraduationCap className="h-5 w-5 text-[#9b87f5]" />
                       </div>
                     </div>
                   </div>
                   
-                  {/* Reviewer Maker Section */}
-                  <div className="flex flex-col h-full">
-                    <div className="flex items-center gap-3 mb-4">
-                      <div className="p-3 bg-[#FDE1D3] rounded-md border-2 border-[#1a1a1a] shadow-neo">
-                        <FileText className="h-5 w-5 text-[#FF5C00]" />
-                      </div>
-                      <h4 className="text-xl font-bold font-heading">Reviewer Maker</h4>
-                    </div>
-
-                    <div className="bg-white neo-border p-4 rounded-lg mb-4">
-                      <p className="text-gray-700">
-                        Our AI-powered tool extracts and organizes key terms, concepts, and definitions from text documents, creating hierarchically structured notes automatically.
-                      </p>
-                    </div>
-
-                    <div className="space-y-3 flex-grow mb-4">
-                      <div className="flex items-start gap-2">
-                        <CheckCircle className="h-5 w-5 text-[#FF5C00] mt-0.5" />
-                        <p>Multiple extraction modes: full, sentence, or keywords</p>
-                      </div>
-                      <div className="flex items-start gap-2">
-                        <CheckCircle className="h-5 w-5 text-[#FF5C00] mt-0.5" />
-                        <p>AI-powered categorization of terms into hierarchical structures</p>
-                      </div>
-                      <div className="flex items-start gap-2">
-                        <CheckCircle className="h-5 w-5 text-[#FF5C00] mt-0.5" />
-                        <p>Context-aware analysis for better understanding</p>
-                      </div>
-                      <div className="flex items-start gap-2">
-                        <CheckCircle className="h-5 w-5 text-[#FF5C00] mt-0.5" />
-                        <p>Export functionality for extracted terms</p>
-                      </div>
-                    </div>
+                  <div className="p-6">
+                    <h4 className="font-bold text-lg mb-4">New Features:</h4>
+                    <ul className="space-y-3">
+                      <li className="flex items-start gap-2">
+                        <CheckCircle className="h-5 w-5 text-[#9b87f5] flex-shrink-0 mt-0.5" />
+                        <span>Auto-determine mode is now default for better question generation</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <CheckCircle className="h-5 w-5 text-[#9b87f5] flex-shrink-0 mt-0.5" />
+                        <span>Verbatim mode is enabled by default for precise learning</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <CheckCircle className="h-5 w-5 text-[#9b87f5] flex-shrink-0 mt-0.5" />
+                        <span>New manual mode for custom term-definition pairs</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <CheckCircle className="h-5 w-5 text-[#9b87f5] flex-shrink-0 mt-0.5" />
+                        <span>Enhanced document processing for DOCX files</span>
+                      </li>
+                    </ul>
                   </div>
-                </div>
-
-                {/* To-Do List Section */}
-                <div className="mt-6">
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className="p-3 bg-[#FFF9EB] rounded-md neo-border">
-                      <ListTodo className="h-5 w-5 text-[#FFC225]" />
-                    </div>
-                    <h4 className="text-xl font-bold font-heading">Task Management</h4>
-                  </div>
-
-                  <div className="bg-white neo-border p-4 rounded-lg mb-4">
-                    <p className="text-gray-700">
-                      Our integrated task management system helps you organize your work and stay on track during your Pomodoro sessions.
-                    </p>
-                  </div>
-
-                  <div className="grid md:grid-cols-2 gap-4">
-                    <div className="space-y-3">
-                      <div className="flex items-start gap-2">
-                        <CheckCircle className="h-5 w-5 text-[#FFC225] mt-0.5" />
-                        <p>Create and manage tasks while working</p>
-                      </div>
-                      <div className="flex items-start gap-2">
-                        <CheckCircle className="h-5 w-5 text-[#FFC225] mt-0.5" />
-                        <p>Track completed and remaining tasks</p>
-                      </div>
-                    </div>
-                    <div className="space-y-3">
-                      <div className="flex items-start gap-2">
-                        <CheckCircle className="h-5 w-5 text-[#FFC225] mt-0.5" />
-                        <p>Collapsible interface for distraction-free work</p>
-                      </div>
-                      <div className="flex items-start gap-2">
-                        <CheckCircle className="h-5 w-5 text-[#FFC225] mt-0.5" />
-                        <p>Persistent storage between sessions</p>
+                </CardContent>
+              </Card>
+              
+              {/* Pomodoro Feature Card */}
+              <Card className="neo-box overflow-hidden border-none">
+                <CardContent className="p-0">
+                  <div className="bg-[#FF5C00] p-4">
+                    <div className="flex justify-between items-center">
+                      <h3 className="text-xl font-bold text-white">Pomodoro Timer</h3>
+                      <div className="bg-white p-1.5 rounded-md">
+                        <Clock className="h-5 w-5 text-[#FF5C00]" />
                       </div>
                     </div>
                   </div>
-                </div>
-
-                {/* AI Technology Section - New */}
-                <div className="mt-6">
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className="p-3 bg-[#e6f1ff] rounded-md neo-border">
-                      <Sparkles className="h-5 w-5 text-[#2563eb]" />
-                    </div>
-                    <h4 className="text-xl font-bold font-heading">AI Technology</h4>
+                  
+                  <div className="p-6">
+                    <h4 className="font-bold text-lg mb-4">New Features:</h4>
+                    <ul className="space-y-3">
+                      <li className="flex items-start gap-2">
+                        <CheckCircle className="h-5 w-5 text-[#FF5C00] flex-shrink-0 mt-0.5" />
+                        <span>Daily streak tracking to build consistent habits</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <CheckCircle className="h-5 w-5 text-[#FF5C00] flex-shrink-0 mt-0.5" />
+                        <span>Visual streak indicators with progressive coloring</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <CheckCircle className="h-5 w-5 text-[#FF5C00] flex-shrink-0 mt-0.5" />
+                        <span>Improved session history visualization</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <CheckCircle className="h-5 w-5 text-[#FF5C00] flex-shrink-0 mt-0.5" />
+                        <span>Enhanced task management integration</span>
+                      </li>
+                    </ul>
                   </div>
-
-                  <div className="bg-white neo-border p-4 rounded-lg mb-4">
-                    <p className="text-gray-700">
-                      We leverage advanced AI algorithms to power our tools, helping you work smarter and more efficiently.
-                    </p>
-                  </div>
-
-                  <div className="grid md:grid-cols-2 gap-4">
-                    <div className="space-y-3">
-                      <div className="flex items-start gap-2">
-                        <CheckCircle className="h-5 w-5 text-[#2563eb] mt-0.5" />
-                        <p>Natural language processing for content understanding</p>
-                      </div>
-                      <div className="flex items-start gap-2">
-                        <CheckCircle className="h-5 w-5 text-[#2563eb] mt-0.5" />
-                        <p>Context-aware analysis of documents</p>
-                      </div>
-                    </div>
-                    <div className="space-y-3">
-                      <div className="flex items-start gap-2">
-                        <CheckCircle className="h-5 w-5 text-[#2563eb] mt-0.5" />
-                        <p>Automated categorization and organization</p>
-                      </div>
-                      <div className="flex items-start gap-2">
-                        <CheckCircle className="h-5 w-5 text-[#2563eb] mt-0.5" />
-                        <p>Continually improving systems</p>
+                </CardContent>
+              </Card>
+              
+              {/* Extractor Feature Card */}
+              <Card className="neo-box overflow-hidden border-none">
+                <CardContent className="p-0">
+                  <div className="bg-[#2563eb] p-4">
+                    <div className="flex justify-between items-center">
+                      <h3 className="text-xl font-bold text-white">Note Extractor</h3>
+                      <div className="bg-white p-1.5 rounded-md">
+                        <FileText className="h-5 w-5 text-[#2563eb]" />
                       </div>
                     </div>
                   </div>
-                </div>
-              </div>
-
-              {/* How to Use Section */}
-              <div className="mt-12">
-                <h3 className="text-xl font-bold border-b-2 border-gray-200 pb-2 mb-6">How to Get Started</h3>
-
-                <div className="space-y-6">
-                  <div className="flex items-start gap-4">
-                    <div className="w-8 h-8 rounded-full bg-[#FF5C00] flex items-center justify-center text-white font-bold flex-shrink-0">
-                      1
-                    </div>
-                    <div>
-                      <h5 className="text-lg font-bold mb-1">Choose Your Tool</h5>
-                      <p className="text-gray-700">
-                        Start with either the Pomodoro Timer to improve your focus or the Reviewer Maker to extract key information from your documents.
-                      </p>
-                    </div>
+                  
+                  <div className="p-6">
+                    <h4 className="font-bold text-lg mb-4">New Features:</h4>
+                    <ul className="space-y-3">
+                      <li className="flex items-start gap-2">
+                        <CheckCircle className="h-5 w-5 text-[#2563eb] flex-shrink-0 mt-0.5" />
+                        <span>Improved DOCX file text extraction</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <CheckCircle className="h-5 w-5 text-[#2563eb] flex-shrink-0 mt-0.5" />
+                        <span>Better handling of formatted documents</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <CheckCircle className="h-5 w-5 text-[#2563eb] flex-shrink-0 mt-0.5" />
+                        <span>Enhanced term recognition in complex texts</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <CheckCircle className="h-5 w-5 text-[#2563eb] flex-shrink-0 mt-0.5" />
+                        <span>Optimized export formats for better readability</span>
+                      </li>
+                    </ul>
                   </div>
-
-                  <div className="flex items-start gap-4">
-                    <div className="w-8 h-8 rounded-full bg-[#FF5C00] flex items-center justify-center text-white font-bold flex-shrink-0">
-                      2
-                    </div>
-                    <div>
-                      <h5 className="text-lg font-bold mb-1">Set Up Your Environment</h5>
-                      <p className="text-gray-700">
-                        For the Pomodoro Timer, create tasks you want to work on. For the Reviewer Maker, prepare your text or document for processing.
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-start gap-4">
-                    <div className="w-8 h-8 rounded-full bg-[#FF5C00] flex items-center justify-center text-white font-bold flex-shrink-0">
-                      3
-                    </div>
-                    <div>
-                      <h5 className="text-lg font-bold mb-1">Start Working</h5>
-                      <p className="text-gray-700">
-                        Begin your focused work sessions with the Pomodoro Timer, or extract key information from your text using the Reviewer Maker.
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-start gap-4">
-                    <div className="w-8 h-8 rounded-full bg-[#FF5C00] flex items-center justify-center text-white font-bold flex-shrink-0">
-                      4
-                    </div>
-                    <div>
-                      <h5 className="text-lg font-bold mb-1">Track and Review</h5>
-                      <p className="text-gray-700">
-                        Monitor your progress, check off completed tasks, and review or export your notes as needed.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Philosophy Section */}
-              <div className="mt-12">
-                <h3 className="text-xl font-bold border-b-2 border-gray-200 pb-2 mb-6">Our Philosophy</h3>
-
-                <div className="grid md:grid-cols-3 gap-6">
-                  <div className="bg-white neo-border p-5 rounded-lg">
-                    <div className="p-2 bg-[#e6f1ff] rounded-md neo-border mb-3 w-12 h-12 flex items-center justify-center">
-                      <Target className="h-6 w-6 text-[#2563eb]" />
-                    </div>
-                    <h4 className="text-lg font-bold mb-2">Focus Enhancement</h4>
-                    <p className="text-gray-700">
-                      Structured methods to improve concentration and productivity during work sessions with minimal distractions.
-                    </p>
-                  </div>
-
-                  <div className="bg-white neo-border p-5 rounded-lg">
-                    <div className="p-2 bg-[#FDE1D3] rounded-md neo-border mb-3 w-12 h-12 flex items-center justify-center">
-                      <Lightbulb className="h-6 w-6 text-[#FF5C00]" />
-                    </div>
-                    <h4 className="text-lg font-bold mb-2">Intuitive Design</h4>
-                    <p className="text-gray-700">
-                      Clean, brutalist interface that's easy to use without any learning curve or unnecessary distractions.
-                    </p>
-                  </div>
-
-                  <div className="bg-white neo-border p-5 rounded-lg">
-                    <div className="p-2 bg-[#FFF9EB] rounded-md neo-border mb-3 w-12 h-12 flex items-center justify-center">
-                      <Brain className="h-6 w-6 text-[#FFC225]" />
-                    </div>
-                    <h4 className="text-lg font-bold mb-2">Smart Technology</h4>
-                    <p className="text-gray-700">
-                      Leveraging AI and proven productivity techniques to help you work smarter, not harder.
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Latest Updates Section - New */}
-              <div className="mt-12">
-                <h3 className="text-xl font-bold border-b-2 border-gray-200 pb-2 mb-6">Latest Updates</h3>
-                
-                <div className="bg-white neo-border p-6 rounded-lg">
-                  <div className="flex items-center gap-3 mb-4">
-                    <Zap className="h-5 w-5 text-[#FF5C00]" />
-                    <h4 className="text-lg font-bold">April 2025 Improvements</h4>
-                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </section>
+          
+          {/* How It Works Section */}
+          <section className="mb-20 max-w-5xl mx-auto">
+            <div className="text-center mb-12">
+              <h2 className="text-4xl font-bold mb-6 font-heading">How Our Tools Work</h2>
+              <p className="text-xl text-gray-700 max-w-3xl mx-auto">
+                Each of our tools is designed to address specific learning and productivity needs.
+              </p>
+            </div>
+            
+            <div className="space-y-12">
+              {/* Quiz Generator */}
+              <div className="grid md:grid-cols-2 gap-8 items-center">
+                <div className="order-2 md:order-1">
+                  <h3 className="text-2xl font-bold mb-4">AI Quiz Generator</h3>
+                  <p className="text-lg text-gray-700 mb-6">
+                    Our quiz generator uses advanced AI to analyze your study materials and generate effective questions that test your knowledge and reinforce learning.
+                  </p>
                   <ul className="space-y-3">
                     <li className="flex items-start gap-2">
-                      <CheckCircle className="h-5 w-5 text-[#FF5C00] mt-0.5" />
-                      <p>Enhanced AI capabilities in our Reviewer Maker tool</p>
+                      <ArrowRight className="h-5 w-5 text-[#9b87f5] flex-shrink-0 mt-1" />
+                      <span>Upload PDF, DOCX, or TXT files or paste text directly</span>
                     </li>
                     <li className="flex items-start gap-2">
-                      <CheckCircle className="h-5 w-5 text-[#FF5C00] mt-0.5" />
-                      <p>Improved user interface with better accessibility</p>
+                      <ArrowRight className="h-5 w-5 text-[#9b87f5] flex-shrink-0 mt-1" />
+                      <span>Choose from multiple question types or use mixed format</span>
                     </li>
                     <li className="flex items-start gap-2">
-                      <CheckCircle className="h-5 w-5 text-[#FF5C00] mt-0.5" />
-                      <p>Updated task management system integration</p>
+                      <ArrowRight className="h-5 w-5 text-[#9b87f5] flex-shrink-0 mt-1" />
+                      <span>Use manual mode to create custom term-definition pairs</span>
                     </li>
                     <li className="flex items-start gap-2">
-                      <CheckCircle className="h-5 w-5 text-[#FF5C00] mt-0.5" />
-                      <p>Expanded documentation and guided tutorials</p>
+                      <ArrowRight className="h-5 w-5 text-[#9b87f5] flex-shrink-0 mt-1" />
+                      <span>Save quizzes for later practice and review</span>
+                    </li>
+                  </ul>
+                </div>
+                <div className="bg-[#f5f2ff] p-8 rounded-2xl border-2 border-[#e5deff] order-1 md:order-2">
+                  <div className="flex items-center gap-4 mb-6">
+                    <div className="w-14 h-14 flex items-center justify-center rounded-lg bg-[#9b87f5] shadow-md">
+                      <GraduationCap className="h-7 w-7 text-white" />
+                    </div>
+                    <h4 className="text-xl font-bold">Quiz Features</h4>
+                  </div>
+                  <div className="space-y-4">
+                    <div className="bg-white p-4 rounded-lg shadow-md">
+                      <div className="flex items-center justify-between">
+                        <span className="font-medium">Auto Question Count</span>
+                        <div className="w-10 h-5 bg-[#9b87f5] rounded-full"></div>
+                      </div>
+                    </div>
+                    <div className="bg-white p-4 rounded-lg shadow-md">
+                      <div className="flex items-center justify-between">
+                        <span className="font-medium">Verbatim Mode</span>
+                        <div className="w-10 h-5 bg-[#9b87f5] rounded-full"></div>
+                      </div>
+                    </div>
+                    <div className="bg-white p-4 rounded-lg shadow-md">
+                      <div className="flex items-center">
+                        <span className="font-medium mr-2">Input Mode:</span>
+                        <span className="bg-[#9b87f5] text-white text-xs px-2 py-1 rounded mr-2">Auto</span>
+                        <span className="bg-[#FF5C00] text-white text-xs px-2 py-1 rounded">Manual</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Pomodoro Timer */}
+              <div className="grid md:grid-cols-2 gap-8 items-center">
+                <div className="bg-[#FFF9EB] p-8 rounded-2xl border-2 border-[#FFE9C9]">
+                  <div className="flex items-center gap-4 mb-6">
+                    <div className="w-14 h-14 flex items-center justify-center rounded-lg bg-[#FF5C00] shadow-md">
+                      <Timer className="h-7 w-7 text-white" />
+                    </div>
+                    <h4 className="text-xl font-bold">Pomodoro Features</h4>
+                  </div>
+                  <div className="space-y-4">
+                    <div className="bg-white p-4 rounded-lg shadow-md">
+                      <div className="flex items-center gap-4">
+                        <div className="p-2 rounded-md bg-[#FFA726]">
+                          <Zap className="h-5 w-5 text-white" />
+                        </div>
+                        <div>
+                          <span className="font-medium block">3-day streak</span>
+                          <div className="h-2 w-32 bg-gray-200 rounded-full mt-1">
+                            <div className="h-2 w-full bg-[#FF5C00] rounded-full"></div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="bg-white p-4 rounded-lg shadow-md flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Settings className="h-5 w-5 text-gray-600" />
+                        <span className="font-medium">Customizable Timers</span>
+                      </div>
+                      <div className="flex gap-2">
+                        <span className="bg-[#FF5C00] text-white text-xs px-2 py-1 rounded">25:00</span>
+                        <span className="bg-[#00C6C2] text-white text-xs px-2 py-1 rounded">5:00</span>
+                        <span className="bg-[#8B5CF6] text-white text-xs px-2 py-1 rounded">15:00</span>
+                      </div>
+                    </div>
+                    <div className="bg-white p-4 rounded-lg shadow-md">
+                      <div className="flex items-center gap-2">
+                        <CheckCircle className="h-5 w-5 text-[#FF5C00]" />
+                        <span className="font-medium">Todo & Task Integration</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div>
+                  <h3 className="text-2xl font-bold mb-4">Pomodoro Focus Timer</h3>
+                  <p className="text-lg text-gray-700 mb-6">
+                    Our Pomodoro timer combines the proven time-management technique with modern features to help you maintain focus and track your progress over time.
+                  </p>
+                  <ul className="space-y-3">
+                    <li className="flex items-start gap-2">
+                      <ArrowRight className="h-5 w-5 text-[#FF5C00] flex-shrink-0 mt-1" />
+                      <span>Customizable focus and break intervals</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <ArrowRight className="h-5 w-5 text-[#FF5C00] flex-shrink-0 mt-1" />
+                      <span>Visual streak tracking to build daily habits</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <ArrowRight className="h-5 w-5 text-[#FF5C00] flex-shrink-0 mt-1" />
+                      <span>Integrated task management</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <ArrowRight className="h-5 w-5 text-[#FF5C00] flex-shrink-0 mt-1" />
+                      <span>Session history and productivity insights</span>
                     </li>
                   </ul>
                 </div>
               </div>
-            </CardContent>
-          </Card>
-        </div>
-      </main>
+            </div>
+          </section>
+          
+          {/* Call-to-Action Section */}
+          <section className="mb-12 py-16 px-6 bg-[#f5f2ff] rounded-3xl border-2 border-[#d4c8ff] max-w-5xl mx-auto text-center">
+            <h2 className="text-3xl md:text-4xl font-bold mb-6 font-heading">Start using DeepTerm today</h2>
+            <p className="text-xl text-gray-700 mb-10 max-w-2xl mx-auto">
+              Discover how our AI-powered tools can help you learn more efficiently, stay focused, and boost your productivity.
+            </p>
+            
+            <div className="flex flex-wrap gap-4 justify-center">
+              <Link to="/quiz">
+                <Button size="lg" className="h-14 text-lg bg-[#9b87f5] hover:bg-[#8A76E5]">Try Quiz Generator</Button>
+              </Link>
+              <Link to="/pomodoro">
+                <Button size="lg" className="h-14 text-lg bg-[#FF5C00] hover:bg-[#E05000]">Use Pomodoro Timer</Button>
+              </Link>
+              <Link to="/extractor">
+                <Button size="lg" className="h-14 text-lg bg-[#2563eb] hover:bg-[#2050c3]">Extract Notes</Button>
+              </Link>
+            </div>
+          </section>
+        </main>
 
-      <Footer />
-    </div>
+        <Footer />
+      </div>
+    </HelmetProvider>
   );
 };
 

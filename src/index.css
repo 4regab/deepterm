@@ -1,4 +1,3 @@
-
 /* postcss-css */
 /* language=postcss */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
@@ -112,8 +111,20 @@
     @apply border-2 border-[#1a1a1a];
   }
   
-  .neo-border-t {
-    @apply border-t-2 border-t-[#1a1a1a];
+  .neo-border-b {
+    @apply border-b-2 border-[#1a1a1a];
+  }
+  
+  .shadow-neo {
+    @apply shadow-[4px_4px_0px_#1a1a1a];
+  }
+  
+  .shadow-neo-sm {
+    @apply shadow-[2px_2px_0px_#1a1a1a];
+  }
+  
+  .shadow-neo-lg {
+    @apply shadow-[6px_6px_0px_#1a1a1a];
   }
   
   .neo-box {
@@ -236,5 +247,66 @@
   
   .border-3 {
     @apply border-[3px];
+  }
+  
+  /* New Focus Deep page specific styles */
+  .grid-cols-53 {
+    grid-template-columns: repeat(53, minmax(0, 1fr));
+  }
+  
+  /* GitHub-like heatmap colors */
+  .heatmap-0 {
+    @apply bg-[#ebedf0];
+  }
+  
+  .heatmap-1 {
+    @apply bg-[#9be9a8];
+  }
+  
+  .heatmap-2 {
+    @apply bg-[#40c463];
+  }
+  
+  .heatmap-3 {
+    @apply bg-[#30a14e];
+  }
+  
+  .heatmap-4 {
+    @apply bg-[#216e39];
+  }
+  
+  /* Flashcard styles */
+  .perspective-500 {
+    perspective: 1000px;
+  }
+  
+  .flip-card {
+    width: 100%;
+    height: 100%;
+    transition: 0.8s;
+    transform-style: preserve-3d;
+  }
+  
+  .flip-card-inner {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    transition: transform 0.8s;
+    transform-style: preserve-3d;
+  }
+  
+  .flip-card-flipped .flip-card-inner {
+    transform: rotateY(180deg);
+  }
+  
+  .flip-card-front, .flip-card-back {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    backface-visibility: hidden;
+  }
+  
+  .flip-card-back {
+    transform: rotateY(180deg);
   }
 }
