@@ -428,7 +428,7 @@ export class QuizGenerator extends GeminiCore {
         questions = JSON.parse(jsonString);
         console.log("Successfully parsed JSON on first attempt.");
       } catch (parseError: unknown) {
-        const errorMessage = parseError instanceof Error ? error.message : String(parseError);
+        const errorMessage = parseError instanceof Error ? parseError.message : String(parseError);
         console.error("Initial JSON parse error:", errorMessage);
         if (errorMessage.includes('position')) {
             const positionMatch = errorMessage.match(/position (\d+)/);
