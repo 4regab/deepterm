@@ -3,22 +3,20 @@ import { usePomodoroContext } from '@/hooks/usePomodoroContext';
 import { useUserProfile } from '@/context/UserProfileContext'; // Import useUserProfile only
 import { ACHIEVEMENT_BADGES, UserAchievement } from '@/context/userProfileConstants'; // Import ACHIEVEMENT_BADGES from the correct source
 import { useFlashcard } from '@/context/FlashcardContextDefinition'; // Import useFlashcard
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
-import { Trophy, Calendar as CalendarIcon, Award, User, ChevronRight, Clock, Target, Camera, ChevronLeft, ChevronRight as ChevronRightIcon, Bell, Activity, Zap, FileText, Layers, BrainCircuit, Download, KeyRound } from "lucide-react"; // Added Download icon and KeyRound
+import { Trophy, Calendar as CalendarIcon, Award, User, ChevronRight, Clock, Target, Camera, ChevronLeft, ChevronRight as ChevronRightIcon, Bell, Activity, Zap, FileText, Layers, BrainCircuit, Download, KeyRound, Settings } from "lucide-react"; // Added Settings icon
 import { toast } from "sonner";
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { formatDistanceToNow } from 'date-fns'; // Import date-fns utility for relative time
-// Import the exportAsPDF function for downloading extracted notes
 import { exportAsPDF } from '@/utils/fileUtils';
 import { ExtractionResult } from '@/types';
-// Import the ApiKeyInput component
 import ApiKeyInput from '@/components/shared/ApiKeyInput';
 
 // New interface for study calendar
@@ -56,8 +54,15 @@ const Dashboard = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [hoveredDay, setHoveredDay] = useState<{day: CalendarDay, x: number, y: number} | null>(null);
   const [calendarDays, setCalendarDays] = useState<CalendarDay[][]>([]);
-  // State for API Key Dialog
-  const [showApiKeyDialog, setShowApiKeyDialog] = useState<boolean>(false);
+  // State for Settings Dialog
+  const [showSettingsDialog, setShowSettingsDialog] = useState<boolean>(false);
+  // State for editing name in settings
+  const [editableName, setEditableName] = useState(userProfile.name);
+
+  // Update editableName when userProfile.name changes (e.g., after initial welcome dialog)
+  useEffect(() => {
+    setEditableName(userProfile.name);
+  }, [userProfile.name]);
 
   // Function to get achievement progress
   const getAchievementProgress = (achievementId: string): { progress: number, total: number, earned: boolean } => {
@@ -83,6 +88,16 @@ const Dashboard = () => {
       total: badgeDefinition.total ?? 1, // Use definition total
       earned: false
     };
+  };
+
+  // Function to handle saving the name from the settings dialog
+  const handleSaveName = () => {
+    if (editableName.trim()) {
+      updateUserName(editableName.trim());
+      toast.success("Name updated successfully!");
+    } else {
+      toast.error("Name cannot be empty.");
+    }
   };
 
   // Calculate achievement stats
@@ -400,52 +415,73 @@ const Dashboard = () => {
                 }}
               />
             </div>
-            <DialogFooter>
-              <Button 
-                onClick={handleNameSubmit}
-                className="bg-[#9b87f5] hover:bg-[#7E69AB] text-white neo-border shadow-neo-sm hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all"
-              >
-                Continue
-              </Button>
-            </DialogFooter>
+            <Button 
+              onClick={handleNameSubmit}
+              className="bg-[#9b87f5] hover:bg-[#7E69AB] text-white neo-border shadow-neo-sm hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all"
+            >
+              Continue
+            </Button>
           </DialogContent>
         </Dialog>
 
-        {/* API Key Input Dialog */}
-        <Dialog open={showApiKeyDialog} onOpenChange={setShowApiKeyDialog}>
-          <DialogContent className="sm:max-w-[425px] neo-border shadow-neo bg-white">
-            <DialogHeader>
-              <DialogTitle className="text-2xl font-bold flex items-center gap-2">
-                <KeyRound className="h-5 w-5" /> API Key
+        {/* Settings Dialog */}
+        <Dialog open={showSettingsDialog} onOpenChange={setShowSettingsDialog}>
+          <DialogContent className="sm:max-w-md neo-border shadow-neo bg-white">
+            <DialogHeader className="border-b-2 border-black pb-3 mb-4">
+              <DialogTitle className="text-2xl font-black flex items-center gap-2">
+                <Settings className="h-6 w-6" /> Settings
               </DialogTitle>
             </DialogHeader>
-            <div className="py-4">
-              <ApiKeyInput onApiKeySubmit={() => setShowApiKeyDialog(false)} />
+            
+            {/* Profile Settings */}
+            <div className="mb-6">
+              <h3 className="font-bold text-lg mb-3 border-b border-dashed border-gray-400 pb-1">Profile</h3>
+              <Label htmlFor="profileName" className="font-semibold text-md block mb-1">Display Name</Label>
+              <div className="flex items-center gap-2">
+                <Input
+                  id="profileName"
+                  value={editableName}
+                  onChange={(e) => setEditableName(e.target.value)}
+                  className="flex-grow neo-border shadow-neo-sm"
+                  placeholder="Enter your name..."
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      handleSaveName();
+                    }
+                  }}
+                />
+                <Button 
+                  onClick={handleSaveName}
+                  size="sm"
+                  className="bg-[#9b87f5] hover:bg-[#7E69AB] text-white neo-border shadow-neo-sm hover:shadow-none hover:translate-x-[1px] hover:translate-y-[1px] transition-all"
+                >
+                  Save
+                </Button>
+              </div>
             </div>
-            <DialogFooter>
-              <Button 
-                variant="outline"
-                onClick={() => setShowApiKeyDialog(false)}
-                className="neo-border shadow-neo-sm hover:shadow-none hover:translate-x-[1px] hover:translate-y-[1px] transition-all"
-              >
-                Close
-              </Button>
-            </DialogFooter>
+
+            {/* API Key Settings */}
+            <div className="mb-4">
+              <h3 className="font-bold text-lg mb-3 border-b border-dashed border-gray-400 pb-1 flex items-center gap-2">
+                <KeyRound className="h-5 w-5" /> API Key
+              </h3>
+              <ApiKeyInput onApiKeySubmit={() => { /* Optionally add feedback */ }} />
+            </div>
           </DialogContent>
         </Dialog>
 
         {/* Neobrutalist Player Stats */}
         <div className="bg-[#9b87f5] border-4 border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] mb-6">
           <div className="container mx-auto px-4 py-6 relative"> {/* Added relative positioning */}
-            {/* API Key Button - Top Right */}
+            {/* Settings Button - Top Right */}
             <Button 
               variant="outline"
               size="icon"
-              onClick={() => setShowApiKeyDialog(true)}
+              onClick={() => setShowSettingsDialog(true)}
               className="absolute top-4 right-4 bg-white text-black neo-border shadow-neo-sm hover:shadow-none hover:translate-x-[1px] hover:translate-y-[1px] transition-all"
-              aria-label="Set API Key"
+              aria-label="Settings"
             >
-              <KeyRound className="h-5 w-5" />
+              <Settings className="h-5 w-5" />
             </Button>
             
             <div className="flex flex-col gap-4">
