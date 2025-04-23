@@ -3,14 +3,15 @@ import { usePomodoroContext } from '@/hooks/usePomodoroContext';
 import { useUserProfile } from '@/context/UserProfileContext'; // Import useUserProfile only
 import { ACHIEVEMENT_BADGES, UserAchievement } from '@/context/userProfileConstants'; // Import ACHIEVEMENT_BADGES from the correct source
 import { useFlashcard } from '@/context/FlashcardContextDefinition'; // Import useFlashcard
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"; // Import DialogClose
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
-import { Trophy, Calendar as CalendarIcon, Award, User, ChevronRight, Clock, Target, Camera, ChevronLeft, ChevronRight as ChevronRightIcon, Bell, Activity, Zap, FileText, Layers, BrainCircuit, Download, KeyRound, Settings } from "lucide-react"; // Added Settings icon
+import { Trophy, Calendar as CalendarIcon, Award, User, ChevronRight, Clock, Target, Camera, ChevronLeft, ChevronRight as ChevronRightIcon, Bell, Activity, Zap, FileText, Layers, BrainCircuit, Download, KeyRound, Settings, X } from "lucide-react"; // Added Settings and X icons
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"; // Import Tabs components
 import { toast } from "sonner";
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
@@ -426,49 +427,48 @@ const Dashboard = () => {
 
         {/* Settings Dialog */}
         <Dialog open={showSettingsDialog} onOpenChange={setShowSettingsDialog}>
-          <DialogContent className="max-w-[90%] sm:max-w-md neo-border shadow-neo bg-white p-3 sm:p-4">
-            <DialogHeader className="border-b-2 border-black pb-2 mb-3">
-              <DialogTitle className="text-xl sm:text-2xl font-black flex items-center gap-2">
-                <Settings className="h-5 w-5 sm:h-6 sm:w-6" /> Settings
+          <DialogContent className="sm:max-w-lg neo-border shadow-neo bg-white p-0">
+            <DialogHeader className="border-b-2 border-black p-4">
+              <DialogTitle className="text-2xl font-black flex items-center gap-2">
+                <Settings className="h-6 w-6" /> Settings
               </DialogTitle>
             </DialogHeader>
-            
-            {/* Profile Settings */}
-            <div className="mb-4">
-              <h3 className="font-bold text-base sm:text-lg mb-2 border-b border-dashed border-gray-400 pb-1">Profile</h3>
-              <div className="space-y-2">
-                <Label htmlFor="profileName" className="font-semibold text-sm sm:text-md block">Display Name</Label>
-                <div className="flex items-center gap-2 flex-col sm:flex-row">
-                  <Input
-                    id="profileName"
-                    value={editableName}
-                    onChange={(e) => setEditableName(e.target.value)}
-                    className="flex-grow neo-border shadow-neo-sm w-full"
-                    placeholder="Enter your name..."
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        handleSaveName();
-                      }
-                    }}
-                  />
-                  <Button 
-                    onClick={handleSaveName}
-                    size="sm"
-                    className="bg-[#9b87f5] hover:bg-[#7E69AB] text-white neo-border shadow-neo-sm hover:shadow-none hover:translate-x-[1px] hover:translate-y-[1px] transition-all w-full sm:w-auto mt-1 sm:mt-0 py-2"
-                  >
-                    Save
-                  </Button>
-                </div>
-              </div>
-            </div>
 
-            {/* API Key Settings */}
-            <div>
-              <h3 className="font-bold text-base sm:text-lg mb-2 border-b border-dashed border-gray-400 pb-1 flex items-center gap-2">
-                <KeyRound className="h-4 w-4 sm:h-5 sm:w-5" /> API Key
-              </h3>
-              <ApiKeyInput onApiKeySubmit={() => { /* Optionally add feedback */ }} />
-            </div>
+            <Tabs defaultValue="profile" className="w-full p-4 pt-2">
+              <TabsList className="grid w-full grid-cols-2 mb-4 bg-gray-100 neo-border shadow-neo-inset">
+                <TabsTrigger value="profile" className="font-semibold data-[state=active]:bg-[#9b87f5] data-[state=active]:text-white data-[state=active]:shadow-neo-sm">Profile</TabsTrigger>
+                <TabsTrigger value="api-key" className="font-semibold data-[state=active]:bg-[#9b87f5] data-[state=active]:text-white data-[state=active]:shadow-neo-sm">API Key</TabsTrigger>
+              </TabsList>
+              <TabsContent value="profile">
+                <div className="space-y-4">
+                  <Label htmlFor="profileName" className="font-semibold text-md block mb-1">Display Name</Label>
+                  <div className="flex items-center gap-2">
+                    <Input
+                      id="profileName"
+                      value={editableName}
+                      onChange={(e) => setEditableName(e.target.value)}
+                      className="flex-grow neo-border shadow-neo-sm"
+                      placeholder="Enter your name..."
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          handleSaveName();
+                        }
+                      }}
+                    />
+                    <Button
+                      onClick={handleSaveName}
+                      size="sm"
+                      className="bg-[#9b87f5] hover:bg-[#7E69AB] text-white neo-border shadow-neo-sm hover:shadow-none hover:translate-x-[1px] hover:translate-y-[1px] transition-all"
+                    >
+                      Save
+                    </Button>
+                  </div>
+                </div>
+              </TabsContent>
+              <TabsContent value="api-key">
+                <ApiKeyInput onApiKeySubmit={() => toast.success("API Key saved!")} />
+              </TabsContent>
+            </Tabs>
           </DialogContent>
         </Dialog>
 
