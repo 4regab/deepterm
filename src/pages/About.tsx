@@ -5,14 +5,14 @@ import Footer from "@/components/Footer";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
-import { FileText, Zap, Clock, Brain, Lightbulb, CheckCircle, ExternalLink, ArrowRight, BookText, GraduationCap, Timer, Settings, MoreHorizontal } from "lucide-react";
+import { FileText, Zap, Clock, Brain, Lightbulb, CheckCircle, ArrowRight, BookText, GraduationCap, Timer, Settings, Layers, Activity, Trophy, User } from "lucide-react";
 
 const About = () => {
   return (
     <HelmetProvider>
       <Helmet>
         <title>About DeepTerm - AI-Powered Learning Tools</title>
-        <meta name="description" content="Learn about DeepTerm's mission to enhance productivity and learning with AI-powered tools for quiz creation, note extraction, and focus improvement." />
+        <meta name="description" content="Learn about DeepTerm's mission to enhance productivity and learning with AI-powered tools for quiz creation, flashcard generation, and focus improvement." />
       </Helmet>
       <div className="min-h-screen bg-[#fff6e5] flex flex-col">
         <Navbar />
@@ -30,7 +30,7 @@ const About = () => {
             </h1>
             
             <p className="text-xl text-gray-700 mb-8 max-w-3xl mx-auto">
-              DeepTerm combines advanced AI technology with proven productivity methods to help students, educators, and professionals maximize their learning and productivity.
+              DeepTerm combines advanced AI with proven productivity methods to help you maximize learning and focus, offering tools for quiz generation, flashcard creation, and time management.
             </p>
           </section>
           
@@ -42,10 +42,10 @@ const About = () => {
                   <div>
                     <h2 className="text-3xl font-bold mb-6">Our Mission</h2>
                     <p className="text-lg text-gray-700 mb-6">
-                      DeepTerm was created with a simple mission: to make learning more efficient, enjoyable, and accessible for everyone. We believe that AI technology should enhance human capability, not replace it.
+                      DeepTerm aims to make learning more efficient, engaging, and accessible. We believe AI should enhance human capability, empowering you to learn smarter.
                     </p>
                     <p className="text-lg text-gray-700">
-                      Our tools are designed to help you extract knowledge, reinforce learning through testing, and maintain focus through structured work sessions—combining the best cognitive science principles with cutting-edge AI technology.
+                      Our tools help you extract knowledge, reinforce learning via quizzes and flashcards, and maintain focus with structured work sessions—blending cognitive science with cutting-edge AI.
                     </p>
                   </div>
                   <div className="bg-[#f5f2ff] p-8 rounded-2xl border-2 border-[#e5deff]">
@@ -76,19 +76,19 @@ const About = () => {
           {/* What's New Section */}
           <section className="mb-20">
             <div className="text-center mb-12">
-              <h2 className="text-4xl font-bold mb-6 font-heading">What's New at DeepTerm</h2>
+              <h2 className="text-4xl font-bold mb-6 font-heading">Explore DeepTerm's Features</h2>
               <p className="text-xl text-gray-700 max-w-3xl mx-auto">
-                We're constantly updating our tools based on user feedback and the latest advancements in AI technology.
+                Discover our suite of tools and track your progress, constantly refined with user feedback and AI advancements.
               </p>
             </div>
             
-            <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8 max-w-7xl mx-auto">
               {/* Quiz Feature Card */}
               <Card className="neo-box overflow-hidden border-none">
                 <CardContent className="p-0">
                   <div className="bg-[#9b87f5] p-4">
                     <div className="flex justify-between items-center">
-                      <h3 className="text-xl font-bold text-white">Quiz Generator</h3>
+                      <h3 className="text-xl font-bold text-white">Quiz Maker</h3>
                       <div className="bg-white p-1.5 rounded-md">
                         <GraduationCap className="h-5 w-5 text-[#9b87f5]" />
                       </div>
@@ -96,23 +96,23 @@ const About = () => {
                   </div>
                   
                   <div className="p-6">
-                    <h4 className="font-bold text-lg mb-4">New Features:</h4>
+                    <h4 className="font-bold text-lg mb-4">Key Features:</h4>
                     <ul className="space-y-3">
                       <li className="flex items-start gap-2">
                         <CheckCircle className="h-5 w-5 text-[#9b87f5] flex-shrink-0 mt-0.5" />
-                        <span>Auto-determine mode is now default for better question generation</span>
+                        <span>Generate quizzes from text, PDF, or DOCX files</span>
                       </li>
                       <li className="flex items-start gap-2">
                         <CheckCircle className="h-5 w-5 text-[#9b87f5] flex-shrink-0 mt-0.5" />
-                        <span>Verbatim mode is enabled by default for precise learning</span>
+                        <span>Multiple question types (MCQ, T/F, Fill-in-the-blank)</span>
                       </li>
                       <li className="flex items-start gap-2">
                         <CheckCircle className="h-5 w-5 text-[#9b87f5] flex-shrink-0 mt-0.5" />
-                        <span>New manual mode for custom term-definition pairs</span>
+                        <span>Manual mode for custom question creation</span>
                       </li>
                       <li className="flex items-start gap-2">
                         <CheckCircle className="h-5 w-5 text-[#9b87f5] flex-shrink-0 mt-0.5" />
-                        <span>Enhanced document processing for DOCX files</span>
+                        <span>Save and review quizzes anytime</span>
                       </li>
                     </ul>
                   </div>
@@ -132,59 +132,95 @@ const About = () => {
                   </div>
                   
                   <div className="p-6">
-                    <h4 className="font-bold text-lg mb-4">New Features:</h4>
+                    <h4 className="font-bold text-lg mb-4">Key Features:</h4>
                     <ul className="space-y-3">
                       <li className="flex items-start gap-2">
                         <CheckCircle className="h-5 w-5 text-[#FF5C00] flex-shrink-0 mt-0.5" />
-                        <span>Daily streak tracking to build consistent habits</span>
+                        <span>Customizable work/break intervals</span>
                       </li>
                       <li className="flex items-start gap-2">
                         <CheckCircle className="h-5 w-5 text-[#FF5C00] flex-shrink-0 mt-0.5" />
-                        <span>Visual streak indicators with progressive coloring</span>
+                        <span>Daily streak tracking for habit building</span>
                       </li>
                       <li className="flex items-start gap-2">
                         <CheckCircle className="h-5 w-5 text-[#FF5C00] flex-shrink-0 mt-0.5" />
-                        <span>Improved session history visualization</span>
+                        <span>Session history and basic analytics</span>
                       </li>
                       <li className="flex items-start gap-2">
                         <CheckCircle className="h-5 w-5 text-[#FF5C00] flex-shrink-0 mt-0.5" />
-                        <span>Enhanced task management integration</span>
+                        <span>Optional task integration</span>
                       </li>
                     </ul>
                   </div>
                 </CardContent>
               </Card>
               
-              {/* Extractor Feature Card */}
+              {/* Flashcard Feature Card */}
               <Card className="neo-box overflow-hidden border-none">
                 <CardContent className="p-0">
                   <div className="bg-[#2563eb] p-4">
                     <div className="flex justify-between items-center">
-                      <h3 className="text-xl font-bold text-white">Note Extractor</h3>
+                      <h3 className="text-xl font-bold text-white">Flashcard Maker</h3>
                       <div className="bg-white p-1.5 rounded-md">
-                        <FileText className="h-5 w-5 text-[#2563eb]" />
+                        <Layers className="h-5 w-5 text-[#2563eb]" />
                       </div>
                     </div>
                   </div>
                   
                   <div className="p-6">
-                    <h4 className="font-bold text-lg mb-4">New Features:</h4>
+                    <h4 className="font-bold text-lg mb-4">Key Features:</h4>
                     <ul className="space-y-3">
                       <li className="flex items-start gap-2">
                         <CheckCircle className="h-5 w-5 text-[#2563eb] flex-shrink-0 mt-0.5" />
-                        <span>Improved DOCX file text extraction</span>
+                        <span>Extract key terms & definitions from text/docs</span>
                       </li>
                       <li className="flex items-start gap-2">
                         <CheckCircle className="h-5 w-5 text-[#2563eb] flex-shrink-0 mt-0.5" />
-                        <span>Better handling of formatted documents</span>
+                        <span>Supports PDF, DOCX, and direct text input</span>
                       </li>
                       <li className="flex items-start gap-2">
                         <CheckCircle className="h-5 w-5 text-[#2563eb] flex-shrink-0 mt-0.5" />
-                        <span>Enhanced term recognition in complex texts</span>
+                        <span>Manual mode for creating custom flashcards</span>
                       </li>
                       <li className="flex items-start gap-2">
                         <CheckCircle className="h-5 w-5 text-[#2563eb] flex-shrink-0 mt-0.5" />
-                        <span>Optimized export formats for better readability</span>
+                        <span>Save flashcard sets for review and study</span>
+                      </li>
+                    </ul>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Personalized Dashboard Card */}
+              <Card className="neo-box overflow-hidden border-none">
+                <CardContent className="p-0">
+                  <div className="bg-[#10B981] p-4">
+                    <div className="flex justify-between items-center">
+                      <h3 className="text-xl font-bold text-white">Dashboard</h3>
+                      <div className="bg-white p-1.5 rounded-md">
+                        <Activity className="h-5 w-5 text-[#10B981]" />
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="p-6">
+                    <h4 className="font-bold text-lg mb-4">Key Features:</h4>
+                    <ul className="space-y-3">
+                      <li className="flex items-start gap-2">
+                        <CheckCircle className="h-5 w-5 text-[#10B981] flex-shrink-0 mt-0.5" />
+                        <span>Track study streaks & session history</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <CheckCircle className="h-5 w-5 text-[#10B981] flex-shrink-0 mt-0.5" />
+                        <span>Visualize progress with study calendar</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <CheckCircle className="h-5 w-5 text-[#10B981] flex-shrink-0 mt-0.5" />
+                        <span>Level up based on study time (XP)</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <CheckCircle className="h-5 w-5 text-[#10B981] flex-shrink-0 mt-0.5" />
+                        <span>Unlock achievement badges for milestones</span>
                       </li>
                     </ul>
                   </div>
@@ -198,7 +234,7 @@ const About = () => {
             <div className="text-center mb-12">
               <h2 className="text-4xl font-bold mb-6 font-heading">How Our Tools Work</h2>
               <p className="text-xl text-gray-700 max-w-3xl mx-auto">
-                Each of our tools is designed to address specific learning and productivity needs.
+                Leveraging AI to streamline your learning and productivity workflows, with all your progress tracked on your personal dashboard.
               </p>
             </div>
             
@@ -206,26 +242,26 @@ const About = () => {
               {/* Quiz Generator */}
               <div className="grid md:grid-cols-2 gap-8 items-center">
                 <div className="order-2 md:order-1">
-                  <h3 className="text-2xl font-bold mb-4">AI Quiz Generator</h3>
+                  <h3 className="text-2xl font-bold mb-4">Quiz Maker</h3>
                   <p className="text-lg text-gray-700 mb-6">
-                    Our quiz generator uses advanced AI to analyze your study materials and generate effective questions that test your knowledge and reinforce learning.
+                    Analyzes your study materials (text, PDF, DOCX) to create relevant questions, reinforcing knowledge through active recall.
                   </p>
                   <ul className="space-y-3">
                     <li className="flex items-start gap-2">
                       <ArrowRight className="h-5 w-5 text-[#9b87f5] flex-shrink-0 mt-1" />
-                      <span>Upload PDF, DOCX, or TXT files or paste text directly</span>
+                      <span>Upload materials or paste text</span>
                     </li>
                     <li className="flex items-start gap-2">
                       <ArrowRight className="h-5 w-5 text-[#9b87f5] flex-shrink-0 mt-1" />
-                      <span>Choose from multiple question types or use mixed format</span>
+                      <span>Choose question types or let AI decide</span>
                     </li>
                     <li className="flex items-start gap-2">
                       <ArrowRight className="h-5 w-5 text-[#9b87f5] flex-shrink-0 mt-1" />
-                      <span>Use manual mode to create custom term-definition pairs</span>
+                      <span>Fine-tune with manual question creation</span>
                     </li>
                     <li className="flex items-start gap-2">
                       <ArrowRight className="h-5 w-5 text-[#9b87f5] flex-shrink-0 mt-1" />
-                      <span>Save quizzes for later practice and review</span>
+                      <span>Save quizzes for later study sessions</span>
                     </li>
                   </ul>
                 </div>
@@ -257,6 +293,64 @@ const About = () => {
                       </div>
                     </div>
                   </div>
+                </div>
+              </div>
+
+              {/* Flashcard Generator */}
+              <div className="grid md:grid-cols-2 gap-8 items-center">
+                <div className="bg-[#eef2ff] p-8 rounded-2xl border-2 border-[#dbeafe] order-1 md:order-2">
+                  <div className="flex items-center gap-4 mb-6">
+                    <div className="w-14 h-14 flex items-center justify-center rounded-lg bg-[#2563eb] shadow-md">
+                      <Layers className="h-7 w-7 text-white" />
+                    </div>
+                    <h4 className="text-xl font-bold">Flashcard Features</h4>
+                  </div>
+                  <div className="space-y-4">
+                    <div className="bg-white p-4 rounded-lg shadow-md">
+                      <div className="flex items-center justify-between">
+                        <span className="font-medium">AI Term Extraction</span>
+                        <div className="w-10 h-5 bg-[#2563eb] rounded-full"></div>
+                      </div>
+                    </div>
+                    <div className="bg-white p-4 rounded-lg shadow-md">
+                      <div className="flex items-center justify-between">
+                        <span className="font-medium">Manual Card Creation</span>
+                        <div className="w-10 h-5 bg-[#2563eb] rounded-full"></div>
+                      </div>
+                    </div>
+                    <div className="bg-white p-4 rounded-lg shadow-md">
+                      <div className="flex items-center">
+                        <span className="font-medium mr-2">Input Types:</span>
+                        <span className="bg-[#2563eb] text-white text-xs px-2 py-1 rounded mr-1">TXT</span>
+                        <span className="bg-[#2563eb] text-white text-xs px-2 py-1 rounded mr-1">PDF</span>
+                        <span className="bg-[#2563eb] text-white text-xs px-2 py-1 rounded">DOCX</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div className="order-2 md:order-1">
+                  <h3 className="text-2xl font-bold mb-4">Flashcard Maker</h3>
+                  <p className="text-lg text-gray-700 mb-6">
+                    Automatically extracts key terms and definitions from your notes or documents, creating flashcard sets ideal for spaced repetition and memorization.
+                  </p>
+                  <ul className="space-y-3">
+                    <li className="flex items-start gap-2">
+                      <ArrowRight className="h-5 w-5 text-[#2563eb] flex-shrink-0 mt-1" />
+                      <span>Process text, PDF, or DOCX files</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <ArrowRight className="h-5 w-5 text-[#2563eb] flex-shrink-0 mt-1" />
+                      <span>AI identifies potential terms and definitions</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <ArrowRight className="h-5 w-5 text-[#2563eb] flex-shrink-0 mt-1" />
+                      <span>Create custom flashcards manually</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <ArrowRight className="h-5 w-5 text-[#2563eb] flex-shrink-0 mt-1" />
+                      <span>Save and organize flashcard sets</span>
+                    </li>
+                  </ul>
                 </div>
               </div>
               
@@ -305,24 +399,24 @@ const About = () => {
                 <div>
                   <h3 className="text-2xl font-bold mb-4">Pomodoro Focus Timer</h3>
                   <p className="text-lg text-gray-700 mb-6">
-                    Our Pomodoro timer combines the proven time-management technique with modern features to help you maintain focus and track your progress over time.
+                    Implements the Pomodoro Technique® with customizable timers, streak tracking, and task integration to help you manage time and maintain deep focus.
                   </p>
                   <ul className="space-y-3">
                     <li className="flex items-start gap-2">
                       <ArrowRight className="h-5 w-5 text-[#FF5C00] flex-shrink-0 mt-1" />
-                      <span>Customizable focus and break intervals</span>
+                      <span>Set custom focus and break lengths</span>
                     </li>
                     <li className="flex items-start gap-2">
                       <ArrowRight className="h-5 w-5 text-[#FF5C00] flex-shrink-0 mt-1" />
-                      <span>Visual streak tracking to build daily habits</span>
+                      <span>Track daily streaks to build consistency</span>
                     </li>
                     <li className="flex items-start gap-2">
                       <ArrowRight className="h-5 w-5 text-[#FF5C00] flex-shrink-0 mt-1" />
-                      <span>Integrated task management</span>
+                      <span>Link sessions to specific tasks</span>
                     </li>
                     <li className="flex items-start gap-2">
                       <ArrowRight className="h-5 w-5 text-[#FF5C00] flex-shrink-0 mt-1" />
-                      <span>Session history and productivity insights</span>
+                      <span>Review session history</span>
                     </li>
                   </ul>
                 </div>
@@ -332,20 +426,23 @@ const About = () => {
           
           {/* Call-to-Action Section */}
           <section className="mb-12 py-16 px-6 bg-[#f5f2ff] rounded-3xl border-2 border-[#d4c8ff] max-w-5xl mx-auto text-center">
-            <h2 className="text-3xl md:text-4xl font-bold mb-6 font-heading">Start using DeepTerm today</h2>
+            <h2 className="text-3xl md:text-4xl font-bold mb-6 font-heading">Ready to Boost Your Learning?</h2>
             <p className="text-xl text-gray-700 mb-10 max-w-2xl mx-auto">
-              Discover how our AI-powered tools can help you learn more efficiently, stay focused, and boost your productivity.
+              Explore DeepTerm's tools, track your progress, and experience a smarter way to study and stay focused.
             </p>
             
             <div className="flex flex-wrap gap-4 justify-center">
               <Link to="/quiz">
-                <Button size="lg" className="h-14 text-lg bg-[#9b87f5] hover:bg-[#8A76E5]">Try Quiz Generator</Button>
+                <Button size="lg" className="h-14 text-lg bg-[#9b87f5] hover:bg-[#8A76E5]">Generate a Quiz</Button>
+              </Link>
+              <Link to="/study#flashcards">
+                <Button size="lg" className="h-14 text-lg bg-[#2563eb] hover:bg-[#2050c3]">Create Flashcards</Button>
               </Link>
               <Link to="/pomodoro">
-                <Button size="lg" className="h-14 text-lg bg-[#FF5C00] hover:bg-[#E05000]">Use Pomodoro Timer</Button>
+                <Button size="lg" className="h-14 text-lg bg-[#FF5C00] hover:bg-[#E05000]">Start Focus Timer</Button>
               </Link>
-              <Link to="/extractor">
-                <Button size="lg" className="h-14 text-lg bg-[#2563eb] hover:bg-[#2050c3]">Extract Notes</Button>
+              <Link to="/dashboard">
+                <Button size="lg" className="h-14 text-lg bg-[#10B981] hover:bg-[#0F9A6F]">View Dashboard</Button>
               </Link>
             </div>
           </section>
