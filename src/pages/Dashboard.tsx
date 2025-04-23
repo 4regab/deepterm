@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react'; // Import useRef
+import React, { useState, useEffect, useRef, useCallback } from 'react'; // Added useCallback
 import { usePomodoroContext } from '@/hooks/usePomodoroContext';
 import { useUserProfile } from '@/context/UserProfileContext'; // Import useUserProfile only
 import { ACHIEVEMENT_BADGES, UserAchievement } from '@/context/userProfileConstants'; // Import ACHIEVEMENT_BADGES from the correct source
@@ -59,6 +59,15 @@ const Dashboard = () => {
   const [showSettingsDialog, setShowSettingsDialog] = useState<boolean>(false);
   // State for editing name in settings
   const [editableName, setEditableName] = useState(userProfile.name);
+  // State for level progress to ensure real-time updates
+  const [levelProgress, setLevelProgress] = useState(() => getLevelProgress());
+  const [currentLevel, setCurrentLevel] = useState(() => getUserLevel());
+
+  // Update level progress whenever minutesStudied changes
+  useEffect(() => {
+    setLevelProgress(getLevelProgress());
+    setCurrentLevel(getUserLevel());
+  }, [userProfile.minutesStudied, userProfile.xp, userProfile.level, getLevelProgress, getUserLevel]);
 
   // Update editableName when userProfile.name changes (e.g., after initial welcome dialog)
   useEffect(() => {
@@ -385,10 +394,6 @@ const Dashboard = () => {
       toast.error("Failed to download PDF. Please try again.");
     }
   };
-
-  // Get level progress
-  const levelProgress = getLevelProgress();
-  const currentLevel = getUserLevel();
 
   return (
     <>
