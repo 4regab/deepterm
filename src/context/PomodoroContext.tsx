@@ -23,6 +23,10 @@ let userInteractionOccurred = false;
 // Store the previous page path for returning after breaks
 let previousPagePath = '';
 
+// Add storage key for real-time study tracking
+const REALTIME_STUDY_KEY = 'realtime-study-data';
+const POMODORO_STATE_KEY = 'pomodoro-state';
+
 // Export the type
 export interface PomodoroContextType {
     timer: number;
@@ -75,6 +79,8 @@ export interface PomodoroContextType {
     // Timer visibility in navbar
     isTimerVisibleInNavbar: boolean;
     setIsTimerVisibleInNavbar: React.Dispatch<React.SetStateAction<boolean>>;
+    // Real-time study tracking
+    elapsedTimeRef: React.MutableRefObject<number>;
 }
 
 const PomodoroContext = createContext<PomodoroContextType | undefined>(undefined);
@@ -145,6 +151,182 @@ export const PomodoroProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const intervalRef = useRef<NodeJS.Timeout | null>(null); // Ref to store interval ID
     const startTimeRef = useRef<number | null>(null); // Ref to store the timestamp when the timer started/resumed
     const pauseTimeRef = useRef<number>(userSettings.pomodoro); // Ref to store remaining time when paused
+
+    // New: Real-time study tracking ref for continuous time logging
+    const elapsedTimeRef = useRef<number>(0); // Accumulated study time in current session
+    const lastCheckpointRef = useRef<number | null>(null); // Timestamp of last checkpoint
+    const studyTimeRef = useRef<NodeJS.Timeout | null>(null); // Timer for periodic saving
+
+    // Keep track of tab visibility state
+    const wasVisible = useRef(true);
+    
+    // New: Add state for real-time current session study time
+    const [currentSessionTime, setCurrentSessionTime] = useState<number>(0);
+
+    // New: Update elapsed time for real-time tracking
+    const updateElapsedTime = useCallback(() => {
+        if (timerType === 'pomodoro' && lastCheckpointRef.current && isRunning) {
+            // Calculate time elapsed since the last checkpoint
+            const now = Date.now();
+            const sinceLastCheckpoint = Math.floor((now - lastCheckpointRef.current) / 1000);
+            
+            // Add to accumulated elapsed time
+            elapsedTimeRef.current += sinceLastCheckpoint;
+            
+            // Update checkpoint
+            lastCheckpointRef.current = now;
+            
+            // Update the current session time state for UI
+            setCurrentSessionTime(elapsedTimeRef.current);
+            
+            return sinceLastCheckpoint;
+        }
+        return 0;
+    }, [timerType, isRunning]);
+
+    // New: Save real-time study data to localStorage
+    const saveRealTimeData = useCallback(() => {
+        // Only save meaningful data for pomodoro timers (not breaks)
+        if (timerType === 'pomodoro') {
+            // Update elapsed time before saving
+            updateElapsedTime();
+            
+            // Prepare data to save
+            const dataToSave = {
+                elapsedTime: elapsedTimeRef.current,
+                timerType: timerType,
+                lastUpdated: new Date().toISOString()
+            };
+            
+            try {
+                localStorage.setItem(REALTIME_STUDY_KEY, JSON.stringify(dataToSave));
+            } catch (error) {
+                console.error("Failed to save real-time study data:", error);
+            }
+        }
+    }, [timerType, updateElapsedTime]);
+    
+    // New: Periodic save of study time during pomodoro session
+    useEffect(() => {
+        // Only track elapsed time during pomodoro sessions, not during breaks
+        if (timerType !== 'pomodoro') return;
+
+        // Set up interval for periodic saving (every 30 seconds)
+        const saveRealTimeDataPeriodically = () => {
+            if (studyTimeRef.current) {
+                clearInterval(studyTimeRef.current);
+            }
+
+            // Only if we're in a pomodoro timer (not breaks)
+            if (timerType === 'pomodoro') {
+                studyTimeRef.current = setInterval(() => {
+                    saveRealTimeData();
+                }, 30000); // Save every 30 seconds
+            }
+            
+            return () => {
+                if (studyTimeRef.current) {
+                    clearInterval(studyTimeRef.current);
+                    studyTimeRef.current = null;
+                }
+            };
+        };
+
+        // Start/stop periodic saving based on timer running state
+        if (isRunning) {
+            lastCheckpointRef.current = Date.now();
+            return saveRealTimeDataPeriodically();
+        } else {
+            // When pausing, update elapsed time before stopping interval
+            updateElapsedTime();
+            if (studyTimeRef.current) {
+                clearInterval(studyTimeRef.current);
+                studyTimeRef.current = null;
+            }
+            
+            // Save data when pausing to ensure we don't lose progress
+            saveRealTimeData();
+        }
+        
+        // Cleanup function
+        return () => {
+            if (studyTimeRef.current) {
+                clearInterval(studyTimeRef.current);
+                studyTimeRef.current = null;
+            }
+        };
+    }, [isRunning, timerType, saveRealTimeData, updateElapsedTime]);
+
+    useEffect(() => {
+        const handleVisibilityChange = () => {
+            const isVisible = !document.hidden;
+            
+            // Handle tab becoming visible
+            if (isVisible && !wasVisible.current && isPlayingSound && !isMuted) {
+                console.log("Tab became visible, checking audio...");
+                
+                // Check if audio is actually playing
+                const currentAudio = audioRef.current;
+                if (currentAudio && (currentAudio.paused || currentAudio.ended)) {
+                    console.log("Audio was paused, attempting to resume...");
+                    
+                    // Try to resume playback
+                    const resumePromise = currentAudio.play();
+                    if (resumePromise) {
+                        resumePromise.catch(error => {
+                            console.error("Failed to resume audio:", error);
+                            // Create new audio element if resume fails
+                            const newAudio = new Audio(NOTIFICATION_SOUND_URL);
+                            newAudio.loop = true;
+                            audioRef.current = newAudio;
+                            (window as Window).__pomodoroAudio = newAudio;
+                            newAudio.play().catch(console.error);
+                        });
+                    }
+                }
+            }
+
+            // When tab becomes visible again, update elapsed time if we're in a pomodoro
+            if (isVisible && !wasVisible.current && timerType === 'pomodoro') {
+                updateElapsedTime();
+            }
+            
+            // Update visibility state
+            wasVisible.current = isVisible;
+        };
+
+        // Set up visibility change listener
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+        
+        return () => {
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
+        };
+    }, [isPlayingSound, isMuted, timerType, updateElapsedTime]);
+
+    // New: Load real-time study data from localStorage if it exists
+    useEffect(() => {
+        try {
+            const savedRealTimeData = localStorage.getItem(REALTIME_STUDY_KEY);
+            if (savedRealTimeData) {
+                const data = JSON.parse(savedRealTimeData);
+                
+                // Only restore elapsed time for pomodoro type, not for breaks
+                if (data.timerType === 'pomodoro') {
+                    elapsedTimeRef.current = data.elapsedTime || 0;
+                    
+                    // If there was an ongoing pomodoro session, show the timer in navbar
+                    if (elapsedTimeRef.current > 0) {
+                        setIsTimerVisibleInNavbar(true);
+                    }
+                    
+                    // Log a message to confirm data was loaded
+                    console.log(`Loaded real-time study data: ${elapsedTimeRef.current} seconds`);
+                }
+            }
+        } catch (error) {
+            console.error("Failed to load real-time study data:", error);
+        }
+    }, []);
 
     // Track the current page and store it if it's not the Pomodoro page
     useEffect(() => {
@@ -245,6 +427,54 @@ export const PomodoroProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         setTotalStudyTimeToday(todayTime);
     }, [studySessions]);
 
+    // New: Update totalStudyTimeToday in real-time to include current active session
+    useEffect(() => {
+        // Set up interval for real-time updates to totalStudyTimeToday
+        let updateInterval: NodeJS.Timeout | null = null;
+
+        const updateTotalStudyTimeWithCurrentSession = () => {
+            // Only update when it's a pomodoro timer (not breaks)
+            if (timerType === 'pomodoro' && isRunning) {
+                // First, update the elapsed time reference to current value
+                updateElapsedTime();
+                
+                // Get the base time from completed sessions for today
+                const today = new Date();
+                const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+                
+                const completedSessionsTimeToday = studySessions
+                    .filter(session => {
+                        const sessionDate = new Date(session.date);
+                        const sessionDateStr = `${sessionDate.getFullYear()}-${String(sessionDate.getMonth() + 1).padStart(2, '0')}-${String(sessionDate.getDate()).padStart(2, '0')}`;
+                        return sessionDateStr === todayStr;
+                    })
+                    .reduce((total, session) => total + session.duration, 0);
+                
+                // Add current session's elapsed time to completed sessions
+                const updatedTotalTime = completedSessionsTimeToday + elapsedTimeRef.current;
+                
+                // Update the displayed total
+                setTotalStudyTimeToday(updatedTotalTime);
+            }
+        };
+
+        // Start interval for real-time updates if we're in a pomodoro session
+        if (timerType === 'pomodoro' && isRunning) {
+            // Update immediately once
+            updateTotalStudyTimeWithCurrentSession();
+            
+            // Then set interval for continuous updates (every 1 second)
+            updateInterval = setInterval(updateTotalStudyTimeWithCurrentSession, 1000);
+        }
+
+        // Clean up the interval on component unmount or dependencies change
+        return () => {
+            if (updateInterval) {
+                clearInterval(updateInterval);
+            }
+        };
+    }, [timerType, isRunning, studySessions, updateElapsedTime]);
+
     // Update user settings and save to localStorage
     const updateUserSettings = useCallback((newSettings: Partial<typeof userSettings>) => {
         setUserSettings(prevSettings => {
@@ -322,50 +552,6 @@ export const PomodoroProvider: React.FC<{ children: React.ReactNode }> = ({ chil
                 (window as Window).__pomodoroAudio.pause();
                 (window as Window).__pomodoroAudio = null;
             }
-        };
-    }, [isPlayingSound, isMuted]);
-
-    // Keep track of tab visibility state
-    const wasVisible = useRef(true);
-
-    useEffect(() => {
-        const handleVisibilityChange = () => {
-            const isVisible = !document.hidden;
-            
-            // Handle tab becoming visible
-            if (isVisible && !wasVisible.current && isPlayingSound && !isMuted) {
-                console.log("Tab became visible, checking audio...");
-                
-                // Check if audio is actually playing
-                const currentAudio = audioRef.current;
-                if (currentAudio && (currentAudio.paused || currentAudio.ended)) {
-                    console.log("Audio was paused, attempting to resume...");
-                    
-                    // Try to resume playback
-                    const resumePromise = currentAudio.play();
-                    if (resumePromise) {
-                        resumePromise.catch(error => {
-                            console.error("Failed to resume audio:", error);
-                            // Create new audio element if resume fails
-                            const newAudio = new Audio(NOTIFICATION_SOUND_URL);
-                            newAudio.loop = true;
-                            audioRef.current = newAudio;
-                            (window as Window).__pomodoroAudio = newAudio;
-                            newAudio.play().catch(console.error);
-                        });
-                    }
-                }
-            }
-            
-            // Update visibility state
-            wasVisible.current = isVisible;
-        };
-
-        // Set up visibility change listener
-        document.addEventListener('visibilitychange', handleVisibilityChange);
-        
-        return () => {
-            document.removeEventListener('visibilitychange', handleVisibilityChange);
         };
     }, [isPlayingSound, isMuted]);
 
@@ -497,6 +683,97 @@ export const PomodoroProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         setIsPlayingSound(false);
     }, []);
 
+    // New: Record real-time study session
+    const recordRealTimeStudySession = useCallback(() => {
+        // Only record if there's meaningful time accumulated (> 10 seconds)
+        if (elapsedTimeRef.current > 10) {
+            const now = new Date().toISOString();
+            const newSession: StudySession = {
+                date: now,
+                duration: elapsedTimeRef.current // Duration in seconds from accumulated tracking
+            };
+            
+            setStudySessions(prevSessions => {
+                const updatedSessions = [...prevSessions, newSession];
+                try {
+                    localStorage.setItem('study-sessions', JSON.stringify(updatedSessions));
+                } catch (error) {
+                    console.error("Failed to save study session:", error);
+                }
+                return updatedSessions;
+            });
+            
+            // Convert duration to minutes and update user XP
+            const minutes = Math.floor(elapsedTimeRef.current / 60);
+            if (minutes > 0) {
+                // Pass true as the second parameter to trigger XP updates and achievement checks
+                updateMinutesStudied(minutes, true);
+                
+                // Log to confirm the real-time session was recorded
+                console.log(`Recorded real-time study session: ${minutes} minutes (${elapsedTimeRef.current} seconds)`);
+            }
+            
+            // Reset elapsed time after recording
+            elapsedTimeRef.current = 0;
+            lastCheckpointRef.current = null;
+            
+            // Clear stored real-time data
+            try {
+                localStorage.removeItem(REALTIME_STUDY_KEY);
+            } catch (error) {
+                console.error("Failed to clear real-time study data:", error);
+            }
+        }
+    }, [updateMinutesStudied]);
+
+    // Add window beforeunload event to save progress when page is closed/refreshed
+    useEffect(() => {
+        const handleBeforeUnload = () => {
+             if (isRunning && startTimeRef.current && lastCheckpointRef.current) {
+                 const elapsedSinceLastCheckpoint = (Date.now() - lastCheckpointRef.current) / 1000;
+                 const currentAccumulated = elapsedTimeRef.current + (timerType === 'pomodoro' ? elapsedSinceLastCheckpoint : 0);
+                 const currentTime = pauseTimeRef.current - Math.floor((Date.now() - startTimeRef.current) / 1000);
+
+                 // Save incomplete pomodoro session if it's a pomodoro timer and we have accumulated time
+                 if (timerType === 'pomodoro' && currentAccumulated > 0) {
+                     console.log(`Saving incomplete pomodoro session with duration: ${currentAccumulated}s`);
+                     recordRealTimeStudySession();
+                 }
+
+                 const stateToSave = {
+                     timer: Math.max(0, currentTime),
+                     timerType,
+                     isRunning,
+                     completedPomodoros,
+                     initialTime,
+                     timestamp: Date.now(),
+                 };
+                 try {
+                     localStorage.setItem(POMODORO_STATE_KEY, JSON.stringify(stateToSave));
+                 } catch (error) {
+                     console.error("Failed to save Pomodoro state on unload:", error);
+                 }
+
+             } else if (timerType === 'pomodoro' && !isRunning && elapsedTimeRef.current > 0) {
+                 // Also save paused pomodoro sessions
+                 console.log(`Saving paused pomodoro session with duration: ${elapsedTimeRef.current}s`);
+                 recordRealTimeStudySession();
+             }
+        };
+
+        window.addEventListener('beforeunload', handleBeforeUnload);
+
+        return () => {
+            window.removeEventListener('beforeunload', handleBeforeUnload);
+            
+            // When component unmounts, record any accumulated time
+            if (timerType === 'pomodoro' && elapsedTimeRef.current > 0) {
+                console.log(`Component unmounting, saving accumulated time: ${elapsedTimeRef.current}s`);
+                recordRealTimeStudySession();
+            }
+        };
+    }, [isRunning, timerType, completedPomodoros, initialTime, recordRealTimeStudySession]);
+
     // Record completed pomodoro session
     const recordPomodoroSession = useCallback((duration: number) => {
         const now = new Date().toISOString();
@@ -542,6 +819,12 @@ export const PomodoroProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         let nextType: TimerType;
 
         if (timerType === 'pomodoro') {
+            // Add any accumulated real-time tracking to the session record
+            updateElapsedTime();
+            if (elapsedTimeRef.current > 0) {
+                recordRealTimeStudySession();
+            }
+            
             // Record completed pomodoro session when it's a pomodoro (not a break)
             // Fix: pass the initialTime instead of userSettings.pomodoro to avoid double counting
             recordPomodoroSession(initialTime);
@@ -567,7 +850,7 @@ export const PomodoroProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
         // Stop the current timer
         setIsRunning(false);
-    }, [completedPomodoros, timerType, playSound, userSettings, recordPomodoroSession, initialTime]);
+    }, [completedPomodoros, timerType, playSound, userSettings, recordPomodoroSession, initialTime, updateElapsedTime, recordRealTimeStudySession]);
 
     // Handle timer type change
     const handleTimerTypeChange = useCallback((type: TimerType) => {
@@ -578,6 +861,14 @@ export const PomodoroProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         if (intervalRef.current) {
             clearInterval(intervalRef.current);
             intervalRef.current = null;
+        }
+
+        // If changing from pomodoro to a break, record accumulated study time
+        if (timerType === 'pomodoro' && type !== 'pomodoro') {
+            updateElapsedTime();
+            if (elapsedTimeRef.current > 0) {
+                recordRealTimeStudySession();
+            }
         }
 
         // Change the timer type
@@ -607,7 +898,7 @@ export const PomodoroProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         setIsTimerCompleted(false); // Ensure completion dialog is closed
         stopSound(); // Stop any completion sound
 
-    }, [isRunning, userSettings, stopSound, resetTasksInPomodoro]);
+    }, [isRunning, userSettings, stopSound, resetTasksInPomodoro, timerType, updateElapsedTime, recordRealTimeStudySession]);
 
     // Handle starting the next timer phase
     const handleStartNextPhase = useCallback(() => {
@@ -649,6 +940,13 @@ export const PomodoroProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             // If this is starting a break, navigate to the Pomodoro page
             const startTimer = () => {
                 startTimeRef.current = Date.now(); // Set start time *just before* running
+                
+                // If starting a new pomodoro, reset real-time tracking
+                if (nextType === 'pomodoro') {
+                    elapsedTimeRef.current = 0;
+                    lastCheckpointRef.current = Date.now();
+                }
+                
                 setIsRunning(true);
                 setNextTimerType(null);
             };
@@ -678,6 +976,11 @@ export const PomodoroProvider: React.FC<{ children: React.ReactNode }> = ({ chil
                 startTimeRef.current = Date.now();
                 // Ensure pauseTimeRef holds the correct starting value for this run
                 // pauseTimeRef.current = timer; // This is set correctly in toggleTimer/handleStartNextPhase
+                
+                // Initialize/update checkpoint for real-time tracking (pomodoro only)
+                if (timerType === 'pomodoro') {
+                    lastCheckpointRef.current = Date.now();
+                }
             }
 
             // Clear any existing interval before starting a new one
@@ -726,7 +1029,7 @@ export const PomodoroProvider: React.FC<{ children: React.ReactNode }> = ({ chil
                 intervalRef.current = null;
             }
         };
-    }, [isRunning, handleTimerComplete, timer]); // Added 'timer' to dependencies to satisfy lint rule
+    }, [isRunning, handleTimerComplete, timer, timerType]); // Added 'timer' to dependencies to satisfy lint rule
 
     // Toggle timer running state
     const toggleTimer = () => {
@@ -738,6 +1041,11 @@ export const PomodoroProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             // Set start time and ensure pauseTimeRef has the current timer value
             startTimeRef.current = Date.now();
             pauseTimeRef.current = timer; // Store the time we are starting *from*
+            
+            // For pomodoro timers, update real-time tracking checkpoint
+            if (timerType === 'pomodoro') {
+                lastCheckpointRef.current = Date.now();
+            }
 
             if (timerType === 'pomodoro' && timer === initialTime) {
                 resetTasksInPomodoro();
@@ -748,6 +1056,13 @@ export const PomodoroProvider: React.FC<{ children: React.ReactNode }> = ({ chil
                 clearInterval(intervalRef.current);
                 intervalRef.current = null;
             }
+            
+            // Update elapsed time for real-time tracking (pomodoro only)
+            if (timerType === 'pomodoro') {
+                updateElapsedTime();
+                saveRealTimeData();
+            }
+            
             pauseTimeRef.current = timer; // Store remaining time when pausing
         }
 
@@ -762,6 +1077,23 @@ export const PomodoroProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         if (intervalRef.current) { // Clear any active interval
             clearInterval(intervalRef.current);
             intervalRef.current = null;
+        }
+
+        // If resetting a pomodoro, record any accumulated study time
+        if (timerType === 'pomodoro') {
+            updateElapsedTime();
+            if (elapsedTimeRef.current > 30) { // Only record if > 30 seconds have passed
+                recordRealTimeStudySession();
+            } else {
+                // Just clear the tracking data if insignificant time
+                elapsedTimeRef.current = 0;
+                lastCheckpointRef.current = null;
+                try {
+                    localStorage.removeItem(REALTIME_STUDY_KEY);
+                } catch (error) {
+                    console.error("Failed to clear real-time study data:", error);
+                }
+            }
         }
 
         let newInitialTime;
@@ -827,7 +1159,9 @@ export const PomodoroProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         setPreviousPagePath,
         // Timer visibility in navbar
         isTimerVisibleInNavbar,
-        setIsTimerVisibleInNavbar
+        setIsTimerVisibleInNavbar,
+        // Real-time study tracking
+        elapsedTimeRef
     };
 
     return (
