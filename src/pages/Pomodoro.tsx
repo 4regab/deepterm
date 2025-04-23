@@ -62,7 +62,8 @@ const Pomodoro = () => {
     setIsStreakDialogOpen,
     totalStudyTimeToday,
     formatDuration,
-    getFormattedDate
+    getFormattedDate,
+    elapsedTimeRef
   } = usePomodoroContext();
 
   // Local state for settings form
@@ -99,6 +100,24 @@ const Pomodoro = () => {
       });
     }
   }, [isSettingsDialogOpen, userSettings.pomodoro, userSettings.shortBreak, userSettings.longBreak, userSettings.pomodorosUntilLongBreak]);
+
+  // Add an effect to force refresh the study history dialog when elapsedTimeRef changes
+  useEffect(() => {
+    // Create a timer to periodically update the study history dialog content
+    // This ensures the dialog reflects real-time changes even when it's already open
+    const historyUpdateInterval = setInterval(() => {
+      // Only update if we're in an active pomodoro session and the streak dialog is open
+      if (timerType === 'pomodoro' && isRunning && isStreakDialogOpen) {
+        // Force a re-render of the study history by using a state update
+        // We're just using the same value to trigger the re-render without changing actual data
+        setIsStreakDialogOpen(true);
+      }
+    }, 1000); // Update every second to match the timer update frequency
+    
+    return () => {
+      clearInterval(historyUpdateInterval);
+    };
+  }, [timerType, isRunning, isStreakDialogOpen, setIsStreakDialogOpen]);
 
   // Toggle todo list visibility
   const toggleTodoListVisibility = () => {
@@ -190,8 +209,26 @@ const Pomodoro = () => {
 
   // Get study sessions grouped by date
   const getStudySessionsByDate = () => {
+    // Create a copy of the study sessions array
+    const sessionsToDisplay = [...studySessions];
+
+    // Add the current active session if it's a pomodoro and it's running or has accumulated time
+    if (timerType === 'pomodoro' && (isRunning || elapsedTimeRef.current > 0)) {
+      // Create a temporary session object for the current active session
+      const now = new Date().toISOString();
+      const currentSession = {
+        date: now,
+        // We don't have direct access to elapsedTimeRef here, so we estimate from totalStudyTimeToday
+        // This works because the totalStudyTimeToday is updated in real-time to include the current session
+        duration: elapsedTimeRef?.current || 0
+      };
+
+      // Add it to our sessions array for display
+      sessionsToDisplay.push(currentSession);
+    }
+
     // Group sessions by date
-    const sessionsByDate = studySessions.reduce<{[date: string]: number}>((acc, session) => {
+    const sessionsByDate = sessionsToDisplay.reduce<{[date: string]: number}>((acc, session) => {
       // Get date in YYYY-MM-DD format for grouping
       const date = new Date(session.date);
       const dateKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
@@ -478,11 +515,13 @@ const Pomodoro = () => {
                   value={settingsForm.pomodorosUntilLongBreak}
                   onChange={(e) => {
                     const value = e.target.value === '' ? '' : Math.min(99, parseInt(e.target.value) || 1);
-                    setSettingsForm({ ...settingsForm, pomodorosUntilLongBreak: value });
+                    // Ensure the value set in state is always a number, defaulting to 1 if empty/invalid
+                    setSettingsForm({ ...settingsForm, pomodorosUntilLongBreak: Number(value) || 1 });
                   }}
                   onBlur={(e) => {
+                    // Ensure the value set on blur is also a number, defaulting to 1
                     const value = e.target.value === '' ? 1 : Math.min(99, parseInt(e.target.value) || 1);
-                    setSettingsForm({ ...settingsForm, pomodorosUntilLongBreak: value });
+                    setSettingsForm({ ...settingsForm, pomodorosUntilLongBreak: Number(value) });
                   }}
                   className="neo-border text-2xl h-14 text-center font-mono [-moz-appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                   placeholder="4"
