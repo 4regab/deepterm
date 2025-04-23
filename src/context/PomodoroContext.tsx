@@ -23,14 +23,6 @@ let userInteractionOccurred = false;
 // Store the previous page path for returning after breaks
 let previousPagePath = '';
 
-// Active study session tracking interface
-interface ActiveStudySession {
-  startTime: number; // Timestamp when session started
-  accumulatedTime: number; // Previously accumulated time in seconds
-  timerType: TimerType;
-  lastUpdateTime: number; // Last time the session was updated
-}
-
 // Export the type
 export interface PomodoroContextType {
     timer: number;
@@ -118,19 +110,6 @@ export const PomodoroProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         return [];
     };
 
-    // Load active session from localStorage
-    const loadActiveSession = (): ActiveStudySession | null => {
-        try {
-            const activeSession = localStorage.getItem('active-study-session');
-            if (activeSession) {
-                return JSON.parse(activeSession);
-            }
-        } catch (error) {
-            console.error("Failed to load active study session:", error);
-        }
-        return null;
-    };
-
     // User settings state
     const [userSettings, setUserSettings] = useState(loadSavedSettings);
     const [isSettingsDialogOpen, setIsSettingsDialogOpen] = useState(false);
@@ -150,9 +129,6 @@ export const PomodoroProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     // State for timer visibility in navbar
     const [isTimerVisibleInNavbar, setIsTimerVisibleInNavbar] = useState(false);
     
-    // Active study session state
-    const [activeStudySession, setActiveStudySession] = useState<ActiveStudySession | null>(loadActiveSession);
-    
     // Store the previous page path for returning after breaks
     const setPreviousPagePath = useCallback((path: string) => {
         previousPagePath = path;
@@ -169,66 +145,6 @@ export const PomodoroProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const intervalRef = useRef<NodeJS.Timeout | null>(null); // Ref to store interval ID
     const startTimeRef = useRef<number | null>(null); // Ref to store the timestamp when the timer started/resumed
     const pauseTimeRef = useRef<number>(userSettings.pomodoro); // Ref to store remaining time when paused
-    
-    // Ref to store the last time we saved study progress
-    const lastSavedProgressRef = useRef<number>(Date.now());
-
-    // Log study session data to history
-    const logStudyTimeToHistory = useCallback((duration: number) => {
-        if (duration <= 0 || timerType !== 'pomodoro') return;
-        
-        const now = new Date().toISOString();
-        const newSession: StudySession = {
-            date: now,
-            duration: duration // Duration in seconds
-        };
-        
-        setStudySessions(prevSessions => {
-            const updatedSessions = [...prevSessions, newSession];
-            try {
-                localStorage.setItem('study-sessions', JSON.stringify(updatedSessions));
-            } catch (error) {
-                console.error("Failed to save study session:", error);
-            }
-            return updatedSessions;
-        });
-        
-        // Convert duration to minutes and update user XP
-        const minutes = Math.floor(duration / 60);
-        if (minutes > 0) {
-            // Don't pass the isPomodoroSession flag since this is incremental tracking
-            updateMinutesStudied(minutes, false);
-            
-            // Log to confirm the session was recorded (for debugging)
-            console.log(`Recorded incremental study session: ${minutes} minutes`);
-        }
-    }, [timerType, updateMinutesStudied]);
-
-    // Restore active session from localStorage on mount
-    useEffect(() => {
-        if (activeStudySession && activeStudySession.timerType === 'pomodoro') {
-            // Only restore pomodoro sessions, not breaks
-            if (Date.now() - activeStudySession.lastUpdateTime < 24 * 60 * 60 * 1000) { // Within 24 hours
-                // Calculate the elapsed time since last update
-                const elapsedSinceLastUpdate = Math.floor((Date.now() - activeStudySession.lastUpdateTime) / 1000);
-                
-                // Only log the accumulated time, don't try to resume the timer
-                if (activeStudySession.accumulatedTime > 0) {
-                    // Log the accumulated time to study history
-                    logStudyTimeToHistory(activeStudySession.accumulatedTime);
-                    console.log(`Restored and logged ${formatDuration(activeStudySession.accumulatedTime)} from previous session`);
-                    
-                    // Clear the active session since we've logged it
-                    setActiveStudySession(null);
-                    localStorage.removeItem('active-study-session');
-                }
-            } else {
-                // Session is too old, discard it
-                setActiveStudySession(null);
-                localStorage.removeItem('active-study-session');
-            }
-        }
-    }, [activeStudySession, logStudyTimeToHistory]);
 
     // Track the current page and store it if it's not the Pomodoro page
     useEffect(() => {
@@ -255,57 +171,6 @@ export const PomodoroProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             document.title = originalTitle;
         };
     }, [timer, isRunning, timerType, isTimerCompleted]);
-
-    // Save active study session to localStorage when it changes
-    useEffect(() => {
-        if (activeStudySession) {
-            try {
-                localStorage.setItem('active-study-session', JSON.stringify(activeStudySession));
-            } catch (error) {
-                console.error("Failed to save active study session:", error);
-            }
-        } else {
-            localStorage.removeItem('active-study-session');
-        }
-    }, [activeStudySession]);
-
-    // Periodically log accumulated study time while timer is running
-    useEffect(() => {
-        if (isRunning && timerType === 'pomodoro') {
-            const updateInterval = setInterval(() => {
-                // Record accumulated time every 30 seconds
-                const now = Date.now();
-                if (now - lastSavedProgressRef.current >= 30000 && startTimeRef.current) {
-                    const elapsedSinceLastSave = Math.floor((now - lastSavedProgressRef.current) / 1000);
-                    
-                    // Update active study session
-                    setActiveStudySession(prev => {
-                        if (!prev) {
-                            return {
-                                startTime: startTimeRef.current || now,
-                                accumulatedTime: elapsedSinceLastSave,
-                                timerType: timerType,
-                                lastUpdateTime: now
-                            };
-                        }
-                        
-                        return {
-                            ...prev,
-                            accumulatedTime: prev.accumulatedTime + elapsedSinceLastSave,
-                            lastUpdateTime: now
-                        };
-                    });
-                    
-                    // Update the ref to current time
-                    lastSavedProgressRef.current = now;
-                }
-            }, 10000); // Check every 10 seconds
-            
-            return () => {
-                clearInterval(updateInterval);
-            };
-        }
-    }, [isRunning, timerType]);
 
     // Calculate streak on component mount and when study sessions change
     useEffect(() => {
@@ -492,39 +357,6 @@ export const PomodoroProvider: React.FC<{ children: React.ReactNode }> = ({ chil
                 }
             }
             
-            // If the tab becomes invisible/visible, and we're in a pomodoro timer, update the active session
-            if (isRunning && timerType === 'pomodoro' && wasVisible.current !== isVisible) {
-                const now = Date.now();
-                
-                if (!isVisible) {
-                    // Tab is becoming hidden - update last saved progress time
-                    lastSavedProgressRef.current = now;
-                } else {
-                    // Tab is becoming visible again
-                    if (startTimeRef.current) {
-                        // Update active study session with accumulated time while away
-                        setActiveStudySession(prev => {
-                            if (!prev) {
-                                return {
-                                    startTime: startTimeRef.current || now,
-                                    accumulatedTime: 0, // Will be updated on next interval
-                                    timerType: timerType,
-                                    lastUpdateTime: now
-                                };
-                            }
-                            
-                            return {
-                                ...prev,
-                                lastUpdateTime: now
-                            };
-                        });
-                    }
-                    
-                    // Reset the last saved progress time
-                    lastSavedProgressRef.current = now;
-                }
-            }
-            
             // Update visibility state
             wasVisible.current = isVisible;
         };
@@ -535,7 +367,7 @@ export const PomodoroProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         return () => {
             document.removeEventListener('visibilitychange', handleVisibilityChange);
         };
-    }, [isPlayingSound, isMuted, isRunning, timerType]);
+    }, [isPlayingSound, isMuted]);
 
     // Play notification sound continuously
     const playSound = useCallback(() => {
@@ -693,19 +525,10 @@ export const PomodoroProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             // Log to confirm the session was recorded (for debugging)
             console.log(`Recorded completed pomodoro session: ${minutes} minutes`);
         }
-        
-        // Clear any active study session
-        setActiveStudySession(null);
     }, [updateMinutesStudied]);
 
     // Handle timer completion
     const handleTimerComplete = useCallback(() => {
-        // Log any accumulated study time from active session
-        if (timerType === 'pomodoro' && activeStudySession) {
-            // Include the full pomodoro time in the record
-            recordPomodoroSession(initialTime);
-        }
-        
         // Play sound that will continue until user takes action
         playSound();
 
@@ -719,7 +542,10 @@ export const PomodoroProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         let nextType: TimerType;
 
         if (timerType === 'pomodoro') {
-            // Update completed pomodoros count
+            // Record completed pomodoro session when it's a pomodoro (not a break)
+            // Fix: pass the initialTime instead of userSettings.pomodoro to avoid double counting
+            recordPomodoroSession(initialTime);
+            
             const newCount = completedPomodoros + 1;
 
             // After completing set number of pomodoros, take a long break
@@ -741,7 +567,7 @@ export const PomodoroProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
         // Stop the current timer
         setIsRunning(false);
-    }, [completedPomodoros, timerType, playSound, userSettings, recordPomodoroSession, initialTime, activeStudySession]);
+    }, [completedPomodoros, timerType, playSound, userSettings, recordPomodoroSession, initialTime]);
 
     // Handle timer type change
     const handleTimerTypeChange = useCallback((type: TimerType) => {
@@ -752,20 +578,6 @@ export const PomodoroProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         if (intervalRef.current) {
             clearInterval(intervalRef.current);
             intervalRef.current = null;
-        }
-
-        // If switching from pomodoro and we have active session data, save it
-        if (timerType === 'pomodoro' && type !== 'pomodoro' && activeStudySession) {
-            // Calculate elapsed time and log it
-            const now = Date.now();
-            const elapsedTime = activeStudySession.accumulatedTime;
-            
-            if (elapsedTime > 0) {
-                logStudyTimeToHistory(elapsedTime);
-            }
-            
-            // Clear the active session
-            setActiveStudySession(null);
         }
 
         // Change the timer type
@@ -795,11 +607,7 @@ export const PomodoroProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         setIsTimerCompleted(false); // Ensure completion dialog is closed
         stopSound(); // Stop any completion sound
 
-        // Reset progress tracking time if starting pomodoro
-        if (type === 'pomodoro') {
-            lastSavedProgressRef.current = Date.now();
-        }
-    }, [isRunning, userSettings, stopSound, resetTasksInPomodoro, timerType, activeStudySession, logStudyTimeToHistory]);
+    }, [isRunning, userSettings, stopSound, resetTasksInPomodoro]);
 
     // Handle starting the next timer phase
     const handleStartNextPhase = useCallback(() => {
@@ -837,11 +645,6 @@ export const PomodoroProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             completionProcessed.current = false; // Reset flag for the new timer phase
             startTimeRef.current = null; // Ensure start time is reset before potentially setting isRunning
 
-            // Reset progress tracking time if starting pomodoro
-            if (nextType === 'pomodoro') {
-                lastSavedProgressRef.current = Date.now();
-            }
-
             // Handle navigation first before changing timer state
             // If this is starting a break, navigate to the Pomodoro page
             const startTimer = () => {
@@ -873,29 +676,8 @@ export const PomodoroProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             // If startTimeRef is not set, initialize it (handles resuming)
             if (startTimeRef.current === null) {
                 startTimeRef.current = Date.now();
-                
-                // Initialize or update the active study session for pomodoros
-                if (timerType === 'pomodoro') {
-                    setActiveStudySession(prev => {
-                        if (!prev) {
-                            return {
-                                startTime: Date.now(),
-                                accumulatedTime: 0,
-                                timerType: timerType,
-                                lastUpdateTime: Date.now()
-                            };
-                        }
-                        
-                        // If we already have an active session, update it
-                        return {
-                            ...prev,
-                            lastUpdateTime: Date.now()
-                        };
-                    });
-                    
-                    // Reset progress tracking time
-                    lastSavedProgressRef.current = Date.now();
-                }
+                // Ensure pauseTimeRef holds the correct starting value for this run
+                // pauseTimeRef.current = timer; // This is set correctly in toggleTimer/handleStartNextPhase
             }
 
             // Clear any existing interval before starting a new one
@@ -928,33 +710,6 @@ export const PomodoroProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             }, 250); // Check more frequently for better responsiveness
 
         } else {
-            // Timer is being paused - log accumulated time for pomodoros
-            if (timerType === 'pomodoro' && startTimeRef.current !== null) {
-                const now = Date.now();
-                const elapsedSincePause = Math.floor((now - (startTimeRef.current || now)) / 1000);
-                
-                // Update active study session with the time accumulated until pause
-                setActiveStudySession(prev => {
-                    if (!prev) {
-                        return {
-                            startTime: startTimeRef.current || now,
-                            accumulatedTime: elapsedSincePause,
-                            timerType: timerType,
-                            lastUpdateTime: now
-                        };
-                    }
-                    
-                    return {
-                        ...prev,
-                        accumulatedTime: prev.accumulatedTime + elapsedSincePause,
-                        lastUpdateTime: now
-                    };
-                });
-                
-                // Update the progress tracking time
-                lastSavedProgressRef.current = now;
-            }
-            
             // Clear interval when paused or stopped
             if (intervalRef.current) {
                 clearInterval(intervalRef.current);
@@ -971,7 +726,7 @@ export const PomodoroProvider: React.FC<{ children: React.ReactNode }> = ({ chil
                 intervalRef.current = null;
             }
         };
-    }, [isRunning, handleTimerComplete, timerType]); // Removed 'timer' from dependencies since we don't use it directly
+    }, [isRunning, handleTimerComplete, timer]); // Added 'timer' to dependencies to satisfy lint rule
 
     // Toggle timer running state
     const toggleTimer = () => {
@@ -984,26 +739,11 @@ export const PomodoroProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             startTimeRef.current = Date.now();
             pauseTimeRef.current = timer; // Store the time we are starting *from*
 
-            if (timerType === 'pomodoro') {
-                if (timer === initialTime) {
-                    resetTasksInPomodoro();
-                }
-                
-                // Initialize or reset active session tracking
-                lastSavedProgressRef.current = Date.now();
-                
-                // Initialize the active study session if starting from beginning
-                if (timer === initialTime) {
-                    setActiveStudySession({
-                        startTime: Date.now(),
-                        accumulatedTime: 0,
-                        timerType: 'pomodoro',
-                        lastUpdateTime: Date.now()
-                    });
-                }
+            if (timerType === 'pomodoro' && timer === initialTime) {
+                resetTasksInPomodoro();
             }
         } else {
-            // Pausing the timer - handled in the timer tick effect
+            // Pausing the timer
             if (intervalRef.current) {
                 clearInterval(intervalRef.current);
                 intervalRef.current = null;
@@ -1016,14 +756,6 @@ export const PomodoroProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
     // Reset the current timer
     const resetTimer = () => {
-        // If this is a pomodoro timer and we have accumulated time, log it before resetting
-        if (timerType === 'pomodoro' && activeStudySession && activeStudySession.accumulatedTime > 0) {
-            logStudyTimeToHistory(activeStudySession.accumulatedTime);
-            
-            // Clear active session since we've logged it
-            setActiveStudySession(null);
-        }
-        
         setIsRunning(false); // Stop the timer
         completionProcessed.current = false; // Reset flag on manual reset
         startTimeRef.current = null; // Reset start time ref
@@ -1048,49 +780,7 @@ export const PomodoroProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         setTimer(newInitialTime);
         setInitialTime(newInitialTime);
         pauseTimeRef.current = newInitialTime; // Reset pause time ref
-        
-        // Reset progress tracking time if it's a pomodoro
-        if (timerType === 'pomodoro') {
-            lastSavedProgressRef.current = Date.now();
-        }
     };
-
-    // Before unloading the page, save any active pomodoro session
-    useEffect(() => {
-        const handleBeforeUnload = () => {
-            // If we have an active pomodoro session that's running, save it
-            if (isRunning && timerType === 'pomodoro' && startTimeRef.current) {
-                const now = Date.now();
-                const elapsedSinceLastUpdate = Math.floor((now - (lastSavedProgressRef.current || now)) / 1000);
-                
-                // Update the active session in localStorage directly (since state update won't complete before unload)
-                if (activeStudySession) {
-                    const updatedSession = {
-                        ...activeStudySession,
-                        accumulatedTime: activeStudySession.accumulatedTime + elapsedSinceLastUpdate,
-                        lastUpdateTime: now
-                    };
-                    
-                    localStorage.setItem('active-study-session', JSON.stringify(updatedSession));
-                } else {
-                    const newSession = {
-                        startTime: startTimeRef.current,
-                        accumulatedTime: elapsedSinceLastUpdate,
-                        timerType: 'pomodoro',
-                        lastUpdateTime: now
-                    };
-                    
-                    localStorage.setItem('active-study-session', JSON.stringify(newSession));
-                }
-            }
-        };
-        
-        window.addEventListener('beforeunload', handleBeforeUnload);
-        
-        return () => {
-            window.removeEventListener('beforeunload', handleBeforeUnload);
-        };
-    }, [isRunning, timerType, activeStudySession]);
 
     // Toggle mute state
     const toggleMute = () => {
