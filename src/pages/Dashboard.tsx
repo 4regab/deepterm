@@ -426,44 +426,46 @@ const Dashboard = () => {
 
         {/* Settings Dialog */}
         <Dialog open={showSettingsDialog} onOpenChange={setShowSettingsDialog}>
-          <DialogContent className="sm:max-w-md neo-border shadow-neo bg-white">
-            <DialogHeader className="border-b-2 border-black pb-3 mb-4">
-              <DialogTitle className="text-2xl font-black flex items-center gap-2">
-                <Settings className="h-6 w-6" /> Settings
+          <DialogContent className="max-w-[90%] sm:max-w-md neo-border shadow-neo bg-white p-3 sm:p-4">
+            <DialogHeader className="border-b-2 border-black pb-2 mb-3">
+              <DialogTitle className="text-xl sm:text-2xl font-black flex items-center gap-2">
+                <Settings className="h-5 w-5 sm:h-6 sm:w-6" /> Settings
               </DialogTitle>
             </DialogHeader>
             
             {/* Profile Settings */}
-            <div className="mb-6">
-              <h3 className="font-bold text-lg mb-3 border-b border-dashed border-gray-400 pb-1">Profile</h3>
-              <Label htmlFor="profileName" className="font-semibold text-md block mb-1">Display Name</Label>
-              <div className="flex items-center gap-2">
-                <Input
-                  id="profileName"
-                  value={editableName}
-                  onChange={(e) => setEditableName(e.target.value)}
-                  className="flex-grow neo-border shadow-neo-sm"
-                  placeholder="Enter your name..."
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      handleSaveName();
-                    }
-                  }}
-                />
-                <Button 
-                  onClick={handleSaveName}
-                  size="sm"
-                  className="bg-[#9b87f5] hover:bg-[#7E69AB] text-white neo-border shadow-neo-sm hover:shadow-none hover:translate-x-[1px] hover:translate-y-[1px] transition-all"
-                >
-                  Save
-                </Button>
+            <div className="mb-4">
+              <h3 className="font-bold text-base sm:text-lg mb-2 border-b border-dashed border-gray-400 pb-1">Profile</h3>
+              <div className="space-y-2">
+                <Label htmlFor="profileName" className="font-semibold text-sm sm:text-md block">Display Name</Label>
+                <div className="flex items-center gap-2 flex-col sm:flex-row">
+                  <Input
+                    id="profileName"
+                    value={editableName}
+                    onChange={(e) => setEditableName(e.target.value)}
+                    className="flex-grow neo-border shadow-neo-sm w-full"
+                    placeholder="Enter your name..."
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        handleSaveName();
+                      }
+                    }}
+                  />
+                  <Button 
+                    onClick={handleSaveName}
+                    size="sm"
+                    className="bg-[#9b87f5] hover:bg-[#7E69AB] text-white neo-border shadow-neo-sm hover:shadow-none hover:translate-x-[1px] hover:translate-y-[1px] transition-all w-full sm:w-auto mt-1 sm:mt-0 py-2"
+                  >
+                    Save
+                  </Button>
+                </div>
               </div>
             </div>
 
             {/* API Key Settings */}
-            <div className="mb-4">
-              <h3 className="font-bold text-lg mb-3 border-b border-dashed border-gray-400 pb-1 flex items-center gap-2">
-                <KeyRound className="h-5 w-5" /> API Key
+            <div>
+              <h3 className="font-bold text-base sm:text-lg mb-2 border-b border-dashed border-gray-400 pb-1 flex items-center gap-2">
+                <KeyRound className="h-4 w-4 sm:h-5 sm:w-5" /> API Key
               </h3>
               <ApiKeyInput onApiKeySubmit={() => { /* Optionally add feedback */ }} />
             </div>
