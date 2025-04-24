@@ -115,51 +115,50 @@ const Navbar = () => {
           
           {isMobile ? (
             <div className="flex items-center gap-2">
-              {isTimerVisibleInNavbar && (
-                <div 
-                  className="neo-border bg-white rounded-lg shadow-neo px-3 py-1 cursor-pointer"
+              {isTimerVisibleInNavbar && (                <div 
+                  className="neo-border bg-white rounded-lg shadow-neo px-3 py-2 cursor-pointer touch-target"
                   onClick={() => navigate('/pomodoro')}
                 >
                   <div className="flex items-center gap-2">
-                    <div className={`w-2 h-2 rounded-full ${isRunning ? 'bg-green-500 animate-pulse' : 'bg-gray-400'}`}></div>
+                    <div className={`w-2.5 h-2.5 rounded-full ${isRunning ? 'bg-green-500 animate-pulse' : 'bg-gray-400'}`}></div>
                     <div className="text-sm font-bold">{formatTime(timer)}</div>
                     {isRunning ? (
                       <Button 
                         variant="ghost" 
                         size="icon" 
-                        className="h-6 w-6 p-0" 
+                        className="h-8 w-8 p-0 touch-target" 
                         onClick={(e) => {
                           e.stopPropagation();
                           toggleTimer();
                         }}
                       >
-                        <Pause className="h-3 w-3" />
+                        <Pause className="h-4 w-4" />
                       </Button>
                     ) : (
                       <Button 
                         variant="ghost" 
                         size="icon" 
-                        className="h-6 w-6 p-0" 
+                        className="h-8 w-8 p-0 touch-target" 
                         onClick={(e) => {
                           e.stopPropagation();
                           toggleTimer();
                         }}
                       >
-                        <Play className="h-3 w-3" />
+                        <Play className="h-4 w-4" />
                       </Button>
                     )}
                   </div>
+                  <Progress value={percentComplete} className={`h-1.5 mt-1 ${timerColor}`} />
                   <Progress value={percentComplete} className={`h-1 mt-1 ${timerColor}`} />
                 </div>
               )}
-              
-              <Sheet>
+                <Sheet>
                 <SheetTrigger asChild>
-                  <Button variant="outline" className="neo-border shadow-neo p-2 hover:shadow-neo-lg hover:-translate-y-0.5 hover:-translate-x-0.5 transition-all">
-                    <Menu className="h-5 w-5" />
+                  <Button variant="outline" className="neo-border shadow-neo p-3 touch-target hover:shadow-neo-lg hover:-translate-y-0.5 hover:-translate-x-0.5 transition-all">
+                    <Menu className="h-6 w-6" />
                   </Button>
                 </SheetTrigger>
-                <SheetContent side="right" className="border-l-2 border-neo-black bg-white">
+                <SheetContent side="right" className="border-l-2 border-neo-black bg-white w-[85vw] max-w-[300px]">
                   <div className="py-8 flex flex-col gap-4">
                     {isTimerVisibleInNavbar && (
                       <div 
@@ -175,30 +174,29 @@ const Navbar = () => {
                               : timerType === 'shortBreak' 
                                 ? 'Short Break' 
                                 : 'Long Break'}
-                          </h3>
-                          {isRunning ? (
+                          </h3>                          {isRunning ? (
                             <Button 
                               variant="outline" 
                               size="icon" 
-                              className="h-7 w-7" 
+                              className="h-10 w-10 touch-target" 
                               onClick={(e) => {
                                 e.stopPropagation();
                                 toggleTimer();
                               }}
                             >
-                              <Pause className="h-3 w-3" />
+                              <Pause className="h-4 w-4" />
                             </Button>
                           ) : (
                             <Button 
                               variant="outline" 
                               size="icon" 
-                              className="h-7 w-7" 
+                              className="h-10 w-10 touch-target" 
                               onClick={(e) => {
                                 e.stopPropagation();
                                 toggleTimer();
                               }}
                             >
-                              <Play className="h-3 w-3" />
+                              <Play className="h-4 w-4" />
                             </Button>
                           )}
                         </div>
