@@ -146,10 +146,8 @@ const Navbar = () => {
                       >
                         <Play className="h-4 w-4" />
                       </Button>
-                    )}
-                  </div>
+                    )}                  </div>
                   <Progress value={percentComplete} className={`h-1.5 mt-1 ${timerColor}`} />
-                  <Progress value={percentComplete} className={`h-1 mt-1 ${timerColor}`} />
                 </div>
               )}
                 <Sheet>                <SheetTrigger asChild>
