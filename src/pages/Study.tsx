@@ -1,4 +1,4 @@
-import React, { useState, useContext, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -12,13 +12,16 @@ import FlashcardCreationForm from "@/components/flashcard/FlashcardCreationForm"
 import FlashcardViewer from "@/components/flashcard/FlashcardViewer";
 import FlashcardSavedList from "@/components/flashcard/FlashcardSavedList";
 import { toast } from "sonner"; 
-import { QuizContext, QuizPhase, Quiz, QuizQuestion, QuestionType } from "@/pages/Quiz";
+import { QuizContext, QuizPhase, Quiz, QuizQuestion, QuestionType, useQuiz } from "@/context/QuizContext";
 import { useFlashcard } from "@/context/FlashcardContextDefinition";
+import { useLocation } from "react-router-dom";
+
+// Constant for storing UI state in local storage
+const FLASHCARD_UI_STATE_KEY = 'flashcard-ui-state';
 
 // Export the quiz types to maintain compatibility
 export type { QuestionType, QuizQuestion, Quiz };
 export { QuizContext };
-export const useQuiz = () => useContext(QuizContext);
 
 const Study = () => {
   // State for the main tabs
@@ -36,14 +39,61 @@ const Study = () => {
 
   // Get the flashcard context from the main provider
   const flashcardContext = useFlashcard();
-
-  // Check if we have an active deck and set the appropriate tab and subtab
+  
+  // Get location for URL parameters
+  const location = useLocation();
+  
+  // On initial load, try to restore UI state from local storage
   useEffect(() => {
-    if (flashcardContext.activeDeck) {
-      setActiveStudyTab("flashcard");
-      setFlashcardSubTab("view");
+    try {
+      const savedState = localStorage.getItem(FLASHCARD_UI_STATE_KEY);
+      if (savedState) {
+        const state = JSON.parse(savedState);
+        // Restore UI state
+        if (state.activeStudyTab) {
+          setActiveStudyTab(state.activeStudyTab);
+        }
+        if (state.flashcardSubTab) {
+          setFlashcardSubTab(state.flashcardSubTab);
+        }
+        
+        // If we have an active deck, set the flashcard tab as active
+        if (flashcardContext.activeDeck) {
+          setActiveStudyTab("flashcard");
+          setFlashcardSubTab("view");
+        }
+      }
+    } catch (error) {
+      console.error("Failed to restore UI state:", error);
     }
-  }, [flashcardContext.activeDeck]);
+  }, [flashcardContext.activeDeck]); // Add flashcardContext.activeDeck as dependency
+
+  // Handle URL-based navigation and tab changes
+  useEffect(() => {
+    const urlParams = new URLSearchParams(location.search);
+    const mode = urlParams.get('mode');
+    const viewing = urlParams.get('viewing');
+    const deckId = urlParams.get('deckId');
+    
+    // Check for special create mode parameter - this has priority
+    if (mode === 'flashcard-create') {
+      setActiveStudyTab("flashcard");
+      setFlashcardSubTab("create");
+      return;
+    }
+    
+    // Handle direct link to view flashcards
+    if (viewing === 'flashcard') {
+      setActiveStudyTab("flashcard");
+      
+      // If we have an activeDeck loaded, go to view mode
+      // This happens when "Study Now" is clicked
+      if (flashcardContext.activeDeck || deckId) {
+        setFlashcardSubTab("view");
+      }
+    }
+    // Add flashcardContext.activeDeck to dependency array to fix ESLint warning
+  }, [location.search, flashcardContext.activeDeck]);
 
   // Quiz handlers
   const deleteQuiz = (quizId: string) => {
@@ -140,6 +190,19 @@ const Study = () => {
     }
     setFlashcardSubTab(value);
   };
+
+  // Save UI state to localStorage whenever it changes
+  useEffect(() => {
+    try {
+      const uiState = {
+        activeStudyTab,
+        flashcardSubTab,
+      };
+      localStorage.setItem(FLASHCARD_UI_STATE_KEY, JSON.stringify(uiState));
+    } catch (error) {
+      console.error("Failed to save UI state:", error);
+    }
+  }, [activeStudyTab, flashcardSubTab]);
 
   return (
     <div className="min-h-screen flex flex-col bg-[#fff6e5]">

@@ -1,4 +1,4 @@
-import { useState, createContext, useContext, useEffect } from "react";
+import { useState, useEffect } from "react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
@@ -11,86 +11,16 @@ import { toast } from "sonner";
 import { useLocalStorage } from "@/hooks/use-local-storage";
 import { useLocation } from "react-router-dom";
 import { usePomodoroContext } from "@/hooks/usePomodoroContext"; // Corrected import path
+// Import context, types, hook, and constant from the new file
+import { 
+  QuizContext, 
+  type Quiz, // Use type-only import for Quiz type
+  QuizPhase, 
+  useQuiz, 
+  QUIZ_PROGRESS_KEY 
+} from "@/context/QuizContext";
 
-export type QuestionType = "multiple" | "truefalse" | "identification" | "statementTrueFalse" | "mixed";
-
-export interface QuizQuestion {
-  id: string;
-  question: string;
-  options?: string[];
-  answer: string;
-  explanation?: string;
-  type: QuestionType;
-  userAnswer?: string;
-}
-
-export interface Quiz {
-  id: string;
-  title: string;
-  studyMaterial: string;
-  questions: QuizQuestion[];
-  dateCreated: string;
-  lastModified: string;
-  settings: {
-    questionType: QuestionType;
-    numberOfQuestions: number;
-    verbatimMode: boolean;
-    inputMode?: 'auto' | 'manual';
-  };
-  score?: {
-    correct: number;
-    total: number;
-    percentage: number;
-    completed: boolean;
-    completedDate?: string;
-    incorrectQuestions?: QuizQuestion[];
-  };
-  // Track current progress for preserving state
-  progress?: {
-    currentQuestionIndex: number;
-    timeRemaining?: number;
-  };
-}
-
-type QuizTab = "create" | "take";
-export type QuizPhase = "creation" | "taking" | "results"; // Export QuizPhase
-
-// Create a sessionStorage key for temporary quiz state
-const QUIZ_PROGRESS_KEY = 'quiz-temp-progress';
-
-export const QuizContext = createContext<{
-  activeQuiz: Quiz | null;
-  setActiveQuiz: (quiz: Quiz | null) => void;
-  savedQuizzes: Quiz[];
-  setSavedQuizzes: (quizzes: Quiz[]) => void;
-  isGenerating: boolean;
-  setIsGenerating: (isGenerating: boolean) => void;
-  quizPhase: QuizPhase;
-  setQuizPhase: (phase: QuizPhase) => void;
-  saveQuiz: (quiz: Quiz) => void;
-  loadQuiz: (quizId: string) => void;
-  deleteQuiz: (quizId: string) => void;
-  handleCreateNewQuiz: () => void;
-  saveProgress: (quizId: string, currentQuestionIndex: number) => void;
-  loadProgress: (quizId: string) => number | undefined;
-}>({
-  activeQuiz: null,
-  setActiveQuiz: () => {},
-  savedQuizzes: [],
-  setSavedQuizzes: () => {},
-  isGenerating: false,
-  setIsGenerating: () => {},
-  quizPhase: "creation",
-  setQuizPhase: () => {},
-  saveQuiz: () => {},
-  loadQuiz: () => {},
-  deleteQuiz: () => {},
-  handleCreateNewQuiz: () => {},
-  saveProgress: () => {},
-  loadProgress: () => undefined
-});
-
-export const useQuiz = () => useContext(QuizContext);
+type QuizTab = "create" | "take"; // Keep this type local if only used here
 
 const Quiz = () => {
   const [activeTab, setActiveTab] = useState<QuizTab>("create");
@@ -101,42 +31,18 @@ const Quiz = () => {
   const location = useLocation();
   const { previousPagePath } = usePomodoroContext();
 
-  // Check for URL parameters to load a specific quiz
-  useEffect(() => {
-    const searchParams = new URLSearchParams(location.search);
-    const quizId = searchParams.get('id');
-    
-    if (quizId) {
-      loadQuiz(quizId);
-    }
+  // --- Function Definitions (Moved Before useEffect) ---
 
-    // If we're returning from a pomodoro break, restore the quiz state
-    if (previousPagePath === '/quiz' && activeQuiz && quizPhase === 'taking') {
-      // The quiz state is already loaded, just make sure the tab is correct
-      setActiveTab('take');
+  // Load quiz progress from sessionStorage
+  const loadProgress = (quizId: string): number | undefined => {
+    try {
+      const progressMap = JSON.parse(sessionStorage.getItem(QUIZ_PROGRESS_KEY) || '{}');
+      return progressMap[quizId];
+    } catch (error) {
+      console.error('Error loading quiz progress:', error);
+      return undefined;
     }
-  }, [location.search, previousPagePath]);
-
-  // This effect ensures the correct tab is shown based on quiz phase
-  useEffect(() => {
-    if (quizPhase === "taking" || quizPhase === "results") {
-      // Ensure we're on the take tab for both taking and results phases
-      if (activeQuiz?.questions?.length > 0) {
-        console.log("Switching to take tab due to quiz phase:", quizPhase);
-        setActiveTab("take");
-      }
-    }
-  }, [quizPhase, activeQuiz]);
-
-  // Debug logging for tab changes and quiz phases
-  useEffect(() => {
-    console.log("Active tab changed to:", activeTab);
-    console.log("Current quiz phase:", quizPhase);
-    console.log("Active quiz exists:", !!activeQuiz);
-    if (activeQuiz) {
-      console.log("Questions count:", activeQuiz.questions.length);
-    }
-  }, [activeTab, quizPhase, activeQuiz]);
+  };
 
   const saveQuiz = (quiz: Quiz) => {
     const updatedQuiz = {
@@ -169,9 +75,17 @@ const Quiz = () => {
       };
       
       setActiveQuiz(quizWithProgress);
-      setQuizPhase(quiz.score?.completed ? "results" : "taking");
-      setActiveTab("take");
-      toast.success(`"${quiz.title}" loaded successfully!`);
+      // Determine phase based on loaded quiz state
+      if (quiz.score?.completed) {
+        setQuizPhase("results");
+        setActiveTab("take"); // Show results in the take tab
+      } else {
+        setQuizPhase("creation"); // Start in creation/edit mode
+        setActiveTab("create"); // Switch to create tab for editing
+      }
+      toast.success(`"${quiz.title}" loaded for editing!`);
+    } else {
+      toast.error("Could not find the quiz to load.");
     }
   };
 
@@ -181,6 +95,7 @@ const Quiz = () => {
     if (activeQuiz && activeQuiz.id === quizId) {
       setActiveQuiz(null);
       setQuizPhase("creation");
+      setActiveTab("create"); // Go back to create tab after deleting active quiz
     }
     toast.success("Quiz deleted successfully!");
     
@@ -200,17 +115,6 @@ const Quiz = () => {
     setActiveTab("create");
   };
 
-  const handleTabChange = (value: QuizTab) => {
-    if (value === "take" && !activeQuiz?.questions?.length) {
-      toast.error("Please create a quiz first!");
-      return;
-    }
-    setActiveTab(value);
-    if (value === "create") {
-      setQuizPhase("creation");
-    }
-  };
-  
   // Save quiz progress to sessionStorage for persistence between page navigations
   const saveProgress = (quizId: string, currentQuestionIndex: number) => {
     try {
@@ -232,17 +136,103 @@ const Quiz = () => {
       console.error('Error saving quiz progress:', error);
     }
   };
-  
-  // Load quiz progress from sessionStorage
-  const loadProgress = (quizId: string): number | undefined => {
-    try {
-      const progressMap = JSON.parse(sessionStorage.getItem(QUIZ_PROGRESS_KEY) || '{}');
-      return progressMap[quizId];
-    } catch (error) {
-      console.error('Error loading quiz progress:', error);
-      return undefined;
+
+  // --- End Function Definitions ---
+
+  // --- Add handleTabChange definition here ---
+  const handleTabChange = (value: QuizTab) => {
+    if (value === "take" && !activeQuiz?.questions?.length) {
+      toast.error("Please create a quiz first!");
+      return;
+    }
+    setActiveTab(value);
+    if (value === "create") {
+      // When switching to create tab, ensure phase is creation
+      // unless an active quiz is already loaded (which implies editing)
+      if (!activeQuiz) {
+        setQuizPhase("creation");
+      }
+    } else if (value === "take" && activeQuiz) {
+      // When switching to take tab with an active quiz,
+      // set phase based on completion status
+      setQuizPhase(activeQuiz.score?.completed ? "results" : "taking");
     }
   };
+  // --- End handleTabChange definition ---
+
+  // Check for URL parameters to load a specific quiz
+  useEffect(() => {
+    const searchParams = new URLSearchParams(location.search);
+    const quizId = searchParams.get('id');
+    
+    if (quizId) {
+      // Find the quiz without immediately setting state
+      const quizToLoad = savedQuizzes.find(q => q.id === quizId);
+      if (quizToLoad) {
+        // Load saved progress if available
+        const savedProgress = loadProgress(quizId);
+        const quizWithProgress = { 
+          ...quizToLoad, 
+          progress: savedProgress !== undefined ? { 
+            currentQuestionIndex: savedProgress 
+          } : undefined 
+        };
+        setActiveQuiz(quizWithProgress);
+        // Set phase based on loaded quiz state
+        if (quizToLoad.score?.completed) {
+          setQuizPhase("results");
+        } else {
+          // If not completed, assume we want to edit or continue taking
+          // The QuizSavedList edit button now sets phase to "creation"
+          // If loaded via URL, maybe default to "taking" if progress exists?
+          if (savedProgress !== undefined) {
+            setQuizPhase("taking");
+          } else {
+            setQuizPhase("creation"); // Default to creation/edit if no progress
+          }
+        }
+        toast.success(`"${quizToLoad.title}" loaded!`);
+      } else {
+        toast.error("Quiz ID from URL not found.");
+        // Optionally clear the URL parameter or redirect
+      }
+    }
+
+    // If we're returning from a pomodoro break, restore the quiz state
+    if (previousPagePath === '/quiz' && activeQuiz && quizPhase === 'taking') {
+      // The quiz state is already loaded, just make sure the tab is correct
+      setActiveTab('take');
+    }
+    // Dependencies: location.search, previousPagePath, savedQuizzes (to find quiz), activeQuiz, quizPhase
+    // Removed loadQuiz from deps as it causes infinite loops if defined inside component
+    // loadProgress is also defined inside, but seems stable. Consider moving helpers outside.
+  }, [location.search, previousPagePath, savedQuizzes, activeQuiz, quizPhase]);
+
+  // This effect ensures the correct tab is shown based on quiz phase
+  useEffect(() => {
+    if (quizPhase === "taking" || quizPhase === "results") {
+      // Ensure we're on the take tab for both taking and results phases
+      if (activeQuiz?.questions?.length > 0) {
+        console.log("Switching to take tab due to quiz phase:", quizPhase);
+        setActiveTab("take");
+      }
+    } else if (quizPhase === "creation" && activeQuiz) {
+      // If we are in creation phase AND have an active quiz, it means we are editing.
+      // Switch to the create tab.
+      console.log("Switching to create tab for editing quiz:", activeQuiz.id);
+      setActiveTab("create");
+    }
+  }, [quizPhase, activeQuiz]);
+
+  // Debug logging for tab changes and quiz phases
+  useEffect(() => {
+    console.log("Active tab changed to:", activeTab);
+    console.log("Current quiz phase:", quizPhase);
+    console.log("Active quiz exists:", !!activeQuiz);
+    if (activeQuiz) {
+      console.log("Questions count:", activeQuiz.questions.length);
+    }
+  }, [activeTab, quizPhase, activeQuiz]);
 
   // Determine what content to show in the take tab based on quiz phase
   const renderTakeTabContent = () => {
