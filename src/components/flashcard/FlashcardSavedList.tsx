@@ -33,10 +33,12 @@ const FlashcardSavedList = () => {
   
   const handleStudyNow = (deckId: string) => {
     // First load the deck so it gets set as active and saved to local storage
-    loadDeck(deckId);
+    const deck = loadDeck(deckId);
     
-    // Then navigate to the study page
-    navigate("/study");
+    if (deck) {
+      // Navigate directly to view mode using the new URL parameter system
+      navigate("/study?viewing=flashcard");
+    }
   };
 
   if (!savedDecks.length) {
