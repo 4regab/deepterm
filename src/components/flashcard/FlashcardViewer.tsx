@@ -1,17 +1,18 @@
 import React, { useState, useEffect, useRef, TouchEvent, useCallback } from "react";
-import { Link } from "react-router-dom"; // Import Link
+import { Link, useNavigate } from "react-router-dom"; // Added useNavigate import
 import { Button } from "@/components/ui/button";
 import { useFlashcard } from "@/context/FlashcardContextDefinition";
-import { useUserProfile } from "@/context/UserProfileContext"; // Add this import
+import { useUserProfile } from "@/context/UserProfileContext";
 import { Shuffle, ChevronLeft, ChevronRight, RotateCcw, Home, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { Progress } from "@/components/ui/progress";
 import { FlashcardDisplayMode } from "@/types/flashcard";
 
 const FlashcardViewer = () => {
-  const { activeDeck, handleCreateNewDeck } = useFlashcard();
+  const { activeDeck, handleCreateNewDeck, setActiveDeck } = useFlashcard();
   // Add UserProfile context for achievement tracking
   const { trackFlashcardStudy } = useUserProfile();
+  const navigate = useNavigate(); // Add navigate hook
 
   const [currentCardIndex, setCurrentCardIndex] = useState(0);
   const [flipped, setFlipped] = useState(false);
@@ -19,7 +20,7 @@ const FlashcardViewer = () => {
   const [knownCards, setKnownCards] = useState<Set<string>>(new Set());
   const [fullscreenMode, setFullscreenMode] = useState(false);
   const [completed, setCompleted] = useState(false);
-  const [sessionTracked, setSessionTracked] = useState(false); // Add this state to prevent duplicate tracking
+  const [sessionTracked, setSessionTracked] = useState(false);
   
   // Get the display mode from the deck or default to term-first
   const displayMode: FlashcardDisplayMode = activeDeck?.displayMode || "term-first";
@@ -38,7 +39,7 @@ const FlashcardViewer = () => {
   const progressPercentage = cards.length > 0 
     ? Math.round(((currentCardIndex + 1) / cards.length) * 100) 
     : 0;
-  
+
   useEffect(() => {
     if (activeDeck?.cards) {
       setCards(activeDeck.cards);
@@ -46,7 +47,7 @@ const FlashcardViewer = () => {
       setFlipped(false);
       setKnownCards(new Set());
       setCompleted(false);
-      setSessionTracked(false); // Reset session tracking
+      setSessionTracked(false);
     }
   }, [activeDeck]);
   // Remove automatic completion when reaching the last card
@@ -89,6 +90,14 @@ const FlashcardViewer = () => {
     setCompleted(false);
     setSessionTracked(false); // Reset session tracking
     toast.success("Starting deck from beginning");
+  };
+
+  // Add new function to handle returning to study center
+  const handleBackToStudyCenter = () => {
+    // Clear the active deck before navigating
+    setActiveDeck(null);
+    // Navigate to study page with a special parameter that forces flashcard creation mode
+    navigate("/study?mode=flashcard-create");
   };
 
   useEffect(() => {
@@ -242,7 +251,7 @@ const FlashcardViewer = () => {
               Study Again
             </Button>            
             <Button 
-              onClick={() => window.location.href = '/study'} // Navigate and refresh
+              onClick={handleBackToStudyCenter} // Use the new function to handle navigation
               className="bg-[#f7e9d3] text-[#1A1F2C] neo-border border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all flex gap-2"
             >
               <Home className="h-4 w-4" />
@@ -288,7 +297,7 @@ const FlashcardViewer = () => {
           {/* Front of card */}
           <div className="flip-card-front bg-white neo-border border-4 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] p-6 flex flex-col justify-center">
             <div className="text-center w-full">
-              <div className="text-2xl md:text-3xl font-bold mb-2 text-[#1A1F2C] overflow-hidden">
+              <div className="text-2xl md:text-3xl font-bold mb-2 text-[#1A1F2C] overflow-y-auto max-h-[calc(70vh-2rem)]">
                 {cardContent.front}
               </div>
             </div>
@@ -296,9 +305,9 @@ const FlashcardViewer = () => {
           
           {/* Back of card */}
           <div className="flip-card-back bg-[#F9F6FF] neo-border border-4 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] p-6 flex flex-col justify-center">
-            <div className="text-center w-full">
-              {/* Reduced font size for definition */}
-              <div className="text-base md:text-lg font-medium mb-2 text-[#1A1F2C] overflow-y-auto max-h-[70vh]">
+            <div className="text-center w-full h-full">
+              {/* Improved styling for definition with better scrolling and padding */}
+              <div className="text-base md:text-lg font-medium text-[#1A1F2C] overflow-y-auto max-h-[calc(70vh-2rem)] py-2 px-4 rounded-md">
                 {cardContent.back}
               </div>
             </div>
@@ -378,6 +387,18 @@ const FlashcardViewer = () => {
             <RefreshCw className="h-4 w-4 mr-1" />
             <span>Restart</span>
           </Button>
+          
+          {/* Added Back to Study Center button */}
+          <Button
+            onClick={handleBackToStudyCenter}
+            variant="outline"
+            className="bg-white neo-border shadow-neo-sm hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all"
+            title="Return to Study Center"
+            size="sm"
+          >
+            <Home className="h-4 w-4 mr-1" />
+            <span>Study Center</span>
+          </Button>
         </div>
       </div>
       
@@ -415,6 +436,15 @@ const FlashcardViewer = () => {
           transform: rotateY(180deg);
         }
         
+        /* Add swipe animation hints */
+        @keyframes hintSwipe {
+          0% { transform: translateX(0); }
+          25% { transform: translateX(-10px); }
+          75% { transform: translateX(10px); }
+          100% { transform: translateX(0); }
+        }
+        
+        /* Improved styling for flashcard content */
         .flip-card-front, .flip-card-back {
           position: absolute;
           width: 100%;
@@ -422,22 +452,39 @@ const FlashcardViewer = () => {
           -webkit-backface-visibility: hidden;
           backface-visibility: hidden;
           border-radius: 0.75rem;
-          overflow-y: auto;
+          overflow: hidden; /* Changed from overflow-y: auto to prevent whole card scrolling */
           display: flex;
           align-items: center;
           justify-content: center;
         }
         
-        .flip-card-back {
-          transform: rotateY(180deg);
+        /* Ensure text container within card can scroll independently */
+        .flip-card-front > div, .flip-card-back > div {
+          width: 100%;
+          height: 100%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
         }
         
-        /* Add swipe animation hints */
-        @keyframes hintSwipe {
-          0% { transform: translateX(0); }
-          25% { transform: translateX(-10px); }
-          75% { transform: translateX(10px); }
-          100% { transform: translateX(0); }
+        /* Add proper scrollbar styling for definition text */
+        .flip-card-front div div, .flip-card-back div div {
+          scrollbar-width: thin;
+          scrollbar-color: #9b87f5 #F9F6FF;
+        }
+        
+        .flip-card-front div div::-webkit-scrollbar, .flip-card-back div div::-webkit-scrollbar {
+          width: 5px;
+          height: 5px;
+        }
+        
+        .flip-card-front div div::-webkit-scrollbar-track, .flip-card-back div div::-webkit-scrollbar-track {
+          background: transparent;
+        }
+        
+        .flip-card-front div div::-webkit-scrollbar-thumb, .flip-card-back div div::-webkit-scrollbar-thumb {
+          background-color: #9b87f5;
+          border-radius: 10px;
         }
       `}</style>
     </div>
