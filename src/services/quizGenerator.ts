@@ -124,12 +124,13 @@ export class QuizGenerator extends GeminiCore {
       
       // Process subcategories if they exist
       if (term.subcategories && Array.isArray(term.subcategories) && term.subcategories.length > 0) {
-        // For subcategories, we'll use the main term's meaning as context
+        // For subcategories, use the main term's meaning as context, but avoid the relational phrase
         term.subcategories.forEach(subcat => {
           if (subcat && subcat.trim()) {
             allTerms.push({
               term: subcat,
-              meaning: `${subcat} is a subcategory of ${term.term}. ${term.meaning}`
+              // MODIFIED: Provide main term's meaning as context without the "is a subcategory of" phrase
+              meaning: `Context: ${term.term}. ${term.meaning}` 
             });
           }
         });
@@ -137,12 +138,13 @@ export class QuizGenerator extends GeminiCore {
       
       // Process examples if they exist
       if (term.examples && Array.isArray(term.examples) && term.examples.length > 0) {
-        // For examples, we'll use the main term for context
+        // For examples, use the main term for context, but avoid the relational phrase
         term.examples.forEach(example => {
           if (example && example.trim()) {
             allTerms.push({
               term: example,
-              meaning: `${example} is an example of ${term.term}. ${term.meaning}`
+              // MODIFIED: Provide main term's meaning as context without the "is an example of" phrase
+              meaning: `Context: ${term.term}. ${term.meaning}`
             });
           }
         });
@@ -206,6 +208,8 @@ export class QuizGenerator extends GeminiCore {
     });
     
     console.log(`Creating quiz from ${allMeaningfulTerms.length} meaningful terms`);
+    // *** LOGGING ADDED ***
+    console.log(`[Quiz Input Material] Start of formattedMaterial (first 300 chars):\n${formattedMaterial.substring(0, 300)}...`);
     
     // Generate quiz using the enhanced formatted material
     return this.generateQuizQuestions(formattedMaterial, numQuestions, quizType, verbatim);
@@ -215,15 +219,19 @@ export class QuizGenerator extends GeminiCore {
     studyMaterial: string,
     numQuestions?: number,
     quizType: "multiple" | "truefalse" | "identification" | "statementTrueFalse" | "mixed" = "multiple",
-    verbatim: boolean = false,
+    verbatim: boolean = false, // Log this value
     sourceTerms?: Array<{ term: string, definition: string }>
   ): Promise<QuizGenerationResponse> {
+    // *** ADD LOGGING HERE ***
+    console.log(`[generateQuizQuestions ENTRY] Args:`, { numQuestions, quizType, verbatim });
+
     const questionCount = numQuestions ? `${numQuestions}` : "an appropriate number of";
     
-    const verbatimInstruction = verbatim 
-      ? `VERY IMPORTANT: Your task is to identify KEY TERMS and create fill-in-the-blank questions where the BLANK replaces the term, directly followed by the definition/explanation.
+    // Keep verbatimInstruction separate for clarity
+    const verbatimInstructionContent = verbatim 
+      ? `VERY IMPORTANT (VERBATIM MODE): Your task is to identify KEY TERMS and create fill-in-the-blank questions where the BLANK replaces the term, directly followed by the definition/explanation. THIS FORMAT APPLIES *ONLY* TO MULTIPLE CHOICE AND IDENTIFICATION QUESTIONS WHEN VERBATIM MODE IS ACTIVE.
 
-      HOW TO IDENTIFY KEY TERMS:
+      HOW TO IDENTIFY KEY TERMS (for Verbatim MC/ID):
       - Look for bold or italicized terms
       - Look for numbered or bulleted items with a term followed by a dash (–) or colon (:)
       - Look for lines that start with a clear term followed by explanation
@@ -231,14 +239,14 @@ export class QuizGenerator extends GeminiCore {
       - YOU MUST INCLUDE ALL categories, subcategories, and examples as potential terms
       - YOU MUST CREATE QUESTIONS from ALL examples and types mentioned in the study material
       
-      FORMAT YOUR QUESTIONS:
-      1. For each term you identify, create a question like this:
+      FORMAT YOUR QUESTIONS (for Verbatim MC/ID):
+      1. For each term you identify, create a question like this ONLY for Multiple Choice and Identification question types:
          "__________ [EXACT explanation/definition that follows the term]"
       2. NEVER include any dash (–) or colon (:) between the blank and the text
       3. The blank must be directly followed by the explanation text
       4. DO NOT include the term in the question text
       
-      CRUCIAL RULES:
+      CRUCIAL RULES (for Verbatim MC/ID):
       - The blank ALWAYS represents the key term
       - The text after the blank MUST be EXACT verbatim passages from the study material
       - DO NOT modify any words from the source material's explanation part
@@ -246,45 +254,54 @@ export class QuizGenerator extends GeminiCore {
       - For numbered or bulleted lists that define terms, use the term as the answer
       - YOU MUST CREATE QUESTIONS from ALL examples and categories - these are crucial for comprehensive coverage
       
-      Examples:
+      Examples (for Verbatim MC/ID):
       
       Source text: "Ethical relativism argues that moral values are shaped by social, cultural, and individual perspectives."
-      
       CORRECT question: "__________ argues that moral values are shaped by social, cultural, and individual perspectives."
       CORRECT answer: "Ethical relativism"
       
       Source text: "Intentionality – The individual's intention behind an action is important in determining moral responsibility. Actions done with deliberate intent carry more moral weight than those done accidentally."
-      
       CORRECT question: "__________ The individual's intention behind an action is important in determining moral responsibility. Actions done with deliberate intent carry more moral weight than those done accidentally."
       CORRECT answer: "Intentionality"
       
       Source text: "Eco-Friendly Packaging – Companies using biodegradable materials to reduce environmental impact."
-      
       CORRECT question: "__________ Companies using biodegradable materials to reduce environmental impact."
       CORRECT answer: "Eco-Friendly Packaging"
       
       The ANSWER must ONLY be the key term that would fill in the blank.
       
-      EXTREMELY IMPORTANT: Preserve the EXACT capitalization of the key terms as they appear in the source material. Do not lowercase or change any capitalization.
+      EXTREMELY IMPORTANT (for Verbatim MC/ID): Preserve the EXACT capitalization of the key terms as they appear in the source material. Do not lowercase or change any capitalization.
       
-      NEVER TRUNCATE OR SPLIT THE TERM. If a term includes a dash (like "Term-Based Analysis"), keep the ENTIRE term as the answer.`
+      NEVER TRUNCATE OR SPLIT THE TERM (for Verbatim MC/ID). If a term includes a dash (like "Term-Based Analysis"), keep the ENTIRE term as the answer.`
       : `Generate questions that test understanding of the concepts in the study material. Questions can rephrase or reframe the material to test deeper understanding. MOST IMPORTANTLY: INCLUDE ALL key terms, examples, subcategories, and concepts from the material in your question set - make sure every term has at least one question.`;
     
     const statementTrueFalseInstructions = quizType === "statementTrueFalse" || quizType === "mixed" 
       ? `
       For "Statement True/False" questions:
-      - Create questions with TWO statements about the material
-      - Label them clearly as "Statement 1:" and "Statement 2:"
-      - Make sure each statement can be definitively evaluated as true or false
+      - Create questions with TWO statements about the material.
+      - Label them clearly as "Statement 1:" and "Statement 2:".
+      - Make sure each statement can be definitively evaluated as true or false based on the material.
       - Use the standard options:
         A. The first statement is true, the second statement is false.
         B. The first statement is false, the second statement is true.
         C. Both statements are true.
         D. Both statements are false.
-      - Make sure the answer is one of these four options
+      - Make sure the answer is one of these four options (A, B, C, or D).
       `
       : "";
-    
+      
+    // Specific instructions for standard True/False
+    const trueFalseInstructions = (quizType === "truefalse" || quizType === "mixed")
+      ? `
+      For standard "True/False" questions:
+      - Create a SINGLE statement based on the study material.
+      - This statement should be either factually correct (True) or incorrect (False) according to the material.
+      - You can create false statements by swapping terms/definitions, negating a fact, or slightly altering a concept.
+      - The question MUST be a statement, NOT a fill-in-the-blank.
+      - The options MUST be ["True", "False"].
+      - The answer MUST be either "True" or "False".
+      ` : "";
+
     const systemPrompt = `
       You are an expert quiz generator. Generate ${questionCount} quiz questions based on the study material provided.
       
@@ -294,99 +311,131 @@ export class QuizGenerator extends GeminiCore {
                    quizType === "statementTrueFalse" ? "Statement True/False" : 
                    "Identification"}
       
-      ${verbatimInstruction}
+      ${verbatimInstructionContent} 
+      
+      ${trueFalseInstructions} 
       
       ${statementTrueFalseInstructions}
       
       ${numQuestions ? `IMPORTANT: You MUST generate EXACTLY ${numQuestions} questions, no more and no less.` : 
       `IMPORTANT: Generate a comprehensive set of questions that thoroughly covers the material provided.
-       - For short materials (< 500 words), generate at least 10-15 questions
-       - For medium materials (500-1500 words), generate at least 20-30 questions
-       - For long materials (> 1500 words), generate at least 30-60 questions
        - ENSURE you cover ALL key concepts and important information in the material
        - CRITICAL: Do not skip any terms or sections of the content
        - YOU MUST include questions about EVERY example, subcategory, and concept that appears in the material
        - MAXIMIZE COVERAGE - you should aim to have at least one question about every term in the input`}
 
-      SUPER IMPORTANT FOR VERBATIM QUESTIONS:
-      - DO NOT create questions asking about the meaning or definition of a term
-      - INSTEAD, the blank should BE the term itself, and what follows should be the explanation
-      - Always format as: "__________ [explanation of the term]" (with NO dash or colon)
-      - Looking for patterns like "Term – explanation" or "1. Term - explanation"
-      - Never rewrite or paraphrase the explanation - use the EXACT text that follows the term
-      - DO NOT include any dash or colon between the blank and the text that follows
-      - Make sure the answer is the COMPLETE term - not just part of it
-      - For example, if the term is "Eco-Friendly Packaging", the ENTIRE phrase must be the answer, not just "Eco-Friendly"
-      - PRESERVE EXACT CAPITALIZATION of key terms as they appear in the source material
+      GENERAL RULES FOR ALL QUESTION TYPES:
+      - CRITICAL INSTRUCTION: The material contains all terms and examples that were extracted. YOU MUST STRIVE TO INCLUDE AS MANY OF THESE TERMS AS POSSIBLE in your questions. Aim for maximum coverage of all terms.
+      - AVOID generating questions that use the exact phrases "is a subcategory of" or "is an example of". Test these relationships indirectly if necessary.
+      - PRESERVE EXACT CAPITALIZATION of key terms when they are the answer or part of the question statement, unless generating a deliberately incorrect statement for True/False.
+      - Ensure the JSON is properly formatted with no syntax errors.
+      - Do not wrap your response in markdown code blocks or backticks.
+      - Your entire response should be a valid JSON array, nothing else.
+      - Cover the FULL BREADTH of the study material - do not neglect any important sections.
+      - CRITICAL: Generate questions from EVERY section of the material - don't focus only on the beginning.
       
-      CRITICAL INSTRUCTION: The material contains all terms and examples that were extracted. YOU MUST STRIVE TO INCLUDE AS MANY OF THESE TERMS AS POSSIBLE in your questions. Aim for maximum coverage of all terms.
+      SUPER IMPORTANT FOR VERBATIM MULTIPLE CHOICE / IDENTIFICATION:
+      - The fill-in-the-blank format "__________ [explanation]" applies ONLY to Multiple Choice and Identification types AND only when verbatim mode is active.
+      - DO NOT use this format for True/False or Statement True/False questions.
+      - DO NOT create questions asking about the meaning or definition of a term in verbatim mode.
+      - INSTEAD, the blank should BE the term itself, and what follows should be the explanation.
+      - Looking for patterns like "Term – explanation" or "1. Term - explanation".
+      - Never rewrite or paraphrase the explanation - use the EXACT text that follows the term.
+      - DO NOT include any dash or colon between the blank and the text that follows.
+      - Make sure the answer is the COMPLETE term - not just part of it.
+      - For example, if the term is "Eco-Friendly Packaging", the ENTIRE phrase must be the answer, not just "Eco-Friendly".
+      - DO NOT use any quotation marks in the verbatim questions.
+      - Place EXACTLY ONE blank (________) at the beginning of EACH verbatim MC/ID question without any dash or colon after it.
+      - The "answer" field MUST contain the COMPLETE term that would fill in the blank, EXACTLY as it appears in the source.
       
       Format your response as a valid JSON array of quiz question objects with the following format:
       
-      For Multiple Choice:
+      For Multiple Choice (Non-Verbatim):
       {
         "id": 1,
         "type": "multiple",
-        "question": "__________ [Term explanation from source]",
-        "options": ["Term 1", "Term 2", "Term 3", "Term 4"],
-        "answer": "Term 1",
+        "question": "[Question testing understanding of a concept]",
+        "options": ["Option A", "Option B", "Correct Answer", "Option D"],
+        "answer": "Correct Answer",
         "explanation": "Explanation of the correct answer"
+      }
+      
+      For Multiple Choice (Verbatim):
+      {
+        "id": 1
+        "type": "multiple",
+        "question": "__________ [Exact explanation from source]",
+        "options": ["Distractor Term 1", "Correct Term", "Distractor Term 2", "Distractor Term 3"],
+        "answer": "Correct Term",
+        "explanation": "Explanation of the correct answer (term)"
       }
       
       For True/False:
       {
         "id": 2,
         "type": "truefalse",
-        "question": "__________ [Statement]",
+        "question": "[A statement about a concept from the material, which might be true or false]", 
         "options": ["True", "False"],
-        "answer": "True",
-        "explanation": "Explanation of why this is true"
+        "answer": "True", // or "False"
+        "explanation": "Explanation of why the statement is true or false based on the material"
       }
       
       For Statement True/False:
       {
         "id": 3,
         "type": "statementTrueFalse",
-        "question": "Statement 1: [First statement]\\nStatement 2: [Second statement]",
+        "question": "Statement 1: [First statement based on material]\\nStatement 2: [Second statement based on material]",
         "options": [
           "A. The first statement is true, the second statement is false.",
           "B. The first statement is false, the second statement is true.",
           "C. Both statements are true.",
           "D. Both statements are false."
         ],
-        "answer": "A. The first statement is true, the second statement is false.",
-        "explanation": "Explanation of why the first statement is true and the second is false"
+        "answer": "C. Both statements are true.", // Example answer
+        "explanation": "Explanation justifying the truth value of both statements"
       }
       
-      For Identification:
+      For Identification (Non-Verbatim):
       {
         "id": 4,
         "type": "identification",
-        "question": "__________ [Definition or description]",
-        "answer": "The term",
+        "question": "[Question asking to identify a term based on definition/description]",
+        "answer": "The Correct Term",
         "options": [],
         "explanation": "Explanation of the answer"
       }
       
-      IMPORTANT:
-      1. Ensure proper escaping of special characters in JSON strings
-      2. For verbatim questions, make sure the "answer" field contains the COMPLETE term (including any dashes or hyphens) that appears in the source material
-      3. Only include information directly from the provided study material
-      4. For multiple choice, all options should be terms from the source material
-      5. Ensure the JSON is properly formatted with no syntax errors
-      6. Do not wrap your response in markdown code blocks or backticks
-      7. Your entire response should be a valid JSON array, nothing else
-      8. Cover the FULL BREADTH of the study material - do not neglect any important sections
-      9. Place EXACTLY ONE blank (________) at the beginning of EACH question without any dash or colon after it
-      10. DO NOT use any quotation marks in the verbatim questions
-      11. The "answer" field MUST contain the COMPLETE term that would fill in the blank, EXACTLY as it appears in the source
-      12. PRESERVE EXACT CAPITALIZATION of key terms
-      13. CRITICAL: Generate questions from EVERY section of the material - don't focus only on the beginning
+      For Identification (Verbatim):
+      {
+        "id": 4,
+        "type": "identification",
+        "question": "__________ [Exact definition or description from source]",
+        "answer": "The Correct Term",
+        "options": [],
+        "explanation": "Explanation of the answer (term)"
+      }
       
       ONLY return the raw JSON array with no additional text.
     `;
 
+    // Remove the console.log check from within the prompt string itself
+    // *** LOGGING REMOVED from prompt string ***
+
     try {
+      // *** ADDING LOGGING BEFORE API CALL ***
+      console.log(`[generateQuizQuestions] Generating quiz. Type: ${quizType}, Verbatim: ${verbatim}`);
+      if (quizType === 'truefalse') {
+          const trueFalseInstructionsInPrompt = systemPrompt.match(/For standard "True\/False" questions:[\s\S]*?answer MUST be either "True" or "False"./);
+          console.log('[generateQuizQuestions] Specific T/F Instructions in Prompt:', trueFalseInstructionsInPrompt ? trueFalseInstructionsInPrompt[0] : 'Not Found');
+          const trueFalseExampleInPrompt = systemPrompt.match(/For True\/False:\s*\{[\s\S]*?\}/);
+          console.log('[generateQuizQuestions] T/F JSON Example in Prompt:', trueFalseExampleInPrompt ? trueFalseExampleInPrompt[0] : 'Not Found');
+      }
+      if (verbatim) {
+          const verbatimAppliesTo = systemPrompt.match(/THIS FORMAT APPLIES \*ONLY\* TO MULTIPLE CHOICE AND IDENTIFICATION/);
+          console.log('[generateQuizQuestions] Verbatim scope check in prompt:', verbatimAppliesTo ? 'Found restriction' : 'Restriction MISSING');
+      }
+      // *** END LOGGING ***
+
       const result = await this.generateContent(studyMaterial, systemPrompt, {
         temperature: 0.7,
         maxOutputTokens: 100000,
@@ -422,7 +471,7 @@ export class QuizGenerator extends GeminiCore {
       
       console.log("Cleaned JSON string (first 500 chars):", jsonString.substring(0, 500) + (jsonString.length > 500 ? "..." : ""));
       console.log("Cleaned JSON string length:", jsonString.length);
-      
+
       let questions;
       try {
         questions = JSON.parse(jsonString);
@@ -468,37 +517,207 @@ export class QuizGenerator extends GeminiCore {
       
       const validatedQuestions: QuizQuestion[] = questions.map((q: Record<string, unknown>, index: number) => {
         // Create base question
-        const question: QuizQuestion = {
-          id: (q.id as string | number) || uuidv4(),
-          type: (q.type && ["multiple", "truefalse", "identification", "statementTrueFalse"].includes(q.type as string)) 
-            ? q.type as "multiple" | "truefalse" | "identification" | "statementTrueFalse" 
-            : quizType === "mixed" ? "multiple" : quizType, // Default to the requested quizType if type is invalid
-          question: (q.question as string) || "Question unavailable",
+        const initialQuestionFromAI: Partial<QuizQuestion> = {
+          id: (q.id as string | number) || undefined,
+          type: q.type as "multiple" | "truefalse" | "identification" | "statementTrueFalse", 
+          question: (q.question as string) || "",
           options: Array.isArray(q.options) ? q.options as string[] : [],
           answer: (q.answer as string) || "",
-          explanation: (q.explanation as string) || "No explanation provided"
+          explanation: (q.explanation as string) || ""
         };
+
+        console.log(`[VALIDATION START Q${index + 1}] Verbatim Flag: ${verbatim}, Initial AI Type: '${initialQuestionFromAI.type}', Initial AI Question: "${initialQuestionFromAI.question?.substring(0, 100)}"`);
+
+        const question: QuizQuestion = {
+          id: initialQuestionFromAI.id || uuidv4(),
+          type: (initialQuestionFromAI.type && ["multiple", "truefalse", "identification", "statementTrueFalse"].includes(initialQuestionFromAI.type as string)) 
+            ? initialQuestionFromAI.type as "multiple" | "truefalse" | "identification" | "statementTrueFalse" 
+            : quizType === "mixed" ? "multiple" : quizType,
+          question: initialQuestionFromAI.question || "Question unavailable",
+          options: initialQuestionFromAI.options || [],
+          answer: initialQuestionFromAI.answer || "",
+          explanation: initialQuestionFromAI.explanation || "No explanation provided"
+        };
+
+        // *** ENHANCED TRUE/FALSE DETECTION ***
+        // Early detection of True/False questions by multiple criteria
+        let isTrueFalseQuestion = false;
         
-        // Handle verbatim formatting
-        if (verbatim) {
+        // 1. Check type
+        if (question.type === "truefalse") {
+          isTrueFalseQuestion = true;
+        }
+        // 2. Check options
+        else if (Array.isArray(question.options) && 
+            question.options.length === 2 && 
+            question.options[0] === "True" && 
+            question.options[1] === "False") {
+          isTrueFalseQuestion = true;
+          question.type = "truefalse";
+          console.log(`[T/F Detection Q${index + 1}] Detected True/False by options`);
+        }
+        // 3. Check answer
+        else if (question.answer === "True" || question.answer === "False") {
+          isTrueFalseQuestion = true;
+          question.type = "truefalse";
+          console.log(`[T/F Detection Q${index + 1}] Detected True/False by answer`);
+        }
+        // 4. Check quiz type setting
+        else if (quizType === "truefalse") {
+          isTrueFalseQuestion = true;
+          question.type = "truefalse";
+          console.log(`[T/F Detection Q${index + 1}] Forced True/False by quiz type`);
+        }
+        
+        // *** ENHANCED BLANK REMOVAL FOR TRUE/FALSE ***
+        // Always remove blanks for True/False questions EARLY
+        if (isTrueFalseQuestion) {
+          // First ensure options are correct
+          question.options = ["True", "False"];
+          
+          // Then remove any leading blanks, BUT STORE THE ORIGINAL ANSWER if this was a converted identification question
+          const originalQuestion = question.question;
+          const originalAnswer = question.answer;
+          // First check if question starts with blank
+          const hasLeadingBlank = /^[_]+\s*/.test(question.question);
+          
+          if (hasLeadingBlank) {
+            // IMPROVED: Replace the blank with the answer term instead of just removing it
+            // This makes the sentence complete rather than leaving it truncated
+            // Only do this when the question was clearly an identification question converted to T/F
+            if (initialQuestionFromAI.type === "identification" && originalAnswer && typeof originalAnswer === 'string') {
+              // Insert the original answer where the blank was
+              question.question = originalAnswer + " " + question.question.replace(/^[_]+\s*/, '').trim();
+              console.log(`[T/F Blank REPLACED Q${index + 1}] Replaced blank with answer term '${originalAnswer}'`);
+            } else {
+              // Fallback to just removing the blank if we can't determine the original answer
+              question.question = question.question.replace(/^[_]+\s*/, '').trim();
+              console.log(`[T/F Blank Removal Q${index + 1}] Removed blanks from True/False question without replacement`);
+            }
+          }
+          
+          // Now that we have a complete sentence (Question = "[Term] [definition]"), we need to decide if it's True or False
+          // If this was a converted identification question, we should determine if the statement is actually true
+          if (initialQuestionFromAI.type === "identification" && hasLeadingBlank && originalAnswer && typeof originalAnswer === 'string') {
+            // Default to 50/50 True/False rather than always True
+            // For better variation in answers
+            const randomizeTrueFalse = Math.random() < 0.5;
+            
+            if (randomizeTrueFalse) {
+              // Make the statement false by replacing the term with a different term
+              // First try to find another term from other questions
+              const otherAnswers = questions
+                .filter((oq: Record<string, unknown>, idx: number) => 
+                  idx !== index && 
+                  oq.answer && 
+                  typeof oq.answer === 'string' && 
+                  oq.answer.toLowerCase() !== originalAnswer.toLowerCase()
+                )
+                .map((oq: Record<string, unknown>) => oq.answer as string);
+              
+              if (otherAnswers.length > 0) {
+                // Pick a random wrong term to use
+                const wrongTerm = otherAnswers[Math.floor(Math.random() * otherAnswers.length)];
+                // Replace the original term with the wrong term
+                question.question = question.question.replace(new RegExp(`^${originalAnswer}\\b`, 'i'), wrongTerm);
+                // Set answer to False since we made the statement incorrect
+                question.answer = "False";
+                // Update the explanation to explain why it's false
+                question.explanation = `This statement is false. ${wrongTerm} is not correctly paired with this description. The correct term is ${originalAnswer}.`;
+                console.log(`[T/F Answer Q${index + 1}] Set to FALSE by replacing term with '${wrongTerm}'`);
+              } else {
+                // If we can't find another term, set to False and modify the statement
+                question.answer = "False";
+                // Add a negation in the explanation
+                question.explanation = `This statement is false. The correct term for this description is ${originalAnswer}.`;
+                console.log(`[T/F Answer Q${index + 1}] Set to FALSE with updated explanation`);
+              }
+            } else {
+              // Keep the statement true
+              question.answer = "True";
+              question.explanation = `This statement is true. ${originalAnswer} is correctly described.`;
+              console.log(`[T/F Answer Q${index + 1}] Set to TRUE with updated explanation`);
+            }
+          }
+        }
+
+        // *** NEW CHECK ***
+        // If options are exactly ["True", "False"], force type to "truefalse"
+        // This catches cases where the AI returns a T/F structure without the correct type field.
+        if (Array.isArray(question.options) &&
+            question.options.length === 2 &&
+            question.options[0] === "True" &&
+            question.options[1] === "False") {
+            if (question.type !== "truefalse") {
+                console.warn(`[Validation Fix Q${index + 1}] Forcing type to 'truefalse' based on options ['True', 'False']. Original type was '${question.type}'.`);
+                question.type = "truefalse";
+            }
+        }
+
+        // *** Type forcing based on answer ***
+        // If the type isn't already T/F but the answer is literally "True" or "False", force it.
+        // This catches cases where AI provides T/F answer but wrong type/options.
+        if (question.type !== "truefalse" && (question.answer === "True" || question.answer === "False")) {
+            console.warn(`[Validation Fix Q${index + 1}] Forcing type to 'truefalse' based on answer ('${question.answer}'). Original type was '${question.type}'.`);
+            question.type = "truefalse";
+        }
+
+        // Handle verbatim formatting ONLY for MC and ID types
+        if (verbatim && (question.type === "multiple" || question.type === "identification")) { // <-- ADDED TYPE CHECK HERE
           question.question = question.question.replace(/["""''`]/g, '');
           question.question = question.question.replace(/^_+\s*[-–—:]\s*/, '__________ ');
           if (!question.question.trim().startsWith('__________')) {
-            const dashMatch = question.question.match(/(.+?)[-–—:](.+)/);
-            if (dashMatch) {
-              question.question = `__________ ${dashMatch[2].trim()}`;
-            } else {
-              question.question = `__________ ${question.question.trim()}`;
-            }
+             console.warn(`[Verbatim Fix Q${index + 1}] Adding missing blank for verbatim MC/ID.`);
+             question.question = '__________ ' + question.question.trim();
           }
+          // Ensure answer capitalization matches source if possible (best effort)
           if (question.answer) {
-            question.answer = question.answer.replace(/[.,;:!?]$/, '');
+             // Find the original term casing if sourceTerms are available
+             const sourceTerm = sourceTerms?.find(st => st.term.toLowerCase() === question.answer.toLowerCase());
+             if (sourceTerm) {
+                 question.answer = sourceTerm.term; // Use original casing
+             }
           }
         }
         
         // Ensure proper options for different question types
         if (question.type === "truefalse") {
+          // DEBUG: Log the question before T/F processing
+          console.log(`[T/F PRE Q${index + 1}] Before blank removal: "${question.question.substring(0, 40)}"`);
+          console.log(`[T/F REGEX Q${index + 1}] Checking if starts with blanks: ${/^_+\s*/.test(question.question)}`);
+          
           question.options = ["True", "False"];
+          // CRITICAL FIX: Ensure T/F questions DON'T start with the blank placeholder, 
+          // even if verbatim was requested overall for the quiz.
+          const before = question.question;
+          question.question = question.question.replace(/^_+\s*/, '').trim();
+          
+          // DEBUG: Log the question after T/F processing
+          console.log(`[T/F POST Q${index + 1}] After blank removal:`, {
+            before: before.substring(0, 40),
+            after: question.question.substring(0, 40),
+            changed: before !== question.question
+          });
+          
+          // Validate T/F answer
+          if (!question.answer || !["True", "False"].includes(question.answer)) {
+              console.warn(`[Validation Fix Q${index + 1}] Invalid answer ('${question.answer}') for True/False. Attempting to determine based on explanation or defaulting.`);
+              // Basic check: if explanation mentions 'incorrect', 'opposite', 'false', assume False.
+              const explanationLower = question.explanation.toLowerCase();
+              if (explanationLower.includes('incorrect') || explanationLower.includes('opposite') || explanationLower.includes('false') || explanationLower.includes('not true')) {
+                  question.answer = "False";
+              } else {
+                  // If explanation suggests correctness or is neutral, assume True (less safe default)
+                  question.answer = "True"; 
+              }
+              console.warn(`[Validation Fix Q${index + 1}] Corrected T/F answer to '${question.answer}'`);
+          }
+        }
+        
+        // FINAL SAFETY CHECK - ensure no True/False questions have blanks
+        if (question.type === "truefalse" && question.question.match(/^_+\s*/)) {
+            console.warn(`[FINAL CHECK Q${index + 1}] True/False still has blanks! Removing them now.`);
+            question.question = question.question.replace(/^_+\s*/, '').trim();
         }
         
         if (question.type === "statementTrueFalse") {
@@ -516,73 +735,119 @@ export class QuizGenerator extends GeminiCore {
         // Fix for multiple choice questions - ensure they always have at least 4 options
         if (question.type === "multiple") {
           const correctAnswer = (question.answer || "").trim(); // Ensure trimmed
-          let potentialDistractors: string[] = [];
-          console.log(`[MC Options] Q: ${question.question}, Answer: "${correctAnswer}"`); // Log
+          let currentOptions = question.options || []; // Options from LLM (if any)
+          console.log(`[MC Options DEBUG Q${index + 1}] Initial options from LLM:`, currentOptions); // Log options from LLM
 
-          // PRIORITIZE sourceTerms if available (manual input)
-          if (sourceTerms && sourceTerms.length > 0) {
-            console.log(`[MC Options] Using sourceTerms (count: ${sourceTerms.length})`); // Log
-            potentialDistractors = sourceTerms
-              .map(t => (t.term || "").trim()) // Ensure trimmed
-              // Ensure distractors are strings, not empty, and not the correct answer (case-insensitive)
-              .filter(term => term !== '' && term.toLowerCase() !== correctAnswer.toLowerCase());
-            console.log(`[MC Options] Potential distractors from sourceTerms:`, potentialDistractors); // Log
-          } else {
-            // Fallback: Try to get distractors from other generated questions' answers (auto mode)
-            console.log(`[MC Options] Using other questions' answers as distractors`); // Log
-            potentialDistractors = questions
-              .filter((oq: Record<string, unknown>) => oq.id !== q.id && typeof oq.answer === 'string' && (oq.answer as string).trim() !== '')
-              .map((oq: Record<string, unknown>) => (oq.answer as string).trim()) // Ensure trimmed
-              .filter((opt: string) => opt.toLowerCase() !== correctAnswer.toLowerCase());
-             console.log(`[MC Options] Potential distractors from other answers:`, potentialDistractors); // Log
+          // Ensure the correct answer is included if options were provided
+          if (currentOptions.length > 0 && !currentOptions.map(o => o.toLowerCase()).includes(correctAnswer.toLowerCase())) {
+              console.warn(`[MC Options DEBUG Q${index + 1}] Correct answer "${correctAnswer}" missing from LLM options. Adding it.`);
+              currentOptions.push(correctAnswer); // Add if missing
+          } else if (currentOptions.length === 0) {
+              console.log(`[MC Options DEBUG Q${index + 1}] No options from LLM. Starting with only correct answer.`);
+              currentOptions = [correctAnswer]; // Start with the correct answer if none provided
           }
 
-          // Ensure uniqueness (case-insensitive)
-          const uniqueDistractors = potentialDistractors.reduce((acc: string[], current: string) => {
-            if (!acc.map(d => d.toLowerCase()).includes(current.toLowerCase())) {
+          // Remove duplicates (case-insensitive) keeping the first occurrence
+          const uniqueCurrentOptions = currentOptions.reduce((acc: string[], current: string) => {
+            if (!acc.map(o => o.toLowerCase()).includes(current.toLowerCase())) {
               acc.push(current);
             }
             return acc;
           }, []);
-          console.log(`[MC Options] Unique distractors:`, uniqueDistractors); // Log
+          console.log(`[MC Options DEBUG Q${index + 1}] Unique options after initial processing:`, uniqueCurrentOptions);
 
+          const newOptions: string[] = [...uniqueCurrentOptions]; // Start building final options
 
-          const newOptions: string[] = [correctAnswer];
+          // Try adding distractors from sourceTerms or other answers (if needed)
+          if (newOptions.length < 4) {
+              let potentialDistractors: string[] = [];
+              // PRIORITIZE sourceTerms if available (manual input)
+              if (sourceTerms && sourceTerms.length > 0) {
+                console.log(`[MC Options DEBUG Q${index + 1}] Using sourceTerms (count: ${sourceTerms.length})`); // Log
+                potentialDistractors = sourceTerms
+                  .map(t => (t.term || "").trim()) // Ensure trimmed
+                  .filter(term => term !== ''); // Ensure distractors are strings, not empty
+              } else {
+                // Fallback: Try to get distractors from other generated questions' answers (auto mode)
+                console.log(`[MC Options DEBUG Q${index + 1}] Using other questions' answers as distractors`); // Log
+                potentialDistractors = questions
+                  .filter((oq: Record<string, unknown>) => oq.id !== q.id && typeof oq.answer === 'string' && (oq.answer as string).trim() !== '')
+                  .map((oq: Record<string, unknown>) => (oq.answer as string).trim()); // Ensure trimmed
+              }
+              console.log(`[MC Options DEBUG Q${index + 1}] Potential distractors from other sources:`, potentialDistractors);
 
-          // Add unique distractors
-          const shuffledDistractors = this.shuffleArray(uniqueDistractors);
-          let addedCount = 0;
-          for (const distractor of shuffledDistractors) {
-            // Check type and ensure it's not the answer itself (case-insensitive)
-            if (typeof distractor === 'string' && !newOptions.map(o => o.toLowerCase()).includes(distractor.toLowerCase())) {
-              newOptions.push(distractor);
-              addedCount++;
-              if (addedCount >= 3) break;
-            }
+              // Ensure uniqueness (case-insensitive) and filter out the correct answer
+              const uniqueDistractors = potentialDistractors.reduce((acc: string[], current: string) => {
+                if (!acc.map(d => d.toLowerCase()).includes(current.toLowerCase()) && current.toLowerCase() !== correctAnswer.toLowerCase()) {
+                  acc.push(current);
+                }
+                return acc;
+              }, []);
+              console.log(`[MC Options DEBUG Q${index + 1}] Unique distractors from other sources:`, uniqueDistractors);
+
+              const shuffledDistractors = this.shuffleArray(uniqueDistractors);
+              for (const distractor of shuffledDistractors) {
+                  if (newOptions.length >= 4) break;
+                  // Check type and ensure it's not already in newOptions (case-insensitive)
+                  if (typeof distractor === 'string' && !newOptions.map(o => o.toLowerCase()).includes(distractor.toLowerCase())) {
+                      newOptions.push(distractor);
+                  }
+              }
+              console.log(`[MC Options DEBUG Q${index + 1}] Options after adding distractors from other sources:`, newOptions);
           }
-          console.log(`[MC Options] Options after adding distractors:`, newOptions); // Log
 
 
-          // If still not enough options, add generic placeholders
+          // If still not enough options, extract words from the study material
+          if (newOptions.length < 4) {
+            console.log(`[MC Options DEBUG Q${index + 1}] Fallback: Extracting keywords from studyMaterial.`);
+            // *** LOG THE STUDY MATERIAL BEING USED HERE ***
+            console.log(`[MC Options DEBUG Q${index + 1}] studyMaterial length for keyword extraction: ${studyMaterial.length}`);
+            console.log(`[MC Options DEBUG Q${index + 1}] studyMaterial start: "${studyMaterial.substring(0, 200)}..."`);
+
+            const skipWords = new Set(["a", "an", "the", "in", "on", "at", "to", "for", "with", "by", "about", "and", "or", "but", "if", "then", "than", "that", "this", "these", "those", "it", "its"]);
+            const answerWords = new Set(correctAnswer.toLowerCase().split(/\s+/).map(w => w.replace(/[.,;:!?()[\]{}"\d]/g, '').trim()).filter(w => w.length > 0));
+            console.log(`[MC Options DEBUG Q${index + 1}] answerWords to filter:`, answerWords);
+
+            const words = studyMaterial.split(/\s+/)
+              .map(w => w.replace(/[.,;:!?()[\]{}"\d]/g, '').trim())
+              .filter(w => w.length > 3 && !skipWords.has(w.toLowerCase()))
+              .filter(w => !answerWords.has(w.toLowerCase())); // Filter out words exactly matching answer words
+
+            const significantWords = [...new Set(words)]; // Get unique words
+            console.log(`[MC Options DEBUG Q${index + 1}] Found ${significantWords.length} significant keywords:`, significantWords.slice(0, 10)); // Log found keywords
+
+            const shuffledWords = this.shuffleArray(significantWords);
+            for (let i = 0; i < shuffledWords.length && newOptions.length < 4; i++) {
+              const word = shuffledWords[i];
+              if (word && !newOptions.map(o => o.toLowerCase()).includes(word.toLowerCase())) {
+                // Capitalize the first letter to make it look like a term
+                const formattedOption = word.charAt(0).toUpperCase() + word.slice(1);
+                newOptions.push(formattedOption);
+              }
+            }
+            console.log(`[MC Options DEBUG Q${index + 1}] Options after adding keywords:`, newOptions);
+          }
+          
+          // Final fallback to generic options if STILL needed
           let genericOptionCounter = 1;
           while (newOptions.length < 4) {
-            const genericOption = `Option ${genericOptionCounter}`;
+            const genericOption = `Alternative ${genericOptionCounter}`;
+            console.log(`[MC Options DEBUG Q${index + 1}] Adding generic option: ${genericOption}`); // Log generic add
             // Ensure generic option doesn't accidentally match the answer or existing options (case-insensitive)
             if (!newOptions.map(o => o.toLowerCase()).includes(genericOption.toLowerCase())) {
                newOptions.push(genericOption);
-               console.log(`[MC Options] Added generic option: ${genericOption}`); // Log
             }
             genericOptionCounter++;
             // Safety break to prevent infinite loops
             if (genericOptionCounter > 10) {
-                console.warn("[MC Options] Safety break triggered while adding generic options."); // Log
+                console.warn(`[MC Options DEBUG Q${index + 1}] Safety break triggered adding generic options.`);
                 break;
             }
           }
 
           // Shuffle the final options
           question.options = this.shuffleArray(newOptions);
-          console.log(`[MC Options] Final shuffled options:`, question.options); // Log
+          console.log(`[MC Options DEBUG Q${index + 1}] Final options:`, question.options); // Log final options
         }
         
         // If we're enforcing question type and it doesn't match what was requested, fix it
