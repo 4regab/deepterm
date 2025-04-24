@@ -14,8 +14,7 @@ const Footer = () => {
             <p className="font-bold text-xl">DeepTerm</p>
           </div>
           <p className="text-gray-700">
-            Boost your productivity with our Pomodoro
-            and Notes tool.
+            Our all-in-one study companion with gamified experience designed to boost your learning efficiency
           </p>
 
           <p className="text-gray-600 text-sm mt-4">
@@ -54,7 +53,7 @@ const Footer = () => {
             {/* Align link content to start (left) on all screen sizes */}
             <a href="https://ko-fi.com/deepterm" target="_blank" rel="noopener noreferrer" className="text-gray-700 hover:text-[#FF5C00] transition-colors flex items-center justify-start gap-2">
               <Coffee className="h-4 w-4" /> {/* Changed Github icon to Coffee */}
-              <span>Donate on Ko-fi</span> {/* Changed text */}
+              <span>Donate here</span> {/* Changed text */}
             </a>
           </div>
         </div>
