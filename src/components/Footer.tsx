@@ -14,7 +14,7 @@ const Footer = () => {
             <p className="font-bold text-xl">DeepTerm</p>
           </div>
           <p className="text-gray-700">
-            Our all-in-one study companion with gamified experience designed to boost your learning efficiency
+            Your all-in-one study companion with gamified experience designed to boost your learning efficiency
           </p>
 
           <p className="text-gray-600 text-sm mt-4">
