@@ -152,14 +152,13 @@ const Navbar = () => {
                   <Progress value={percentComplete} className={`h-1 mt-1 ${timerColor}`} />
                 </div>
               )}
-                <Sheet>
-                <SheetTrigger asChild>
-                  <Button variant="outline" className="neo-border shadow-neo p-3 touch-target hover:shadow-neo-lg hover:-translate-y-0.5 hover:-translate-x-0.5 transition-all">
+                <Sheet>                <SheetTrigger asChild>
+                  <Button variant="outline" className="neo-border shadow-neo p-3 min-h-[48px] min-w-[48px] touch-target hover:shadow-neo-lg hover:-translate-y-0.5 hover:-translate-x-0.5 transition-all">
                     <Menu className="h-6 w-6" />
                   </Button>
                 </SheetTrigger>
-                <SheetContent side="right" className="border-l-2 border-neo-black bg-white w-[85vw] max-w-[300px]">
-                  <div className="py-8 flex flex-col gap-4">
+                <SheetContent side="right" className="border-l-2 border-neo-black bg-white w-[85vw] max-w-[300px] p-4 pt-8">
+                  <div className="py-4 flex flex-col gap-4">
                     {isTimerVisibleInNavbar && (
                       <div 
                         className="neo-border bg-white rounded-lg shadow-neo p-4 cursor-pointer mb-2"
@@ -206,34 +205,33 @@ const Navbar = () => {
                         <Progress value={percentComplete} className={`h-2 ${timerColor}`} />
                       </div>
                     )}
-                    
-                    <Link to="/" className="w-full">
-                      <Button variant="outline" className="neo-border w-full justify-start font-medium">
-                        <Home className="h-4 w-4 mr-2" />
+                      <Link to="/" className="w-full">
+                      <Button variant="outline" className="neo-border w-full justify-start font-medium p-4 h-auto min-h-[48px] text-base">
+                        <Home className="h-5 w-5 mr-3" />
                         Home
                       </Button>
                     </Link>
                     <Link to="/extractor" className="w-full">
-                      <Button variant="outline" className="neo-border w-full justify-start font-medium bg-neo-accent2 text-white">
-                        <FileText className="h-4 w-4 mr-2" />
+                      <Button variant="outline" className="neo-border w-full justify-start font-medium bg-neo-accent2 text-white p-4 h-auto min-h-[48px] text-base">
+                        <FileText className="h-5 w-5 mr-3" />
                         Reviewer Maker
                       </Button>
                     </Link>
                     <Link to="/pomodoro" className="w-full">
-                      <Button variant="outline" className="neo-border w-full justify-start font-medium bg-neo-accent3 text-neo-black">
-                        <Clock className="h-4 w-4 mr-2" />
+                      <Button variant="outline" className="neo-border w-full justify-start font-medium bg-neo-accent3 text-neo-black p-4 h-auto min-h-[48px] text-base">
+                        <Clock className="h-5 w-5 mr-3" />
                         Pomodoro Timer
                       </Button>
                     </Link>
                     <Link to="/study" className="w-full">
-                      <Button variant="outline" className="neo-border w-full justify-start font-medium bg-[#9b87f5] text-white">
-                        <BookOpen className="h-4 w-4 mr-2" />
+                      <Button variant="outline" className="neo-border w-full justify-start font-medium bg-[#9b87f5] text-white p-4 h-auto min-h-[48px] text-base">
+                        <BookOpen className="h-5 w-5 mr-3" />
                         Study Center
                       </Button>
                     </Link>
                     <Link to="/dashboard" className="w-full">
-                      <Button variant="outline" className="neo-border w-full justify-start font-medium bg-[#FFC225] text-neo-black">
-                        <BarChart2 className="h-4 w-4 mr-2" />
+                      <Button variant="outline" className="neo-border w-full justify-start font-medium bg-[#FFC225] text-neo-black p-4 h-auto min-h-[48px] text-base">
+                        <BarChart2 className="h-5 w-5 mr-3" />
                         Dashboard
                       </Button>
                     </Link>
