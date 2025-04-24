@@ -3,55 +3,43 @@ import { FlashcardDeck } from "@/types/flashcard";
 import { v4 as uuidv4 } from 'uuid';
 import { toast } from "sonner";
 import { FlashcardContext, FLASHCARD_STORAGE_KEY } from "./FlashcardContextDefinition";
+import { useLocalStorage } from "@/hooks/use-local-storage"; // Import the hook
 
 // Define a constant for storing the active deck ID
 const ACTIVE_DECK_ID_KEY = 'flashcard-active-deck-id';
 
 // Provider component
 export const FlashcardProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  // Use useLocalStorage for savedDecks persistence
+  const [savedDecks, setSavedDecks] = useLocalStorage<FlashcardDeck[]>(FLASHCARD_STORAGE_KEY, []);
+  
+  // State for activeDeck and generation status (keep using useState)
   const [activeDeck, setActiveDeck] = useState<FlashcardDeck | null>(null);
-  const [savedDecks, setSavedDecks] = useState<FlashcardDeck[]>([]);
   const [isGenerating, setIsGenerating] = useState<boolean>(false);
 
-  // Load decks from local storage on initial render
+  // Load active deck from local storage on initial render
   useEffect(() => {
     try {
-      const storedDecks = localStorage.getItem(FLASHCARD_STORAGE_KEY);
-      if (storedDecks) {
-        const parsedDecks: FlashcardDeck[] = JSON.parse(storedDecks);
-        // Ensure dateCreated is a properly formatted string
-        const validatedDecks = parsedDecks.map(deck => ({
-          ...deck,
-          dateCreated: deck.dateCreated || new Date().toISOString(),
-          lastModified: deck.lastModified || new Date().toISOString()
-        }));
-        setSavedDecks(validatedDecks);
-        
-        // Try to restore the active deck
-        const activeDeckId = localStorage.getItem(ACTIVE_DECK_ID_KEY);
-        if (activeDeckId) {
-          const activeD = validatedDecks.find(d => d.id === activeDeckId);
-          if (activeD) {
-            setActiveDeck(activeD);
-          }
+      const activeDeckId = localStorage.getItem(ACTIVE_DECK_ID_KEY);
+      if (activeDeckId) {
+        // Find the deck from the already loaded savedDecks
+        const activeD = savedDecks.find(d => d.id === activeDeckId);
+        if (activeD) {
+          setActiveDeck(activeD);
+        } else {
+          // If the active deck ID is invalid, remove it
+          localStorage.removeItem(ACTIVE_DECK_ID_KEY);
         }
       }
     } catch (error) {
-      console.error("Failed to load flashcard decks from local storage:", error);
-      toast.error("Could not load your saved flashcard decks.");
+      console.error("Failed to load active flashcard deck ID:", error);
     }
-  }, []);
-
-  // Save decks to local storage whenever they change
-  useEffect(() => {
-    try {
-      localStorage.setItem(FLASHCARD_STORAGE_KEY, JSON.stringify(savedDecks));
-    } catch (error) {
-      console.error("Failed to save flashcard decks to local storage:", error);
-      toast.error("Could not save changes to your flashcard decks.");
-    }
+    // Depend on savedDecks being loaded by the hook
   }, [savedDecks]);
-  
+
+  // Remove the useEffect hooks that manually loaded/saved savedDecks
+  // The useLocalStorage hook handles this automatically.
+
   // Save active deck ID to local storage whenever it changes
   useEffect(() => {
     try {
@@ -65,65 +53,73 @@ export const FlashcardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     }
   }, [activeDeck]);
 
-  // Function to save or update a deck
+  // Function to save or update a deck (adapts to useLocalStorage setter)
   const saveFlashcardDeck = useCallback((deckData: Omit<FlashcardDeck, 'id' | 'dateCreated'> & { id?: string }) => {
-    setSavedDecks(prevDecks => {
-      const now = new Date().toISOString();
-      if (deckData.id) {
-        // Update existing deck
-        const index = prevDecks.findIndex(d => d.id === deckData.id);
-        if (index !== -1) {
-          const updatedDecks = [...prevDecks];
-          updatedDecks[index] = { 
-            ...prevDecks[index], 
-            ...deckData, 
-            lastModified: now 
-          };
-          toast.success(`Deck "${deckData.title}" updated.`);
-          
-          // If this is the active deck, update it too
-          if (activeDeck && activeDeck.id === deckData.id) {
-            setActiveDeck(updatedDecks[index]);
-          }
-          
-          return updatedDecks;
-        }
+    const now = new Date().toISOString();
+    let updatedDeck: FlashcardDeck | null = null;
+    
+    // Direct assignment instead of updater function
+    const prevDecks = [...savedDecks]; // Create a copy of current state
+    
+    if (deckData.id) {
+      // Update existing deck
+      const index = prevDecks.findIndex(d => d.id === deckData.id);
+      if (index !== -1) {
+        updatedDeck = { 
+          ...prevDecks[index], 
+          ...deckData, 
+          lastModified: now 
+        };
+        prevDecks[index] = updatedDeck;
+        toast.success(`Deck "${deckData.title}" updated.`);
       }
+    } else {
       // Add new deck
-      const newDeck: FlashcardDeck = {
+      updatedDeck = {
         ...deckData,
         id: deckData.id || uuidv4(),
         dateCreated: now,
         lastModified: now,
         cards: deckData.cards || []
       };
-      toast.success(`Deck "${newDeck.title}" saved.`);
-      return [...prevDecks, newDeck];
-    });
-  }, [activeDeck]);
+      prevDecks.push(updatedDeck);
+      toast.success(`Deck "${updatedDeck.title}" saved.`);
+    }
+    
+    // Set the entire new array
+    setSavedDecks(prevDecks);
 
-  // Function to delete a deck
+    // If this was the active deck being updated, update the activeDeck state
+    if (updatedDeck && activeDeck && activeDeck.id === updatedDeck.id) {
+      setActiveDeck(updatedDeck);
+    }
+  }, [activeDeck, savedDecks, setSavedDecks]);
+
+  // Function to delete a deck (adapts to useLocalStorage setter)
   const deleteFlashcardDeck = useCallback((deckId: string) => {
-    setSavedDecks(prevDecks => {
-      const deckToDelete = prevDecks.find(d => d.id === deckId);
+    // Direct manipulation instead of updater function
+    const prevDecks = [...savedDecks];
+    const deckToDelete = prevDecks.find(d => d.id === deckId);
+    
+    if (deckToDelete) {
+      // Filter out the deck to delete
       const updatedDecks = prevDecks.filter(deck => deck.id !== deckId);
-      if (deckToDelete) {
-        toast.success(`Deck "${deckToDelete.title}" deleted.`);
-      }
-      return updatedDecks;
-    });
+      setSavedDecks(updatedDecks);
+      toast.success(`Deck "${deckToDelete.title}" deleted.`);
+    }
+    
     // If the active deck is the one being deleted, clear it
     if (activeDeck?.id === deckId) {
       setActiveDeck(null);
     }
-  }, [activeDeck]);
+  }, [activeDeck, savedDecks, setSavedDecks]);
 
-  // Function to load a specific deck by ID (useful for opening a deck)
+  // Function to load a specific deck by ID (uses savedDecks from the hook)
   const loadDeck = useCallback((deckId: string): FlashcardDeck | null => {
     const deck = savedDecks.find(d => d.id === deckId) || null;
     setActiveDeck(deck); // Set as active deck when loaded
     return deck;
-  }, [savedDecks]);
+  }, [savedDecks]); // Depends on savedDecks from the hook
 
   // Function for creating a new deck
   const handleCreateNewDeck = useCallback(() => {
