@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { ChevronLeft, ChevronRight, ArrowLeft, Save } from "lucide-react";
-import { Quiz, useQuiz } from "@/pages/Quiz";
+import { Quiz, useQuiz } from "@/context/QuizContext";
 import { toast } from "sonner";
 import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from "@/components/ui/alert-dialog";
 import { useUserProfile } from "@/context/UserProfileContext"; // Import user profile context

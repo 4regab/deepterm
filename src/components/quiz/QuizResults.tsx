@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Check, X, RefreshCw, PenSquare } from "lucide-react";
-import { useQuiz, QuizQuestion } from "@/pages/Quiz"; // Import QuizQuestion
+import { useQuiz, QuizQuestion } from "@/context/QuizContext"; // Import QuizQuestion
 import { useIsMobile } from "@/hooks/use-mobile";
 
 const QuizResults = () => {

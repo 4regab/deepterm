@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Upload, Info, Wand2, Check, ChevronDown, ChevronUp, FileText, Edit, Pencil, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { QuizGenerator } from "@/services/quizGenerator";
-import { QuestionType, useQuiz, QuizQuestion } from "@/pages/Quiz";
+import { QuestionType, useQuiz, QuizQuestion } from "@/context/QuizContext";
 import { v4 as uuidv4 } from "uuid";
 import ApiKeyInput, { API_KEY_STORAGE_KEY } from "@/components/shared/ApiKeyInput";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -66,7 +66,7 @@ const QuizCreationForm = () => {
   const [numberOfQuestions, setNumberOfQuestions] = useState<number>(activeQuiz?.settings?.numberOfQuestions || 5);
   const [isAutoQuestionCount, setIsAutoQuestionCount] = useState(activeQuiz ? false : true);
   const [questionType, setQuestionType] = useState<QuestionType>(activeQuiz?.settings?.questionType || "multiple");
-  const [verbatimMode, setVerbatimMode] = useState(activeQuiz?.settings?.verbatimMode ?? true);
+  const [verbatimMode, setVerbatimMode] = useState<boolean>(false);
   const [hasApiKey, setHasApiKey] = useState(false);
   const [showApiKeyInput, setShowApiKeyInput] = useState(false);
   const [inputMode, setInputMode] = useState<'auto' | 'manual'>(activeQuiz?.settings?.inputMode as ('auto' | 'manual') || 'auto');
@@ -77,24 +77,51 @@ const QuizCreationForm = () => {
   const [generatedQuestions, setGeneratedQuestions] = useState<QuizQuestion[]>([]);
   const [showQuestionsPreview, setShowQuestionsPreview] = useState(false);
   const [editingQuestionIndex, setEditingQuestionIndex] = useState<number | null>(null);
-  
-  // Only consider it edit mode if we were explicitly directed to edit an existing quiz
-  // We determine this based on if activeQuiz exists and if quizPhase !== "taking"
-  // This prevents generated quizzes from immediately going into edit mode
-  const isEditMode = !!activeQuiz?.id && window.location.href.includes('edit');
-  
+
+  // Determine if we are in edit mode based *only* on the presence of an activeQuiz from context.
+  const isEditMode = !!activeQuiz?.id;
+
   const questionCountOptions = Array.from({ length: 96 }, (_, i) => i + 5);
-  
-  // Reset the activeQuiz when component mounts to prevent edit mode persistence
+
+  // Effect to populate form state when activeQuiz changes (for editing)
   useEffect(() => {
-    if (!isEditMode && activeQuiz) {
-      // Don't reset if we're in the middle of generating
-      if (!isGenerating) {
-        setActiveQuiz(null);
+    if (activeQuiz) {
+      console.log("Populating form for editing quiz:", activeQuiz.id);
+      setQuizTitle(activeQuiz.title || "");
+      setStudyMaterial(activeQuiz.studyMaterial || "");
+      setNumberOfQuestions(activeQuiz.settings?.numberOfQuestions || 5);
+      setIsAutoQuestionCount(activeQuiz.settings?.numberOfQuestions === undefined); // Set auto if number wasn't explicitly set
+      setQuestionType(activeQuiz.settings?.questionType || "multiple");
+      setVerbatimMode(activeQuiz.settings?.verbatimMode ?? true);
+      setInputMode(activeQuiz.settings?.inputMode || 'auto');
+      // If editing, load the existing questions into the preview state immediately
+      // This allows editing questions without regenerating
+      setGeneratedQuestions(activeQuiz.questions || []);
+      
+      // Show the questions preview dialog automatically when in edit mode
+      // Add a slight delay to ensure questions are loaded properly first
+      if (activeQuiz.questions && activeQuiz.questions.length > 0) {
+        setTimeout(() => {
+          setShowQuestionsPreview(true);
+        }, 100);
       }
+    } else {
+      // Reset form when activeQuiz is cleared (e.g., creating a new quiz)
+      console.log("Resetting form because activeQuiz is null");
+      setQuizTitle("");
+      setStudyMaterial("");
+      setNumberOfQuestions(5);
+      setIsAutoQuestionCount(true);
+      setQuestionType("multiple");
+      setVerbatimMode(true);
+      setInputMode('auto');
+      setGeneratedQuestions([]);
+      setShowQuestionsPreview(false);
+      setEditingQuestionIndex(null);
     }
-  }, [isEditMode, activeQuiz, isGenerating, setActiveQuiz]);
-  
+  }, [activeQuiz]); // Rerun this effect when activeQuiz changes
+
+
   const checkApiKey = () => {
     const apiKey = localStorage.getItem(API_KEY_STORAGE_KEY);
     const keyExists = !!apiKey && apiKey.trim() !== '';
@@ -132,7 +159,60 @@ const QuizCreationForm = () => {
     toast.info("API Key saved. Please click 'Generate Quiz' again.");
   };
 
-  const handleGenerateQuiz = async () => {
+  // New function to handle updating an existing quiz
+  const handleUpdateQuiz = () => {
+    if (!activeQuiz) {
+      toast.error("Cannot update: No active quiz selected for editing.");
+      return;
+    }
+
+    // Use the questions currently in the preview/edit state
+    if (generatedQuestions.length === 0) {
+      toast.error("Cannot update: Quiz must have at least one question.");
+      return;
+    }
+
+    const updatedQuizData = {
+      ...activeQuiz,
+      title: quizTitle.trim() || `Quiz ${new Date().toLocaleDateString()}`,
+      studyMaterial,
+      questions: generatedQuestions, // Use the potentially edited questions
+      lastModified: new Date().toISOString(),
+      settings: {
+        ...activeQuiz.settings, // Preserve original settings unless changed
+        questionType,
+        numberOfQuestions: generatedQuestions.length, // Update count based on edited questions
+        verbatimMode,
+        inputMode,
+      },
+      // Reset score/progress if settings or questions changed significantly? Optional.
+      // score: undefined,
+      // progress: undefined,
+    };
+
+    saveQuiz(updatedQuizData); // Use the context save function which handles updates
+    toast.success(`Quiz "${updatedQuizData.title}" updated successfully!`);
+    
+    // Exit edit mode by clearing the active quiz
+    setActiveQuiz(null);
+    
+    // Close the questions preview dialog
+    setShowQuestionsPreview(false);
+  };
+
+  // Renamed from handleGenerateQuiz to reflect its dual purpose
+  const handleGenerateOrUpdateQuiz = async () => {
+    if (isEditMode) {
+      // If editing, directly update the quiz with current form values
+      handleUpdateQuiz();
+    } else {
+      // If creating, proceed with generation logic
+      await generateNewQuiz();
+    }
+  };
+
+  // Extracted generation logic into its own function
+  const generateNewQuiz = async () => {
     if (!studyMaterial.trim()) {
       toast.error("Please enter some study material");
       return;
@@ -155,6 +235,14 @@ const QuizCreationForm = () => {
       
       const numQuestionsParam = isAutoQuestionCount ? undefined : numberOfQuestions;
       
+      // *** ADD LOGGING HERE ***
+      console.log(`[QuizCreationForm] Generating quiz with settings:`, {
+        numQuestions: numQuestionsParam,
+        quizType: questionType,
+        verbatimMode, // Log the state value
+        source: studyMaterial ? 'studyMaterial' : 'manualInput'
+      });
+
       let result;
       try {
         if (inputMode === 'manual') {
@@ -343,7 +431,14 @@ const QuizCreationForm = () => {
       toast.error("No questions to save");
       return;
     }
-    
+
+    // If we are editing an existing quiz, update it instead of creating a new one.
+    if (isEditMode && activeQuiz) {
+      handleUpdateQuiz();
+      return;
+    }
+
+    // --- Logic for saving a NEW quiz (after generation and review) ---
     const newQuiz = {
       id: uuidv4(),
       title: quizTitle.trim() || `Quiz ${new Date().toLocaleDateString()}`,
@@ -472,6 +567,7 @@ const QuizCreationForm = () => {
         </div>
       )}
 
+      {/* Keep this Edit Mode indicator */}
       {isEditMode && (
         <div className="bg-blue-100 border-2 border-blue-400 p-4 rounded-md shadow-neo">
           <div className="flex items-center gap-3">
@@ -701,12 +797,12 @@ const QuizCreationForm = () => {
         />
       </div>
 
-      <Button 
-        onClick={handleGenerateQuiz} 
-        disabled={!studyMaterial.trim() || isGenerating} 
+      <Button
+        onClick={handleGenerateOrUpdateQuiz} // Use the combined handler
+        disabled={isGenerating || (inputMode === 'auto' && !studyMaterial.trim()) || (inputMode === 'manual' && !studyMaterial.trim() && !isEditMode)} // Disable if generating or no material (unless editing)
         className={`w-full neo-border shadow-neo-lg hover:shadow-none hover:translate-x-[4px] hover:translate-y-[4px] transition-all text-lg sm:text-xl font-bold py-4 sm:py-6 ${
-          isEditMode 
-            ? "bg-blue-500 hover:bg-blue-600 text-white" 
+          isEditMode
+            ? "bg-blue-500 hover:bg-blue-600 text-white"
             : "bg-[#9b87f5] hover:bg-[#7E69AB] text-white"
         }`}
       >
@@ -720,7 +816,7 @@ const QuizCreationForm = () => {
             {isEditMode ? (
               <span className="flex items-center gap-2">
                 <Edit className="h-5 w-5" />
-                Update Quiz with Changes
+                Update Quiz
               </span>
             ) : (
               "Generate Quiz ✨"
@@ -728,7 +824,7 @@ const QuizCreationForm = () => {
           </>
         )}
       </Button>
-      
+
       {/* Questions Preview Dialog */}
       <Dialog open={showQuestionsPreview} onOpenChange={setShowQuestionsPreview}>
         <DialogContent className="max-w-5xl w-[95vw] max-h-[90vh] overflow-y-auto bg-white neo-border shadow-neo">
@@ -755,16 +851,16 @@ const QuizCreationForm = () => {
               >
                 Cancel
               </Button>
-              <Button 
-                onClick={handleSaveQuiz}
+              <Button
+                onClick={handleSaveQuiz} // This now handles both save new and update existing
                 disabled={generatedQuestions.length === 0}
                 className="bg-[#9b87f5] hover:bg-[#7E69AB] text-white neo-border shadow-neo-sm hover:shadow-none transition-all font-bold"
               >
-                Save Quiz
+                {isEditMode ? "Save Changes" : "Save Quiz"} {/* Change button text in dialog */}
               </Button>
             </div>
           </div>
-          
+
           <div className="space-y-6">
             {generatedQuestions.length > 0 ? (
               generatedQuestions.map((question, index) => (

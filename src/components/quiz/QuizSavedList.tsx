@@ -1,7 +1,7 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Book, Calendar, Play, Trash2, BarChart, Edit } from "lucide-react";
-import { useQuiz } from "@/pages/Quiz";
+import { useQuiz } from "@/context/QuizContext";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { useState } from "react";
 import { toast } from "sonner";
