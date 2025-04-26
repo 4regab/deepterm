@@ -6,6 +6,13 @@
 // Check for browser environment before accessing window or document
 const isBrowser = typeof window !== 'undefined' && typeof document !== 'undefined';
 
+// Extend the Window interface to include gtag
+declare global {
+  interface Window {
+    gtag?: (...args: unknown[]) => void; // Use unknown[] instead of any[] for gtag args
+  }
+}
+
 // Cookie consent levels
 export enum ConsentLevel {
   ESSENTIAL = 'essential',
@@ -90,7 +97,36 @@ export const setConsentLevel = (level: ConsentLevel): void => {
   try {
     window.localStorage.setItem('cookieConsent', level);
 
-    // Configure Google AdSense based on new consent level
+    // Define consent states based on the chosen level
+    const consentState = {
+      'analytics_storage': 'denied',
+      'ad_storage': 'denied',
+      'ad_user_data': 'denied',
+      'ad_personalization': 'denied'
+    };
+
+    if (level === ConsentLevel.ALL) {
+      consentState.analytics_storage = 'granted';
+      consentState.ad_storage = 'granted';
+      consentState.ad_user_data = 'granted';
+      consentState.ad_personalization = 'granted';
+    } else if (level === ConsentLevel.ESSENTIAL) {
+      // If only essential is chosen, perhaps allow basic analytics but not ads?
+      // For now, matching DECLINED based on banner button "Decline Non-Essential"
+      // Keep all as denied unless ALL is selected.
+    }
+    // If level is DECLINED, all remain denied as per initialization above.
+
+    // Update Google Consent State
+    if (typeof window.gtag === 'function') {
+      window.gtag('consent', 'update', consentState);
+      console.log('Google Consent Updated:', consentState); // Log for debugging
+    } else {
+      console.warn('gtag function not found. Consent update skipped.');
+    }
+
+    // Configure Google AdSense based on new consent level (existing logic)
+    // Note: Consent Mode should ideally handle this, but keeping for now
     configureAdsense();
 
     // Clear non-essential cookies if consent is not "all"
@@ -127,8 +163,6 @@ export const clearNonEssentialCookies = (): void => {
     }
   });
 };
-
-// No need to declare it here as it's already in adsbygoogle.d.ts
 
 export default {
   getConsentLevel,
