@@ -17,6 +17,16 @@
   <script>
     window.dataLayer = window.dataLayer || [];
     function gtag() { dataLayer.push(arguments); }
+
+    // Set default consent state - MUST be before gtag('js') and gtag('config')
+    gtag('consent', 'default', {
+      'analytics_storage': 'denied',
+      'ad_storage': 'denied',
+      'ad_user_data': 'denied',        // Consent Mode v2
+      'ad_personalization': 'denied',  // Consent Mode v2
+      'wait_for_update': 500 // Optional: waits 500ms for update command
+    });
+
     gtag('js', new Date());
 
     gtag('config', 'G-W6BMP2LP3T');
