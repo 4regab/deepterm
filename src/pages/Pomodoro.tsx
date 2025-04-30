@@ -10,6 +10,8 @@ import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/components/ui/use-toast";
 import { 
+  BACKGROUND_SOUNDS, // Import background sounds
+  BackgroundSoundId, // Import type if needed for casting
   DEFAULT_SETTINGS, 
   NOTIFICATION_SOUND_URL, 
   StudySession, 
@@ -20,11 +22,16 @@ import {
 } from "@/context/pomodoroUtils";
 import { usePomodoroContext } from "@/hooks/usePomodoroContext"; // Corrected import path
 import { useIsMobile } from "@/hooks/use-mobile";
-import { CheckCircle2, Clock, Coffee, Flame, InfoIcon, Pause, Play, RefreshCcw, Settings, Timer, Volume2, VolumeX, ChevronRight } from "lucide-react";
+import { CheckCircle2, Clock, Coffee, Flame, InfoIcon, Pause, Play, RefreshCcw, Settings, Timer, Volume2, VolumeX, ChevronRight, Music } from "lucide-react"; // Added Music icon
 import { useEffect, useState } from "react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
+// Import Select components
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+// Import DropdownMenu components
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+
 
 const Pomodoro = () => {
   // Use global Pomodoro context
@@ -62,7 +69,10 @@ const Pomodoro = () => {
     setIsStreakDialogOpen,
     totalStudyTimeToday,
     formatDuration,
-    getFormattedDate
+    getFormattedDate,
+    // Background Sound
+    selectedSoundId,
+    selectBackgroundSound
   } = usePomodoroContext();
 
   // Local state for settings form
@@ -478,11 +488,12 @@ const Pomodoro = () => {
                   value={settingsForm.pomodorosUntilLongBreak}
                   onChange={(e) => {
                     const value = e.target.value === '' ? '' : Math.min(99, parseInt(e.target.value) || 1);
-                    setSettingsForm({ ...settingsForm, pomodorosUntilLongBreak: value });
+                    // Ensure value passed to state is a number or empty string for controlled input, but store as number
+                    setSettingsForm({ ...settingsForm, pomodorosUntilLongBreak: Number(value) || 1 }); 
                   }}
                   onBlur={(e) => {
                     const value = e.target.value === '' ? 1 : Math.min(99, parseInt(e.target.value) || 1);
-                    setSettingsForm({ ...settingsForm, pomodorosUntilLongBreak: value });
+                    setSettingsForm({ ...settingsForm, pomodorosUntilLongBreak: Number(value) });
                   }}
                   className="neo-border text-2xl h-14 text-center font-mono [-moz-appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                   placeholder="4"
@@ -516,46 +527,6 @@ const Pomodoro = () => {
           <div className={isTodoListVisible ? 'lg:col-span-2' : 'lg:col-span-1'}>
             <div className={`${isTodoListVisible ? 'max-w-2xl mx-auto lg:max-w-none' : 'max-w-2xl mx-auto'}`}>
 
-              {/* Days Streak Card */}
-              <Card className="mb-8 neo-box overflow-hidden bg-white">
-                <CardContent className="p-6">
-                  <button 
-                    onClick={() => setIsStreakDialogOpen(true)}
-                    className="w-full flex items-center justify-between hover:bg-[#FFF9EB] transition-colors p-2 rounded-md"
-                  >
-                    <div className="flex items-center gap-2">
-                      <div className={`p-2 rounded-md bg-[#FFA726] shadow-neo-sm neo-border`}>
-                        <Flame 
-                          className={`w-5 h-5 ${
-                            studyStreak === 0 
-                              ? 'text-gray-300' // No color when no streak
-                              : studyStreak === 1 
-                                ? 'text-opacity-50 text-white' // 50% color when 1 day streak
-                                : studyStreak === 2 
-                                  ? 'text-opacity-75 text-white' // 75% color when 2 day streak
-                                  : 'text-white' // Full color when 3+ day streak
-                          }`} 
-                        />
-                      </div>
-                      <div className="text-left">
-                        <h3 className="font-bold text-lg">
-                          {studyStreak > 0 ? `${studyStreak} day streak` : 'Start your streak'}
-                        </h3>
-                        <p className="text-sm text-gray-600">
-                          {totalStudyTimeToday > 0 
-                            ? `Today: ${formatDuration(totalStudyTimeToday)}` 
-                            : 'No sessions completed today'}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-1 text-gray-500">
-                      <span className="text-sm">View history</span>
-                      <ChevronRight className="w-4 h-4" />
-                    </div>
-                  </button>
-                </CardContent>
-              </Card>
-
               {/* Timer Type Tabs */}
               <Tabs
                 defaultValue="pomodoro"
@@ -585,57 +556,107 @@ const Pomodoro = () => {
                 </TabsList>
               </Tabs>
 
-              {/* Redesigned Timer Card - Neo-brutalist styling */}
-              <Card className="mb-8 neo-box overflow-hidden">
-                <CardContent className="p-6 md:p-8">
-                  <div className="flex justify-between items-center mb-6">
-                    <div className="flex items-center gap-2">
-                      <div className={`p-2 rounded-md ${bgColor} shadow-neo-sm neo-border`}>
-                        {timerType === 'pomodoro' ?
-                          <Timer className="w-5 h-5 text-white" /> :
-                          timerType === 'shortBreak' ?
-                            <Coffee className="w-5 h-5 text-white" /> :
-                            <Clock className="w-5 h-5 text-white" />
-                        }
-                      </div>
-                      <span className="font-bold text-lg capitalize text-[#1a1a1a]">
+              {/* Redesigned Timer Card */}
+              <Card className="mb-8 neo-box overflow-hidden bg-white">
+                <CardContent className="p-4 sm:p-6">
+                  {/* Card Header: Title, Streak, Controls */}
+                  <div className="flex flex-wrap justify-between items-center gap-y-3 mb-4 sm:mb-6">
+                    {/* Left Side: Title & Streak */}
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+                      <h2 className="text-lg font-semibold order-1 sm:order-none">
                         {timerType === 'pomodoro' ? 'Focus Time' : timerType === 'shortBreak' ? 'Short Break' : 'Long Break'}
-                      </span>
+                      </h2>
+                      {/* MOVED Streak Display Back Here */}
+                      <button 
+                        onClick={() => setIsStreakDialogOpen(true)}
+                        className="flex items-center gap-2 hover:bg-accent p-1.5 rounded-md transition-colors order-2 sm:order-none -ml-1.5 sm:ml-0"
+                        title="View study history"
+                      >
+                        <div className={`p-1.5 rounded-md bg-[#FFA726] shadow-neo-xs neo-border flex-shrink-0`}>
+                          <Flame 
+                            className={`w-4 h-4 ${
+                              studyStreak === 0 
+                                ? 'text-gray-300/70' // Dimmed when no streak
+                                : studyStreak === 1 
+                                  ? 'text-white/50' // 50% opacity for 1 day
+                                  : studyStreak === 2 
+                                    ? 'text-white/75' // 75% opacity for 2 days
+                                    : 'text-white' // Full opacity for 3+ days
+                            }`} 
+                          />
+                        </div>
+                        <div className="text-left leading-tight">
+                          <h3 className="font-bold text-sm">
+                            {studyStreak > 0 ? `${studyStreak} day streak` : 'No streak'}
+                          </h3>
+                          <p className="text-xs text-gray-600">
+                            {totalStudyTimeToday > 0 
+                              ? `Today: ${formatDuration(totalStudyTimeToday)}` 
+                              : 'No focus today'}
+                          </p>
+                        </div>
+                        {/* Subtle history indicator */}
+                        <ChevronRight className="w-3 h-3 text-gray-400 ml-1 flex-shrink-0" />
+                      </button>
                     </div>
-                    <div className="flex gap-2">
-                      <button
+
+                    {/* Right Side: Controls */}
+                    <div className="flex items-center space-x-1 sm:space-x-2 order-3 sm:order-none ml-auto sm:ml-0 pl-2 sm:pl-0">
+                      {/* Background Sound Selector Button */}
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="text-gray-600 hover:text-gray-900 w-8 h-8 sm:w-9 sm:h-9">
+                            <Music className="h-4 w-4 sm:h-5 sm:w-5" />
+                            <span className="sr-only">Select Background Sound</span>
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          {BACKGROUND_SOUNDS.map((sound) => (
+                            <DropdownMenuItem 
+                              key={sound.id} 
+                              onSelect={() => selectBackgroundSound(sound.id)}
+                              className={selectedSoundId === sound.id ? "bg-accent" : ""}
+                            >
+                              {sound.name}
+                            </DropdownMenuItem>
+                          ))}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                      {/* Settings Button */}
+                      <Button
+                        variant="ghost"
+                        size="icon"
                         onClick={() => setIsSettingsDialogOpen(true)}
-                        className="px-3 py-2 flex items-center gap-1 rounded-md bg-white hover:bg-gray-100 transition-colors shadow-neo-sm neo-border"
-                        aria-label="Customize timer settings"
+                        className="text-gray-600 hover:text-gray-900 w-8 h-8 sm:w-9 sm:h-9" // Slightly smaller icons
                       >
-                        <Settings className="w-4 h-4 text-[#1a1a1a]" />
-                        <span className="text-sm hidden sm:inline">Customize</span>
-                      </button>
-                      <button
-                        onClick={toggleMute}
-                        className={`p-2 rounded-md ${bgColor} hover:opacity-90 transition-opacity shadow-neo-sm neo-border`}
-                        aria-label={isMuted ? "Unmute notification sound" : "Mute notification sound"}
-                      >
-                        {isMuted ? <VolumeX className="w-5 h-5 text-white" /> : <Volume2 className="w-5 h-5 text-white" />}
-                      </button>
+                        <Settings className="h-4 w-4 sm:h-5 sm:w-5" />
+                        <span className="sr-only">Customize Timer Settings</span>
+                      </Button>
                     </div>
                   </div>
 
-                  {/* Neo-brutalist Timer Display */}
-                  <div className="relative mx-auto w-full max-w-md mb-8">
+                  {/* REMOVED Centered Streak Display from here */}
+                  {/* 
+                  <div className="flex justify-center mb-4 sm:mb-6">
+                    <button ... > ... </button>
+                  </div>
+                  */}
+
+                  {/* Timer Display */}
+                  <div className="relative mx-auto w-full max-w-md mb-6 sm:mb-8">
                     {/* Progress Bar */}
                     <Progress
                       value={progress}
-                      className="h-6 mb-4 bg-white neo-border"
+                      className="h-5 sm:h-6 mb-4 bg-gray-100 neo-border" // Adjusted background
                       indicatorClassName={bgColor}
                     />
 
-                    {/* Timer Display */}
+                    {/* Timer Display Text */}
                     <div className="flex flex-col items-center justify-center">
-                      <div className="font-mono text-5xl sm:text-6xl font-bold mb-4 text-[#1a1a1a] neo-border px-4 sm:px-8 py-4 sm:py-6 rounded-lg bg-white shadow-neo">
+                      <div className="font-mono text-5xl sm:text-6xl font-bold mb-3 sm:mb-4 text-[#1a1a1a] neo-border px-4 sm:px-8 py-3 sm:py-5 rounded-lg bg-white shadow-neo">
                         {formatTime(getDisplayTime())}
                       </div>
-                      <span className="text-sm text-gray-700 font-medium px-4 py-2 bg-white rounded-full neo-border">
+                      <span className="text-xs sm:text-sm text-gray-700 font-medium px-3 py-1.5 bg-white rounded-full neo-border">
                         {isRunning ? 'Time remaining' : timer === initialTime ? 'Ready to start' : 'Paused'}
                       </span>
                     </div>
