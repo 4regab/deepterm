@@ -140,7 +140,7 @@ export const TodoList: React.FC<TodoListProps> = ({ onVisibilityChange }) => {
   
   return (
     <Card className="neo-box overflow-hidden h-full w-[95%] mx-auto max-w-[800px]">
-      <CardContent className="p-4 md:p-6">
+      <CardContent className="p-4 md:p-6 flex flex-col">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <div className="w-6 h-6 flex items-center justify-center bg-[#FFC225] rounded-md neo-border shadow-neo-sm">
@@ -190,38 +190,40 @@ export const TodoList: React.FC<TodoListProps> = ({ onVisibilityChange }) => {
           </Button>
         </form>
         
-        <div className="space-y-3 max-h-[60vh] lg:max-h-[400px] overflow-y-auto pr-1">
-          {todos.length === 0 ? (
-            <p className="text-gray-500 text-center py-4 text-sm">
-              Add tasks to track during your Pomodoro sessions
-            </p>
-          ) : (
-            todos.map(todo => (
-              <div 
-                key={todo.id} 
-                className={`flex items-center gap-2 p-3 rounded-md neo-border shadow-neo-sm transition-all ${
-                  todo.completed ? 'bg-gray-50 text-gray-500' : 'bg-white'
-                }`}
-              >
-                <Checkbox
-                  checked={todo.completed}
-                  onCheckedChange={() => toggleTodo(todo.id)}
-                  className="border-2 border-gray-300"
-                />
-                <span className={`flex-grow ${todo.completed ? 'line-through' : ''}`}>
-                  {todo.text}
-                </span>
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  onClick={() => deleteTodo(todo.id)}
-                  className="h-8 w-8 text-gray-500 hover:text-red-500"
+        <div className="flex-1 min-h-0 overflow-hidden">
+          <div className="h-full space-y-3 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent pr-2 pb-1">
+            {todos.length === 0 ? (
+              <p className="text-gray-500 text-center py-4 text-sm">
+                Add tasks to track during your Pomodoro sessions
+              </p>
+            ) : (
+              todos.map(todo => (
+                <div 
+                  key={todo.id} 
+                  className={`flex items-center gap-2 p-3 rounded-md neo-border shadow-neo-sm transition-all ${
+                    todo.completed ? 'bg-gray-50 text-gray-500' : 'bg-white'
+                  }`}
                 >
-                  <Trash2 className="w-4 h-4" />
-                </Button>
-              </div>
-            ))
-          )}
+                  <Checkbox
+                    checked={todo.completed}
+                    onCheckedChange={() => toggleTodo(todo.id)}
+                    className="border-2 border-gray-300"
+                  />
+                  <span className={`flex-grow ${todo.completed ? 'line-through' : ''}`}>
+                    {todo.text}
+                  </span>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    onClick={() => deleteTodo(todo.id)}
+                    className="h-8 w-8 text-gray-500 hover:text-red-500"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                </div>
+              ))
+            )}
+          </div>
         </div>
       </CardContent>
     </Card>
