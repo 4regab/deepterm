@@ -1,6 +1,9 @@
+import { useLocalStorage } from "@/hooks/use-local-storage"; // Import useLocalStorage
 import { useToast } from "@/components/ui/use-toast";
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 import { 
+  BACKGROUND_SOUNDS,
+  BackgroundSoundId,
   DEFAULT_SETTINGS, 
   NOTIFICATION_SOUND_URL, 
   StudySession, 
@@ -75,6 +78,10 @@ export interface PomodoroContextType {
     // Timer visibility in navbar
     isTimerVisibleInNavbar: boolean;
     setIsTimerVisibleInNavbar: React.Dispatch<React.SetStateAction<boolean>>;
+    // Background Sound
+    selectedSoundId: BackgroundSoundId;
+    selectBackgroundSound: (soundId: BackgroundSoundId) => void;
+    isBackgroundSoundPlaying: boolean; // Added to track background sound state
 }
 
 const PomodoroContext = createContext<PomodoroContextType | undefined>(undefined);
@@ -139,12 +146,20 @@ export const PomodoroProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const [studyStreak, setStudyStreak] = useState(0);
     const [totalStudyTimeToday, setTotalStudyTimeToday] = useState(0);
 
-    const audioRef = useRef<HTMLAudioElement | null>(null);
+    // Refs for audio elements and timeouts
+    const audioRef = useRef<HTMLAudioElement | null>(null); // For notification sound
+    const backgroundAudioRef = useRef<HTMLAudioElement | null>(null); // For background sound
+    const backgroundSoundTimeoutRef = useRef<NodeJS.Timeout | null>(null); // Timeout to stop background sound
+
     const { toast } = useToast();
     const completionProcessed = useRef(false); // Ref to prevent double completion processing
     const intervalRef = useRef<NodeJS.Timeout | null>(null); // Ref to store interval ID
     const startTimeRef = useRef<number | null>(null); // Ref to store the timestamp when the timer started/resumed
     const pauseTimeRef = useRef<number>(userSettings.pomodoro); // Ref to store remaining time when paused
+
+    // State for background sound - Use localStorage
+    const [selectedSoundId, setSelectedSoundId] = useLocalStorage<BackgroundSoundId>('pomodoro-background-sound', 'none');
+    const [isBackgroundSoundPlaying, setIsBackgroundSoundPlaying] = useState(false);
 
     // Track the current page and store it if it's not the Pomodoro page
     useEffect(() => {
@@ -155,14 +170,14 @@ export const PomodoroProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
     // Update document title based on timer state
     useEffect(() => {
-        const originalTitle = "Focus Deep";
+        const originalTitle = "Pomodoro";
         
         if (isRunning) {
             const formattedTime = formatTime(timer);
             const prefix = timerType === 'pomodoro' ? '🎯 ' : '☕ ';
-            document.title = `${prefix}${formattedTime} - Focus Deep`;
+            document.title = `${prefix}${formattedTime} - Pomodoro`;
         } else if (isTimerCompleted) {
-            document.title = `⏰ Timer Complete! - Focus Deep`;
+            document.title = `⏰ Timer Complete! - Pomodoro`;
         } else {
             document.title = originalTitle;
         }
@@ -197,11 +212,11 @@ export const PomodoroProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             // Check if the most recent study day is today
             if (uniqueDates[0] !== todayStr) {
                 const mostRecentDate = new Date(uniqueDates[0]);
-                const diffTime = Math.abs(today.getTime() - mostRecentDate.getTime());
-                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                const diffTimeToday = Math.abs(today.getTime() - mostRecentDate.getTime());
+                const diffDaysToday = Math.ceil(diffTimeToday / (1000 * 60 * 60 * 24));
                 
                 // If the most recent study day was not yesterday or today, break the streak
-                if (diffDays > 1) return 0;
+                if (diffDaysToday > 1) return 0;
             }
             
             // Count consecutive days
@@ -210,11 +225,11 @@ export const PomodoroProvider: React.FC<{ children: React.ReactNode }> = ({ chil
                 const prevDate = new Date(uniqueDates[i + 1]);
                 
                 // Calculate the difference in days
-                const diffTime = Math.abs(currentDate.getTime() - prevDate.getTime());
-                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                const diffTimeConsecutive = Math.abs(currentDate.getTime() - prevDate.getTime());
+                const diffDaysConsecutive = Math.ceil(diffTimeConsecutive / (1000 * 60 * 60 * 24));
                 
                 // If the days are consecutive, increase the streak
-                if (diffDays === 1) {
+                if (diffDaysConsecutive === 1) {
                     currentStreak++;
                 } else {
                     break; // Break in the streak
@@ -324,6 +339,91 @@ export const PomodoroProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             }
         };
     }, [isPlayingSound, isMuted]);
+
+    // Stop background sound function
+    const stopBackgroundSound = useCallback(() => {
+        if (backgroundSoundTimeoutRef.current) {
+            clearTimeout(backgroundSoundTimeoutRef.current);
+            backgroundSoundTimeoutRef.current = null;
+        }
+        if (backgroundAudioRef.current) {
+            backgroundAudioRef.current.pause();
+            backgroundAudioRef.current.currentTime = 0;
+            // Optional: Detach src to release resources sooner
+            // backgroundAudioRef.current.src = ''; 
+        }
+        setIsBackgroundSoundPlaying(false);
+    }, []);
+
+    // Play background sound function
+    const playBackgroundSound = useCallback((soundIdOverride?: BackgroundSoundId) => {
+        const currentSoundId = soundIdOverride ?? selectedSoundId;
+
+        // --- REVISED CONDITION ---
+        // Only play during pomodoro and if not muted and a sound is selected.
+        // The check for isRunning is removed as the callers handle this.
+        if (timerType !== 'pomodoro' || isMuted || currentSoundId === 'none') { 
+            stopBackgroundSound(); // Ensure it's stopped if conditions aren't met
+            return;
+        }
+        // --- END REVISED CONDITION ---
+
+
+        const sound = BACKGROUND_SOUNDS.find(s => s.id === currentSoundId);
+        if (!sound || !sound.path) {
+            stopBackgroundSound();
+            return;
+        }
+
+        // Ensure previous sound is stopped before starting a new one or resuming
+        stopBackgroundSound();
+
+        try {
+            if (!backgroundAudioRef.current) {
+                backgroundAudioRef.current = new Audio();
+            }
+            
+            backgroundAudioRef.current.src = sound.path;
+            backgroundAudioRef.current.loop = true;
+            backgroundAudioRef.current.play().then(() => {
+                setIsBackgroundSoundPlaying(true);
+                
+                // Set timeout to stop the sound exactly when the timer should end
+                // Use a ref to get the most current timer value if needed, or rely on closure
+                const remainingDurationMs = timer * 1000; 
+                if (remainingDurationMs > 0) {
+                    backgroundSoundTimeoutRef.current = setTimeout(() => {
+                        stopBackgroundSound();
+                    }, remainingDurationMs);
+                } else {
+                    stopBackgroundSound(); // Stop immediately if timer is already 0?
+                }
+            }).catch(error => {
+                console.error("Failed to play background sound:", error);
+                stopBackgroundSound();
+                toast({
+                    title: "Background Sound Error",
+                    description: "Could not play the selected background sound.",
+                    variant: "destructive",
+                });
+            });
+        } catch (error) {
+            console.error("Error setting up background audio:", error);
+            stopBackgroundSound();
+        }
+
+    }, [selectedSoundId, timerType, isMuted, timer, stopBackgroundSound, toast]); // Removed isRunning dependency
+
+    // Select background sound function
+    const selectBackgroundSound = useCallback((soundId: BackgroundSoundId) => {
+        stopBackgroundSound(); // Stop current sound when changing selection
+        setSelectedSoundId(soundId); // This now uses the setter from useLocalStorage
+        // If the timer is currently running and it's a pomodoro, start the new sound
+        if (isRunning && timerType === 'pomodoro' && soundId !== 'none') {
+             playBackgroundSound(soundId); // Pass the new soundId directly
+        }
+    }, [stopBackgroundSound, isRunning, timerType, playBackgroundSound, setSelectedSoundId]); // Added setSelectedSoundId dependency
+
 
     // Keep track of tab visibility state
     const wasVisible = useRef(true);
@@ -531,11 +631,10 @@ export const PomodoroProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const handleTimerComplete = useCallback(() => {
         // Play sound that will continue until user takes action
         playSound();
+        stopBackgroundSound(); // Stop background sound when timer completes
 
         // Set states for showing the completion dialog
         setIsTimerCompleted(true);
-        
-        // Show timer in navbar when completed
         setIsTimerVisibleInNavbar(true);
 
         // Determine next timer type
@@ -567,7 +666,7 @@ export const PomodoroProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
         // Stop the current timer
         setIsRunning(false);
-    }, [completedPomodoros, timerType, playSound, userSettings, recordPomodoroSession, initialTime]);
+    }, [completedPomodoros, timerType, playSound, userSettings, recordPomodoroSession, initialTime, stopBackgroundSound]);
 
     // Handle timer type change
     const handleTimerTypeChange = useCallback((type: TimerType) => {
@@ -579,6 +678,7 @@ export const PomodoroProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             clearInterval(intervalRef.current);
             intervalRef.current = null;
         }
+        stopBackgroundSound(); // Stop background sound when changing type manually
 
         // Change the timer type
         setTimerType(type);
@@ -607,17 +707,15 @@ export const PomodoroProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         setIsTimerCompleted(false); // Ensure completion dialog is closed
         stopSound(); // Stop any completion sound
 
-    }, [isRunning, userSettings, stopSound, resetTasksInPomodoro]);
+    }, [isRunning, userSettings, stopSound, resetTasksInPomodoro, stopBackgroundSound]);
 
     // Handle starting the next timer phase
     const handleStartNextPhase = useCallback(() => {
         // Stop the alarm sound
         stopSound();
-
-        // Close the completion dialog
+        stopBackgroundSound(); // Ensure background sound is stopped before starting next phase
         setIsTimerCompleted(false);
 
-        // Set timer type to the next type
         if (nextTimerType) {
             const nextType = nextTimerType;
             setTimerType(nextType);
@@ -627,7 +725,6 @@ export const PomodoroProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             switch (nextType) {
                 case 'pomodoro':
                     nextDuration = userSettings.pomodoro;
-                    // Reset the task in pomodoro counter when starting a new pomodoro session
                     resetTasksInPomodoro();
                     break;
                 case 'shortBreak':
@@ -651,6 +748,11 @@ export const PomodoroProvider: React.FC<{ children: React.ReactNode }> = ({ chil
                 startTimeRef.current = Date.now(); // Set start time *just before* running
                 setIsRunning(true);
                 setNextTimerType(null);
+                // --- ADDED: Start background sound if starting a pomodoro ---
+                if (nextType === 'pomodoro') {
+                    playBackgroundSound(); // Will check internally if a sound is selected
+                }
+                // --- END ADDED ---
             };
 
             if ((nextType === 'shortBreak' || nextType === 'longBreak') && location.pathname !== '/pomodoro') {
@@ -668,7 +770,7 @@ export const PomodoroProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             // Start immediately if no navigation
             startTimer();
         }
-    }, [nextTimerType, stopSound, userSettings, navigate, location.pathname, setPreviousPagePath, resetTasksInPomodoro]);
+    }, [nextTimerType, stopSound, userSettings, navigate, location.pathname, setPreviousPagePath, resetTasksInPomodoro, stopBackgroundSound, playBackgroundSound]); // Added playBackgroundSound dependency back
 
     // Timer tick effect - uses Date.now() for accuracy
     useEffect(() => {
@@ -742,6 +844,10 @@ export const PomodoroProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             if (timerType === 'pomodoro' && timer === initialTime) {
                 resetTasksInPomodoro();
             }
+            // Start background sound if starting a pomodoro
+            if (timerType === 'pomodoro') {
+                playBackgroundSound(); // Will check internally if a sound is selected
+            }
         } else {
             // Pausing the timer
             if (intervalRef.current) {
@@ -749,6 +855,7 @@ export const PomodoroProvider: React.FC<{ children: React.ReactNode }> = ({ chil
                 intervalRef.current = null;
             }
             pauseTimeRef.current = timer; // Store remaining time when pausing
+            stopBackgroundSound(); // Stop background sound on pause
         }
 
         setIsRunning(newIsRunning);
@@ -763,6 +870,7 @@ export const PomodoroProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             clearInterval(intervalRef.current);
             intervalRef.current = null;
         }
+        stopBackgroundSound(); // Stop background sound on reset
 
         let newInitialTime;
         switch (timerType) {
@@ -784,7 +892,15 @@ export const PomodoroProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
     // Toggle mute state
     const toggleMute = () => {
-        setIsMuted(!isMuted);
+        const newMutedState = !isMuted;
+        setIsMuted(newMutedState);
+        // If unmuting and a background sound should be playing (running pomodoro), start it
+        if (!newMutedState && isRunning && timerType === 'pomodoro' && selectedSoundId !== 'none') {
+            playBackgroundSound();
+        } else {
+            // If muting, stop the background sound
+            stopBackgroundSound();
+        }
     }; 
     
     const value = {
@@ -827,7 +943,11 @@ export const PomodoroProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         setPreviousPagePath,
         // Timer visibility in navbar
         isTimerVisibleInNavbar,
-        setIsTimerVisibleInNavbar
+        setIsTimerVisibleInNavbar,
+        // Background Sound
+        selectedSoundId,
+        selectBackgroundSound,
+        isBackgroundSoundPlaying // Pass state if needed by UI
     };
 
     return (
@@ -852,6 +972,7 @@ export const PomodoroProvider: React.FC<{ children: React.ReactNode }> = ({ chil
                             {timerType === 'pomodoro'
                                 ? 'Great job focusing! Time to take a break.'
                                 : 'Break time is over. Ready to focus again?'}
+
                         </p>
                         <div className="flex justify-end gap-2">
                             <button

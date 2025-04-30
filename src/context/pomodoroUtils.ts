@@ -9,6 +9,18 @@ export const DEFAULT_SETTINGS = {
 // Audio notification path
 export const NOTIFICATION_SOUND_URL = '/notification.mp3';
 
+// Background sound options
+export const BACKGROUND_SOUNDS = [
+    { id: 'none', name: 'None', path: '' },
+    { id: 'ambient', name: 'Ambient Noise', path: '/AmbientNoise10min.MP3' },
+    { id: 'rain', name: 'Rain', path: '/Rain10min.mp3' },
+    { id: 'whitenoise', name: 'White Noise', path: '/whitenoise10min.MP3' },
+    { id: 'ticking', name: 'Ticking Clock', path: '/Tickingclock10min.MP3' },
+] as const; // Use "as const" for stricter typing
+
+export type BackgroundSoundId = typeof BACKGROUND_SOUNDS[number]['id'];
+
+
 // Session history interface
 export interface StudySession {
     date: string; // ISO string format
