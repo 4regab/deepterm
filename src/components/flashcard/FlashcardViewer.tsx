@@ -30,6 +30,8 @@ const FlashcardViewer = () => {
   
   // Refs for touch events
   const cardRef = useRef<HTMLDivElement>(null);
+  const frontContentRef = useRef<HTMLDivElement>(null);
+  const backContentRef = useRef<HTMLDivElement>(null);
   const touchStartX = useRef<number | null>(null);
   const touchEndX = useRef<number | null>(null);
   const touchStartY = useRef<number | null>(null);
@@ -296,19 +298,20 @@ const FlashcardViewer = () => {
         >
           {/* Front of card */}
           <div className="flip-card-front bg-white neo-border border-4 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] p-6 flex flex-col justify-center">
-            <div className="text-center w-full">
-              <div className="text-2xl md:text-3xl font-bold mb-2 text-[#1A1F2C] overflow-y-auto max-h-[calc(70vh-2rem)]">
-                {cardContent.front}
+            <div className="text-center w-full h-full flex items-center justify-center">
+              {/* Removed fixed font size classes */}
+              <div className="font-bold text-[#1A1F2C] break-words hyphens-auto px-2 w-full h-full flex items-center justify-center">
+                <div ref={frontContentRef} className="card-content-scaling">{cardContent.front}</div>
               </div>
             </div>
           </div>
           
           {/* Back of card */}
           <div className="flip-card-back bg-[#F9F6FF] neo-border border-4 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] p-6 flex flex-col justify-center">
-            <div className="text-center w-full h-full">
-              {/* Improved styling for definition with better scrolling and padding */}
-              <div className="text-base md:text-lg font-medium text-[#1A1F2C] overflow-y-auto max-h-[calc(70vh-2rem)] py-2 px-4 rounded-md">
-                {cardContent.back}
+            <div className="text-center w-full h-full flex items-center justify-center">
+              {/* Removed fixed font size classes */}
+              <div className="font-medium text-[#1A1F2C] py-2 px-4 rounded-md break-words hyphens-auto flex items-center justify-center h-full w-full">
+                <div ref={backContentRef} className="card-content-scaling">{cardContent.back}</div>
               </div>
             </div>
           </div>
@@ -324,15 +327,15 @@ const FlashcardViewer = () => {
         </div>
         
         {/* Main controls */}
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-3 gap-2 sm:gap-4">
           <div className="flex justify-start">
             <Button
               onClick={handlePrevCard}
-              className="bg-white neo-border shadow-neo-sm hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all text-[#1A1F2C] flex items-center gap-1"
+              className="bg-white neo-border shadow-neo-sm hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all text-[#1A1F2C] flex items-center gap-1 p-2 sm:p-0"
               title="Previous Card (←)"
               size="default"
             >
-              <ChevronLeft className="h-4 w-4" />
+              <ChevronLeft className="h-5 w-5 sm:h-4 sm:w-4" />
               <span className="hidden sm:inline">Previous</span>
             </Button>
           </div>
@@ -341,10 +344,11 @@ const FlashcardViewer = () => {
             <Button
               onClick={() => setFlipped(!flipped)}
               variant="outline"
-              className="bg-white neo-border shadow-neo-sm hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all w-full"
+              className="bg-white neo-border shadow-neo-sm hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all w-full p-2 sm:p-0"
               title="Flip Card (Space)"
+              size="default" // Keep default size for height consistency, adjust padding
             >
-              <RotateCcw className="h-4 w-4 mr-1" />
+              <RotateCcw className="h-5 w-5 sm:h-4 sm:w-4 sm:mr-1" />
               <span className="hidden sm:inline">Flip</span>
             </Button>
           </div>
@@ -352,14 +356,14 @@ const FlashcardViewer = () => {
           <div className="flex justify-end">
             <Button
               onClick={handleNextCard}
-              className={`neo-border shadow-neo-sm hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all flex items-center gap-1
+              className={`neo-border shadow-neo-sm hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all flex items-center gap-1 p-2 sm:p-0
                 ${currentCardIndex === totalCards - 1 ? "bg-[#FFC225] text-[#1A1F2C]" : "bg-[#9b87f5] text-white"}`}
 
               title={currentCardIndex === totalCards - 1 ? "Complete Deck (→)" : "Next Card (→)"}
               size="default"
             >
               <span className="hidden sm:inline">{currentCardIndex === totalCards - 1 ? "Complete" : "Next"}</span>
-              <ChevronRight className="h-4 w-4" />
+              <ChevronRight className="h-5 w-5 sm:h-4 sm:w-4" />
             </Button>
           </div>
         </div>
@@ -452,39 +456,38 @@ const FlashcardViewer = () => {
           -webkit-backface-visibility: hidden;
           backface-visibility: hidden;
           border-radius: 0.75rem;
-          overflow: hidden; /* Changed from overflow-y: auto to prevent whole card scrolling */
+          overflow: hidden; /* Ensure card itself clips overflow */
           display: flex;
           align-items: center;
           justify-content: center;
+          padding: 1rem; /* Add padding inside the card */
         }
         
         /* Ensure text container within card can scroll independently */
+        /* Modified: Remove independent scrolling, allow flex centering */
         .flip-card-front > div, .flip-card-back > div {
           width: 100%;
           height: 100%;
           display: flex;
           align-items: center;
           justify-content: center;
+          text-align: center; /* Center text within its container */
+          overflow: hidden; /* Hide overflow within the flex container */
         }
-        
-        /* Add proper scrollbar styling for definition text */
-        .flip-card-front div div, .flip-card-back div div {
-          scrollbar-width: thin;
-          scrollbar-color: #9b87f5 #F9F6FF;
-        }
-        
-        .flip-card-front div div::-webkit-scrollbar, .flip-card-back div div::-webkit-scrollbar {
-          width: 5px;
-          height: 5px;
-        }
-        
-        .flip-card-front div div::-webkit-scrollbar-track, .flip-card-back div div::-webkit-scrollbar-track {
-          background: transparent;
-        }
-        
-        .flip-card-front div div::-webkit-scrollbar-thumb, .flip-card-back div div::-webkit-scrollbar-thumb {
-          background-color: #9b87f5;
-          border-radius: 10px;
+
+        /* Target the actual text content div */
+        .card-content-scaling {
+          max-width: 100%;
+          max-height: 100%;
+          overflow-wrap: break-word; /* Allow breaking long words */
+          word-break: break-word; /* Ensure words break */
+          text-wrap: balance; /* Improve text wrapping balance if supported */
+          /* Dynamic font sizing: Adjust min/max/preferred values as needed */
+          /* Using clamp for fluid typography based on viewport width */
+          /* Example: min 12px, preferred 2.5vw, max 24px */
+          font-size: clamp(0.75rem, 2.5vw, 1.5rem); 
+          line-height: 1.4; /* Adjust line height for readability */
+          overflow: hidden; /* Hide any final overflow, though font scaling should prevent it */
         }
       `}</style>
     </div>
