@@ -322,69 +322,21 @@ export class QuizGenerator extends GeminiCore {
       - For example, if the term is "Eco-Friendly Packaging", the ENTIRE phrase must be the answer, not just "Eco-Friendly"
       - PRESERVE EXACT CAPITALIZATION of key terms as they appear in the source material
       
-      CRITICAL INSTRUCTION: The material contains all terms and examples that were extracted. YOU MUST STRIVE TO INCLUDE AS MANY OF THESE TERMS AS POSSIBLE in your questions. Aim for maximum coverage of all terms.
-      
-      Format your response as a valid JSON array of quiz question objects with the following format:
-      
-      For Multiple Choice:
-      {
-        "id": 1,
-        "type": "multiple",
-        "question": "__________ [Term explanation from source]",
-        "options": ["Term 1", "Term 2", "Term 3", "Term 4"],
-        "answer": "Term 1",
-        "explanation": "Explanation of the correct answer"
-      }
-      
-      For True/False:
-      {
-        "id": 2,
-        "type": "truefalse",
-        "question": "__________ [Statement]",
-        "options": ["True", "False"],
-        "answer": "True",
-        "explanation": "Explanation of why this is true"
-      }
-      
-      For Statement True/False:
-      {
-        "id": 3,
-        "type": "statementTrueFalse",
-        "question": "Statement 1: [First statement]\\nStatement 2: [Second statement]",
-        "options": [
-          "A. The first statement is true, the second statement is false.",
-          "B. The first statement is false, the second statement is true.",
-          "C. Both statements are true.",
-          "D. Both statements are false."
-        ],
-        "answer": "A. The first statement is true, the second statement is false.",
-        "explanation": "Explanation of why the first statement is true and the second is false"
-      }
-      
-      For Identification:
-      {
-        "id": 4,
-        "type": "identification",
-        "question": "__________ [Definition or description]",
-        "answer": "The term",
-        "options": [],
-        "explanation": "Explanation of the answer"
-      }
-      
       IMPORTANT:
       1. Ensure proper escaping of special characters in JSON strings
       2. For verbatim questions, make sure the "answer" field contains the COMPLETE term (including any dashes or hyphens) that appears in the source material
       3. Only include information directly from the provided study material
-      4. For multiple choice, ensure options are relevant terms from the study material whenever possible. Avoid generic placeholders unless absolutely necessary.
+      4. For multiple choice, ensure ALL options (correct answer and distractors) are relevant terms from the study material. DO NOT use generic placeholders like \\"Option 1\\", \\"Option 2\\", \\"Incorrect Option A\\", etc., under ANY circumstances. If you cannot find enough distinct terms from the material to create multiple options, provide fewer options, but they MUST come from the material.
       5. Ensure the JSON is properly formatted with no syntax errors
       6. Do not wrap your response in markdown code blocks or backticks
       7. Your entire response should be a valid JSON array, nothing else
       8. Cover the FULL BREADTH of the study material - do not neglect any important sections
       9. Place EXACTLY ONE blank (________) at the beginning of EACH question without any dash or colon after it
       10. DO NOT use any quotation marks in the verbatim questions
-      11. The "answer" field MUST contain the COMPLETE term that would fill in the blank, EXACTLY as it appears in the source
+      11. The \\"answer\\" field MUST contain the COMPLETE term that would fill in the blank, EXACTLY as it appears in the source
       12. PRESERVE EXACT CAPITALIZATION of key terms
       13. CRITICAL: Generate questions from EVERY section of the material - don't focus only on the beginning
+      14. DO NOT generate duplicate questions. Each question in the array must be unique.
       
       ONLY return the raw JSON array with no additional text.
     `;
@@ -469,7 +421,8 @@ export class QuizGenerator extends GeminiCore {
          }
       }
       
-      const validatedQuestions: QuizQuestion[] = questions.map((q: Record<string, unknown>, index: number) => {
+      // Step 1: Map and validate raw questions from AI
+      const initialValidatedQuestions: QuizQuestion[] = questions.map((q: Record<string, unknown>, index: number) => {
         // Create base question
         const question: QuizQuestion = {
           id: (q.id as string | number) || uuidv4(),
@@ -520,95 +473,73 @@ export class QuizGenerator extends GeminiCore {
         if (question.type === "multiple") {
           const correctAnswer = (question.answer || "").trim();
           let potentialDistractors: string[] = [];
-          console.log(`[MC Options] Q: ${question.question}, Answer: "${correctAnswer}"`);
+          console.log(`[MC Options - ${question.id}] Q: ${question.question}, Answer: \\"${correctAnswer}\\"`);
 
           // Determine the source of terms for distractors
           let termSource: Array<{ term: string, definition?: string, meaning?: string }> = [];
           if (manualSourceTerms && manualSourceTerms.length > 0) {
-            console.log(`[MC Options] Using manualSourceTerms (count: ${manualSourceTerms.length})`);
+            console.log(`[MC Options - ${question.id}] Using manualSourceTerms (count: ${manualSourceTerms.length})`);
             termSource = manualSourceTerms;
           } else if (allExtractedTerms && allExtractedTerms.length > 0) {
-            console.log(`[MC Options] Using allExtractedTerms (count: ${allExtractedTerms.length})`);
-            // Map allExtractedTerms to the expected structure
+            console.log(`[MC Options - ${question.id}] Using allExtractedTerms (count: ${allExtractedTerms.length})`);
             termSource = allExtractedTerms.map(t => ({ term: t.term, definition: t.meaning }));
           } else {
-             // Fallback: Use other answers ONLY if no primary source is available
-             console.warn(`[MC Options] No primary term source (manual or extracted). Falling back to other answers.`);
+             console.warn(`[MC Options - ${question.id}] No primary term source (manual or extracted). Attempting fallback using other answers.`);
              potentialDistractors = questions
                .filter((oq: Record<string, unknown>) => oq.id !== q.id && typeof oq.answer === 'string' && (oq.answer as string).trim() !== '')
                .map((oq: Record<string, unknown>) => (oq.answer as string).trim())
                .filter((opt: string) => opt.toLowerCase() !== correctAnswer.toLowerCase());
-             console.log(`[MC Options] Potential distractors from other answers:`, potentialDistractors);
+             console.log(`[MC Options - ${question.id}] Potential distractors from other answers:`, potentialDistractors);
           }
 
           // If we have a primary term source, extract distractors from it
           if (termSource.length > 0) {
               potentialDistractors = termSource
-                .map(t => (t.term || "").trim())
-                .filter(term => term !== '' && term.toLowerCase() !== correctAnswer.toLowerCase());
-              console.log(`[MC Options] Potential distractors from primary source:`, potentialDistractors);
+                .map(t => (t.term || "").trim()) // Get the term string and trim whitespace
+                .filter(term => term !== '' && term.toLowerCase() !== correctAnswer.toLowerCase()); // Filter out empty strings and the correct answer (case-insensitive)
+              console.log(`[MC Options - ${question.id}] Potential distractors from primary source:`, potentialDistractors);
           }
-
 
           // Ensure uniqueness (case-insensitive)
           const uniqueDistractors = potentialDistractors.reduce((acc: string[], current: string) => {
-            if (!acc.map(d => d.toLowerCase()).includes(current.toLowerCase())) {
+            if (current && !acc.some(d => d.toLowerCase() === current.toLowerCase())) {
               acc.push(current);
             }
             return acc;
           }, []);
-          console.log(`[MC Options] Unique distractors:`, uniqueDistractors);
+          console.log(`[MC Options - ${question.id}] Unique distractors after filtering:`, uniqueDistractors);
 
-
-          const newOptions: string[] = [correctAnswer];
+          // Start building options with the correct answer
+          const newOptions: string[] = [];
+          if (correctAnswer) { // Only add if the correct answer is not empty
+              newOptions.push(correctAnswer);
+          }
 
           // Add up to 3 unique distractors from the material
           const shuffledDistractors = this.shuffleArray(uniqueDistractors);
           let addedCount = 0;
           for (const distractor of shuffledDistractors) {
-            // Check type and ensure it's not the answer itself (case-insensitive) - redundant check but safe
-            if (typeof distractor === 'string' && distractor.trim() !== '' && !newOptions.map(o => o.toLowerCase()).includes(distractor.toLowerCase())) {
-              newOptions.push(distractor.trim()); // Ensure distractors are also trimmed
+            // Ensure distractor is valid and not already in newOptions (case-insensitive)
+            if (distractor && typeof distractor === 'string' && distractor.trim() !== '' && !newOptions.some(o => o.toLowerCase() === distractor.toLowerCase())) {
+              newOptions.push(distractor.trim());
               addedCount++;
-              if (addedCount >= 3) break; // We need 3 distractors + 1 correct answer = 4 options
+              if (addedCount >= 3) break; // Aim for 4 options total (1 correct + 3 distractors)
             }
           }
-          console.log(`[MC Options] Options after adding distractors:`, newOptions);
+          console.log(`[MC Options - ${question.id}] Options after adding ${addedCount} distractors:`, newOptions);
 
-          // REMOVED the loop adding generic "Option X" placeholders
+          // REMOVED the fallback logic that added "Incorrect Option A/B/C" or "Option X"
 
-          // Shuffle the final options (which might have < 4 elements if not enough distractors were found)
+          // Shuffle the final options. This might result in fewer than 4 options if not enough unique distractors were found.
           question.options = this.shuffleArray(newOptions);
-          console.log(`[MC Options] Final shuffled options (count: ${question.options.length}):`, question.options);
+          console.log(`[MC Options - ${question.id}] Final shuffled options (count: ${question.options.length}):`, question.options);
 
-          // If, after all this, we still have only 1 option (the answer), add some basic distractors as a last resort
-          // This prevents errors in rendering components expecting multiple options.
-          if (question.options.length <= 1) {
-              console.warn(`[MC Options] Only found 1 option (the answer). Adding fallback distractors.`);
-              const fallbackDistractors = ["Incorrect Option A", "Incorrect Option B", "Incorrect Option C"];
-              let fallbackAdded = 0;
-              for (const fbDistractor of fallbackDistractors) {
-                  if (question.options.length < 4) {
-                      // Ensure fallback doesn't match the answer (case-insensitive)
-                      if (fbDistractor.toLowerCase() !== correctAnswer.toLowerCase()) {
-                          question.options.push(fbDistractor);
-                          fallbackAdded++;
-                      }
-                  } else {
-                      break;
-                  }
-              }
-              // If still not enough options (e.g., answer was 'Incorrect Option A'), add more generic ones
-              let genericCounter = 1;
-              while (question.options.length < 2 && genericCounter < 5) { // Ensure at least 2 options minimum
-                  const genericFallback = `Option ${genericCounter++}`;
-                   if (!question.options.map(o => o.toLowerCase()).includes(genericFallback.toLowerCase())) {
-                       question.options.push(genericFallback);
-                   }
-              }
-
-              question.options = this.shuffleArray(question.options); // Re-shuffle with fallbacks
-              console.log(`[MC Options] Options after adding fallback distractors:`, question.options);
+          // Optional: Add a check here if a minimum number of options is strictly required.
+          // For now, we allow fewer than 4 options if they are material-based.
+          if (question.options.length < 2) {
+              console.warn(`[MC Options - ${question.id}] Generated question has fewer than 2 options (${question.options.length}). This might indicate insufficient unique terms in the source material or an issue with the generated question/answer pair.`);
+              // Decide how to handle this: filter out later, or allow it?
+              // For now, allowing it, but logging the warning.
           }
         }
         
@@ -632,8 +563,22 @@ export class QuizGenerator extends GeminiCore {
         return question;
       });
       
-      console.log(`Generated ${validatedQuestions.length} questions successfully`);
-      return { success: true, questions: validatedQuestions };
+      // Step 2: Deduplicate questions based on the question text
+      const uniqueQuestions: QuizQuestion[] = [];
+      const seenQuestions = new Set<string>();
+      
+      for (const q of initialValidatedQuestions) {
+          const questionText = q.question.trim().toLowerCase(); // Normalize for comparison
+          if (!seenQuestions.has(questionText)) {
+              seenQuestions.add(questionText);
+              uniqueQuestions.push(q);
+          } else {
+              console.warn(`[Deduplication] Duplicate question removed: \\"${q.question}\\"`);
+          }
+      }
+      
+      console.log(`Generated ${uniqueQuestions.length} unique questions successfully (out of ${initialValidatedQuestions.length} initial).`);
+      return { success: true, questions: uniqueQuestions }; // Return the deduplicated list
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : "Failed to process quiz questions.";
       console.error("Failed to parse quiz generation result:", errorMessage);
