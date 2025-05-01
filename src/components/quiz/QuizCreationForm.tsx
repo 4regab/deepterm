@@ -55,7 +55,7 @@ const QuizCreationForm = () => {
     isGenerating,
     setIsGenerating,
     setQuizPhase,
-    saveQuiz
+    saveQuiz // Ensure saveQuiz is destructured
   } = useQuiz();
   
   // Add the user profile context to track achievements
@@ -85,8 +85,9 @@ const QuizCreationForm = () => {
 
   // Effect to populate form state when activeQuiz changes (for editing)
   useEffect(() => {
+    console.log(`[Effect activeQuiz] Running. activeQuiz ID: ${activeQuiz?.id ?? 'null'}`); // Log effect run
     if (activeQuiz) {
-      console.log("Populating form for editing quiz:", activeQuiz.id);
+      console.log("[Effect activeQuiz] Populating form for editing quiz:", activeQuiz.id);
       setQuizTitle(activeQuiz.title || "");
       setStudyMaterial(activeQuiz.studyMaterial || "");
       setNumberOfQuestions(activeQuiz.settings?.numberOfQuestions || 5);
@@ -97,17 +98,20 @@ const QuizCreationForm = () => {
       // If editing, load the existing questions into the preview state immediately
       // This allows editing questions without regenerating
       setGeneratedQuestions(activeQuiz.questions || []);
-      
+
       // Show the questions preview dialog automatically when in edit mode
-      // Add a slight delay to ensure questions are loaded properly first
       if (activeQuiz.questions && activeQuiz.questions.length > 0) {
+        console.log("[Effect activeQuiz] Found questions, scheduling setShowQuestionsPreview(true)"); // Log scheduling
         setTimeout(() => {
+          console.log("[Effect activeQuiz] setTimeout executing: setShowQuestionsPreview(true)"); // Log execution
           setShowQuestionsPreview(true);
         }, 100);
+      } else {
+         console.log("[Effect activeQuiz] No questions found, not showing preview automatically.");
       }
     } else {
       // Reset form when activeQuiz is cleared (e.g., creating a new quiz)
-      console.log("Resetting form because activeQuiz is null");
+      console.log("[Effect activeQuiz] Resetting form because activeQuiz is null.");
       setQuizTitle("");
       setStudyMaterial("");
       setNumberOfQuestions(5);
@@ -116,6 +120,7 @@ const QuizCreationForm = () => {
       setVerbatimMode(true);
       setInputMode('auto');
       setGeneratedQuestions([]);
+      console.log("[Effect activeQuiz] Calling setShowQuestionsPreview(false) in else block."); // Log reset call
       setShowQuestionsPreview(false);
       setEditingQuestionIndex(null);
     }
@@ -161,14 +166,17 @@ const QuizCreationForm = () => {
 
   // New function to handle updating an existing quiz
   const handleUpdateQuiz = () => {
+    console.log("[handleUpdateQuiz] Starting update."); // Log start
     if (!activeQuiz) {
       toast.error("Cannot update: No active quiz selected for editing.");
+      console.error("[handleUpdateQuiz] Error: No activeQuiz found."); // Log error
       return;
     }
 
     // Use the questions currently in the preview/edit state
     if (generatedQuestions.length === 0) {
       toast.error("Cannot update: Quiz must have at least one question.");
+       console.error("[handleUpdateQuiz] Error: No generatedQuestions found."); // Log error
       return;
     }
 
@@ -189,15 +197,21 @@ const QuizCreationForm = () => {
       // score: undefined,
       // progress: undefined,
     };
+    console.log("[handleUpdateQuiz] Constructed updatedQuizData:", updatedQuizData.id); // Log data
 
+    console.log("[handleUpdateQuiz] Calling saveQuiz..."); // Log before save
     saveQuiz(updatedQuizData); // Use the context save function which handles updates
+    console.log("[handleUpdateQuiz] Returned from saveQuiz."); // Log after save
+
     toast.success(`Quiz "${updatedQuizData.title}" updated successfully!`);
-    
-    // Exit edit mode by clearing the active quiz
+
+    console.log("[handleUpdateQuiz] Calling setActiveQuiz(null)..."); // Log before setActiveQuiz
     setActiveQuiz(null);
-    
-    // Close the questions preview dialog
+    console.log("[handleUpdateQuiz] Returned from setActiveQuiz(null)."); // Log after setActiveQuiz
+
+    console.log("[handleUpdateQuiz] Calling setShowQuestionsPreview(false)..."); // Log before setShowQuestionsPreview
     setShowQuestionsPreview(false);
+    console.log("[handleUpdateQuiz] Returned from setShowQuestionsPreview(false). Update finished."); // Log end
   };
 
   // Renamed from handleGenerateQuiz to reflect its dual purpose
@@ -427,18 +441,21 @@ const QuizCreationForm = () => {
 
   // Add new handlers for quiz review functionality
   const handleSaveQuiz = () => {
-    if (generatedQuestions.length === 0) {
+    console.log(`[handleSaveQuiz] Clicked. isEditMode: ${isEditMode}, activeQuiz ID: ${activeQuiz?.id ?? 'null'}`); // Log click
+    if (generatedQuestions.length === 0 && !isEditMode) { // Allow saving empty if editing (though handleUpdateQuiz prevents it)
       toast.error("No questions to save");
       return;
     }
 
     // If we are editing an existing quiz, update it instead of creating a new one.
     if (isEditMode && activeQuiz) {
+      console.log("[handleSaveQuiz] Entering edit mode branch, calling handleUpdateQuiz."); // Log branch
       handleUpdateQuiz();
-      return;
+      return; // IMPORTANT: Return here to prevent executing new quiz logic
     }
 
     // --- Logic for saving a NEW quiz (after generation and review) ---
+    console.log("[handleSaveQuiz] Entering new quiz save branch."); // Log branch
     const newQuiz = {
       id: uuidv4(),
       title: quizTitle.trim() || `Quiz ${new Date().toLocaleDateString()}`,
@@ -455,7 +472,11 @@ const QuizCreationForm = () => {
     };
 
     // Save quiz using the context function
+    console.log("[handleSaveQuiz] Calling saveQuiz for new quiz..."); // Log save new
     saveQuiz(newQuiz);
+    console.log("[handleSaveQuiz] Returned from saveQuiz for new quiz."); // Log save new return
+
+    console.log("[handleSaveQuiz] Calling setShowQuestionsPreview(false) for new quiz."); // Log close dialog new
     setShowQuestionsPreview(false);
     toast.success(`Quiz saved successfully with ${generatedQuestions.length} questions!`);
     
