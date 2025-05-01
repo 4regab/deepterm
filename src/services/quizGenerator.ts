@@ -165,50 +165,50 @@ export class QuizGenerator extends GeminiCore {
     let formattedMaterial = "";
     
     // Add title
-    formattedMaterial += `${extractionResult.title}\n\n`;
+    formattedMaterial += `${extractionResult.title}\\n\\n`;
     
     // Include ALL meaningful terms with their meanings
     allMeaningfulTerms.forEach(item => {
-      formattedMaterial += `${item.term} - ${item.meaning}\n\n`;
+      formattedMaterial += `${item.term} - ${item.meaning}\\n\\n`;
     });
     
     // Additionally, include the original hierarchical structure for context
-    formattedMaterial += "\n--- Original Structure ---\n\n";
+    formattedMaterial += "\\n--- Original Structure ---\\n\\n";
     extractionResult.keyTerms.forEach(term => {
-      formattedMaterial += `${term.term} - ${term.meaning}\n`;
+      formattedMaterial += `${term.term} - ${term.meaning}\\n`;
       
       // Include category if available
       if (term.category) {
-        formattedMaterial += `Category: ${term.category}\n`;
+        formattedMaterial += `Category: ${term.category}\\n`;
       }
       
       // Include all subcategories with their title
       if (term.subcategories && term.subcategories.length > 0) {
         if (term.subcategoryTitle) {
-          formattedMaterial += `${term.subcategoryTitle}:\n`;
+          formattedMaterial += `${term.subcategoryTitle}:\\n`;
         } else {
-          formattedMaterial += `Subcategories:\n`;
+          formattedMaterial += `Subcategories:\\n`;
         }
         term.subcategories.forEach(subcat => {
-          formattedMaterial += `- ${subcat}\n`;
+          formattedMaterial += `- ${subcat}\\n`;
         });
       }
       
       // Include all examples
       if (term.examples && term.examples.length > 0) {
-        formattedMaterial += `Examples:\n`;
+        formattedMaterial += `Examples:\\n`;
         term.examples.forEach(example => {
-          formattedMaterial += `- ${example}\n`;
+          formattedMaterial += `- ${example}\\n`;
         });
       }
       
-      formattedMaterial += "\n";
+      formattedMaterial += "\\n";
     });
     
     console.log(`Creating quiz from ${allMeaningfulTerms.length} meaningful terms`);
     
-    // Generate quiz using the enhanced formatted material
-    return this.generateQuizQuestions(formattedMaterial, numQuestions, quizType, verbatim);
+    // Generate quiz using the enhanced formatted material, passing all meaningful terms
+    return this.generateQuizQuestions(formattedMaterial, numQuestions, quizType, verbatim, undefined, allMeaningfulTerms);
   }
 
   async generateQuizQuestions(
@@ -216,7 +216,10 @@ export class QuizGenerator extends GeminiCore {
     numQuestions?: number,
     quizType: "multiple" | "truefalse" | "identification" | "statementTrueFalse" | "mixed" = "multiple",
     verbatim: boolean = false,
-    sourceTerms?: Array<{ term: string, definition: string }>
+    // Renamed for clarity: terms provided directly (e.g., manual input)
+    manualSourceTerms?: Array<{ term: string, definition: string }>,
+    // Added: all terms extracted from the material (used when not manual)
+    allExtractedTerms?: Array<{ term: string, meaning: string }>
   ): Promise<QuizGenerationResponse> {
     const questionCount = numQuestions ? `${numQuestions}` : "an appropriate number of";
     
@@ -372,7 +375,7 @@ export class QuizGenerator extends GeminiCore {
       1. Ensure proper escaping of special characters in JSON strings
       2. For verbatim questions, make sure the "answer" field contains the COMPLETE term (including any dashes or hyphens) that appears in the source material
       3. Only include information directly from the provided study material
-      4. For multiple choice, all options should be terms from the source material
+      4. For multiple choice, ensure options are relevant terms from the study material whenever possible. Avoid generic placeholders unless absolutely necessary.
       5. Ensure the JSON is properly formatted with no syntax errors
       6. Do not wrap your response in markdown code blocks or backticks
       7. Your entire response should be a valid JSON array, nothing else
@@ -513,29 +516,39 @@ export class QuizGenerator extends GeminiCore {
           }
         }
         
-        // Fix for multiple choice questions - ensure they always have at least 4 options
+        // Fix for multiple choice questions - ensure options are from the material
         if (question.type === "multiple") {
-          const correctAnswer = (question.answer || "").trim(); // Ensure trimmed
+          const correctAnswer = (question.answer || "").trim();
           let potentialDistractors: string[] = [];
-          console.log(`[MC Options] Q: ${question.question}, Answer: "${correctAnswer}"`); // Log
+          console.log(`[MC Options] Q: ${question.question}, Answer: "${correctAnswer}"`);
 
-          // PRIORITIZE sourceTerms if available (manual input)
-          if (sourceTerms && sourceTerms.length > 0) {
-            console.log(`[MC Options] Using sourceTerms (count: ${sourceTerms.length})`); // Log
-            potentialDistractors = sourceTerms
-              .map(t => (t.term || "").trim()) // Ensure trimmed
-              // Ensure distractors are strings, not empty, and not the correct answer (case-insensitive)
-              .filter(term => term !== '' && term.toLowerCase() !== correctAnswer.toLowerCase());
-            console.log(`[MC Options] Potential distractors from sourceTerms:`, potentialDistractors); // Log
+          // Determine the source of terms for distractors
+          let termSource: Array<{ term: string, definition?: string, meaning?: string }> = [];
+          if (manualSourceTerms && manualSourceTerms.length > 0) {
+            console.log(`[MC Options] Using manualSourceTerms (count: ${manualSourceTerms.length})`);
+            termSource = manualSourceTerms;
+          } else if (allExtractedTerms && allExtractedTerms.length > 0) {
+            console.log(`[MC Options] Using allExtractedTerms (count: ${allExtractedTerms.length})`);
+            // Map allExtractedTerms to the expected structure
+            termSource = allExtractedTerms.map(t => ({ term: t.term, definition: t.meaning }));
           } else {
-            // Fallback: Try to get distractors from other generated questions' answers (auto mode)
-            console.log(`[MC Options] Using other questions' answers as distractors`); // Log
-            potentialDistractors = questions
-              .filter((oq: Record<string, unknown>) => oq.id !== q.id && typeof oq.answer === 'string' && (oq.answer as string).trim() !== '')
-              .map((oq: Record<string, unknown>) => (oq.answer as string).trim()) // Ensure trimmed
-              .filter((opt: string) => opt.toLowerCase() !== correctAnswer.toLowerCase());
-             console.log(`[MC Options] Potential distractors from other answers:`, potentialDistractors); // Log
+             // Fallback: Use other answers ONLY if no primary source is available
+             console.warn(`[MC Options] No primary term source (manual or extracted). Falling back to other answers.`);
+             potentialDistractors = questions
+               .filter((oq: Record<string, unknown>) => oq.id !== q.id && typeof oq.answer === 'string' && (oq.answer as string).trim() !== '')
+               .map((oq: Record<string, unknown>) => (oq.answer as string).trim())
+               .filter((opt: string) => opt.toLowerCase() !== correctAnswer.toLowerCase());
+             console.log(`[MC Options] Potential distractors from other answers:`, potentialDistractors);
           }
+
+          // If we have a primary term source, extract distractors from it
+          if (termSource.length > 0) {
+              potentialDistractors = termSource
+                .map(t => (t.term || "").trim())
+                .filter(term => term !== '' && term.toLowerCase() !== correctAnswer.toLowerCase());
+              console.log(`[MC Options] Potential distractors from primary source:`, potentialDistractors);
+          }
+
 
           // Ensure uniqueness (case-insensitive)
           const uniqueDistractors = potentialDistractors.reduce((acc: string[], current: string) => {
@@ -544,45 +557,59 @@ export class QuizGenerator extends GeminiCore {
             }
             return acc;
           }, []);
-          console.log(`[MC Options] Unique distractors:`, uniqueDistractors); // Log
+          console.log(`[MC Options] Unique distractors:`, uniqueDistractors);
 
 
           const newOptions: string[] = [correctAnswer];
 
-          // Add unique distractors
+          // Add up to 3 unique distractors from the material
           const shuffledDistractors = this.shuffleArray(uniqueDistractors);
           let addedCount = 0;
           for (const distractor of shuffledDistractors) {
-            // Check type and ensure it's not the answer itself (case-insensitive)
-            if (typeof distractor === 'string' && !newOptions.map(o => o.toLowerCase()).includes(distractor.toLowerCase())) {
-              newOptions.push(distractor);
+            // Check type and ensure it's not the answer itself (case-insensitive) - redundant check but safe
+            if (typeof distractor === 'string' && distractor.trim() !== '' && !newOptions.map(o => o.toLowerCase()).includes(distractor.toLowerCase())) {
+              newOptions.push(distractor.trim()); // Ensure distractors are also trimmed
               addedCount++;
-              if (addedCount >= 3) break;
+              if (addedCount >= 3) break; // We need 3 distractors + 1 correct answer = 4 options
             }
           }
-          console.log(`[MC Options] Options after adding distractors:`, newOptions); // Log
+          console.log(`[MC Options] Options after adding distractors:`, newOptions);
 
+          // REMOVED the loop adding generic "Option X" placeholders
 
-          // If still not enough options, add generic placeholders
-          let genericOptionCounter = 1;
-          while (newOptions.length < 4) {
-            const genericOption = `Option ${genericOptionCounter}`;
-            // Ensure generic option doesn't accidentally match the answer or existing options (case-insensitive)
-            if (!newOptions.map(o => o.toLowerCase()).includes(genericOption.toLowerCase())) {
-               newOptions.push(genericOption);
-               console.log(`[MC Options] Added generic option: ${genericOption}`); // Log
-            }
-            genericOptionCounter++;
-            // Safety break to prevent infinite loops
-            if (genericOptionCounter > 10) {
-                console.warn("[MC Options] Safety break triggered while adding generic options."); // Log
-                break;
-            }
-          }
-
-          // Shuffle the final options
+          // Shuffle the final options (which might have < 4 elements if not enough distractors were found)
           question.options = this.shuffleArray(newOptions);
-          console.log(`[MC Options] Final shuffled options:`, question.options); // Log
+          console.log(`[MC Options] Final shuffled options (count: ${question.options.length}):`, question.options);
+
+          // If, after all this, we still have only 1 option (the answer), add some basic distractors as a last resort
+          // This prevents errors in rendering components expecting multiple options.
+          if (question.options.length <= 1) {
+              console.warn(`[MC Options] Only found 1 option (the answer). Adding fallback distractors.`);
+              const fallbackDistractors = ["Incorrect Option A", "Incorrect Option B", "Incorrect Option C"];
+              let fallbackAdded = 0;
+              for (const fbDistractor of fallbackDistractors) {
+                  if (question.options.length < 4) {
+                      // Ensure fallback doesn't match the answer (case-insensitive)
+                      if (fbDistractor.toLowerCase() !== correctAnswer.toLowerCase()) {
+                          question.options.push(fbDistractor);
+                          fallbackAdded++;
+                      }
+                  } else {
+                      break;
+                  }
+              }
+              // If still not enough options (e.g., answer was 'Incorrect Option A'), add more generic ones
+              let genericCounter = 1;
+              while (question.options.length < 2 && genericCounter < 5) { // Ensure at least 2 options minimum
+                  const genericFallback = `Option ${genericCounter++}`;
+                   if (!question.options.map(o => o.toLowerCase()).includes(genericFallback.toLowerCase())) {
+                       question.options.push(genericFallback);
+                   }
+              }
+
+              question.options = this.shuffleArray(question.options); // Re-shuffle with fallbacks
+              console.log(`[MC Options] Options after adding fallback distractors:`, question.options);
+          }
         }
         
         // If we're enforcing question type and it doesn't match what was requested, fix it
@@ -771,11 +798,11 @@ export class QuizGenerator extends GeminiCore {
   ): Promise<QuizGenerationResponse> {
     try {
       // Prepare the study material in a format that's usable for the quiz generation
-      let formattedMaterial = `${parsedInput.title}\n\n`;
+      let formattedMaterial = `${parsedInput.title}\\n\\n`;
       
       // Add all terms and definitions
       parsedInput.terms.forEach(item => {
-        formattedMaterial += `${item.term} - ${item.definition}\n\n`;
+        formattedMaterial += `${item.term} - ${item.definition}\\n\\n`;
       });
       
       console.log(`Creating quiz from ${parsedInput.terms.length} manually entered terms`);
@@ -802,8 +829,8 @@ export class QuizGenerator extends GeminiCore {
         console.log(`Auto-determined question count for manual input: ${numQuestions} for ${termCount} terms`);
       }
       
-      // Generate quiz based on the formatted material, passing the original terms
-      return this.generateQuizQuestions(formattedMaterial, numQuestions, quizType, verbatim, parsedInput.terms);
+      // Generate quiz based on the formatted material, passing the original terms as manualSourceTerms
+      return this.generateQuizQuestions(formattedMaterial, numQuestions, quizType, verbatim, parsedInput.terms, undefined);
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : "Failed to process manual input";
       console.error("Error in generate quiz from manual input:", errorMessage);
