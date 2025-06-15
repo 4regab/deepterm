@@ -20,9 +20,6 @@ interface Window {
   __pomodoroAudio?: HTMLAudioElement | null;
 }
 
-// Flag to track if audio playback was initiated by user interaction
-let userInteractionOccurred = false;
-
 // Store the previous page path for returning after breaks
 let previousPagePath = '';
 
@@ -271,76 +268,31 @@ export const PomodoroProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             }
             return updatedSettings;
         });
-    }, []);
-
-    // Create audio element on component mount and set up user interaction tracking
+    }, []);    // Simplified audio management with better error handling
     useEffect(() => {
-        // Create and configure audio element
-        const audioElement = new Audio(NOTIFICATION_SOUND_URL);
-        audioRef.current = audioElement;
-        (window as Window).__pomodoroAudio = audioElement;
-        
-        audioElement.preload = "auto";
-        audioElement.loop = true;
-
-        // Handle user interaction for audio permission
-        const handleUserInteraction = () => {
-            if (!userInteractionOccurred) {
-                userInteractionOccurred = true;
-                
-                // Try to initialize audio context
-                const warmupAudio = new Audio(NOTIFICATION_SOUND_URL);
-                const silentPlay = warmupAudio.play();
-                if (silentPlay) {
-                    silentPlay.then(() => {
-                        warmupAudio.pause();
-                        warmupAudio.currentTime = 0;
-                    }).catch(() => {
-                        // Ignore errors during warmup
-                    });
-                }
+        // Preload notification sound
+        const preloadAudio = () => {
+            try {
+                const audio = new Audio(NOTIFICATION_SOUND_URL);
+                audio.preload = 'auto';
+                audio.load();
+                audioRef.current = audio;
+            } catch (error) {
+                console.warn('Failed to preload notification audio:', error);
             }
         };
 
-        // Handle audio error recovery
-        const handleAudioError = (error: Event) => {
-            console.error("Audio playback error:", error);
-            if (isPlayingSound && !isMuted) {
-                // Try to recover by recreating the audio element
-                const newAudio = new Audio(NOTIFICATION_SOUND_URL);
-                newAudio.loop = true;
-                audioRef.current = newAudio;
-                (window as Window).__pomodoroAudio = newAudio;
-                newAudio.play().catch(console.error);
-            }
-        };
+        preloadAudio();
 
-        // Add event listeners
-        window.addEventListener('click', handleUserInteraction);
-        window.addEventListener('keydown', handleUserInteraction);
-        window.addEventListener('touchstart', handleUserInteraction);
-        audioElement.addEventListener('error', handleAudioError);
-
+        // Clean up on unmount
         return () => {
-            // Clean up event listeners
-            window.removeEventListener('click', handleUserInteraction);
-            window.removeEventListener('keydown', handleUserInteraction);
-            window.removeEventListener('touchstart', handleUserInteraction);
-            audioElement.removeEventListener('error', handleAudioError);
-
-            // Clean up audio elements
             if (audioRef.current) {
                 audioRef.current.pause();
+                audioRef.current.src = '';
                 audioRef.current = null;
             }
-            if ((window as Window).__pomodoroAudio) {
-                (window as Window).__pomodoroAudio.pause();
-                (window as Window).__pomodoroAudio = null;
-            }
         };
-    }, [isPlayingSound, isMuted]);
-
-    // Stop background sound function
+    }, []);    // Simplified background sound management
     const stopBackgroundSound = useCallback(() => {
         if (backgroundSoundTimeoutRef.current) {
             clearTimeout(backgroundSoundTimeoutRef.current);
@@ -349,25 +301,20 @@ export const PomodoroProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         if (backgroundAudioRef.current) {
             backgroundAudioRef.current.pause();
             backgroundAudioRef.current.currentTime = 0;
-            // Optional: Detach src to release resources sooner
-            // backgroundAudioRef.current.src = ''; 
+            backgroundAudioRef.current.src = '';
         }
         setIsBackgroundSoundPlaying(false);
     }, []);
 
-    // Play background sound function
+    // Simplified background sound playback
     const playBackgroundSound = useCallback((soundIdOverride?: BackgroundSoundId) => {
         const currentSoundId = soundIdOverride ?? selectedSoundId;
 
-        // --- REVISED CONDITION ---
-        // Only play during pomodoro and if not muted and a sound is selected.
-        // The check for isRunning is removed as the callers handle this.
+        // Only play during pomodoro sessions
         if (timerType !== 'pomodoro' || isMuted || currentSoundId === 'none') { 
-            stopBackgroundSound(); // Ensure it's stopped if conditions aren't met
+            stopBackgroundSound();
             return;
         }
-        // --- END REVISED CONDITION ---
-
 
         const sound = BACKGROUND_SOUNDS.find(s => s.id === currentSoundId);
         if (!sound || !sound.path) {
@@ -375,226 +322,97 @@ export const PomodoroProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             return;
         }
 
-        // Ensure previous sound is stopped before starting a new one or resuming
+        // Stop any existing sound
         stopBackgroundSound();
 
         try {
-            if (!backgroundAudioRef.current) {
-                backgroundAudioRef.current = new Audio();
-            }
+            const audio = new Audio(sound.path);
+            audio.loop = true;
+            backgroundAudioRef.current = audio;
             
-            backgroundAudioRef.current.src = sound.path;
-            backgroundAudioRef.current.loop = true;
-            backgroundAudioRef.current.play().then(() => {
+            audio.play().then(() => {
                 setIsBackgroundSoundPlaying(true);
-                
-                // Set timeout to stop the sound exactly when the timer should end
-                // Use a ref to get the most current timer value if needed, or rely on closure
-                const remainingDurationMs = timer * 1000; 
-                if (remainingDurationMs > 0) {
-                    backgroundSoundTimeoutRef.current = setTimeout(() => {
-                        stopBackgroundSound();
-                    }, remainingDurationMs);
-                } else {
-                    stopBackgroundSound(); // Stop immediately if timer is already 0?
-                }
+                console.log(`Playing background sound: ${sound.name}`);
             }).catch(error => {
-                console.error("Failed to play background sound:", error);
+                console.warn("Background sound playback failed:", error);
                 stopBackgroundSound();
-                toast({
-                    title: "Background Sound Error",
-                    description: "Could not play the selected background sound.",
-                    variant: "destructive",
-                });
             });
         } catch (error) {
             console.error("Error setting up background audio:", error);
             stopBackgroundSound();
         }
+    }, [selectedSoundId, timerType, isMuted, stopBackgroundSound]);
 
-    }, [selectedSoundId, timerType, isMuted, timer, stopBackgroundSound, toast]); // Removed isRunning dependency
-
-    // Select background sound function
+    // Background sound selection
     const selectBackgroundSound = useCallback((soundId: BackgroundSoundId) => {
-        stopBackgroundSound(); // Stop current sound when changing selection
-        setSelectedSoundId(soundId); // This now uses the setter from useLocalStorage
-        // If the timer is currently running and it's a pomodoro, start the new sound
-        if (isRunning && timerType === 'pomodoro' && soundId !== 'none') {
-             playBackgroundSound(soundId); // Pass the new soundId directly
-        }
-    }, [stopBackgroundSound, isRunning, timerType, playBackgroundSound, setSelectedSoundId]); // Added setSelectedSoundId dependency
-
-
-    // Keep track of tab visibility state
-    const wasVisible = useRef(true);
-
-    useEffect(() => {
-        const handleVisibilityChange = () => {
-            const isVisible = !document.hidden;
-            
-            // Handle tab becoming visible
-            if (isVisible && !wasVisible.current && isPlayingSound && !isMuted) {
-                console.log("Tab became visible, checking audio...");
-                
-                // Check if audio is actually playing
-                const currentAudio = audioRef.current;
-                if (currentAudio && (currentAudio.paused || currentAudio.ended)) {
-                    console.log("Audio was paused, attempting to resume...");
-                    
-                    // Try to resume playback
-                    const resumePromise = currentAudio.play();
-                    if (resumePromise) {
-                        resumePromise.catch(error => {
-                            console.error("Failed to resume audio:", error);
-                            // Create new audio element if resume fails
-                            const newAudio = new Audio(NOTIFICATION_SOUND_URL);
-                            newAudio.loop = true;
-                            audioRef.current = newAudio;
-                            (window as Window).__pomodoroAudio = newAudio;
-                            newAudio.play().catch(console.error);
-                        });
-                    }
-                }
-            }
-            
-            // Update visibility state
-            wasVisible.current = isVisible;
-        };
-
-        // Set up visibility change listener
-        document.addEventListener('visibilitychange', handleVisibilityChange);
+        stopBackgroundSound();
+        setSelectedSoundId(soundId);
         
-        return () => {
-            document.removeEventListener('visibilitychange', handleVisibilityChange);
-        };
-    }, [isPlayingSound, isMuted]);
+        // Start new sound if timer is running and it's a pomodoro
+        if (isRunning && timerType === 'pomodoro' && soundId !== 'none') {
+             playBackgroundSound(soundId);
+        }    }, [stopBackgroundSound, isRunning, timerType, playBackgroundSound, setSelectedSoundId]);
 
-    // Play notification sound continuously
+    // Simplified notification sound playback
     const playSound = useCallback(() => {
         if (isMuted) return;
 
-        const playAudio = async () => {
-            try {
-                if (!audioRef.current) {
-                    audioRef.current = new Audio(NOTIFICATION_SOUND_URL);
-                }
-
-                // Configure audio settings
-                audioRef.current.currentTime = 0;
-                audioRef.current.loop = true;
-                
-                // Show desktop notification if supported
-                if ('Notification' in window && Notification.permission === 'granted') {
-                    new Notification('Pomodoro Timer', {
-                        body: timerType === 'pomodoro' ? 'Time for a break!' : 'Break is over!',
-                        icon: '/favicon.ico'
-                    });
-                }
-
-                // Set state for visual feedback before attempting playback
-                setIsPlayingSound(true);
-
-                // Attempt to play using the primary audio element
-                await audioRef.current.play();
-
-                // Backup audio for redundancy
-                if (!(window as Window).__pomodoroAudio) {
-                    (window as Window).__pomodoroAudio = audioRef.current;
-                }
-
-                // Log success for debugging
-                console.log("Notification sound playing successfully");
-
-            } catch (error) {
-                console.error("Initial audio playback failed:", error);
-                
-                // First recovery attempt - try reinitializing audio
-                try {
-                    const newAudio = new Audio(NOTIFICATION_SOUND_URL);
-                    newAudio.loop = true;
-                    await newAudio.play();
-                    
-                    // If successful, update references
-                    audioRef.current = newAudio;
-                    (window as Window).__pomodoroAudio = newAudio;
-                    
-                } catch (retryError) {
-                    console.error("Retry audio playback failed:", retryError);
-                    
-                    // Second recovery attempt - try playing without loop
-                    try {
-                        const fallbackAudio = new Audio(NOTIFICATION_SOUND_URL);
-                        await fallbackAudio.play();
-                        
-                        // Manually handle looping
-                        fallbackAudio.addEventListener('ended', function() {
-                            if (isPlayingSound && !isMuted) {
-                                fallbackAudio.currentTime = 0;
-                                fallbackAudio.play().catch(console.error);
-                            }
-                        });
-                        
-                        audioRef.current = fallbackAudio;
-                        (window as Window).__pomodoroAudio = fallbackAudio;
-                        
-                    } catch (finalError) {
-                        console.error("Final audio playback attempt failed:", finalError);
-                        
-                        // Show a more specific toast message
-                        toast({
-                            title: "Sound notifications blocked",
-                            description: userInteractionOccurred 
-                                ? "Please check your browser's audio settings"
-                                : "Click anywhere to enable sound notifications",
-                            duration: 5000
-                        });
-                    }
-                }
-            }
-        };
-
-        // Start playing and ensure visual feedback even if sound fails
-        playAudio().catch(() => {
-            setIsPlayingSound(true);
-        });
-    }, [isMuted, timerType, toast, isPlayingSound]);
-
-    // Stop playing sound
-    const stopSound = useCallback(() => {
-        const cleanupAudio = (audio: HTMLAudioElement | null) => {
-            if (!audio) return;
+        try {
+            // Create fresh audio element for notification
+            const audio = new Audio(NOTIFICATION_SOUND_URL);
+            audio.loop = true;
+            audioRef.current = audio;
             
-            try {
-                // Remove any event listeners to prevent memory leaks
-                audio.onended = null;
-                audio.onerror = null;
-                
-                // Ensure audio is fully stopped
-                audio.pause();
-                audio.currentTime = 0;
-                audio.loop = false;
-                
-                // Release media resources
-                if (audio.src) {
-                    const emptyBlob = new Blob([], { type: 'audio/mp3' });
-                    audio.src = URL.createObjectURL(emptyBlob);
-                    URL.revokeObjectURL(audio.src);
-                }
-            } catch (error) {
-                console.error("Error cleaning up audio:", error);
+            // Show desktop notification if supported
+            if ('Notification' in window && Notification.permission === 'granted') {
+                new Notification('Pomodoro Timer', {
+                    body: timerType === 'pomodoro' ? 'Time for a break!' : 'Break is over!',
+                    icon: '/favicon.ico'
+                });
             }
-        };
 
-        // Clean up both audio instances
-        cleanupAudio(audioRef.current);
-        cleanupAudio((window as Window).__pomodoroAudio);
-        
-        // Reset audio references
-        audioRef.current = null;
-        (window as Window).__pomodoroAudio = null;
-        
-        // Update state
-        setIsPlayingSound(false);
+            // Attempt to play audio
+            const playPromise = audio.play();
+            if (playPromise) {
+                playPromise
+                    .then(() => {
+                        setIsPlayingSound(true);
+                        console.log("Notification sound playing successfully");
+                    })
+                    .catch(error => {
+                        console.warn("Audio playback failed:", error);
+                        // Still show visual notification even if audio fails
+                        setIsPlayingSound(true);
+                        
+                        toast({
+                            title: "Audio blocked",
+                            description: "Sound notifications require user interaction. Click anywhere to enable audio.",
+                            duration: 3000
+                        });
+                    });
+            } else {
+                setIsPlayingSound(true);
+            }
+        } catch (error) {
+            console.error("Failed to create notification audio:", error);
+            setIsPlayingSound(true); // Still show visual feedback
+        }
+    }, [isMuted, timerType, toast]);
+
+    // Simplified stop sound function
+    const stopSound = useCallback(() => {
+        try {
+            if (audioRef.current) {
+                audioRef.current.pause();
+                audioRef.current.currentTime = 0;
+                audioRef.current.src = '';
+                audioRef.current = null;
+            }
+            setIsPlayingSound(false);
+        } catch (error) {
+            console.warn("Error stopping notification sound:", error);
+            setIsPlayingSound(false);
+        }
     }, []);
 
     // Record completed pomodoro session
