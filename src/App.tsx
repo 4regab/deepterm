@@ -16,12 +16,10 @@ import Pomodoro from "./pages/Pomodoro";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import Terms from "./pages/Terms";
 import CookieConsentBanner from "./components/CookieConsentBanner";
-import AnnouncementPopup from "./components/AnnouncementPopup";
 import Study from "./pages/Study";
 
 const queryClient = new QueryClient();
 
-// Component to conditionally render AnnouncementPopup except on home page
 const AppContent = () => {
   const location = useLocation();
   const isHomePage = location.pathname === "/";
@@ -41,10 +39,8 @@ const AppContent = () => {
         <Route path="/terms" element={<Terms />} />
         <Route path="/contact" element={<Contact />} />
         <Route path="/about" element={<About />} />
-        <Route path="*" element={<NotFound />} />
-      </Routes>
+        <Route path="*" element={<NotFound />} />      </Routes>
       <CookieConsentBanner />
-      {!isHomePage && <AnnouncementPopup />}
     </>
   );
 };

@@ -31,8 +31,7 @@ const ProcessingIndicator = ({ mode }: ProcessingIndicatorProps) => {
         }
         
         // Update step based on progress
-        const newProgress = prev + (Math.random() * 3 + 1);
-        if (newProgress > currentStep * 20 + 20 && currentStep < steps.length - 1) {
+        const newProgress = prev + (Math.random() * 3 + 1);        if (newProgress > currentStep * 20 + 20 && currentStep < steps.length - 1) {
           setCurrentStep(currStep => currStep + 1);
         }
         
@@ -41,7 +40,7 @@ const ProcessingIndicator = ({ mode }: ProcessingIndicatorProps) => {
     }, 300);
     
     return () => clearInterval(timer);
-  }, [currentStep]);
+  }, [currentStep, steps.length]);
   
   const renderIcon = () => {
     const icons = [

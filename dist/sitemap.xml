@@ -3,43 +3,43 @@
   <url>
     <loc>https://deepterm.com/</loc>
     <lastmod>2025-04-16</lastmod>
-    <changefreq>weekly</changefreq>
+    <changefreq>daily</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
     <loc>https://deepterm.com/extractor</loc>
     <lastmod>2025-04-16</lastmod>
-    <changefreq>monthly</changefreq>
+    <changefreq>daily</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
     <loc>https://deepterm.com/pomodoro</loc>
     <lastmod>2025-04-16</lastmod>
-    <changefreq>monthly</changefreq>
+    <changefreq>daily</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
     <loc>https://deepterm.com/about</loc>
     <lastmod>2025-04-16</lastmod>
-    <changefreq>monthly</changefreq>
+    <changefreq>daily</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://deepterm.com/contact</loc>
+    <loc>https://deepterm.com/study</loc>
     <lastmod>2025-04-16</lastmod>
-    <changefreq>monthly</changefreq>
+    <changefreq>daily</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://deepterm.com/privacy-policy</loc>
     <lastmod>2025-04-16</lastmod>
-    <changefreq>yearly</changefreq>
+    <changefreq>daily</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
     <loc>https://deepterm.com/terms</loc>
     <lastmod>2025-04-16</lastmod>
-    <changefreq>yearly</changefreq>
+    <changefreq>daily</changefreq>
     <priority>0.5</priority>
   </url>
 </urlset>

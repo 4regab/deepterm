@@ -49,13 +49,12 @@ export const TodoList: React.FC<TodoListProps> = ({ onVisibilityChange }) => {
       onVisibilityChange(!isMinimized);
     }
   }, [isMinimized, onVisibilityChange]);
-
   // Initialize the parent component with the correct visibility on mount
   useEffect(() => {
     if (onVisibilityChange) {
       onVisibilityChange(!isMinimized);
     }
-  }, []);
+  }, [isMinimized, onVisibilityChange]);
 
   const addTodo = (e: React.FormEvent) => {
     e.preventDefault();

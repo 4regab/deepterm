@@ -318,15 +318,14 @@ export const readFileAsText = (file: File): Promise<string> => {
             // Look for readable text segments that don't contain binary markers
             const decoder = new TextDecoder('utf-8');
             const fullContent = decoder.decode(docxData as ArrayBuffer);
-            
-            // Extract text from XML paragraphs while strictly filtering out binary/PDF content
+              // Extract text from XML paragraphs while strictly filtering out binary/PDF content
             const paragraphs = fullContent.split(/\n/).filter(line => {
               // Keep only lines with substantial text content
               return line.trim().length > 10 && 
                     /[a-zA-Z]{5,}/.test(line) && 
                     !/(endobj|startxref|stream h|endstream|\/Filter\/|\/Length \d+)/i.test(line) &&
                     // Check for ratio of readable characters
-                    ((line.match(/[a-zA-Z0-9\s.,;:!?'"()\[\]\-]/g) || []).length / line.length) > 0.7;
+                    ((line.match(/[a-zA-Z0-9\s.,;:!?'"()[\]-]/g) || []).length / line.length) > 0.7;
             });
             
             if (paragraphs.length > 0) {

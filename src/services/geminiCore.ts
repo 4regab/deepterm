@@ -3,7 +3,7 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 
 interface GenerationResult {
   success: boolean;
-  data?: any;
+  data?: unknown;
   error?: string;
 }
 

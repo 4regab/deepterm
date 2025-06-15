@@ -1,5 +1,6 @@
 
 import type { Config } from "tailwindcss";
+import tailwindcssAnimate from "tailwindcss-animate";
 
 export default {
 	darkMode: ["class"],
@@ -121,11 +122,10 @@ export default {
 			},
 			animation: {
 				'accordion-down': 'accordion-down 0.2s ease-out',
-				'accordion-up': 'accordion-up 0.2s ease-out',
-				'pixel-spin': 'pixel-spin 1s steps(4) infinite',
+				'accordion-up': 'accordion-up 0.2s ease-out',				'pixel-spin': 'pixel-spin 1s steps(4) infinite',
 				'pixel-pulse': 'pixel-pulse 2s ease infinite'
 			}
 		}
 	},
-	plugins: [require("tailwindcss-animate")],
+	plugins: [tailwindcssAnimate],
 } satisfies Config;
