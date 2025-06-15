@@ -1,5 +1,4 @@
 node_modules
-dist
 .env
 .env.local
 .env.development.local
@@ -10,5 +9,8 @@ yarn-debug.log*
 yarn-error.log*
 .DS_Store
 *.tsbuildinfo
-.vercel
-.turbo
+src/**/*.test.ts
+src/**/*.test.tsx
+src/**/*.spec.ts
+src/**/*.spec.tsx
+README.md
