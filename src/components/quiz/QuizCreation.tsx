@@ -10,7 +10,7 @@ import { toast } from 'sonner';
 import { v4 as uuidv4 } from 'uuid';
 import { QuizGenerator } from '@/services/quizGenerator';
 import { API_KEY_STORAGE_KEY } from '@/components/shared/ApiKeyInput';
-import { useUserProfile } from '@/context/UserProfileContext';
+import { useUserProfile } from '@/hooks/useUserProfile';
 
 const QuizCreation = () => {
   const { 

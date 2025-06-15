@@ -13,7 +13,7 @@ import {
   getFormattedDate 
 } from "./pomodoroUtils";
 import { useNavigate, useLocation } from "react-router-dom";
-import { useUserProfile } from "./UserProfileContext";
+import { useUserProfile } from "@/hooks/useUserProfile";
 
 // Extend the Window interface to include our custom property
 interface Window {

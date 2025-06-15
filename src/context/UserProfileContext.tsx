@@ -1,30 +1,7 @@
-import React, { createContext, useState, useEffect, useContext } from 'react';
+import React, { useState, useEffect } from 'react';
 import { toast } from 'sonner'; // Import toast
 import { ACHIEVEMENT_BADGES, LEVEL_DATA, UserAchievement, UserLevel, UserProfile, QuizStats, FlashcardStats, TaskStats } from './userProfileConstants'; // Import constants and types
-
-interface UserProfileContextType {
-  userProfile: UserProfile;
-  updateUserName: (name: string) => void;
-  updateUserXP: (xp: number) => void;
-  updateMinutesStudied: (minutes: number, isPomodoroSession?: boolean) => void; // Add flag for Pomodoro completion
-  updateBestStreak: (streak: number) => void;
-  updateProfilePicture: (pictureDataUrl: string | null) => void; // Add function to update picture
-  getTimeBasedGreeting: () => string;
-  getUserLevel: () => UserLevel;
-  getLevelProgress: () => { current: number, required: number, percentage: number, minuteProgress: number };
-  markFirstVisitComplete: () => void;
-  // New functions for quiz tracking
-  trackQuizCreated: () => void;
-  trackQuizTaken: (score: number) => void;
-  // New functions for flashcard tracking
-  trackFlashcardCreated: (count: number) => void;
-  trackFlashcardStudy: (cardsStudied: number, accuracy?: number) => void;
-  // New functions for task tracking
-  trackTaskCompleted: (taskText: string) => void;
-  trackTaskCreated: () => void;
-  resetTasksInPomodoro: () => void; // To be called at the start of a new Pomodoro session
-  checkAndUpdateAchievement: (achievementId: string, condition: boolean, progressValue?: number, totalValue?: number) => void; // Expose checkAndUpdateAchievement
-}
+import { UserProfileContext, UserProfileContextType } from './UserProfileContextDefinition'; // Import context and type
 
 // Default user profile
 const DEFAULT_USER_PROFILE: UserProfile = {
@@ -64,9 +41,6 @@ const DEFAULT_USER_PROFILE: UserProfile = {
     uniqueSubjectsToday: [],
   }
 };
-
-// Create the context
-const UserProfileContext = createContext<UserProfileContextType | undefined>(undefined);
 
 // XP conversion constants
 const MINUTES_PER_XP = 6; // 6 minutes = 1 XP (10 XP per hour)
@@ -931,16 +905,7 @@ export const UserProfileProvider: React.FC<{ children: React.ReactNode }> = ({ c
   };
 
   return (
-    <UserProfileContext.Provider value={value}>
-      {children}
+    <UserProfileContext.Provider value={value}>      {children}
     </UserProfileContext.Provider>
   );
-};
-
-export const useUserProfile = () => {
-  const context = useContext(UserProfileContext);
-  if (context === undefined) {
-    throw new Error("useUserProfile must be used within a UserProfileProvider");
-  }
-  return context;
 };

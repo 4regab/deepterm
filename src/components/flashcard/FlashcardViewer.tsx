@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, TouchEvent, useCallback } from "rea
 import { Link, useNavigate } from "react-router-dom"; // Added useNavigate import
 import { Button } from "@/components/ui/button";
 import { useFlashcard } from "@/context/FlashcardContextDefinition";
-import { useUserProfile } from "@/context/UserProfileContext";
+import { useUserProfile } from "@/hooks/useUserProfile";
 import { Shuffle, ChevronLeft, ChevronRight, RotateCcw, Home, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { Progress } from "@/components/ui/progress";

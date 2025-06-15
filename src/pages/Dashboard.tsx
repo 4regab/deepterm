@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react'; // Added useCallback
 import { usePomodoroContext } from '@/hooks/usePomodoroContext';
-import { useUserProfile } from '@/context/UserProfileContext'; // Import useUserProfile only
+import { useUserProfile } from '@/hooks/useUserProfile';
 import { ACHIEVEMENT_BADGES, UserAchievement } from '@/context/userProfileConstants'; // Import ACHIEVEMENT_BADGES from the correct source
 import { useFlashcard } from '@/context/FlashcardContextDefinition'; // Import useFlashcard
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"; // Import DialogClose

@@ -9,7 +9,7 @@ import { ChevronLeft, ChevronRight, ArrowLeft, Save } from "lucide-react";
 import { Quiz, useQuiz } from "@/context/QuizContext";
 import { toast } from "sonner";
 import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from "@/components/ui/alert-dialog";
-import { useUserProfile } from "@/context/UserProfileContext"; // Import user profile context
+import { useUserProfile } from "@/hooks/useUserProfile"; // Import user profile hook
 
 const QuizTaking = () => {
   const { 

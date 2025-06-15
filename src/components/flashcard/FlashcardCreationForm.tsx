@@ -9,7 +9,7 @@ import { v4 as uuidv4 } from "uuid";
 import ApiKeyInput, { API_KEY_STORAGE_KEY } from "@/components/shared/ApiKeyInput";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useFlashcard } from "@/context/FlashcardContextDefinition";
-import { useUserProfile } from "@/context/UserProfileContext"; // Add UserProfileContext
+import { useUserProfile } from "@/hooks/useUserProfile"; // Add UserProfileHook
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Flashcard, FlashcardDeck, FlashcardDisplayMode } from "@/types/flashcard";

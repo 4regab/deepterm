@@ -12,7 +12,7 @@ import { QuestionType, useQuiz, QuizQuestion } from "@/context/QuizContext";
 import { v4 as uuidv4 } from "uuid";
 import ApiKeyInput, { API_KEY_STORAGE_KEY } from "@/components/shared/ApiKeyInput";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useUserProfile } from "@/context/UserProfileContext";
+import { useUserProfile } from "@/hooks/useUserProfile";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 
 const questionTypeOptions = [
