@@ -226,18 +226,17 @@ const Study = () => {
             value={activeStudyTab} 
             onValueChange={(value) => setActiveStudyTab(value as "quiz" | "flashcard")} 
             className="mx-auto"
-          >
-            <div className="flex justify-center mb-6">
-              <TabsList className="neo-border bg-white shadow-neo h-14 p-1">
+          >            <div className="flex justify-center mb-6">
+              <TabsList className="neo-border bg-white shadow-neo h-12 sm:h-14 p-1 grid grid-cols-2 w-full max-w-md">
                 <TabsTrigger 
                   value="quiz" 
-                  className="px-8 py-2 text-lg font-bold data-[state=active]:bg-[#FF5C00] data-[state=active]:text-white data-[state=active]:shadow-none transition-all"
+                  className="px-4 sm:px-8 py-2 text-base sm:text-lg font-bold data-[state=active]:bg-[#FF5C00] data-[state=active]:text-white data-[state=active]:shadow-none transition-all touch-target"
                 >
                   Quiz
                 </TabsTrigger>
                 <TabsTrigger 
                   value="flashcard" 
-                  className="px-8 py-2 text-lg font-bold data-[state=active]:bg-[#9b87f5] data-[state=active]:text-white data-[state=active]:shadow-none transition-all"
+                  className="px-4 sm:px-8 py-2 text-base sm:text-lg font-bold data-[state=active]:bg-[#9b87f5] data-[state=active]:text-white data-[state=active]:shadow-none transition-all touch-target"
                 >
                   Flashcards
                 </TabsTrigger>

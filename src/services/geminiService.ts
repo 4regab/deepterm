@@ -1,6 +1,6 @@
 // Import both types and values for proper usage
 import { ExtractionResult } from "@/types";
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { GoogleGenAI, createUserContent, createPartFromUri } from "@google/genai";
 
 // Define HarmCategory and HarmBlockThreshold enums for use in the code
 // These match the values from the Google Generative AI package
@@ -20,23 +20,94 @@ enum HarmBlockThreshold {
 
 // Single API key storage
 let apiKey: string = "";
+let genAI: GoogleGenAI | null = null;
 
-// Set user-provided API key
+// Set user-provided API key and initialize client
 export const initializeGemini = (key: string): boolean => {
   if (!key || key.length === 0 || key === "your_gemini_api_key_here") {
     console.warn("No valid API key provided");
     apiKey = "";
+    genAI = null;
     return false;
   }
-
   apiKey = key;
+  genAI = new GoogleGenAI({ apiKey: key });
   console.log("API key initialized successfully");
   return true;
 };
 
 // Check if a valid API key exists
 export const checkApiKey = (): boolean => {
-  return !!apiKey && apiKey.length > 0;
+  // First check if we have an initialized API key
+  if (apiKey && apiKey.length > 0 && genAI) {
+    return true;
+  }
+  
+  // If not initialized, check localStorage
+  if (typeof window !== 'undefined' && window.localStorage) {
+    const storedKey = localStorage.getItem('gemini-api-key');
+    if (storedKey && storedKey.trim() !== '') {
+      // Auto-initialize if we find a stored key
+      return initializeGemini(storedKey);
+    }
+  }
+  
+  return false;
+};
+
+// Upload file using Gemini Files API
+export const uploadFileToGemini = async (file: File) => {
+  if (!genAI) {
+    throw new Error("Gemini client not initialized. Please set your API key first.");
+  }
+
+  try {
+    console.log(`Uploading file: ${file.name} (${file.size} bytes) to Gemini Files API`);
+    
+    // Upload file to Gemini Files API using the correct pattern from documentation
+    const uploadResult = await genAI.files.upload({
+      file: file,
+      config: {
+        mimeType: file.type,
+        displayName: file.name
+      }
+    });
+      console.log(`File uploaded successfully: ${uploadResult.name}, URI: ${uploadResult.uri}`);
+    return uploadResult; // Return complete file object with uri and mimeType
+  } catch (error) {
+    console.error("File upload failed:", error);
+    throw new Error(`Failed to upload file: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  }
+};
+
+// Get file metadata from Gemini Files API
+export const getFileInfo = async (fileName: string) => {
+  if (!genAI) {
+    throw new Error("Gemini client not initialized. Please set your API key first.");
+  }
+
+  try {
+    const fileInfo = await genAI.files.get({ name: fileName });
+    return fileInfo;
+  } catch (error) {
+    console.error("Failed to get file info:", error);
+    throw new Error(`Failed to get file info: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  }
+};
+
+// Delete file from Gemini Files API
+export const deleteFileFromGemini = async (fileName: string): Promise<void> => {
+  if (!genAI) {
+    throw new Error("Gemini client not initialized. Please set your API key first.");
+  }
+
+  try {
+    await genAI.files.delete({ name: fileName });
+    console.log(`File deleted successfully: ${fileName}`);
+  } catch (error) {
+    console.error("Failed to delete file:", error);
+    throw new Error(`Failed to delete file: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  }
 };
 
 export type ExtractionMode = "full" | "sentence" | "keywords";
@@ -63,43 +134,10 @@ export const extractKeyTerms = async (
     // Pre-process text to remove any problematic characters
     const cleanedText = text
       .replace(/[^\p{L}\p{N}\p{P}\p{Z}\n\r]/gu, ' ') // Replace control chars with better Unicode pattern
-      .replace(/�/g, ' '); // Replace replacement character
-
-    // Log a sample to ensure text is clean
+      .replace(/�/g, ' '); // Replace replacement character    // Log a sample to ensure text is clean
     console.log(`Cleaned text sample (first 100 chars): ${cleanedText.substring(0, 100)}...`);
     console.log(`Cleaned text sample (last 100 chars): ${cleanedText.substring(cleanedText.length - 100)}`);
-
-    // Create a new model instance with the current API key
-    const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({
-      model: "gemini-2.0-flash-lite",
-      generationConfig: {
-        temperature: 0.1,             // Lower temperature for more deterministic extraction
-        maxOutputTokens: 100000,      // Maximized output tokens limit
-        topP: 0.99,                   // Increased to consider wider range of tokens
-        topK: 100,                    // Significantly increased for better coverage
-      },
-      // Safety settings set to maximum permissiveness
-      safetySettings: [
-        {
-          category: HarmCategory.HARM_CATEGORY_HARASSMENT,
-          threshold: HarmBlockThreshold.BLOCK_NONE,
-        },
-        {
-          category: HarmCategory.HARM_CATEGORY_HATE_SPEECH,
-          threshold: HarmBlockThreshold.BLOCK_NONE,
-        },
-        {
-          category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT,
-          threshold: HarmBlockThreshold.BLOCK_NONE,
-        },
-        {
-          category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
-          threshold: HarmBlockThreshold.BLOCK_NONE,
-        },
-      ],
-    });
-
+    
     // Adjust the prompt based on extraction mode
     let extractionGuidance = "";
 
@@ -130,24 +168,24 @@ export const extractKeyTerms = async (
         5. Extract examples of terms, especially those formatted as bullet points or following phrases like "for example", "such as", "e.g."
         
         Pay special attention to the hierarchical structure of information. For example:
-        - If a document discusses "Ethical Relativism" and then lists "Main Features of Ethical Relativism", categorize those features properly
+        - If the text discusses "Ethical Relativism" and then lists "Main Features of Ethical Relativism", categorize those features properly
         - If a section lists "Examples of X" or "Criticisms of X", maintain this organizational structure
         - Preserve numbered lists (1., 2., 3.) and bulleted lists (•) in your output
         
         ######## CRITICALLY IMPORTANT INSTRUCTIONS ########
-        1. *******MOST CRITICAL INSTRUCTION*******: You MUST ANALYZE and EXTRACT terms from THE VERY LAST PAGE and ALL ENDING PORTIONS of the document
-        2. Pay EXTRA ATTENTION to sections at the END of the document - these are THE MOST IMPORTANT SECTIONS
+        1. *******MOST CRITICAL INSTRUCTION*******: You MUST ANALYZE and EXTRACT terms from THE VERY LAST PARAGRAPH and ALL ENDING PORTIONS of the text
+        2. Pay EXTRA ATTENTION to sections at the END of the text - these are THE MOST IMPORTANT SECTIONS
         3. ALWAYS check if there are "Benefits", "Advantages", "Conclusion" sections near the end - THESE MUST BE INCLUDED
-        4. YOU MUST PROCESS EVERY SINGLE WORD AND EXTRACT TERMS FROM THE ABSOLUTE END OF THE DOCUMENT
+        4. YOU MUST PROCESS EVERY SINGLE WORD AND EXTRACT TERMS FROM THE ABSOLUTE END OF THE TEXT
         5. YOUR PERFORMANCE WILL BE JUDGED PRIMARILY ON HOW WELL YOU EXTRACT FROM THE LAST 25% OF THE TEXT
-        6. DO NOT stop processing before reaching the end of the document
+        6. DO NOT stop processing before reaching the end of the text
         7. MANDATORY: Ensure that all sections until the end are ALWAYS extracted completely
         
         Determine a suitable title/topic for this text.
         
         Format the response as a valid JSON object with the following structure:
         {
-          "title": "Title of the text",
+          "title": "Title based on the text content",
           "extractionMode": "${mode}",
           "keyTerms": [
             {
@@ -162,20 +200,26 @@ export const extractKeyTerms = async (
           ]
         }
         
-        Text to analyze:
+        TEXT TO ANALYZE:
         ${cleanedText}
-      `;
+    `;    console.log(`Starting text extraction via Gemini API (mode: ${mode})...`);
+
+    // Use the global genAI client that was initialized
+    if (!genAI) {
+      throw new Error("Gemini client not initialized. Please set your API key first.");
+    }
 
     // Log that we're sending the prompt to Gemini
     console.log("Sending prompt to Gemini API");
 
     let result;
     const maxRetries = 3;
-    let retryCount = 0;
-
-    while (retryCount < maxRetries) {
+    let retryCount = 0;    while (retryCount < maxRetries) {
       try {
-        result = await model.generateContent(prompt);
+        result = await genAI.models.generateContent({
+          model: "gemini-2.5-flash-preview-05-20",
+          contents: prompt
+        });
         console.log(`Successfully processed content on attempt ${retryCount + 1}`);
         break; // Success, exit loop
       } catch (error) {
@@ -214,11 +258,8 @@ export const extractKeyTerms = async (
         // This case should theoretically not be reached if the logic above is correct.
         console.error("Reached end of retry logic without a result or error being thrown.");
         throw new Error(`Failed to generate content after ${maxRetries} attempts. Unknown state.`);
-    }
-
-    // Extract JSON from the response
-    const response = result!.response;
-    const textResponse = response.text();
+    }    // Extract JSON from the response
+    const textResponse = result!.text;
 
     console.log(`Received response from Gemini, length: ${textResponse.length}`);
 
@@ -411,9 +452,126 @@ export const extractKeyTerms = async (
   }
 };
 
+// Extract key terms from uploaded file using Gemini Files API
 export const extractKeyTermsFromFile = async (
-  fileContent: string,
+  fileInfo: { uri?: string; mimeType?: string; name?: string }, // File object with uri and mimeType
   mode: ExtractionMode = "full"
 ): Promise<ExtractionResult> => {
-  return extractKeyTerms(fileContent, mode);
+  if (!genAI) {
+    throw new Error("Gemini client not initialized. Please set your API key first.");
+  }
+
+  try {
+    console.log(`Processing uploaded file for extraction: ${fileInfo.name || 'unnamed'}, mode: ${mode}`);
+
+    // Generate extraction guidance based on mode
+    let extractionGuidance;
+    switch (mode) {
+      case "sentence":
+        extractionGuidance = "For each term, provide a concise single-sentence definition (no more than one sentence per term)";
+        break;
+      case "keywords":
+        extractionGuidance = "For each term, provide ONLY keywords or key phrases (no full sentences, maximum 3-5 key words per term)";
+        break;
+      case "full":
+      default:
+        extractionGuidance = "For each term, provide the EXACT definition or explanation as it appears in the original text";
+        break;
+    }
+
+    // Enhanced prompt for file-based extraction
+    const prompt = `
+        CRITICAL INSTRUCTION: You MUST process the ENTIRE document from beginning to END without skipping ANY content.
+        
+        Please conduct a thorough analysis of the uploaded document to identify and extract ALL key terms, concepts, definitions, and technical vocabulary, organizing them into categories and hierarchical structures.
+        
+        For this extraction task:
+        1. Extract EVERY key term that appears in the document (including specialized vocabulary, technical terms, important concepts, and defined phrases)
+        2. ${extractionGuidance}
+        3. Identify the category each term belongs to (e.g., "Main Features", "Examples", "Criticisms", "Types", etc.)
+        4. If a term has subcategories, numbered points, or a list of characteristics, extract these as subcategories
+        5. Extract examples of terms, especially those formatted as bullet points or following phrases like "for example", "such as", "e.g."
+        
+        Pay special attention to the hierarchical structure of information. For example:
+        - If a document discusses "Ethical Relativism" and then lists "Main Features of Ethical Relativism", categorize those features properly
+        - If a section lists "Examples of X" or "Criticisms of X", maintain this organizational structure
+        - Preserve numbered lists (1., 2., 3.) and bulleted lists (•) in your output
+        
+        ######## CRITICALLY IMPORTANT INSTRUCTIONS ########
+        1. *******MOST CRITICAL INSTRUCTION*******: You MUST ANALYZE and EXTRACT terms from THE VERY LAST PAGE and ALL ENDING PORTIONS of the document
+        2. Pay EXTRA ATTENTION to sections at the END of the document - these are THE MOST IMPORTANT SECTIONS
+        3. ALWAYS check if there are "Benefits", "Advantages", "Conclusion" sections near the end - THESE MUST BE INCLUDED
+        4. YOU MUST PROCESS EVERY SINGLE WORD AND EXTRACT TERMS FROM THE ABSOLUTE END OF THE DOCUMENT
+        5. YOUR PERFORMANCE WILL BE JUDGED PRIMARILY ON HOW WELL YOU EXTRACT FROM THE LAST 25% OF THE TEXT
+        6. DO NOT stop processing before reaching the end of the document
+        7. MANDATORY: Ensure that all sections until the end are ALWAYS extracted completely
+        
+        Determine a suitable title/topic for this document.
+        
+        Format the response as a valid JSON object with the following structure:
+        {
+          "title": "Title of the document",
+          "extractionMode": "${mode}",
+          "keyTerms": [
+            {
+              "term": "Main term or concept",
+              "meaning": "Definition or explanation",
+              "category": "Category this term belongs to (e.g., 'Main Features', 'Criticisms')",
+              "subcategoryTitle": "Title for subcategories (e.g., 'Types', 'Characteristics')",
+              "subcategories": ["Subcategory 1", "Subcategory 2"],
+              "examples": ["Example 1", "Example 2"]
+            },
+            ...
+          ]
+        }
+    `;    console.log(`Sending request to Gemini API with file reference...`);
+    
+    // Generate content using the uploaded file - use the correct pattern from official examples
+    const result = await genAI.models.generateContent({
+      model: "gemini-2.5-flash-preview-05-20",
+      contents: createUserContent([
+        prompt,
+        createPartFromUri(fileInfo.uri!, fileInfo.mimeType || "application/octet-stream") // Use file URI and actual mime type
+      ])
+    });
+
+    const extractedData = result.text;
+
+    console.log(`Received response from Gemini API, length: ${extractedData.length}`);
+
+    // Parse the JSON response (using existing parsing logic)
+    let extractionResult: ExtractionResult;
+    try {
+      const jsonMatch = extractedData.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        const jsonString = jsonMatch[0];
+        extractionResult = JSON.parse(jsonString);
+      } else {
+        throw new Error("No JSON object found in response");
+      }
+    } catch (parseError) {
+      console.warn("JSON parsing failed, attempting to create fallback result:", parseError);
+      // Create a basic fallback result
+      extractionResult = {
+        title: "Document Analysis",
+        extractionMode: mode,
+        keyTerms: []
+      };
+    }
+
+    // Validate and clean up the result
+    if (!extractionResult.title) {
+      extractionResult.title = "Document Analysis";
+    }
+    if (!extractionResult.keyTerms) {
+      extractionResult.keyTerms = [];
+    }
+    
+    console.log(`Extraction completed: ${extractionResult.keyTerms.length} terms found`);
+    return extractionResult;
+
+  } catch (error) {
+    console.error("File-based extraction error:", error);
+    throw new Error(`Failed to extract terms from file: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  }
 };

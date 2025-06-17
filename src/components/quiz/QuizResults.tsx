@@ -3,9 +3,10 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Check, X, RefreshCw, PenSquare } from "lucide-react";
 import { useQuiz, QuizQuestion } from "@/context/QuizContext"; // Import QuizQuestion
 import { useIsMobile } from "@/hooks/use-mobile";
+import { toast } from "sonner";
 
 const QuizResults = () => {
-  const { activeQuiz, setQuizPhase, handleCreateNewQuiz } = useQuiz();
+  const { activeQuiz, setActiveQuiz, setQuizPhase, handleCreateNewQuiz } = useQuiz();
   const isMobile = useIsMobile();
   
   if (!activeQuiz || !activeQuiz.score) {
@@ -28,20 +29,40 @@ const QuizResults = () => {
   };
   
   const { grade, message } = getGrade(score.percentage);
-  
   const handleRetakeQuiz = () => {
+    // Reset all question answers
     const resetQuestions = activeQuiz.questions.map(q => ({
       ...q,
       userAnswer: undefined
     }));
     
+    // Create completely reset quiz with no progress
     const resetQuiz = {
       ...activeQuiz,
       questions: resetQuestions,
-      score: undefined
+      score: undefined,
+      progress: {
+        currentQuestionIndex: 0, // Explicitly reset to first question
+        timeRemaining: undefined
+      }
     };
     
+    // Clear sessionStorage progress for this quiz
+    if (activeQuiz.id) {
+      try {
+        const progressMap = JSON.parse(sessionStorage.getItem('quiz-temp-progress') || '{}');
+        delete progressMap[activeQuiz.id];
+        sessionStorage.setItem('quiz-temp-progress', JSON.stringify(progressMap));
+      } catch (error) {
+        console.error('Error clearing quiz progress:', error);
+      }
+    }
+      // Update context with reset quiz and switch to taking phase
+    setActiveQuiz(resetQuiz);
     setQuizPhase("taking");
+    
+    // Provide feedback to user
+    toast.success("Quiz reset! Starting from question 1.");
   };
 
   // Helper function to format answers for display

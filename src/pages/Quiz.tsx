@@ -207,22 +207,21 @@ const Quiz = () => {
     // Removed loadQuiz from deps as it causes infinite loops if defined inside component
     // loadProgress is also defined inside, but seems stable. Consider moving helpers outside.
   }, [location.search, previousPagePath, savedQuizzes, activeQuiz, quizPhase]);
-
   // This effect ensures the correct tab is shown based on quiz phase
   useEffect(() => {
     if (quizPhase === "taking" || quizPhase === "results") {
       // Ensure we're on the take tab for both taking and results phases
-      if (activeQuiz?.questions?.length > 0) {
+      if (activeQuiz?.questions?.length > 0 && activeTab !== "take") {
         console.log("Switching to take tab due to quiz phase:", quizPhase);
         setActiveTab("take");
       }
-    } else if (quizPhase === "creation" && activeQuiz) {
+    } else if (quizPhase === "creation" && activeQuiz && activeTab !== "create") {
       // If we are in creation phase AND have an active quiz, it means we are editing.
       // Switch to the create tab.
       console.log("Switching to create tab for editing quiz:", activeQuiz.id);
       setActiveTab("create");
     }
-  }, [quizPhase, activeQuiz]);
+  }, [quizPhase, activeQuiz, activeTab]);
 
   // Debug logging for tab changes and quiz phases
   useEffect(() => {

@@ -3,7 +3,7 @@ import { useDropzone } from "react-dropzone";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
-import { readFileAsText } from "@/utils/fileUtils";
+import { processFileWithGemini, isFileTypeSupported, formatFileSize, getFileLimits } from "@/utils/fileProcessing";
 import { AlertCircle, FileText, Upload, X, ClipboardCopy, Type, FileUp, ArrowLeft } from "lucide-react";
 import LoadingSpinner from "./LoadingSpinner";
 import { useToast } from "@/components/ui/use-toast";
@@ -21,63 +21,83 @@ const TextInput = ({ onSubmit, isLoading, extractionMode, onResetMode }: TextInp
   const [file, setFile] = useState<File | null>(null);
   const [mode, setMode] = useState<'text' | 'file' | null>(null);
   const { toast } = useToast();
-
-  const MAX_TEXT_LENGTH = 100000;
+  const fileLimits = getFileLimits();
 
   const { getRootProps, getInputProps } = useDropzone({
     accept: {
       'text/plain': ['.txt'],
       'application/pdf': ['.pdf'],
-      'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx']
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx'],
+      'application/msword': ['.doc']
     },
     multiple: false,
     onDrop: async (acceptedFiles) => {
       if (acceptedFiles.length > 0) {
         const selectedFile = acceptedFiles[0];
+        
+        // Validate file type using our new utility
+        if (!isFileTypeSupported(selectedFile)) {
+          toast({
+            title: "Unsupported File Type",
+            description: `File type not supported. Please use: ${fileLimits.supportedTypes.join(', ')}`,
+            variant: "destructive",
+          });
+          return;
+        }
+
+        // Validate file size
+        if (selectedFile.size > fileLimits.maxSize) {
+          toast({
+            title: "File Too Large",
+            description: `File size (${formatFileSize(selectedFile.size)}) exceeds the maximum limit of ${fileLimits.maxSizeFormatted}`,
+            variant: "destructive",
+          });
+          return;
+        }
+
         setFile(selectedFile);
         setMode('file');
 
-        try {
-          let loadingToast: { id: string } | undefined;
-          if (selectedFile.size > 1000000) {
-            loadingToast = toast({
-              title: "Processing Large File",
-              description: "Please wait while we extract the text...",
-            });
-          }
+        // Show loading toast for files over 1MB
+        let loadingToast: { id: string } | undefined;
+        if (selectedFile.size > 1000000) {
+          loadingToast = toast({
+            title: "Processing File with AI",
+            description: `Uploading and extracting content from ${selectedFile.name}...`,
+          });
+        }
 
-          const fileContent = await readFileAsText(selectedFile);
+        try {
+          // Use the new Files API processing
+          const result = await processFileWithGemini(selectedFile, extractionMode || "full");
 
           if (loadingToast) {
             toast({
-              title: "File Processed",
-              description: "Text extraction complete.",
+              title: "File Processed Successfully",
+              description: "Content extracted using Gemini Files API",
             });
           }
 
-          setText(fileContent);
-
-          if (fileContent.length > MAX_TEXT_LENGTH) {
-            toast({
-              title: "Text Too Long - Content Will Be Truncated",
-              description: `Your text is ${fileContent.length.toLocaleString()} characters. The system can only process ${MAX_TEXT_LENGTH.toLocaleString()} characters. Please reduce your text or the end of your document will NOT be processed.`,
-              variant: "destructive",
-            });
+          if (!result.success) {
+            throw new Error(result.error || "Failed to process file");
           }
 
-          if (selectedFile.name.endsWith('.docx')) {
-            toast({
-              title: "Limited DOCX Support",
-              description: "DOCX parsing is limited. For best results, use TXT or PDF files.",
-            });
-          }
+          // Set the extracted text
+          setText(result.text || "");
 
-          console.log(`File processed: ${selectedFile.name}, size: ${selectedFile.size} bytes, extracted content length: ${fileContent.length} characters`);
-        } catch (error) {
-          console.error("Error reading file:", error);
+          // Success feedback
           toast({
-            title: `Error Reading File: ${selectedFile.name}`,
-            description: error instanceof Error ? error.message : "Failed to read the file",
+            title: "File Processed Successfully",
+            description: `${selectedFile.name} has been processed and content extracted`,
+          });
+
+          console.log(`File processed with Gemini Files API: ${selectedFile.name}, size: ${selectedFile.size} bytes`);
+          
+        } catch (error) {
+          console.error("Error processing file:", error);
+          toast({
+            title: `Error Processing File: ${selectedFile.name}`,
+            description: error instanceof Error ? error.message : "Failed to process the file",
             variant: "destructive",
           });
           setFile(null);
@@ -87,7 +107,6 @@ const TextInput = ({ onSubmit, isLoading, extractionMode, onResetMode }: TextInp
       }
     }
   });
-
   const handleSubmit = () => {
     if (!text.trim()) {
       toast({
@@ -96,14 +115,6 @@ const TextInput = ({ onSubmit, isLoading, extractionMode, onResetMode }: TextInp
         variant: "destructive",
       });
       return;
-    }
-
-    if (text.length > MAX_TEXT_LENGTH) {
-      toast({
-        title: "Text Too Long - Will Be Truncated",
-        description: `Your text exceeds the ${MAX_TEXT_LENGTH.toLocaleString()} character limit. Please reduce your text or the end portion WILL NOT be processed.`,
-        variant: "destructive",
-      });
     }
 
     proceedWithSubmission();
@@ -124,18 +135,10 @@ const TextInput = ({ onSubmit, isLoading, extractionMode, onResetMode }: TextInp
     navigator.clipboard.readText()
       .then(clipText => {
         setText(clipText);
-        setMode('text');
-        toast({
+        setMode('text');        toast({
           title: "Text pasted successfully",
           description: `${clipText.length.toLocaleString()} characters pasted from clipboard`,
         });
-        if (clipText.length > MAX_TEXT_LENGTH) {
-          toast({
-            title: "Text Too Long - Content Will Be Truncated",
-            description: `Pasted text is ${clipText.length.toLocaleString()} characters. The system can only process ${MAX_TEXT_LENGTH.toLocaleString()} characters. The end of your text WILL NOT be processed.`,
-            variant: "destructive",
-          });
-        }
       })
       .catch(() => {
         toast({
@@ -152,7 +155,6 @@ const TextInput = ({ onSubmit, isLoading, extractionMode, onResetMode }: TextInp
       onResetMode();
     }
   };
-
   const proceedWithSubmission = () => {
     const firstChunk = text.substring(0, 500);
     const lastChunk = text.substring(text.length - 500);
@@ -166,12 +168,12 @@ const TextInput = ({ onSubmit, isLoading, extractionMode, onResetMode }: TextInp
       // eslint-disable-next-line no-control-regex
       const cleanedText = text.replace(/[\x00-\x09\x0B\x0C\x0E-\x1F\x7F-\x9F]/g, ' ');
       console.log(`Cleaned content for processing, original length: ${text.length}, cleaned length: ${cleanedText.length}`);
-      onSubmit(cleanedText.substring(0, MAX_TEXT_LENGTH), file?.name);
+      onSubmit(cleanedText, file?.name);
       return;
     }
 
     console.log(`Submitting text for processing, length: ${text.length}`);
-    onSubmit(text.substring(0, MAX_TEXT_LENGTH), file?.name);
+    onSubmit(text, file?.name);
   };
 
   return (
@@ -254,19 +256,9 @@ const TextInput = ({ onSubmit, isLoading, extractionMode, onResetMode }: TextInp
               className="min-h-[180px] mb-2 font-mono text-sm neo-border focus:ring-2 focus:ring-neo-accent3 rounded-lg resize-y"
               value={text}
               onChange={(e) => setText(e.target.value)}
-            />
-            {text.length > 0 && (
-              <div className={`text-xs mb-2 text-right flex items-center justify-end ${text.length > MAX_TEXT_LENGTH ? 'text-red-500 font-bold' : 'text-neo-muted'}`}>
-                <div className="flex-grow text-left">
-                  {text.length > MAX_TEXT_LENGTH && (
-                    <span className="text-red-500">Text too long - end will be cut off!</span>
-                  )}
-                </div>
-                <div>
-                  <span className={text.length > MAX_TEXT_LENGTH ? 'font-bold' : ''}>
-                    {text.length.toLocaleString()} / {MAX_TEXT_LENGTH.toLocaleString()} characters
-                  </span>
-                </div>
+            />            {text.length > 0 && (
+              <div className="text-xs mb-2 text-right text-neo-muted">
+                {text.length.toLocaleString()} characters
               </div>
             )}
           </div>
@@ -288,9 +280,8 @@ const TextInput = ({ onSubmit, isLoading, extractionMode, onResetMode }: TextInp
                   <p className="text-base font-bold text-neo-black mb-1">
                     <span className="hidden sm:inline">Drag & drop a file here, or click to select</span>
                     <span className="sm:hidden">Upload a file</span>
-                  </p>
-                  <p className="text-xs text-neo-muted hidden sm:block">
-                    Supported formats: TXT, PDF (full support), DOCX (limited support)
+                  </p>                  <p className="text-xs text-neo-muted hidden sm:block">
+                    Supported formats: PDF, DOCX, DOC, TXT (up to {fileLimits.maxSizeFormatted})
                   </p>
                 </div>
                 <Button
@@ -317,20 +308,10 @@ const TextInput = ({ onSubmit, isLoading, extractionMode, onResetMode }: TextInp
                     title="Clear file and choose mode again"
                   >
                     <X className="h-4 w-4" />
-                  </Button>
-                </div>
+                  </Button>                </div>
                 {text.length > 0 && (
-                  <div className={`text-xs mt-2 text-right flex items-center justify-end ${text.length > MAX_TEXT_LENGTH ? 'text-red-500 font-bold' : 'text-neo-muted'}`}>
-                    <div className="flex-grow text-left">
-                      {text.length > MAX_TEXT_LENGTH && (
-                        <span className="text-red-500">File too long - end will be cut off!</span>
-                      )}
-                    </div>
-                    <div>
-                      <span className={text.length > MAX_TEXT_LENGTH ? 'font-bold' : ''}>
-                        {text.length.toLocaleString()} / {MAX_TEXT_LENGTH.toLocaleString()} characters extracted
-                      </span>
-                    </div>
+                  <div className="text-xs mt-2 text-right text-neo-muted">
+                    Content extracted: {text.length.toLocaleString()} characters
                   </div>
                 )}
               </div>

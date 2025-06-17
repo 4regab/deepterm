@@ -10,10 +10,9 @@ interface GenerationResult {
 class GeminiCore {
   private genAI: GoogleGenerativeAI;
   private model: string;
-
   constructor(apiKey: string) {
     this.genAI = new GoogleGenerativeAI(apiKey);
-    this.model = "gemini-2.0-flash-lite"; // Updated to use Gemini 2.0 Flash Lite model
+    this.model = "gemini-2.5-flash-preview-05-20"; // Updated to use the latest Gemini 2.5 Flash Preview model
   }
 
   async generateContent(

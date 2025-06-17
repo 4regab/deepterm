@@ -11,7 +11,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@google/generative-ai": "^0.24.0",
+    "@google/genai": "^1.5.1",
+    "@google/generative-ai": "^0.24.1",
     "@hookform/resolvers": "^3.9.0",
     "@radix-ui/react-accordion": "^1.2.0",
     "@radix-ui/react-alert-dialog": "^1.1.1",
@@ -53,12 +54,9 @@
     "input-otp": "^1.2.4",
     "jspdf": "^3.0.1",
     "jspdf-autotable": "^5.0.2",
-    "jszip": "^3.10.1",
     "lucide-react": "^0.462.0",
-    "mammoth": "^1.5.0",
     "next-themes": "^0.3.0",
     "papaparse": "^5.5.2",
-    "pdfjs-dist": "^5.3.31",
     "react": "^18.3.1",
     "react-cookie-consent": "^9.0.0",
     "react-day-picker": "^8.10.1",
@@ -74,7 +72,6 @@
     "tailwindcss-animate": "^1.0.7",
     "uuid": "^11.1.0",
     "vaul": "^0.9.3",
-    "xlsx": "^0.18.5",
     "zod": "^3.23.8"
   },
   "devDependencies": {

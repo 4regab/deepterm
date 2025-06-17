@@ -7,6 +7,7 @@ import { Upload, Info, FileText, Wand2, ArrowLeftRight } from "lucide-react";
 import { toast } from "sonner";
 import { v4 as uuidv4 } from "uuid";
 import ApiKeyInput, { API_KEY_STORAGE_KEY } from "@/components/shared/ApiKeyInput";
+import { initializeGemini, checkApiKey as serviceCheckApiKey } from "@/services/geminiService";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useFlashcard } from "@/context/FlashcardContextDefinition";
 import { useUserProfile } from "@/hooks/useUserProfile"; // Add UserProfileHook
@@ -36,10 +37,8 @@ const FlashcardCreationForm = () => {
   const [generatedCards, setGeneratedCards] = useState<Flashcard[]>([]);
   const [showCardsPreview, setShowCardsPreview] = useState(false);
   const [displayMode, setDisplayMode] = useState<FlashcardDisplayMode>(activeDeck?.displayMode || "term-first");
-  
-  const checkApiKey = () => {
-    const apiKey = localStorage.getItem(API_KEY_STORAGE_KEY);
-    const keyExists = !!apiKey && apiKey.trim() !== '';
+    const checkApiKey = () => {
+    const keyExists = serviceCheckApiKey();
     setHasApiKey(keyExists);
     return keyExists;
   };
@@ -64,13 +63,17 @@ const FlashcardCreationForm = () => {
       clearInterval(intervalCheck);
     };
   }, []);
-
   const handleApiKeySubmit = (apiKey: string) => {
     localStorage.setItem(API_KEY_STORAGE_KEY, apiKey);
-    setHasApiKey(true);
+    // Initialize the Gemini service with the new API key
+    const initialized = initializeGemini(apiKey);
+    setHasApiKey(initialized);
     setShowApiKeyInput(false);
-    toast.success("API Key saved successfully");
-    toast.info("API Key saved. Please click 'Generate Flashcards' again.");
+    if (initialized) {
+      toast.success("API Key saved and initialized successfully");
+    } else {
+      toast.error("Failed to initialize API Key");
+    }
   };
 
   const handleGenerateFlashcards = async () => {
@@ -186,78 +189,53 @@ const FlashcardCreationForm = () => {
   const handleFileClick = () => {
     fileInputRef.current?.click();
   };
-
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
     
     try {
-      let loadingToast: ReturnType<typeof toast> | null = null;
-      if (file.size > 500000) {
-        loadingToast = toast.loading(`Processing ${file.name}...`);
+      // Import the new file processing utilities
+      const { processFileForFlashcards, isFileTypeSupported, formatFileSize, getFileLimits } = await import('@/utils/fileProcessing');
+      
+      // Validate file type
+      if (!isFileTypeSupported(file)) {
+        const limits = getFileLimits();
+        toast.error(`Unsupported file type. Please use: ${limits.supportedTypes.join(', ')}`);
+        return;
       }
-      
-      const { readFileAsText, testDocxExtraction } = await import('@/utils/fileUtils');
-      
-      // Special handling for DOCX files
-      if (file.name.endsWith('.docx')) {
-        loadingToast = loadingToast || toast.loading(`Processing DOCX file: ${file.name}...`);
-        
-        try {
-          // Try extracting text using our improved methods
-          const text = await readFileAsText(file);
-          setStudyMaterial(text);
-          
-          if (loadingToast) {
-            toast.dismiss(loadingToast);
-          }
-          
-          // Check if the extracted text seems valid
-          if (text.length < 200 || !text.match(/[a-zA-Z]{2,}\s+[a-zA-Z]{2,}/g)) {
-            // Text seems too short or doesn't contain proper word sequences
-            // Run a diagnostic test to see which method works best
-            const diagnosticResult = await testDocxExtraction(file);
-            
-            if (diagnosticResult.success) {
-              // We found a better extraction method
-              setStudyMaterial(diagnosticResult.text);
-              toast.success(`DOCX "${file.name}" processed with ${diagnosticResult.method} method`);
-            } else {
-              toast.warning(
-                "The DOCX file may contain formatting that's difficult to extract. "+
-                "If content appears as random characters, try saving your document as plain text (.txt) or PDF instead."
-              );
-            }
-          } else {
-            toast.success(`Document "${file.name}" processed successfully`);
-          }
-        } catch (docxError) {
-          console.error("DOCX processing error:", docxError);
-          toast.error(`Failed to process DOCX: ${docxError instanceof Error ? docxError.message : String(docxError)}`);
-          
-          if (loadingToast) {
-            toast.dismiss(loadingToast);
-          }
-        }
+
+      // Validate file size
+      const limits = getFileLimits();
+      if (file.size > limits.maxSize) {
+        toast.error(`File size (${formatFileSize(file.size)}) exceeds the maximum limit of ${limits.maxSizeFormatted}`);
         return;
       }
       
-      // Standard handling for non-DOCX files
-      const text = await readFileAsText(file);
-      setStudyMaterial(text);
+      let loadingToast: ReturnType<typeof toast> | null = null;
+      if (file.size > 500000) {
+        loadingToast = toast.loading(`Processing ${file.name} with Gemini Files API...`);
+      }
+      
+      // Process file using the new Files API approach
+      const result = await processFileForFlashcards(file);
       
       if (loadingToast) {
         toast.dismiss(loadingToast);
       }
       
-      if (file.name.endsWith('.pdf')) {
-        toast.success(`PDF "${file.name}" processed successfully`);
-      } else {
-        toast.success(`File "${file.name}" uploaded successfully`);
+      if (!result.success) {
+        toast.error(result.error || "Failed to process file");
+        return;
       }
+      
+      // Set the extracted text
+      setStudyMaterial(result.text || "");
+      
+      toast.success(`Document "${file.name}" processed successfully with Gemini AI`);
+      
     } catch (error) {
-      console.error("File reading error:", error);
-      toast.error(`Failed to read file: ${error instanceof Error ? error.message : String(error)}`);
+      console.error("File processing error:", error);
+      toast.error(`Failed to process file: ${error instanceof Error ? error.message : String(error)}`);
     }
   };
 

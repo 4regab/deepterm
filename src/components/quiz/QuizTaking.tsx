@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
@@ -9,7 +9,7 @@ import { ChevronLeft, ChevronRight, ArrowLeft, Save } from "lucide-react";
 import { Quiz, useQuiz } from "@/context/QuizContext";
 import { toast } from "sonner";
 import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from "@/components/ui/alert-dialog";
-import { useUserProfile } from "@/hooks/useUserProfile"; // Import user profile hook
+import { useUserProfile } from "@/hooks/useUserProfile";
 
 const QuizTaking = () => {
   const { 
@@ -22,14 +22,61 @@ const QuizTaking = () => {
     loadProgress
   } = useQuiz();
   
-  // Add user profile context for achievement tracking
-  const { trackQuizTaken } = useUserProfile(); // Removed trackPerfectScore
+  const { trackQuizTaken } = useUserProfile();
+
+  // Initialize from saved progress if available, but prioritize activeQuiz progress
+  const getInitialQuestionIndex = useCallback(() => {
+    if (activeQuiz?.progress?.currentQuestionIndex !== undefined) {
+      return activeQuiz.progress.currentQuestionIndex;
+    }
+    const savedProgress = activeQuiz?.id ? loadProgress(activeQuiz.id) : undefined;
+    return savedProgress || 0;
+  }, [activeQuiz?.progress?.currentQuestionIndex, activeQuiz?.id, loadProgress]);
   
-  // Initialize from saved progress if available
-  const initialQuestionIndex = activeQuiz?.progress?.currentQuestionIndex || 0;
-  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(initialQuestionIndex);
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(() => 
+    activeQuiz?.progress?.currentQuestionIndex ?? 0
+  );
   const [showSaveDialog, setShowSaveDialog] = useState(false);
   const [quizTitle, setQuizTitle] = useState(activeQuiz?.title || "");
+  const [isTransitioning, setIsTransitioning] = useState(false);
+
+  // Memoize current question to prevent unnecessary re-renders
+  const currentQuestion = useMemo(() => {
+    return activeQuiz?.questions[currentQuestionIndex];
+  }, [activeQuiz?.questions, currentQuestionIndex]);
+
+  // Optimized updateAnswer function to reduce flickering
+  const updateAnswer = useCallback((answer: string) => {
+    if (!activeQuiz || !currentQuestion) return;
+    
+    const updatedQuestions = [...activeQuiz.questions];
+    updatedQuestions[currentQuestionIndex] = {
+      ...updatedQuestions[currentQuestionIndex],
+      userAnswer: answer
+    };
+      setActiveQuiz({
+      ...activeQuiz,
+      questions: updatedQuestions
+    });
+
+    // Only auto-advance for non-identification questions
+    if (currentQuestionIndex < activeQuiz.questions.length - 1 && 
+        currentQuestion.type !== "identification") {
+      setIsTransitioning(true);
+      setTimeout(() => {
+        setCurrentQuestionIndex(prev => prev + 1);
+        setIsTransitioning(false);
+      }, 200); // Reduced timeout for better UX
+    }
+  }, [activeQuiz, currentQuestionIndex, currentQuestion, setActiveQuiz]);
+
+  // Reset question index when activeQuiz changes (handles retake scenario)
+  useEffect(() => {
+    if (activeQuiz) {
+      const newIndex = getInitialQuestionIndex();
+      setCurrentQuestionIndex(newIndex);
+    }
+  }, [activeQuiz, getInitialQuestionIndex]);
   
   // Save progress whenever the current question index changes
   useEffect(() => {
@@ -37,7 +84,8 @@ const QuizTaking = () => {
       saveProgress(activeQuiz.id, currentQuestionIndex);
     }
   }, [currentQuestionIndex, activeQuiz?.id, saveProgress]);
-  
+
+  // Early return after all hooks
   if (!activeQuiz || !activeQuiz.questions.length) {
     return <div className="text-center py-12">
       <p className="text-[#8E9196]">No quiz is currently available to take.</p>
@@ -52,7 +100,6 @@ const QuizTaking = () => {
   }
 
   const { questions } = activeQuiz;
-  const currentQuestion = questions[currentQuestionIndex];
   const progress = ((currentQuestionIndex + 1) / questions.length) * 100;
 
   const handlePreviousQuestion = () => {
@@ -69,28 +116,6 @@ const QuizTaking = () => {
     
     if (currentQuestionIndex < questions.length - 1) {
       setCurrentQuestionIndex(currentQuestionIndex + 1);
-    }
-  };
-
-  const updateAnswer = (answer: string) => {
-    const updatedQuestions = [...activeQuiz.questions];
-    updatedQuestions[currentQuestionIndex] = {
-      ...updatedQuestions[currentQuestionIndex],
-      userAnswer: answer
-    };
-    
-    setActiveQuiz({
-      ...activeQuiz,
-      questions: updatedQuestions
-    });
-
-    // Only auto-advance for multiple choice, truefalse, and statementTrueFalse
-    // Don't auto-advance for identification questions
-    if (currentQuestionIndex < questions.length - 1 && 
-        currentQuestion.type !== "identification") {
-      setTimeout(() => {
-        setCurrentQuestionIndex(currentQuestionIndex + 1);
-      }, 500);
     }
   };
 
@@ -184,56 +209,60 @@ const QuizTaking = () => {
     switch (currentQuestion.type) {
       case "multiple":
         return (
-          <RadioGroup 
-            value={currentQuestion.userAnswer || ""}
-            onValueChange={updateAnswer}
-            className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4"
-          >
-            {currentQuestion.options && currentQuestion.options.length > 0 ? (
-              currentQuestion.options.map((option, index) => (
-                <div 
-                  key={index} 
-                  className="relative border-2 border-[#1A1F2C] p-4 rounded-lg hover:bg-[#F8F5FF] transition-all hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[4px_4px_0px_#1A1F2C]"
-                >
-                  <RadioGroupItem 
-                    value={option} 
-                    id={`option-${index}`} 
-                    className="absolute left-4 top-1/2 -translate-y-1/2 text-[#9b87f5]"
-                  />
-                  <Label 
-                    htmlFor={`option-${index}`} 
-                    className="block pl-8 cursor-pointer font-bold text-lg break-words"
+          <div className={`transition-opacity duration-200 ${isTransitioning ? 'opacity-50' : 'opacity-100'}`}>
+            <RadioGroup 
+              value={currentQuestion.userAnswer || ""}
+              onValueChange={updateAnswer}
+              className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4"
+            >
+              {currentQuestion.options && currentQuestion.options.length > 0 ? (
+                currentQuestion.options.map((option, index) => (
+                  <div 
+                    key={index} 
+                    className="relative border-2 border-[#1A1F2C] p-4 rounded-lg hover:bg-[#F8F5FF] transition-all hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[4px_4px_0px_#1A1F2C]"
                   >
-                    {option}
-                  </Label>
-                </div>
-              ))
-            ) : (
-              <div className="text-red-500">No options available for this question.</div>
-            )}
-          </RadioGroup>
+                    <RadioGroupItem 
+                      value={option} 
+                      id={`option-${index}`} 
+                      className="absolute left-4 top-1/2 -translate-y-1/2 text-[#9b87f5]"
+                    />
+                    <Label 
+                      htmlFor={`option-${index}`} 
+                      className="block pl-8 cursor-pointer font-bold text-lg break-words"
+                    >
+                      {option}
+                    </Label>
+                  </div>
+                ))
+              ) : (
+                <div className="text-red-500">No options available for this question.</div>
+              )}
+            </RadioGroup>
+          </div>
         );
         
       case "truefalse":
         return (
-          <RadioGroup 
-            value={currentQuestion.userAnswer || ""}
-            onValueChange={updateAnswer}
-            className="space-y-3 mt-4"
-          >
-            <div className="flex items-center space-x-2 border-2 border-[#D6BCFA] p-3 rounded-lg hover:bg-[#F8F5FF]">
-              <RadioGroupItem value="True" id="option-true" className="text-[#9b87f5]" />
-              <Label htmlFor="option-true" className="flex-grow cursor-pointer font-medium">
-                True
-              </Label>
-            </div>
-            <div className="flex items-center space-x-2 border-2 border-[#D6BCFA] p-3 rounded-lg hover:bg-[#F8F5FF]">
-              <RadioGroupItem value="False" id="option-false" className="text-[#9b87f5]" />
-              <Label htmlFor="option-false" className="flex-grow cursor-pointer font-medium">
-                False
-              </Label>
-            </div>
-          </RadioGroup>
+          <div className={`transition-opacity duration-200 ${isTransitioning ? 'opacity-50' : 'opacity-100'}`}>
+            <RadioGroup 
+              value={currentQuestion.userAnswer || ""}
+              onValueChange={updateAnswer}
+              className="space-y-3 mt-4"
+            >
+              <div className="flex items-center space-x-2 border-2 border-[#D6BCFA] p-3 rounded-lg hover:bg-[#F8F5FF]">
+                <RadioGroupItem value="True" id="option-true" className="text-[#9b87f5]" />
+                <Label htmlFor="option-true" className="flex-grow cursor-pointer font-medium">
+                  True
+                </Label>
+              </div>
+              <div className="flex items-center space-x-2 border-2 border-[#D6BCFA] p-3 rounded-lg hover:bg-[#F8F5FF]">
+                <RadioGroupItem value="False" id="option-false" className="text-[#9b87f5]" />
+                <Label htmlFor="option-false" className="flex-grow cursor-pointer font-medium">
+                  False
+                </Label>
+              </div>
+            </RadioGroup>
+          </div>
         );
         
       case "identification":
@@ -250,27 +279,29 @@ const QuizTaking = () => {
         
       case "statementTrueFalse":
         return (
-          <RadioGroup 
-            value={currentQuestion.userAnswer || ""}
-            onValueChange={updateAnswer}
-            className="space-y-3 mt-4"
-          >
-            {currentQuestion.options?.map((option, index) => (
-              <div key={index} className="flex items-center border-2 border-[#D6BCFA] p-3 rounded-lg hover:bg-[#F8F5FF]">
-                <RadioGroupItem 
-                  value={option} 
-                  id={`option-st-${index}`} 
-                  className="text-[#9b87f5] mr-2"
-                />
-                <Label 
-                  htmlFor={`option-st-${index}`} 
-                  className="flex-grow cursor-pointer font-medium break-words"
-                >
-                  {option}
-                </Label>
-              </div>
-            ))}
-          </RadioGroup>
+          <div className={`transition-opacity duration-200 ${isTransitioning ? 'opacity-50' : 'opacity-100'}`}>
+            <RadioGroup 
+              value={currentQuestion.userAnswer || ""}
+              onValueChange={updateAnswer}
+              className="space-y-3 mt-4"
+            >
+              {currentQuestion.options?.map((option, index) => (
+                <div key={index} className="flex items-center border-2 border-[#D6BCFA] p-3 rounded-lg hover:bg-[#F8F5FF]">
+                  <RadioGroupItem 
+                    value={option} 
+                    id={`option-st-${index}`} 
+                    className="text-[#9b87f5] mr-2"
+                  />
+                  <Label 
+                    htmlFor={`option-st-${index}`} 
+                    className="flex-grow cursor-pointer font-medium break-words"
+                  >
+                    {option}
+                  </Label>
+                </div>
+              ))}
+            </RadioGroup>
+          </div>
         );
         
       default:

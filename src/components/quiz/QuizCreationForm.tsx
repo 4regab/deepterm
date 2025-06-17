@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
@@ -11,6 +11,7 @@ import { QuizGenerator } from "@/services/quizGenerator";
 import { QuestionType, useQuiz, QuizQuestion } from "@/context/QuizContext";
 import { v4 as uuidv4 } from "uuid";
 import ApiKeyInput, { API_KEY_STORAGE_KEY } from "@/components/shared/ApiKeyInput";
+import { initializeGemini, checkApiKey as serviceCheckApiKey } from "@/services/geminiService";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
@@ -60,23 +61,23 @@ const QuizCreationForm = () => {
   
   // Add the user profile context to track achievements
   const { trackQuizCreated } = useUserProfile();
-  
-  const [quizTitle, setQuizTitle] = useState(activeQuiz?.title || "");
+    const [quizTitle, setQuizTitle] = useState(activeQuiz?.title || "");
   const [studyMaterial, setStudyMaterial] = useState(activeQuiz?.studyMaterial || "");
   const [numberOfQuestions, setNumberOfQuestions] = useState<number>(activeQuiz?.settings?.numberOfQuestions || 5);
   const [isAutoQuestionCount, setIsAutoQuestionCount] = useState(activeQuiz ? false : true);
   const [questionType, setQuestionType] = useState<QuestionType>(activeQuiz?.settings?.questionType || "multiple");
-  const [verbatimMode, setVerbatimMode] = useState<boolean>(false);
-  const [hasApiKey, setHasApiKey] = useState(false);
+  const [verbatimMode, setVerbatimMode] = useState<boolean>(false);  const [hasApiKey, setHasApiKey] = useState(false);
   const [showApiKeyInput, setShowApiKeyInput] = useState(false);
   const [inputMode, setInputMode] = useState<'auto' | 'manual'>(activeQuiz?.settings?.inputMode as ('auto' | 'manual') || 'auto');
+  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isQuestionTypeExpanded, setIsQuestionTypeExpanded] = useState(false);
-  
-  // New state variables for quiz review functionality
+    // New state variables for quiz review functionality
   const [generatedQuestions, setGeneratedQuestions] = useState<QuizQuestion[]>([]);
   const [showQuestionsPreview, setShowQuestionsPreview] = useState(false);
   const [editingQuestionIndex, setEditingQuestionIndex] = useState<number | null>(null);
+  const [isEditing, setIsEditing] = useState(false); // Track editing state to prevent interference
+  const isUpdatingRef = useRef(false); // Track if we're in the middle of an update operation
 
   // Determine if we are in edit mode based *only* on the presence of an activeQuiz from context.
   const isEditMode = !!activeQuiz?.id;
@@ -97,15 +98,12 @@ const QuizCreationForm = () => {
       setInputMode(activeQuiz.settings?.inputMode || 'auto');
       // If editing, load the existing questions into the preview state immediately
       // This allows editing questions without regenerating
-      setGeneratedQuestions(activeQuiz.questions || []);
-
-      // Show the questions preview dialog automatically when in edit mode
-      if (activeQuiz.questions && activeQuiz.questions.length > 0) {
-        console.log("[Effect activeQuiz] Found questions, scheduling setShowQuestionsPreview(true)"); // Log scheduling
-        setTimeout(() => {
-          console.log("[Effect activeQuiz] setTimeout executing: setShowQuestionsPreview(true)"); // Log execution
-          setShowQuestionsPreview(true);
-        }, 100);
+      setGeneratedQuestions(activeQuiz.questions || []);      // Show the questions preview dialog automatically when in edit mode
+      if (activeQuiz.questions && activeQuiz.questions.length > 0 && !isUpdatingRef.current) {
+        console.log("[Effect activeQuiz] Found questions, showing preview immediately (not during update)"); // Log immediate show
+        setShowQuestionsPreview(true);
+      } else if (isUpdatingRef.current) {
+        console.log("[Effect activeQuiz] Skipping preview show because we're in the middle of an update");
       } else {
          console.log("[Effect activeQuiz] No questions found, not showing preview automatically.");
       }
@@ -118,18 +116,22 @@ const QuizCreationForm = () => {
       setIsAutoQuestionCount(true);
       setQuestionType("multiple");
       setVerbatimMode(true);
-      setInputMode('auto');
-      setGeneratedQuestions([]);
+      setInputMode('auto');      setGeneratedQuestions([]);
       console.log("[Effect activeQuiz] Calling setShowQuestionsPreview(false) in else block."); // Log reset call
       setShowQuestionsPreview(false);
       setEditingQuestionIndex(null);
     }
   }, [activeQuiz]); // Rerun this effect when activeQuiz changes
 
+  // Cleanup effect to reset updating flag on unmount
+  useEffect(() => {
+    return () => {
+      isUpdatingRef.current = false;
+    };
+  }, []);
 
   const checkApiKey = () => {
-    const apiKey = localStorage.getItem(API_KEY_STORAGE_KEY);
-    const keyExists = !!apiKey && apiKey.trim() !== '';
+    const keyExists = serviceCheckApiKey();
     console.log("API key check: exists =", keyExists);
     setHasApiKey(keyExists);
     return keyExists;
@@ -155,21 +157,27 @@ const QuizCreationForm = () => {
       clearInterval(intervalCheck);
     };
   }, []);
-
   const handleApiKeySubmit = (apiKey: string) => {
     localStorage.setItem(API_KEY_STORAGE_KEY, apiKey);
-    setHasApiKey(true);
+    // Initialize the Gemini service with the new API key
+    const initialized = initializeGemini(apiKey);
+    setHasApiKey(initialized);
     setShowApiKeyInput(false);
-    toast.success("API Key saved successfully");
-    toast.info("API Key saved. Please click 'Generate Quiz' again.");
+    if (initialized) {
+      toast.success("API Key saved and initialized successfully");
+    } else {
+      toast.error("Failed to initialize API Key");
+    }
   };
-
   // New function to handle updating an existing quiz
   const handleUpdateQuiz = () => {
     console.log("[handleUpdateQuiz] Starting update."); // Log start
+    isUpdatingRef.current = true; // Set updating flag to prevent dialog flickering
+    
     if (!activeQuiz) {
       toast.error("Cannot update: No active quiz selected for editing.");
       console.error("[handleUpdateQuiz] Error: No activeQuiz found."); // Log error
+      isUpdatingRef.current = false; // Reset flag on error
       return;
     }
 
@@ -177,6 +185,7 @@ const QuizCreationForm = () => {
     if (generatedQuestions.length === 0) {
       toast.error("Cannot update: Quiz must have at least one question.");
        console.error("[handleUpdateQuiz] Error: No generatedQuestions found."); // Log error
+      isUpdatingRef.current = false; // Reset flag on error
       return;
     }
 
@@ -203,15 +212,17 @@ const QuizCreationForm = () => {
     saveQuiz(updatedQuizData); // Use the context save function which handles updates
     console.log("[handleUpdateQuiz] Returned from saveQuiz."); // Log after save
 
-    toast.success(`Quiz "${updatedQuizData.title}" updated successfully!`);
-
-    console.log("[handleUpdateQuiz] Calling setActiveQuiz(null)..."); // Log before setActiveQuiz
+    toast.success(`Quiz "${updatedQuizData.title}" updated successfully!`);    console.log("[handleUpdateQuiz] Calling setActiveQuiz(null)..."); // Log before setActiveQuiz
     setActiveQuiz(null);
     console.log("[handleUpdateQuiz] Returned from setActiveQuiz(null)."); // Log after setActiveQuiz
 
     console.log("[handleUpdateQuiz] Calling setShowQuestionsPreview(false)..."); // Log before setShowQuestionsPreview
     setShowQuestionsPreview(false);
-    console.log("[handleUpdateQuiz] Returned from setShowQuestionsPreview(false). Update finished."); // Log end
+    console.log("[handleUpdateQuiz] Returned from setShowQuestionsPreview(false). Update finished."); // Log end    // Reset the updating flag after a small delay to ensure all state updates are complete
+    setTimeout(() => {
+      isUpdatingRef.current = false;
+      console.log("[handleUpdateQuiz] Reset updating flag."); // Log flag reset
+    }, 100);
   };
 
   // Renamed from handleGenerateQuiz to reflect its dual purpose
@@ -224,11 +235,11 @@ const QuizCreationForm = () => {
       await generateNewQuiz();
     }
   };
-
   // Extracted generation logic into its own function
   const generateNewQuiz = async () => {
-    if (!studyMaterial.trim()) {
-      toast.error("Please enter some study material");
+    // Check if we have either study material text or an uploaded file
+    if (!studyMaterial.trim() && !uploadedFile) {
+      toast.error("Please enter some study material or upload a file");
       return;
     }
 
@@ -245,6 +256,39 @@ const QuizCreationForm = () => {
 
     try {
       setIsGenerating(true);
+      
+      let actualStudyMaterial = studyMaterial;
+      
+      // If a file was uploaded, process it first
+      if (uploadedFile) {
+        console.log(`[QuizCreationForm] Processing uploaded file: ${uploadedFile.name}`);
+        const loadingToast = toast.loading(`Processing ${uploadedFile.name} with Gemini Files API...`);
+        
+        try {
+          const { processFileWithGemini } = await import('@/utils/fileProcessing');
+          const result = await processFileWithGemini(uploadedFile, "full");
+          
+          toast.dismiss(loadingToast);
+          
+          if (!result.success) {
+            toast.error(result.error || "Failed to process uploaded file");
+            setIsGenerating(false);
+            return;
+          }
+          
+          // Use the extracted text from the file
+          actualStudyMaterial = result.text || "";
+          console.log(`[QuizCreationForm] File processed successfully, extracted ${actualStudyMaterial.length} characters`);
+          
+        } catch (fileError) {
+          toast.dismiss(loadingToast);
+          console.error("File processing error:", fileError);
+          toast.error(`Failed to process file: ${fileError instanceof Error ? fileError.message : String(fileError)}`);
+          setIsGenerating(false);
+          return;
+        }
+      }
+      
       const generator = new QuizGenerator(apiKey!);
       
       const numQuestionsParam = isAutoQuestionCount ? undefined : numberOfQuestions;
@@ -254,13 +298,14 @@ const QuizCreationForm = () => {
         numQuestions: numQuestionsParam,
         quizType: questionType,
         verbatimMode, // Log the state value
-        source: studyMaterial ? 'studyMaterial' : 'manualInput'
+        source: uploadedFile ? `file: ${uploadedFile.name}` : (studyMaterial ? 'studyMaterial' : 'manualInput'),
+        textLength: actualStudyMaterial.length
       });
 
       let result;
       try {
         if (inputMode === 'manual') {
-          const parsedStudyMaterial = parseManualInput(studyMaterial);
+          const parsedStudyMaterial = parseManualInput(actualStudyMaterial);
           if (parsedStudyMaterial.terms.length === 0) {
             toast.error("Could not parse any valid term-definition pairs. Please check your input format.");
             setIsGenerating(false);
@@ -272,10 +317,9 @@ const QuizCreationForm = () => {
             numQuestionsParam,
             questionType,
             verbatimMode
-          );
-        } else {
+          );        } else {
           result = await generator.extractAndGenerateQuiz(
-            studyMaterial,
+            actualStudyMaterial,
             numQuestionsParam,
             questionType,
             verbatimMode
@@ -348,79 +392,39 @@ const QuizCreationForm = () => {
 
   const handleFileClick = () => {
     fileInputRef.current?.click();
-  };
-
-  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  };  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
     
     try {
-      let loadingToast: ReturnType<typeof toast> | null = null;
-      if (file.size > 500000) {
-        loadingToast = toast.loading(`Processing ${file.name}...`);
+      // Import file validation utilities
+      const { isFileTypeSupported, formatFileSize, getFileLimits } = await import('@/utils/fileProcessing');
+      
+      // Validate file type
+      if (!isFileTypeSupported(file)) {
+        const limits = getFileLimits();
+        toast.error(`Unsupported file type. Please use: ${limits.supportedTypes.join(', ')}`);
+        return;
       }
-      
-      const { readFileAsText, testDocxExtraction } = await import('@/utils/fileUtils');
-      
-      // Special handling for DOCX files
-      if (file.name.endsWith('.docx')) {
-        loadingToast = loadingToast || toast.loading(`Processing DOCX file: ${file.name}...`);
-        
-        try {
-          // Try extracting text using our improved methods
-          const text = await readFileAsText(file);
-          setStudyMaterial(text);
-          
-          if (loadingToast) {
-            toast.dismiss(loadingToast);
-          }
-          
-          // Check if the extracted text seems valid
-          if (text.length < 200 || !text.match(/[a-zA-Z]{2,}\s+[a-zA-Z]{2,}/g)) {
-            // Text seems too short or doesn't contain proper word sequences
-            // Run a diagnostic test to see which method works best
-            const diagnosticResult = await testDocxExtraction(file);
-            
-            if (diagnosticResult.success) {
-              // We found a better extraction method
-              setStudyMaterial(diagnosticResult.text);
-              toast.success(`DOCX "${file.name}" processed with ${diagnosticResult.method} method`);
-            } else {
-              toast.warning(
-                "The DOCX file may contain formatting that's difficult to extract. "+
-                "If content appears as random characters, try saving your document as plain text (.txt) or PDF instead."
-              );
-            }
-          } else {
-            toast.success(`Document "${file.name}" processed successfully`);
-          }
-        } catch (docxError) {
-          console.error("DOCX processing error:", docxError);
-          toast.error(`Failed to process DOCX: ${docxError instanceof Error ? docxError.message : String(docxError)}`);
-          
-          if (loadingToast) {
-            toast.dismiss(loadingToast);
-          }
-        }
+
+      // Validate file size
+      const limits = getFileLimits();
+      if (file.size > limits.maxSize) {
+        toast.error(`File size (${formatFileSize(file.size)}) exceeds the maximum limit of ${limits.maxSizeFormatted}`);
         return;
       }
       
-      // Standard handling for non-DOCX files
-      const text = await readFileAsText(file);
-      setStudyMaterial(text);
+      // Store the file for later processing (don't process yet)
+      setUploadedFile(file);
       
-      if (loadingToast) {
-        toast.dismiss(loadingToast);
-      }
+      // Set placeholder text to indicate file is ready
+      setStudyMaterial(`File "${file.name}" uploaded successfully. Click "Generate Quiz" to process with Gemini AI.`);
       
-      if (file.name.endsWith('.pdf')) {
-        toast.success(`PDF "${file.name}" processed successfully`);
-      } else {
-        toast.success(`File "${file.name}" uploaded successfully`);
-      }
+      toast.success(`Document "${file.name}" ready for processing`);
+      
     } catch (error) {
-      console.error("File reading error:", error);
-      toast.error(`Failed to read file: ${error instanceof Error ? error.message : String(error)}`);
+      console.error("File validation error:", error);
+      toast.error(`Failed to validate file: ${error instanceof Error ? error.message : String(error)}`);
     }
   };
 
@@ -513,15 +517,22 @@ const QuizCreationForm = () => {
     // Track quiz creation for achievements
     trackQuizCreated();
   };
-
-  const handleUpdateQuestion = (index: number, field: keyof QuizQuestion, value: string | string[]) => {
-    const updatedQuestions = [...generatedQuestions];
-    updatedQuestions[index] = {
-      ...updatedQuestions[index],
-      [field]: value
-    };
-    setGeneratedQuestions(updatedQuestions);
-  };
+  const handleUpdateQuestion = useCallback((index: number, field: keyof QuizQuestion, value: string | string[]) => {
+    // Prevent interference by batching updates
+    setIsEditing(true);
+    
+    setGeneratedQuestions(prev => {
+      const updatedQuestions = [...prev];
+      updatedQuestions[index] = {
+        ...updatedQuestions[index],
+        [field]: value
+      };
+      return updatedQuestions;
+    });
+    
+    // Reset editing state after a brief delay to prevent rapid re-renders
+    setTimeout(() => setIsEditing(false), 100);
+  }, []);
 
   const handleDeleteQuestion = (index: number) => {
     const updatedQuestions = [...generatedQuestions];

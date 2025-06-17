@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { FileText, Clock, Menu, Home, BarChart2, Play, Pause, Square, BookOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,8 @@ import { Progress } from "./ui/progress";
 const Navbar = () => {
   const isMobile = useIsMobile();
   const navigate = useNavigate();
+  const navigationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  
   const { 
     timer, 
     timerType, 
@@ -21,6 +23,17 @@ const Navbar = () => {
     isTimerVisibleInNavbar
   } = usePomodoroContext();
 
+  // Debounced navigation to prevent double-click issues
+  const debouncedNavigate = (path: string) => {
+    if (navigationTimeoutRef.current) {
+      clearTimeout(navigationTimeoutRef.current);
+    }
+    
+    navigationTimeoutRef.current = setTimeout(() => {
+      navigate(path);
+    }, 100);
+  };
+
   const timerColor = timerType === 'pomodoro' 
     ? 'bg-[#FF5C00]' 
     : timerType === 'shortBreak' 
@@ -31,10 +44,9 @@ const Navbar = () => {
   
   const NavLinks = () => (
     <nav className="flex items-center gap-3">
-      {isTimerVisibleInNavbar && (
-        <div 
+      {isTimerVisibleInNavbar && (        <div 
           className="mr-2 neo-border bg-white rounded-lg shadow-neo px-3 py-1 cursor-pointer hover:shadow-neo-lg transition-all hover:-translate-y-0.5"
-          onClick={() => navigate('/pomodoro')}
+          onClick={() => debouncedNavigate('/pomodoro')}
         >
           <div className="flex items-center gap-2">
             <div className={`w-2 h-2 rounded-full ${isRunning ? 'bg-green-500 animate-pulse' : 'bg-gray-400'}`}></div>
@@ -117,7 +129,7 @@ const Navbar = () => {
             <div className="flex items-center gap-2">
               {isTimerVisibleInNavbar && (                <div 
                   className="neo-border bg-white rounded-lg shadow-neo px-3 py-2 cursor-pointer touch-target"
-                  onClick={() => navigate('/pomodoro')}
+                  onClick={() => debouncedNavigate('/pomodoro')}
                 >
                   <div className="flex items-center gap-2">
                     <div className={`w-2.5 h-2.5 rounded-full ${isRunning ? 'bg-green-500 animate-pulse' : 'bg-gray-400'}`}></div>
@@ -157,11 +169,10 @@ const Navbar = () => {
                 </SheetTrigger>
                 <SheetContent side="right" className="border-l-2 border-neo-black bg-white w-[85vw] max-w-[300px] p-4 pt-8">
                   <div className="py-4 flex flex-col gap-4">
-                    {isTimerVisibleInNavbar && (
-                      <div 
+                    {isTimerVisibleInNavbar && (                      <div 
                         className="neo-border bg-white rounded-lg shadow-neo p-4 cursor-pointer mb-2"
                         onClick={() => {
-                          navigate('/pomodoro');
+                          debouncedNavigate('/pomodoro');
                         }}
                       >
                         <div className="flex justify-between items-center mb-2">
