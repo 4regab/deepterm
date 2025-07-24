@@ -22,6 +22,15 @@ enum HarmBlockThreshold {
 let apiKey: string = "";
 let genAI: GoogleGenAI | null = null;
 
+// Initialize from environment variable if available
+const initializeFromEnv = (): boolean => {
+  const envApiKey = import.meta.env.VITE_GEMINI_API_KEY;
+  if (envApiKey && envApiKey !== "your_gemini_api_key_here" && envApiKey.length > 0) {
+    return initializeGemini(envApiKey);
+  }
+  return false;
+};
+
 // Set user-provided API key and initialize client
 export const initializeGemini = (key: string): boolean => {
   if (!key || key.length === 0 || key === "your_gemini_api_key_here") {
@@ -40,6 +49,11 @@ export const initializeGemini = (key: string): boolean => {
 export const checkApiKey = (): boolean => {
   // First check if we have an initialized API key
   if (apiKey && apiKey.length > 0 && genAI) {
+    return true;
+  }
+  
+  // Try to initialize from environment
+  if (initializeFromEnv()) {
     return true;
   }
   

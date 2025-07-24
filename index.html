@@ -13,27 +13,38 @@
   <meta name="description"
     content="Your all-in-one study companion with gamified experience dashboard" />
   <meta name="author" content="DeepTerm" />
-  <meta name="google-adsense-account" content="ca-pub-7515399741245543">
-  <meta name="trustpilot-one-time-domain-verification-id" content="f72c0388-0502-4e1c-a68c-355c85d945e8"/>
-  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7515399741245543"
-    crossorigin="anonymous"></script>
-  <script async src="https://www.googletagmanager.com/gtag/js?id=G-W6BMP2LP3T"></script>
+  
+  <!-- Replace with your own Google AdSense account ID -->
+  <!-- <meta name="google-adsense-account" content="ca-pub-YOUR_ADSENSE_ID"> -->
+  <!-- <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-YOUR_ADSENSE_ID" crossorigin="anonymous"></script> -->
+  
+  <!-- Replace with your own Google Analytics tracking ID -->
+  <!-- <script async src="https://www.googletagmanager.com/gtag/js?id=GA_TRACKING_ID"></script> -->
   <script>
-    window.dataLayer = window.dataLayer || [];
-    function gtag() { dataLayer.push(arguments); }
+    // Initialize Google Analytics only if tracking ID is provided
+    const trackingId = import.meta.env.VITE_GA_TRACKING_ID;
+    if (trackingId && trackingId !== 'GA_TRACKING_ID') {
+      window.dataLayer = window.dataLayer || [];
+      function gtag() { dataLayer.push(arguments); }
 
-    // Set default consent state - MUST be before gtag('js') and gtag('config')
-    gtag('consent', 'default', {
-      'analytics_storage': 'denied',
-      'ad_storage': 'denied',
-      'ad_user_data': 'denied',        // Consent Mode v2
-      'ad_personalization': 'denied',  // Consent Mode v2
-      'wait_for_update': 500 // Optional: waits 500ms for update command
-    });
+      // Set default consent state - MUST be before gtag('js') and gtag('config')
+      gtag('consent', 'default', {
+        'analytics_storage': 'denied',
+        'ad_storage': 'denied',
+        'ad_user_data': 'denied',        // Consent Mode v2
+        'ad_personalization': 'denied',  // Consent Mode v2
+        'wait_for_update': 500 // Optional: waits 500ms for update command
+      });
 
-    gtag('js', new Date());
-
-    gtag('config', 'G-W6BMP2LP3T');
+      gtag('js', new Date());
+      gtag('config', trackingId);
+      
+      // Load GA script
+      const script = document.createElement('script');
+      script.async = true;
+      script.src = `https://www.googletagmanager.com/gtag/js?id=${trackingId}`;
+      document.head.appendChild(script);
+    }
   </script>
 
   <!-- SEO Meta Tags -->
@@ -44,7 +55,8 @@
   <meta name="robots" content="index, follow" />
   <meta name="language" content="English" />
   <meta name="revisit-after" content="1 days" />
-  <link rel="canonical" href="https://deepterm.tech" />
+  <!-- Update with your domain -->
+  <link rel="canonical" href="https://yourdomain.com" />
 
   <!-- Favicon -->
   <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
@@ -53,25 +65,21 @@
   <link rel="manifest" href="/site.webmanifest">
   <link rel="icon" href="/favicon.ico">
 
-  <!-- Google AdSense verification tag - replace with your own account ID when available -->
-  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7515399741245543"
-    crossorigin="anonymous"></script>
-
   <!-- Open Graph / Facebook -->
   <meta property="og:type" content="website" />
-  <meta property="og:url" content="https://deepterm.tech" />
+  <meta property="og:url" content="https://yourdomain.com" />
   <meta property="og:title" content="DeepTerm" />
   <meta property="og:description"
     content="Your all-in-one study companion with gamified experience designed to boost your learning efficiency." />
-  <meta property="og:image" content="https://deepterm.tech/og-image.jpg" />
+  <meta property="og:image" content="https://yourdomain.com/og-image.jpg" />
 
   <!-- Twitter -->
   <meta property="twitter:card" content="summary_large_image" />
-  <meta property="twitter:url" content="https://deepterm.tech" />
+  <meta property="twitter:url" content="https://yourdomain.com" />
   <meta property="twitter:title" content="DeepTerm" />
   <meta property="twitter:description"
     content="Your all-in-one study companion with gamified experience designed to boost your learning efficiency." />
-  <meta property="twitter:image" content="https://deepterm.tech/og-image.jpg" />
+  <meta property="twitter:image" content="https://yourdomain.com/og-image.jpg" />
 
   <!-- Structured Data - Organization -->
   <script type="application/ld+json">
@@ -79,8 +87,8 @@
       "@context": "https://schema.org",
       "@type": "Organization",
       "name": "DeepTerm",
-      "url": "https://deepterm.tech",
-      "logo": "https://deepterm.tech/android-chrome-512x512.png",
+      "url": "https://yourdomain.com",
+      "logo": "https://yourdomain.com/android-chrome-512x512.png",
       "description": "Your all-in-one study companion with gamified experience designed to boost your learning efficiency."
     }
     </script>

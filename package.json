@@ -1,8 +1,32 @@
 {
-  "name": "vite_react_shadcn_ts",
-  "private": true,
-  "version": "0.0.0",
+  "name": "deepterm",
+  "private": false,
+  "version": "1.0.0",
+  "description": "AI-powered productivity and learning platform with flashcards, quizzes, note extraction, and Pomodoro timer",
   "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/YOUR_USERNAME/deepterm.git"
+  },
+  "homepage": "https://yourdomain.com",
+  "bugs": {
+    "url": "https://github.com/YOUR_USERNAME/deepterm/issues"
+  },
+  "license": "MIT",
+  "author": "DeepTerm Contributors",
+  "keywords": [
+    "productivity",
+    "learning",
+    "ai",
+    "flashcards",
+    "quiz",
+    "pomodoro",
+    "study",
+    "education",
+    "react",
+    "typescript",
+    "vite"
+  ],
   "scripts": {
     "dev": "vite",
     "build": "vite build",
