@@ -1,4 +1,4 @@
-# DeepTerm**DeepTerm** is a comprehensive, completely free AI-powered productivity and learning platform designed to boost your study efficiency. It combines multiple tools in one seamless experience, featuring flashcards, quizzes, note extraction, Pomodoro timer, and gamified learning.
+**DeepTerm** is a comprehensive, completely free AI-powered productivity and learning platform designed to boost your study efficiency. It combines multiple tools in one seamless experience, featuring flashcards, quizzes, note extraction, Pomodoro timer, and gamified learning.
 
 🌐 **Live Demo**: [Update with your domain](https://yourdomain.com)
 
