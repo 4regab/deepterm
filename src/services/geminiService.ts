@@ -55,6 +55,16 @@ export const checkApiKey = (): boolean => {
   return false;
 };
 
+// Clear API key and reset client (for security/logout)
+export const clearApiKey = (): void => {
+  apiKey = "";
+  genAI = null;
+  if (typeof window !== 'undefined' && window.localStorage) {
+    localStorage.removeItem('gemini-api-key');
+  }
+  console.log("API key cleared successfully");
+};
+
 // Upload file using Gemini Files API
 export const uploadFileToGemini = async (file: File) => {
   if (!genAI) {

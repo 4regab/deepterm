@@ -27,15 +27,24 @@ const ApiKeyInput: React.FC<ApiKeyInputProps> = ({ onSubmit }) => {
     
     if (!apiKey.trim()) return;
     
+    // Enhanced API key validation for Gemini format
+    const trimmedKey = apiKey.trim();
+    const isValidFormat = /^AIza[0-9A-Za-z-_]{35}$/.test(trimmedKey);
+    
+    if (!isValidFormat) {
+      alert("Invalid API key format. Gemini API keys should start with 'AIza' and be 39 characters long.");
+      return;
+    }
+    
     setIsLoading(true);
     
     // Store the API key in local storage
-    localStorage.setItem(API_KEY_STORAGE_KEY, apiKey.trim());
+    localStorage.setItem(API_KEY_STORAGE_KEY, trimmedKey);
     
     // Add a small delay to show loading state
     setTimeout(() => {
       // Call the onSubmit callback with the API key
-      onSubmit(apiKey.trim());
+      onSubmit(trimmedKey);
       setIsLoading(false);
     }, 300);
   };

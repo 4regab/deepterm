@@ -1,10 +1,16 @@
 /* postcss-css */
 /* language=postcss */
+/*
+ * PostCSS with Tailwind CSS
+ * This file uses Tailwind CSS directives which require PostCSS processing
+ * VS Code: Install "PostCSS Language Support" extension for proper syntax highlighting
+ */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700;800;900&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
 
+/* Tailwind CSS directives - require PostCSS processing */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -205,7 +211,7 @@
   
   /* Mobile responsive utilities */
   .mobile-container {
-    @apply px-4 sm:px-6 md:px-8;
+    @apply px-3 sm:px-4 md:px-6 lg:px-8;
   }
   
   .mobile-stack {
@@ -217,20 +223,144 @@
   }
   
   .mobile-text-center {
-    @apply text-center md:text-left;
+    @apply text-center sm:text-left;
   }
   
   .mobile-p-smaller {
-    @apply p-4 sm:p-6;
+    @apply p-3 sm:p-4 md:p-6;
   }
   
-  /* Touch-friendly adjustments */
+  /* Enhanced touch-friendly adjustments */
   .touch-target {
     @apply min-h-[44px] min-w-[44px];
   }
   
   .touch-padding {
-    @apply py-3 px-4;
+    @apply py-2.5 px-3 sm:py-3 sm:px-4;
+  }
+  
+  .touch-spacing {
+    @apply space-y-3 sm:space-y-4;
+  }
+  
+  /* Improved responsive text scaling */
+  .text-responsive-xs {
+    @apply text-xs sm:text-sm;
+  }
+  
+  .text-responsive-sm {
+    @apply text-sm sm:text-base;
+  }
+  
+  .text-responsive-base {
+    @apply text-base sm:text-lg;
+  }
+  
+  .text-responsive-lg {
+    @apply text-lg sm:text-xl md:text-2xl;
+  }
+  
+  .text-responsive-xl {
+    @apply text-xl sm:text-2xl md:text-3xl;
+  }
+  
+  .text-responsive-2xl {
+    @apply text-2xl sm:text-3xl md:text-4xl lg:text-5xl;
+  }
+  
+  /* Responsive spacing utilities */
+  .spacing-responsive-sm {
+    @apply space-y-2 sm:space-y-3;
+  }
+  
+  .spacing-responsive-md {
+    @apply space-y-3 sm:space-y-4 md:space-y-6;
+  }
+  
+  .spacing-responsive-lg {
+    @apply space-y-4 sm:space-y-6 md:space-y-8;
+  }
+  
+  /* Responsive margin and padding */  
+  .p-responsive-sm {
+    @apply p-2 sm:p-3 md:p-4;
+  }
+  
+  .p-responsive-md {
+    @apply p-3 sm:p-4 md:p-6;
+  }
+  
+  .p-responsive-lg {
+    @apply p-4 sm:p-6 md:p-8;
+  }
+  
+  .px-responsive {
+    @apply px-3 sm:px-4 md:px-6 lg:px-8;
+  }
+  
+  .py-responsive {
+    @apply py-3 sm:py-4 md:py-6;
+  }
+  
+  /* Responsive gap utilities */
+  .gap-responsive-sm {
+    @apply gap-2 sm:gap-3;
+  }
+  
+  .gap-responsive-md {
+    @apply gap-3 sm:gap-4 md:gap-6;
+  }
+  
+  .gap-responsive-lg {
+    @apply gap-4 sm:gap-6 md:gap-8;
+  }
+  
+  /* Enhanced Neo-brutalist responsive elements */
+  .neo-border-responsive {
+    @apply border-2 sm:border-3 md:border-4 border-[#1a1a1a];
+  }
+  
+  .shadow-neo-responsive {
+    @apply shadow-[3px_3px_0px_#1a1a1a] sm:shadow-[4px_4px_0px_#1a1a1a] md:shadow-[6px_6px_0px_#1a1a1a];
+  }
+  
+  .shadow-neo-hover-responsive {
+    @apply shadow-[3px_3px_0px_#1a1a1a] sm:shadow-[4px_4px_0px_#1a1a1a] hover:shadow-[4px_4px_0px_#1a1a1a] sm:hover:shadow-[6px_6px_0px_#1a1a1a] 
+           hover:translate-x-[-1px] hover:translate-y-[-1px] sm:hover:translate-x-[-2px] sm:hover:translate-y-[-2px] transition-all duration-200;
+  }
+  
+  .neo-card-responsive {
+    @apply bg-white neo-border-responsive rounded-lg overflow-hidden shadow-neo-responsive shadow-neo-hover-responsive;
+  }
+  
+  /* Responsive grid layouts */
+  .grid-responsive-2 {
+    @apply grid grid-cols-1 sm:grid-cols-2;
+  }
+  
+  .grid-responsive-3 {
+    @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3;
+  }
+  
+  .grid-responsive-4 {
+    @apply grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4;
+  }
+  
+  .grid-responsive-auto {
+    @apply grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5;
+  }
+  
+  /* Responsive flex utilities */  
+  .flex-responsive-col {
+    @apply flex flex-col sm:flex-row;
+  }
+  
+  .flex-responsive-center {
+    @apply flex flex-col items-center sm:flex-row sm:justify-between;
+  }
+  
+  .flex-responsive-wrap {
+    @apply flex flex-col sm:flex-row sm:flex-wrap;
   }
   
   /* Neo-brutalist enhancements */

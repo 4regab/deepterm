@@ -178,82 +178,83 @@ const TextInput = ({ onSubmit, isLoading, extractionMode, onResetMode }: TextInp
 
   return (
     <Card className="neo-border shadow-neo bg-white rounded-lg border-2 border-neo-black">
-      <CardContent className="py-6 px-6">
-        <Alert className="mb-5 bg-neo-bg neo-border rounded-lg shadow-neo-sm">
-          <AlertCircle className="h-4 w-4 text-neo-accent" />
-          <AlertDescription className="text-neo-black text-sm">
+      <CardContent className="py-4 px-4 sm:py-6 sm:px-6">
+        <Alert className="mb-4 sm:mb-5 bg-neo-bg neo-border rounded-lg shadow-neo-sm">
+          <AlertCircle className="h-4 w-4 text-neo-accent flex-shrink-0" />
+          <AlertDescription className="text-neo-black text-xs sm:text-sm leading-relaxed">
             <strong className="text-red-500">Important:</strong> Images with text or scanned PDFs cannot be extracted.
             Please ensure your document contains selectable text.
           </AlertDescription>
         </Alert>
 
         {!mode && (
-          <div className="mb-5 flex flex-col sm:flex-row gap-4">
+          <div className="mb-4 sm:mb-5 flex flex-col gap-3 sm:flex-row sm:gap-4">
             <Button
               variant="outline"
               onClick={() => setMode('text')}
-              className="flex-1 neo-border bg-white hover:bg-neo-bg shadow-neo-sm hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all py-6 text-base"
+              className="flex-1 neo-border bg-white hover:bg-neo-bg shadow-neo-sm hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all py-4 sm:py-6 text-sm sm:text-base min-h-[44px] touch-target"
             >
-              <Type className="h-5 w-5 mr-2" />
-              Enter Text
+              <Type className="h-4 w-4 sm:h-5 sm:w-5 mr-2 flex-shrink-0" />
+              <span className="font-medium">Enter Text</span>
             </Button>
             <Button
               variant="outline"
               onClick={() => setMode('file')}
-              className="flex-1 neo-border bg-white hover:bg-neo-bg shadow-neo-sm hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all py-6 text-base"
+              className="flex-1 neo-border bg-white hover:bg-neo-bg shadow-neo-sm hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all py-4 sm:py-6 text-sm sm:text-base min-h-[44px] touch-target"
             >
-              <FileUp className="h-5 w-5 mr-2" />
-              Upload File
+              <FileUp className="h-4 w-4 sm:h-5 sm:w-5 mr-2 flex-shrink-0" />
+              <span className="font-medium">Upload File</span>
             </Button>
           </div>
         )}
 
         {mode && (
-          <div className="mb-4">
+          <div className="mb-3 sm:mb-4">
             <Button
               variant="ghost"
               size="sm"
               onClick={handleBackToModeSelection}
-              className="text-sm flex items-center text-neo-muted hover:text-neo-black hover:bg-neo-bg neo-border rounded-lg shadow-neo-xs"
+              className="text-xs sm:text-sm flex items-center text-neo-muted hover:text-neo-black hover:bg-neo-bg neo-border rounded-lg shadow-neo-xs min-h-[36px] px-3 py-2"
             >
-              <ArrowLeft className="h-4 w-4 mr-1" />
-              Back to extraction mode selection
+              <ArrowLeft className="h-3 w-3 sm:h-4 sm:w-4 mr-1 flex-shrink-0" />
+              <span className="hidden sm:inline">Back to extraction mode selection</span>
+              <span className="sm:hidden">Back to modes</span>
             </Button>
           </div>
         )}
 
         {mode === 'text' && (
-          <div className="mb-5">
-            <div className="flex justify-between items-center mb-2">
-              <label htmlFor="text-input" className="block text-base font-bold text-neo-black">
+          <div className="mb-4 sm:mb-5">
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-3 gap-2">
+              <label htmlFor="text-input" className="block text-sm sm:text-base font-bold text-neo-black">
                 Enter text to analyze
               </label>
-              <div className="flex gap-2">
+              <div className="flex gap-2 flex-wrap">
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={handlePaste}
-                  className="text-xs neo-border bg-white hover:bg-neo-bg shadow-neo-sm hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all"
+                  className="text-xs neo-border bg-white hover:bg-neo-bg shadow-neo-sm hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all min-h-[36px] px-3"
                 >
-                  <ClipboardCopy className="h-3 w-3 mr-1" />
-                  Paste
+                  <ClipboardCopy className="h-3 w-3 mr-1 flex-shrink-0" />
+                  <span>Paste</span>
                 </Button>
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={handleClearText}
-                  className="text-xs text-neo-muted hover:text-red-500 hover:bg-red-50"
+                  className="text-xs text-neo-muted hover:text-red-500 hover:bg-red-50 min-h-[36px] px-3"
                   title="Clear text and choose mode again"
                 >
-                  <X className="h-4 w-4 mr-1" />
-                  Clear
+                  <X className="h-3 w-3 sm:h-4 sm:w-4 mr-1 flex-shrink-0" />
+                  <span>Clear</span>
                 </Button>
               </div>
             </div>
             <Textarea
               id="text-input"
               placeholder="Paste or type your text here..."
-              className="min-h-[180px] mb-2 font-mono text-sm neo-border focus:ring-2 focus:ring-neo-accent3 rounded-lg resize-y"
+              className="min-h-[120px] sm:min-h-[180px] mb-2 font-mono text-xs sm:text-sm neo-border focus:ring-2 focus:ring-neo-accent3 rounded-lg resize-y"
               value={text}
               onChange={(e) => setText(e.target.value)}
             />            {text.length > 0 && (
@@ -265,49 +266,52 @@ const TextInput = ({ onSubmit, isLoading, extractionMode, onResetMode }: TextInp
         )}
 
         {mode === 'file' && (
-          <div className="mb-5">
-            <div className="text-base font-bold mb-2 text-neo-black">Upload a document</div>
+          <div className="mb-4 sm:mb-5">
+            <div className="text-sm sm:text-base font-bold mb-3 text-neo-black">Upload a document</div>
             {!file ? (
               <div
                 {...getRootProps()}
-                className="neo-border border-dashed rounded-lg p-6 text-center cursor-pointer hover:bg-neo-bg transition-colors"
+                className="neo-border border-dashed rounded-lg p-4 sm:p-6 text-center cursor-pointer hover:bg-neo-bg transition-colors min-h-[120px] sm:min-h-[160px] flex flex-col justify-center"
               >
                 <input {...getInputProps()} />
-                <div className="flex flex-col items-center py-4">
-                  <div className="bg-neo-bg p-3 rounded-full mb-3 neo-border">
-                    <Upload className="h-6 w-6 text-neo-accent" />
+                <div className="flex flex-col items-center py-2 sm:py-4">
+                  <div className="bg-neo-bg p-2 sm:p-3 rounded-full mb-2 sm:mb-3 neo-border">
+                    <Upload className="h-5 w-5 sm:h-6 sm:w-6 text-neo-accent" />
                   </div>
-                  <p className="text-base font-bold text-neo-black mb-1">
+                  <p className="text-sm sm:text-base font-bold text-neo-black mb-1 px-2">
                     <span className="hidden sm:inline">Drag & drop a file here, or click to select</span>
-                    <span className="sm:hidden">Upload a file</span>
-                  </p>                  <p className="text-xs text-neo-muted hidden sm:block">
+                    <span className="sm:hidden">Tap to upload a file</span>
+                  </p>                  <p className="text-xs text-neo-muted hidden sm:block px-2 text-center">
                     Supported formats: PDF, DOCX, DOC, TXT (up to {fileLimits.maxSizeFormatted})
+                  </p>
+                  <p className="text-xs text-neo-muted sm:hidden px-2 text-center">
+                    PDF, DOCX, DOC, TXT files
                   </p>
                 </div>
                 <Button
                   variant="link"
                   size="sm"
                   onClick={(e) => { e.stopPropagation(); setMode(null); }}
-                  className="text-xs text-neo-muted hover:text-neo-black mt-2"
+                  className="text-xs text-neo-muted hover:text-neo-black mt-1 sm:mt-2 min-h-[32px]"
                 >
                   Cancel Upload
                 </Button>
               </div>
             ) : (
-              <div className="mt-4">
-                <div className="p-3 bg-neo-bg neo-border rounded-lg flex items-center justify-between">
-                  <div className="flex items-center overflow-hidden">
-                    <FileText className="h-5 w-5 mr-2 flex-shrink-0 text-neo-accent" />
-                    <span className="text-sm font-medium truncate max-w-[200px] sm:max-w-[300px] text-neo-black">{file.name}</span>
+              <div className="mt-3 sm:mt-4">
+                <div className="p-3 bg-neo-bg neo-border rounded-lg flex items-center justify-between gap-2">
+                  <div className="flex items-center overflow-hidden min-w-0 flex-1">
+                    <FileText className="h-4 w-4 sm:h-5 sm:w-5 mr-2 flex-shrink-0 text-neo-accent" />
+                    <span className="text-xs sm:text-sm font-medium truncate text-neo-black">{file.name}</span>
                   </div>
                   <Button
                     variant="ghost"
                     size="icon"
                     onClick={handleClearFile}
-                    className="h-8 w-8 flex-shrink-0 rounded-full hover:bg-red-100"
+                    className="h-8 w-8 flex-shrink-0 rounded-full hover:bg-red-100 min-h-[32px] min-w-[32px]"
                     title="Clear file and choose mode again"
                   >
-                    <X className="h-4 w-4" />
+                    <X className="h-3 w-3 sm:h-4 sm:w-4" />
                   </Button>                </div>
                 {text.length > 0 && (
                   <div className="text-xs mt-2 text-right text-neo-muted">
@@ -320,16 +324,16 @@ const TextInput = ({ onSubmit, isLoading, extractionMode, onResetMode }: TextInp
         )}
 
         {mode && (
-          <div className="flex justify-end">
+          <div className="flex justify-center sm:justify-end">
             <Button
               onClick={handleSubmit}
               disabled={isLoading || !text.trim()}
-              className="font-bold neo-border bg-neo-accent text-neo-black hover:bg-neo-accent/90 shadow-neo-sm hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all rounded-lg py-2 px-6"
+              className="w-full sm:w-auto font-bold neo-border bg-neo-accent text-neo-black hover:bg-neo-accent/90 shadow-neo-sm hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all rounded-lg py-3 px-6 text-sm sm:text-base min-h-[44px] touch-target"
             >
               {isLoading ? (
                 <>
-                  <LoadingSpinner size={16} className="mr-2" />
-                  Processing...
+                  <LoadingSpinner size={16} className="mr-2 flex-shrink-0" />
+                  <span>Processing...</span>
                 </>
               ) : (
                 "Extract All Terms"

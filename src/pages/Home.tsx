@@ -29,42 +29,42 @@ const Home = () => {
       <div className="min-h-screen bg-[#fff6e5] flex flex-col">
         <Navbar />
         
-        <main className="container mx-auto px-4 py-8 flex-grow">
+        <main className="container mx-auto px-3 sm:px-4 lg:px-6 py-6 sm:py-8 flex-grow">
           {/* Hero Section */}
-          <section className="mb-20 py-10 md:py-16">
+          <section className="mb-16 sm:mb-20 py-8 sm:py-10 md:py-16">
             <div className="max-w-6xl mx-auto">
-              <div className="grid grid-cols-1 gap-12">
+              <div className="grid grid-cols-1 gap-8 sm:gap-12">
                 <div className="text-center">
-                  <div className="inline-flex items-center gap-3 mb-6 px-4 py-2 bg-white border-2 border-[#1a1a1a] shadow-neo-sm rounded-full">
-                    <Zap className="h-5 w-5 text-neo-accent" strokeWidth={2.5} />
-                    <span className="text-sm font-bold">100% FREE • No Paywalls • No Account Required</span>
+                  <div className="inline-flex items-center gap-2 sm:gap-3 mb-4 sm:mb-6 px-3 sm:px-4 py-1.5 sm:py-2 bg-white border-2 border-[#1a1a1a] shadow-neo-sm rounded-full">
+                    <Zap className="h-4 w-4 sm:h-5 sm:w-5 text-neo-accent" strokeWidth={2.5} />
+                    <span className="text-xs sm:text-sm font-bold">100% FREE • No Paywalls • No Account Required</span>
                   </div>
                   
-                  <h1 className="text-4xl sm:text-5xl md:text-7xl font-bold mb-8 leading-tight font-heading tracking-tight">
+                  <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-7xl font-bold mb-6 sm:mb-8 leading-tight font-heading tracking-tight">
                     Boost your <span className="text-[#FF5C00]">productivity</span> with DeepTerm
                   </h1>
                   
-                  <p className="text-lg md:text-xl text-gray-700 mb-10 max-w-3xl mx-auto">
+                  <p className="text-base sm:text-lg md:text-xl text-gray-700 mb-8 sm:mb-10 max-w-3xl mx-auto px-4">
                     Our AI-powered tools help you learn efficiently, create custom quizzes, extract organized notes, track progress, and maintain focus with our Pomodoro timer — all completely free.
                   </p>
                   
-                  <div className="flex flex-wrap gap-4 justify-center">
+                  <div className="flex flex-col sm:flex-row flex-wrap gap-3 sm:gap-4 justify-center">
                     <Link to="/dashboard">
-                      <Button size="lg" className="group h-12 md:h-14 text-base md:text-lg border-2 border-[#1a1a1a] bg-[#FFC225] text-[#1a1a1a] shadow-[4px_4px_0px_#1a1a1a]">
+                      <Button size="lg" className="group h-11 sm:h-12 md:h-14 text-sm sm:text-base md:text-lg border-2 border-[#1a1a1a] bg-[#FFC225] text-[#1a1a1a] shadow-[4px_4px_0px_#1a1a1a] w-full sm:w-auto">
                         <span>Dashboard</span>
-                        <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
+                        <ArrowRight className="ml-2 h-4 w-4 sm:h-5 sm:w-5 group-hover:translate-x-1 transition-transform" />
                       </Button>
                     </Link>
                     <Link to="/study">
-                      <Button size="lg" className="group h-12 md:h-14 text-base md:text-lg border-2 border-[#1a1a1a] bg-[#9b87f5] text-[#1a1a1a] shadow-[4px_4px_0px_#1a1a1a]">
+                      <Button size="lg" className="group h-11 sm:h-12 md:h-14 text-sm sm:text-base md:text-lg border-2 border-[#1a1a1a] bg-[#9b87f5] text-[#1a1a1a] shadow-[4px_4px_0px_#1a1a1a] w-full sm:w-auto">
                         <span>Study Center</span>
-                        <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
+                        <ArrowRight className="ml-2 h-4 w-4 sm:h-5 sm:w-5 group-hover:translate-x-1 transition-transform" />
                       </Button>
                     </Link>
                     <Link to="/extractor">
-                      <Button size="lg" className="group h-12 md:h-14 text-base md:text-lg border-2 border-[#1a1a1a] bg-white text-[#1a1a1a] shadow-[4px_4px_0px_#1a1a1a]">
+                      <Button size="lg" className="group h-11 sm:h-12 md:h-14 text-sm sm:text-base md:text-lg border-2 border-[#1a1a1a] bg-white text-[#1a1a1a] shadow-[4px_4px_0px_#1a1a1a] w-full sm:w-auto">
                         <span>Try Now</span>
-                        <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
+                        <ArrowRight className="ml-2 h-4 w-4 sm:h-5 sm:w-5 group-hover:translate-x-1 transition-transform" />
                       </Button>
                     </Link>
                   </div>
@@ -74,44 +74,44 @@ const Home = () => {
           </section>
           
           {/* Features Section */}
-          <section className="mb-24">
-            <div className="text-center mb-16">
-              <h2 className="text-3xl md:text-4xl font-bold mb-6 font-heading">Why Choose DeepTerm?</h2>
-              <div className="w-24 h-2 bg-neo-accent mx-auto rounded-full"></div>
+          <section className="mb-20 sm:mb-24">
+            <div className="text-center mb-12 sm:mb-16">
+              <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-4 sm:mb-6 font-heading">Why Choose DeepTerm?</h2>
+              <div className="w-16 sm:w-24 h-1.5 sm:h-2 bg-neo-accent mx-auto rounded-full"></div>
             </div>
             
-            <div className="grid md:grid-cols-3 gap-6 md:gap-8 max-w-6xl mx-auto">
-              <Card className="overflow-hidden border-2 border-[#1a1a1a] bg-white shadow-[6px_6px_0px_#1a1a1a] hover:shadow-[8px_8px_0px_#1a1a1a] hover:-translate-x-1 hover:-translate-y-1 transition-all duration-200">
-                <CardContent className="p-6 md:p-8 flex flex-col h-full">
-                  <div className="w-14 h-14 md:w-16 md:h-16 flex items-center justify-center mb-6 rounded-lg bg-[#ffead6] border-2 border-[#1a1a1a]">
-                    <Brain className="h-7 md:h-8 w-7 md:w-8 text-[#FF5C00]" />
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 md:gap-8 max-w-6xl mx-auto">
+              <Card className="overflow-hidden border-2 border-[#1a1a1a] bg-white shadow-[4px_4px_0px_#1a1a1a] sm:shadow-[6px_6px_0px_#1a1a1a] hover:shadow-[6px_6px_0px_#1a1a1a] sm:hover:shadow-[8px_8px_0px_#1a1a1a] hover:-translate-x-1 hover:-translate-y-1 transition-all duration-200">
+                <CardContent className="p-4 sm:p-6 md:p-8 flex flex-col h-full">
+                  <div className="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 flex items-center justify-center mb-4 sm:mb-6 rounded-lg bg-[#ffead6] border-2 border-[#1a1a1a]">
+                    <Brain className="h-6 w-6 sm:h-7 sm:w-7 md:h-8 md:w-8 text-[#FF5C00]" />
                   </div>
-                  <h3 className="text-xl md:text-2xl font-bold mb-4 font-heading">AI-Powered Tools</h3>
-                  <p className="text-gray-700 text-base md:text-lg">
+                  <h3 className="text-lg sm:text-xl md:text-2xl font-bold mb-3 sm:mb-4 font-heading">AI-Powered Tools</h3>
+                  <p className="text-gray-700 text-sm sm:text-base md:text-lg">
                     Advanced algorithms that understand context and create interactive learning materials from your documents and content.
                   </p>
                 </CardContent>
               </Card>
               
-              <Card className="overflow-hidden border-2 border-[#1a1a1a] bg-white shadow-[6px_6px_0px_#1a1a1a] hover:shadow-[8px_8px_0px_#1a1a1a] hover:-translate-x-1 hover:-translate-y-1 transition-all duration-200">
-                <CardContent className="p-6 md:p-8 flex flex-col h-full">
-                  <div className="w-14 h-14 md:w-16 md:h-16 flex items-center justify-center mb-6 rounded-lg bg-[#e6f1ff] border-2 border-[#1a1a1a]">
-                    <Target className="h-7 md:h-8 w-7 md:w-8 text-[#2563eb]" />
+              <Card className="overflow-hidden border-2 border-[#1a1a1a] bg-white shadow-[4px_4px_0px_#1a1a1a] sm:shadow-[6px_6px_0px_#1a1a1a] hover:shadow-[6px_6px_0px_#1a1a1a] sm:hover:shadow-[8px_8px_0px_#1a1a1a] hover:-translate-x-1 hover:-translate-y-1 transition-all duration-200">
+                <CardContent className="p-4 sm:p-6 md:p-8 flex flex-col h-full">
+                  <div className="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 flex items-center justify-center mb-4 sm:mb-6 rounded-lg bg-[#e6f1ff] border-2 border-[#1a1a1a]">
+                    <Target className="h-6 w-6 sm:h-7 sm:w-7 md:h-8 md:w-8 text-[#2563eb]" />
                   </div>
-                  <h3 className="text-xl md:text-2xl font-bold mb-4 font-heading">Focus Enhancement</h3>
-                  <p className="text-gray-700 text-base md:text-lg">
+                  <h3 className="text-lg sm:text-xl md:text-2xl font-bold mb-3 sm:mb-4 font-heading">Focus Enhancement</h3>
+                  <p className="text-gray-700 text-sm sm:text-base md:text-lg">
                     Structured methods to improve concentration and productivity with our Pomodoro timer featuring day streaks and task management.
                   </p>
                 </CardContent>
               </Card>
               
-              <Card className="overflow-hidden border-2 border-[#1a1a1a] bg-white shadow-[6px_6px_0px_#1a1a1a] hover:shadow-[8px_8px_0px_#1a1a1a] hover:-translate-x-1 hover:-translate-y-1 transition-all duration-200">
-                <CardContent className="p-6 md:p-8 flex flex-col h-full">
-                  <div className="w-14 h-14 md:w-16 md:h-16 flex items-center justify-center mb-6 rounded-lg bg-[#FDE1D3] border-2 border-[#1a1a1a]">
-                    <Trophy className="h-7 md:h-8 w-7 md:w-8 text-[#FF5C00]" />
+              <Card className="overflow-hidden border-2 border-[#1a1a1a] bg-white shadow-[4px_4px_0px_#1a1a1a] sm:shadow-[6px_6px_0px_#1a1a1a] hover:shadow-[6px_6px_0px_#1a1a1a] sm:hover:shadow-[8px_8px_0px_#1a1a1a] hover:-translate-x-1 hover:-translate-y-1 transition-all duration-200 sm:col-span-2 lg:col-span-1">
+                <CardContent className="p-4 sm:p-6 md:p-8 flex flex-col h-full">
+                  <div className="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 flex items-center justify-center mb-4 sm:mb-6 rounded-lg bg-[#FDE1D3] border-2 border-[#1a1a1a]">
+                    <Trophy className="h-6 w-6 sm:h-7 sm:w-7 md:h-8 md:w-8 text-[#FF5C00]" />
                   </div>
-                  <h3 className="text-xl md:text-2xl font-bold mb-4 font-heading">Gamified Learning</h3>
-                  <p className="text-gray-700 text-base md:text-lg">
+                  <h3 className="text-lg sm:text-xl md:text-2xl font-bold mb-3 sm:mb-4 font-heading">Gamified Learning</h3>
+                  <p className="text-gray-700 text-sm sm:text-base md:text-lg">
                     Track achievements, gain experience levels, and maintain learning streaks with our gamified study tools to stay motivated.
                   </p>
                 </CardContent>
@@ -120,48 +120,48 @@ const Home = () => {
           </section>
           
           {/* Tools Section */}
-          <section className="mb-20">
-            <h2 className="text-3xl md:text-4xl font-bold mb-16 text-center font-heading">Our Productivity Suite</h2>
+          <section className="mb-16 sm:mb-20">
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-12 sm:mb-16 text-center font-heading">Our Productivity Suite</h2>
             
-            <div className="grid md:grid-cols-2 gap-8 md:gap-10 max-w-5xl mx-auto">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 md:gap-10 max-w-5xl mx-auto">
               {/* Dashboard Card */}
-              <Card className="overflow-hidden border-3 border-[#1a1a1a] bg-white shadow-[8px_8px_0px_#1a1a1a] hover:shadow-[10px_10px_0px_#1a1a1a] hover:-translate-x-1 hover:-translate-y-1 transition-all duration-300">
+              <Card className="overflow-hidden border-2 sm:border-3 border-[#1a1a1a] bg-white shadow-[6px_6px_0px_#1a1a1a] sm:shadow-[8px_8px_0px_#1a1a1a] hover:shadow-[8px_8px_0px_#1a1a1a] sm:hover:shadow-[10px_10px_0px_#1a1a1a] hover:-translate-x-1 hover:-translate-y-1 transition-all duration-300">
                 <CardContent className="p-0">
-                  <div className="bg-[#FFC225] p-5 md:p-6">
+                  <div className="bg-[#FFC225] p-4 sm:p-5 md:p-6">
                     <div className="flex justify-between items-center">
-                      <h3 className="text-xl md:text-2xl font-bold text-[#1a1a1a]">Study Dashboard</h3>
-                      <div className="bg-white p-2 rounded-md border-2 border-[#1a1a1a]">
-                        <LineChart className="h-6 w-6 text-[#1a1a1a]" />
+                      <h3 className="text-lg sm:text-xl md:text-2xl font-bold text-[#1a1a1a]">Study Dashboard</h3>
+                      <div className="bg-white p-1.5 sm:p-2 rounded-md border-2 border-[#1a1a1a]">
+                        <LineChart className="h-5 w-5 sm:h-6 sm:w-6 text-[#1a1a1a]" />
                       </div>
                     </div>
                   </div>
                   
-                  <div className="p-5 md:p-6 bg-white flex flex-col h-[360px]">
-                    <div className="mb-5 md:mb-6 p-3 bg-[#fffbf2] rounded-lg border-2 border-[#1a1a1a]">
-                      <p className="text-[#1a1a1a] font-medium">
+                  <div className="p-4 sm:p-5 md:p-6 bg-white flex flex-col min-h-[320px] sm:min-h-[360px]">
+                    <div className="mb-4 sm:mb-5 md:mb-6 p-2.5 sm:p-3 bg-[#fffbf2] rounded-lg border-2 border-[#1a1a1a]">
+                      <p className="text-[#1a1a1a] font-medium text-sm sm:text-base">
                         <span className="font-bold">NEW:</span> Achievement tracking & gamified learning experience
                       </p>
                     </div>
                   
-                    <ul className="space-y-3 md:space-y-4 mb-6 md:mb-8">
-                      <li className="flex items-start gap-3">
-                        <CheckCircle className="h-5 md:h-6 w-5 md:w-6 text-[#FFC225] flex-shrink-0 mt-0.5" />
-                        <span className="text-base md:text-lg">Track daily study time and achievements</span>
+                    <ul className="space-y-2.5 sm:space-y-3 md:space-y-4 mb-5 sm:mb-6 md:mb-8">
+                      <li className="flex items-start gap-2.5 sm:gap-3">
+                        <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6 text-[#FFC225] flex-shrink-0 mt-0.5" />
+                        <span className="text-sm sm:text-base md:text-lg">Track daily study time and achievements</span>
                       </li>
-                      <li className="flex items-start gap-3">
-                        <CheckCircle className="h-5 md:h-6 w-5 md:w-6 text-[#FFC225] flex-shrink-0 mt-0.5" />
-                        <span className="text-base md:text-lg">Gain experience levels as you learn</span>
+                      <li className="flex items-start gap-2.5 sm:gap-3">
+                        <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6 text-[#FFC225] flex-shrink-0 mt-0.5" />
+                        <span className="text-sm sm:text-base md:text-lg">Gain experience levels as you learn</span>
                       </li>
-                      <li className="flex items-start gap-3">
-                        <CheckCircle className="h-5 md:h-6 w-5 md:w-6 text-[#FFC225] flex-shrink-0 mt-0.5" />
-                        <span className="text-base md:text-lg">Monitor your progress with visual charts</span>
+                      <li className="flex items-start gap-2.5 sm:gap-3">
+                        <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6 text-[#FFC225] flex-shrink-0 mt-0.5" />
+                        <span className="text-sm sm:text-base md:text-lg">Monitor your progress with visual charts</span>
                       </li>
                     </ul>
                     
                     <div className="mt-auto">
                       <Link to="/dashboard" className="w-full block">
-                        <button className="w-full text-base md:text-xl py-3 md:py-4 bg-[#FFC225] text-[#1a1a1a] border-2 border-[#1a1a1a] shadow-[4px_4px_0px_#1a1a1a] hover:shadow-[2px_2px_0px_#1a1a1a] hover:translate-y-[2px] hover:translate-x-[2px] transition-all rounded-md flex items-center justify-center">
-                          <ExternalLink className="mr-2 h-5 md:h-6 w-5 md:w-6" />
+                        <button className="w-full text-sm sm:text-base md:text-xl py-2.5 sm:py-3 md:py-4 bg-[#FFC225] text-[#1a1a1a] border-2 border-[#1a1a1a] shadow-[4px_4px_0px_#1a1a1a] hover:shadow-[2px_2px_0px_#1a1a1a] hover:translate-y-[2px] hover:translate-x-[2px] transition-all rounded-md flex items-center justify-center touch-target">
+                          <ExternalLink className="mr-1.5 sm:mr-2 h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6" />
                           Open Dashboard
                         </button>
                       </Link>
@@ -171,43 +171,43 @@ const Home = () => {
               </Card>
               
               {/* Study Center Card */}
-              <Card className="overflow-hidden border-3 border-[#1a1a1a] bg-white shadow-[8px_8px_0px_#1a1a1a] hover:shadow-[10px_10px_0px_#1a1a1a] hover:-translate-x-1 hover:-translate-y-1 transition-all duration-300">
+              <Card className="overflow-hidden border-2 sm:border-3 border-[#1a1a1a] bg-white shadow-[6px_6px_0px_#1a1a1a] sm:shadow-[8px_8px_0px_#1a1a1a] hover:shadow-[8px_8px_0px_#1a1a1a] sm:hover:shadow-[10px_10px_0px_#1a1a1a] hover:-translate-x-1 hover:-translate-y-1 transition-all duration-300">
                 <CardContent className="p-0">
-                  <div className="bg-[#9b87f5] p-5 md:p-6">
+                  <div className="bg-[#9b87f5] p-4 sm:p-5 md:p-6">
                     <div className="flex justify-between items-center">
-                      <h3 className="text-xl md:text-2xl font-bold text-[#1a1a1a]">Study Center</h3>
-                      <div className="bg-white p-2 rounded-md border-2 border-[#1a1a1a]">
-                        <GraduationCap className="h-6 w-6 text-[#1a1a1a]" />
+                      <h3 className="text-lg sm:text-xl md:text-2xl font-bold text-[#1a1a1a]">Study Center</h3>
+                      <div className="bg-white p-1.5 sm:p-2 rounded-md border-2 border-[#1a1a1a]">
+                        <GraduationCap className="h-5 w-5 sm:h-6 sm:w-6 text-[#1a1a1a]" />
                       </div>
                     </div>
                   </div>
                   
-                  <div className="p-5 md:p-6 bg-white flex flex-col h-[360px]">
-                    <div className="mb-5 md:mb-6 p-3 bg-[#f5f2ff] rounded-lg border-2 border-[#1a1a1a]">
-                      <p className="text-[#1a1a1a] font-medium">
+                  <div className="p-4 sm:p-5 md:p-6 bg-white flex flex-col min-h-[320px] sm:min-h-[360px]">
+                    <div className="mb-4 sm:mb-5 md:mb-6 p-2.5 sm:p-3 bg-[#f5f2ff] rounded-lg border-2 border-[#1a1a1a]">
+                      <p className="text-[#1a1a1a] font-medium text-sm sm:text-base">
                         <span className="font-bold">NEW:</span> Flashcards & custom quiz question types
                       </p>
                     </div>
                   
-                    <ul className="space-y-3 md:space-y-4 mb-6 md:mb-8">
-                      <li className="flex items-start gap-3">
-                        <CheckCircle className="h-5 md:h-6 w-5 md:w-6 text-[#9b87f5] flex-shrink-0 mt-0.5" />
-                        <span className="text-base md:text-lg">Create interactive flashcards for studying</span>
+                    <ul className="space-y-2.5 sm:space-y-3 md:space-y-4 mb-5 sm:mb-6 md:mb-8">
+                      <li className="flex items-start gap-2.5 sm:gap-3">
+                        <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6 text-[#9b87f5] flex-shrink-0 mt-0.5" />
+                        <span className="text-sm sm:text-base md:text-lg">Create interactive flashcards for studying</span>
                       </li>
-                      <li className="flex items-start gap-3">
-                        <CheckCircle className="h-5 md:h-6 w-5 md:w-6 text-[#9b87f5] flex-shrink-0 mt-0.5" />
-                        <span className="text-base md:text-lg">Generate custom quizzes from your materials</span>
+                      <li className="flex items-start gap-2.5 sm:gap-3">
+                        <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6 text-[#9b87f5] flex-shrink-0 mt-0.5" />
+                        <span className="text-sm sm:text-base md:text-lg">Generate custom quizzes from your materials</span>
                       </li>
-                      <li className="flex items-start gap-3">
-                        <CheckCircle className="h-5 md:h-6 w-5 md:w-6 text-[#9b87f5] flex-shrink-0 mt-0.5" />
-                        <span className="text-base md:text-lg">Save and revisit your learning resources</span>
+                      <li className="flex items-start gap-2.5 sm:gap-3">
+                        <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6 text-[#9b87f5] flex-shrink-0 mt-0.5" />
+                        <span className="text-sm sm:text-base md:text-lg">Save and revisit your learning resources</span>
                       </li>
                     </ul>
                     
                     <div className="mt-auto">
                       <Link to="/study" className="w-full block">
-                        <button className="w-full text-base md:text-xl py-3 md:py-4 bg-[#9b87f5] text-[#1a1a1a] border-2 border-[#1a1a1a] shadow-[4px_4px_0px_#1a1a1a] hover:shadow-[2px_2px_0px_#1a1a1a] hover:translate-y-[2px] hover:translate-x-[2px] transition-all rounded-md flex items-center justify-center">
-                          <ExternalLink className="mr-2 h-5 md:h-6 w-5 md:w-6" />
+                        <button className="w-full text-sm sm:text-base md:text-xl py-2.5 sm:py-3 md:py-4 bg-[#9b87f5] text-[#1a1a1a] border-2 border-[#1a1a1a] shadow-[4px_4px_0px_#1a1a1a] hover:shadow-[2px_2px_0px_#1a1a1a] hover:translate-y-[2px] hover:translate-x-[2px] transition-all rounded-md flex items-center justify-center touch-target">
+                          <ExternalLink className="mr-1.5 sm:mr-2 h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6" />
                           Study Now
                         </button>
                       </Link>

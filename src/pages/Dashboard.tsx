@@ -478,24 +478,24 @@ const Dashboard = () => {
         </Dialog>
 
         {/* Neobrutalist Player Stats */}
-        <div className="bg-[#9b87f5] border-4 border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] mb-6">
-          <div className="container mx-auto px-4 py-6 relative"> {/* Added relative positioning */}
+        <div className="bg-[#9b87f5] border-3 sm:border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] sm:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] mb-4 sm:mb-6">
+          <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-6 relative">
             {/* Settings Button - Top Right */}
             <Button 
               variant="outline"
               size="icon"
               onClick={() => setShowSettingsDialog(true)}
-              className="absolute top-4 right-4 bg-white text-black neo-border shadow-neo-sm hover:shadow-none hover:translate-x-[1px] hover:translate-y-[1px] transition-all"
+              className="absolute top-3 right-3 sm:top-4 sm:right-4 bg-white text-black neo-border shadow-neo-sm hover:shadow-none hover:translate-x-[1px] hover:translate-y-[1px] transition-all h-8 w-8 sm:h-10 sm:w-10"
               aria-label="Settings"
             >
-              <Settings className="h-5 w-5" />
+              <Settings className="h-4 w-4 sm:h-5 sm:w-5" />
             </Button>
             
-            <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-3 sm:gap-4">
               {/* Player info and welcome */}
-              <div className="flex flex-col md:flex-row md:items-start gap-4">
+              <div className="flex flex-col sm:flex-row sm:items-start gap-3 sm:gap-4">
                 {/* Profile Picture Area */}
-                <div className="relative group h-24 w-24 md:h-32 md:w-32 rounded-full border-4 border-black bg-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] flex items-center justify-center text-4xl md:text-5xl font-black overflow-hidden">
+                <div className="relative group h-20 w-20 sm:h-24 sm:w-24 md:h-32 md:w-32 rounded-full border-3 sm:border-4 border-black bg-white shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] sm:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] flex items-center justify-center text-3xl sm:text-4xl md:text-5xl font-black overflow-hidden mx-auto sm:mx-0">
                   {userProfile.profilePicture ? (
                     <img 
                       src={userProfile.profilePicture} 
@@ -511,7 +511,7 @@ const Dashboard = () => {
                     className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity duration-200 cursor-pointer rounded-full"
                     aria-label="Upload profile picture"
                   >
-                    <Camera className="h-8 w-8" />
+                    <Camera className="h-6 w-6 sm:h-8 sm:w-8" />
                   </button>
                   <input 
                     type="file" 
@@ -523,19 +523,19 @@ const Dashboard = () => {
                 </div>
                 
                 {/* Rest of the player info */}
-                <div className="flex-1">
-                  <h1 className="text-3xl md:text-4xl font-black tracking-tight text-white mb-2">
+                <div className="flex-1 text-center sm:text-left">
+                  <h1 className="text-2xl sm:text-3xl md:text-4xl font-black tracking-tight text-white mb-2">
                     {getTimeBasedGreeting()}, <span className="text-black">{userProfile.name || 'USER'}</span>!
                   </h1>
                   
-                  <div className="flex flex-wrap gap-3 my-2">
-                    <span className="inline-block bg-[#FFC225] text-black font-bold px-4 py-2 border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                  <div className="flex flex-wrap gap-2 sm:gap-3 my-2 justify-center sm:justify-start">
+                    <span className="inline-block bg-[#FFC225] text-black font-bold px-3 sm:px-4 py-1.5 sm:py-2 border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] text-sm sm:text-base">
                       LEVEL {userProfile.level}
                     </span>
-                    <span className="inline-block bg-white text-black font-bold px-4 py-2 border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                    <span className="inline-block bg-white text-black font-bold px-3 sm:px-4 py-1.5 sm:py-2 border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] text-sm sm:text-base">
                       {currentLevel.title}
                     </span>
-                    <span className="inline-block bg-[#FF5C00] text-white font-bold px-4 py-2 border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                    <span className="inline-block bg-[#FF5C00] text-white font-bold px-3 sm:px-4 py-1.5 sm:py-2 border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] text-sm sm:text-base">
                       {userProfile.xp} XP
                     </span>
                   </div>
@@ -545,7 +545,7 @@ const Dashboard = () => {
                       <span>NEXT LEVEL: {levelProgress.current}/{levelProgress.required} XP</span>
                       <span>{levelProgress.percentage}%</span>
                     </div>
-                    <div className="w-full bg-gray-200 h-6 border-2 border-black relative overflow-hidden">
+                    <div className="w-full bg-gray-200 h-4 sm:h-6 border-2 border-black relative overflow-hidden">
                       {/* Main XP progress bar */}
                       <div 
                         className="absolute top-0 left-0 h-full bg-[#20C997] flex items-center justify-end pr-1 transition-all duration-500" 
@@ -593,10 +593,10 @@ const Dashboard = () => {
               </div>
               
               {/* Stats row */}
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 mt-2">
-                <div className="bg-white border-2 border-black p-3 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transform transition hover:-translate-y-1">
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3 mt-2">
+                <div className="bg-white border-2 border-black p-2 sm:p-3 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] sm:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transform transition hover:-translate-y-1">
                   <div className="text-xs font-black uppercase">Today's Study</div>
-                  <div className="text-2xl md:text-3xl font-black">{formatDuration(totalStudyTimeToday)}</div>
+                  <div className="text-xl sm:text-2xl md:text-3xl font-black">{formatDuration(totalStudyTimeToday)}</div>
                   {totalStudyTimeToday > 0 && (
                     <div className="mt-2 flex justify-between items-center text-xs">
                       <span>Minutes earned:</span>
@@ -605,19 +605,19 @@ const Dashboard = () => {
                   )}
                 </div>
                 
-                <div className="bg-[#FFC225] border-2 border-black p-3 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transform transition hover:-translate-y-1">
+                <div className="bg-[#FFC225] border-2 border-black p-2 sm:p-3 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] sm:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transform transition hover:-translate-y-1">
                   <div className="text-xs font-black uppercase">Current Streak</div>
-                  <div className="text-2xl md:text-3xl font-black">{studyStreak} days</div>
+                  <div className="text-xl sm:text-2xl md:text-3xl font-black">{studyStreak} days</div>
                 </div>
                 
-                <div className="bg-[#20C997] border-2 border-black p-3 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transform transition hover:-translate-y-1">
+                <div className="bg-[#20C997] border-2 border-black p-2 sm:p-3 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] sm:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transform transition hover:-translate-y-1">
                   <div className="text-xs font-black uppercase">Best Streak</div>
-                  <div className="text-2xl md:text-3xl font-black">{userProfile.bestStreak} days</div>
+                  <div className="text-xl sm:text-2xl md:text-3xl font-black">{userProfile.bestStreak} days</div>
                 </div>
                 
-                <div className="bg-[#FF5C00] border-2 border-black p-3 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transform transition hover:-translate-y-1">
+                <div className="bg-[#FF5C00] border-2 border-black p-2 sm:p-3 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] sm:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transform transition hover:-translate-y-1">
                   <div className="text-xs font-black uppercase">Sessions</div>
-                  <div className="text-2xl md:text-3xl font-black">{studySessions.length}</div>
+                  <div className="text-xl sm:text-2xl md:text-3xl font-black">{studySessions.length}</div>
                 </div>
               </div>
             </div>
@@ -625,8 +625,8 @@ const Dashboard = () => {
         </div>
 
         {/* Main dashboard content */}
-        <div className="container mx-auto px-4 mt-6">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="container mx-auto px-3 sm:px-4 mt-4 sm:mt-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
             
             {/* Left column - Recent Achievements */}
             <div className="lg:col-span-1 space-y-6">

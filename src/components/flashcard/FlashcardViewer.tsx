@@ -226,8 +226,8 @@ const FlashcardViewer = () => {
 
   if (!activeDeck || !currentCard) {
     return (
-      <div className="text-center py-12">
-        <p className="text-xl font-medium">No flashcard deck selected</p>
+      <div className="text-center py-8 sm:py-12 px-3 sm:px-4">
+        <p className="text-lg sm:text-xl font-medium text-neo-black">No flashcard deck selected</p>
       </div>
     );
   }
@@ -239,25 +239,25 @@ const FlashcardViewer = () => {
   // If completed, show congratulations screen
   if (completed && totalCards > 0) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] py-8">
-        <div className="w-full max-w-xl neo-border border-4 border-black bg-[#9b87f5] shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] p-8 text-center">
-          <h2 className="text-3xl font-black text-white mb-6">🎉 Congratulations!</h2>
-          <p className="text-xl text-white mb-10">You've completed all cards in this deck.</p>
+      <div className="flex flex-col items-center justify-center min-h-[60vh] py-4 sm:py-8 px-3 sm:px-4">
+        <div className="w-full max-w-md sm:max-w-xl neo-border border-2 sm:border-4 border-black bg-[#9b87f5] shadow-neo sm:shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] p-4 sm:p-8 text-center rounded-lg">
+          <h2 className="text-xl sm:text-2xl lg:text-3xl font-black text-white mb-4 sm:mb-6">🎉 Congratulations!</h2>
+          <p className="text-base sm:text-lg lg:text-xl text-white mb-6 sm:mb-10">You've completed all cards in this deck.</p>
           
-          <div className="flex flex-col sm:flex-row gap-4 justify-center mt-4">
+          <div className="flex flex-col gap-3 sm:flex-row sm:gap-4 justify-center mt-4">
             <Button 
               onClick={handleRestartDeck} 
-              className="bg-white text-[#1A1F2C] neo-border border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all flex gap-2"
+              className="bg-white text-[#1A1F2C] neo-border border-2 border-black shadow-neo-sm sm:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all flex gap-2 items-center justify-center min-h-[44px] touch-target text-sm sm:text-base"
             >
-              <RefreshCw className="h-4 w-4" />
-              Study Again
+              <RefreshCw className="h-4 w-4 flex-shrink-0" />
+              <span>Study Again</span>
             </Button>            
             <Button 
-              onClick={handleBackToStudyCenter} // Use the new function to handle navigation
-              className="bg-[#f7e9d3] text-[#1A1F2C] neo-border border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all flex gap-2"
+              onClick={handleBackToStudyCenter}
+              className="bg-[#f7e9d3] text-[#1A1F2C] neo-border border-2 border-black shadow-neo-sm sm:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all flex gap-2 items-center justify-center min-h-[44px] touch-target text-sm sm:text-base"
             >
-              <Home className="h-4 w-4" />
-              Back to Study Center
+              <Home className="h-4 w-4 flex-shrink-0" />
+              <span>Back to Study Center</span>
             </Button>
           </div>
         </div>
@@ -268,26 +268,26 @@ const FlashcardViewer = () => {
   const viewerContent = (
     <>
       {/* Progress bar and counters */}
-      <div className={`w-full max-w-xl mb-2 ${fullscreenMode ? 'px-4' : ''}`}>
-        <div className="flex justify-between items-center mb-2">
+      <div className={`w-full max-w-md sm:max-w-xl mb-2 ${fullscreenMode ? 'px-3 sm:px-4' : ''}`}>
+        <div className="flex justify-between items-center mb-2 gap-2">
           {!fullscreenMode && (
-            <h2 className="text-xl font-bold text-[#1A1F2C] truncate max-w-[60%]">{activeDeck.title}</h2>
+            <h2 className="text-base sm:text-lg lg:text-xl font-bold text-[#1A1F2C] truncate flex-1 min-w-0">{activeDeck.title}</h2>
           )}
-          <span className={`text-[#6B7280] bg-white px-3 py-1 rounded-md neo-border shadow-neo-sm ${fullscreenMode ? 'ml-auto' : ''}`}>
+          <span className={`text-neo-muted bg-white px-2 sm:px-3 py-1 rounded-md neo-border shadow-neo-sm text-xs sm:text-sm font-medium flex-shrink-0 ${fullscreenMode ? 'ml-auto' : ''}`}>
             {currentCardIndex + 1}/{totalCards}
           </span>
         </div>
         <Progress 
           value={progressPercentage} 
-          className="h-2 bg-[#f0f0f0]" 
-          indicatorClassName="bg-[#9b87f5]" 
+          className="h-1.5 sm:h-2 bg-[#f0f0f0] rounded-full" 
+          indicatorClassName="bg-[#9b87f5] rounded-full" 
         />
       </div>
 
       {/* Main flashcard */}
       <div 
         ref={cardRef}
-        className={`w-full max-w-xl aspect-[3/2] my-4 cursor-pointer perspective-1000 relative ${fullscreenMode ? 'scale-105' : ''}`}
+        className={`w-full max-w-xs sm:max-w-md lg:max-w-xl aspect-[4/3] sm:aspect-[3/2] my-3 sm:my-4 cursor-pointer perspective-1000 relative touch-manipulation ${fullscreenMode ? 'scale-100 sm:scale-105' : ''}`}
         onClick={handleFlipCard}
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
@@ -297,20 +297,18 @@ const FlashcardViewer = () => {
           className={`w-full h-full flip-card-inner ${flipped ? 'flipped' : ''}`}
         >
           {/* Front of card */}
-          <div className="flip-card-front bg-white neo-border border-4 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] p-6 flex flex-col justify-center">
+          <div className="flip-card-front bg-white neo-border border-2 sm:border-4 border-black shadow-neo sm:shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] p-3 sm:p-6 flex flex-col justify-center rounded-lg">
             <div className="text-center w-full h-full flex items-center justify-center">
-              {/* Removed fixed font size classes */}
-              <div className="font-bold text-[#1A1F2C] break-words hyphens-auto px-2 w-full h-full flex items-center justify-center">
+              <div className="font-bold text-[#1A1F2C] break-words hyphens-auto px-1 sm:px-2 w-full h-full flex items-center justify-center">
                 <div ref={frontContentRef} className="card-content-scaling">{cardContent.front}</div>
               </div>
             </div>
           </div>
           
           {/* Back of card */}
-          <div className="flip-card-back bg-[#F9F6FF] neo-border border-4 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] p-6 flex flex-col justify-center">
+          <div className="flip-card-back bg-[#F9F6FF] neo-border border-2 sm:border-4 border-black shadow-neo sm:shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] p-3 sm:p-6 flex flex-col justify-center rounded-lg">
             <div className="text-center w-full h-full flex items-center justify-center">
-              {/* Removed fixed font size classes */}
-              <div className="font-medium text-[#1A1F2C] py-2 px-4 rounded-md break-words hyphens-auto flex items-center justify-center h-full w-full">
+              <div className="font-medium text-[#1A1F2C] py-1 sm:py-2 px-2 sm:px-4 rounded-md break-words hyphens-auto flex items-center justify-center h-full w-full">
                 <div ref={backContentRef} className="card-content-scaling">{cardContent.back}</div>
               </div>
             </div>
@@ -318,11 +316,13 @@ const FlashcardViewer = () => {
         </div>
       </div>
         {/* Improved navigation controls */}
-      <div className="w-full max-w-xl mt-6">
+      <div className="w-full max-w-xs sm:max-w-md lg:max-w-xl mt-4 sm:mt-6">
         {/* Card flip indicator */}
-        <div className="flex justify-center mb-4">
-          <div className="text-sm bg-[#f9f6ff] px-4 py-1 rounded-md border border-[#9b87f5] text-[#1A1F2C]">
-            {flipped ? backLabel : frontLabel} • Tap card to flip • Swipe to navigate
+        <div className="flex justify-center mb-3 sm:mb-4">
+          <div className="text-xs sm:text-sm bg-[#f9f6ff] px-2 sm:px-4 py-1 rounded-md border border-[#9b87f5] text-[#1A1F2C] text-center">
+            <span className="font-medium">{flipped ? backLabel : frontLabel}</span>
+            <span className="hidden sm:inline"> • Tap card to flip • Swipe to navigate</span>
+            <span className="sm:hidden"> • Tap to flip</span>
           </div>
         </div>
         
@@ -331,11 +331,11 @@ const FlashcardViewer = () => {
           <div className="flex justify-start">
             <Button
               onClick={handlePrevCard}
-              className="bg-white neo-border shadow-neo-sm hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all text-[#1A1F2C] flex items-center gap-1 p-2 sm:p-0"
+              className="bg-white neo-border shadow-neo-sm hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all text-[#1A1F2C] flex items-center gap-1 px-2 sm:px-4 py-2 min-h-[44px] touch-target text-xs sm:text-sm"
               title="Previous Card (←)"
-              size="default"
+              size="sm"
             >
-              <ChevronLeft className="h-5 w-5 sm:h-4 sm:w-4" />
+              <ChevronLeft className="h-4 w-4 flex-shrink-0" />
               <span className="hidden sm:inline">Previous</span>
             </Button>
           </div>
@@ -344,51 +344,51 @@ const FlashcardViewer = () => {
             <Button
               onClick={() => setFlipped(!flipped)}
               variant="outline"
-              className="bg-white neo-border shadow-neo-sm hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all w-full p-2 sm:p-0"
+              className="bg-white neo-border shadow-neo-sm hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all w-full px-2 sm:px-4 py-2 min-h-[44px] touch-target text-xs sm:text-sm"
               title="Flip Card (Space)"
-              size="default" // Keep default size for height consistency, adjust padding
+              size="sm"
             >
-              <RotateCcw className="h-5 w-5 sm:h-4 sm:w-4 sm:mr-1" />
-              <span className="hidden sm:inline">Flip</span>
+              <RotateCcw className="h-4 w-4 flex-shrink-0" />
+              <span className="hidden sm:inline sm:ml-1">Flip</span>
             </Button>
           </div>
           
           <div className="flex justify-end">
             <Button
               onClick={handleNextCard}
-              className={`neo-border shadow-neo-sm hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all flex items-center gap-1 p-2 sm:p-0
+              className={`neo-border shadow-neo-sm hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all flex items-center gap-1 px-2 sm:px-4 py-2 min-h-[44px] touch-target text-xs sm:text-sm
                 ${currentCardIndex === totalCards - 1 ? "bg-[#FFC225] text-[#1A1F2C]" : "bg-[#9b87f5] text-white"}`}
-
               title={currentCardIndex === totalCards - 1 ? "Complete Deck (→)" : "Next Card (→)"}
-              size="default"
+              size="sm"
             >
               <span className="hidden sm:inline">{currentCardIndex === totalCards - 1 ? "Complete" : "Next"}</span>
-              <ChevronRight className="h-5 w-5 sm:h-4 sm:w-4" />
+              <span className="sm:hidden">{currentCardIndex === totalCards - 1 ? "✓" : "→"}</span>
+              <ChevronRight className="h-4 w-4 flex-shrink-0 sm:hidden" />
             </Button>
           </div>
         </div>
         
         {/* Additional controls */}
-        <div className="flex justify-center mt-4 gap-4">
+        <div className="flex justify-center mt-3 sm:mt-4 gap-2 sm:gap-4 flex-wrap">
           <Button
             onClick={handleShuffleCards}
             variant="outline"
-            className="bg-white neo-border shadow-neo-sm hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all"
+            className="bg-white neo-border shadow-neo-sm hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all min-h-[36px] touch-target text-xs sm:text-sm px-2 sm:px-3"
             title="Shuffle Cards"
             size="sm"
           >
-            <Shuffle className="h-4 w-4 mr-1" />
+            <Shuffle className="h-3 w-3 sm:h-4 sm:w-4 mr-1 flex-shrink-0" />
             <span>Shuffle</span>
           </Button>
           
           <Button
             onClick={handleRestartDeck}
             variant="outline"
-            className="bg-white neo-border shadow-neo-sm hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all"
+            className="bg-white neo-border shadow-neo-sm hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all min-h-[36px] touch-target text-xs sm:text-sm px-2 sm:px-3"
             title="Restart Deck"
             size="sm"
           >
-            <RefreshCw className="h-4 w-4 mr-1" />
+            <RefreshCw className="h-3 w-3 sm:h-4 sm:w-4 mr-1 flex-shrink-0" />
             <span>Restart</span>
           </Button>
           
@@ -396,12 +396,13 @@ const FlashcardViewer = () => {
           <Button
             onClick={handleBackToStudyCenter}
             variant="outline"
-            className="bg-white neo-border shadow-neo-sm hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all"
+            className="bg-white neo-border shadow-neo-sm hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all min-h-[36px] touch-target text-xs sm:text-sm px-2 sm:px-3"
             title="Return to Study Center"
             size="sm"
           >
-            <Home className="h-4 w-4 mr-1" />
-            <span>Study Center</span>
+            <Home className="h-3 w-3 sm:h-4 sm:w-4 mr-1 flex-shrink-0" />
+            <span className="hidden sm:inline">Study Center</span>
+            <span className="sm:hidden">Center</span>
           </Button>
         </div>
       </div>
@@ -410,16 +411,17 @@ const FlashcardViewer = () => {
       <Button
         onClick={() => setFullscreenMode(!fullscreenMode)}
         variant="outline" 
-        className="mt-6 mx-auto block bg-white neo-border shadow-neo-sm hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all"
+        className="mt-4 sm:mt-6 mx-auto block bg-white neo-border shadow-neo-sm hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all min-h-[36px] touch-target text-xs sm:text-sm px-3 sm:px-4"
         size="sm"
       >
-        {fullscreenMode ? "Exit Focus Mode" : "Enter Focus Mode"}
+        <span className="hidden sm:inline">{fullscreenMode ? "Exit Focus Mode" : "Enter Focus Mode"}</span>
+        <span className="sm:hidden">{fullscreenMode ? "Exit Focus" : "Focus Mode"}</span>
       </Button>
     </>
   );
 
   return (
-    <div className={`flex flex-col items-center justify-center min-h-[60vh] mb-8 ${fullscreenMode ? 'fixed inset-0 z-50 bg-[#fff6e5] p-4' : ''}`}>
+    <div className={`flex flex-col items-center justify-center min-h-[60vh] mb-4 sm:mb-8 px-3 sm:px-4 ${fullscreenMode ? 'fixed inset-0 z-50 bg-[#fff6e5] p-3 sm:p-4' : ''}`}>
       {viewerContent}
       
       {/* CSS for 3D card flip effect */}
@@ -482,12 +484,43 @@ const FlashcardViewer = () => {
           overflow-wrap: break-word; /* Allow breaking long words */
           word-break: break-word; /* Ensure words break */
           text-wrap: balance; /* Improve text wrapping balance if supported */
-          /* Dynamic font sizing: Adjust min/max/preferred values as needed */
-          /* Using clamp for fluid typography based on viewport width */
-          /* Example: min 12px, preferred 2.5vw, max 24px */
-          font-size: clamp(0.75rem, 2.5vw, 1.5rem); 
-          line-height: 1.4; /* Adjust line height for readability */
-          overflow: hidden; /* Hide any final overflow, though font scaling should prevent it */
+          /* Enhanced mobile-first font sizing with better scaling */
+          font-size: clamp(0.875rem, 3vw, 1.75rem); /* Mobile: 14px, grows with viewport, max 28px */
+          line-height: 1.3; /* Tighter line height for mobile readability */
+          overflow: hidden; /* Hide any final overflow */
+          text-align: center; /* Ensure centered text alignment */
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 0.25rem; /* Small padding for breathing room */
+        }
+        
+        /* Responsive adjustments for different screen sizes */
+        @media (min-width: 640px) {
+          .card-content-scaling {
+            font-size: clamp(1rem, 2.5vw, 1.5rem); /* Tablet: 16px to 24px */
+            line-height: 1.4;
+            padding: 0.5rem;
+          }
+        }
+        
+        @media (min-width: 1024px) {
+          .card-content-scaling {
+            font-size: clamp(1.125rem, 2vw, 1.75rem); /* Desktop: 18px to 28px */
+            line-height: 1.5;
+            padding: 0.75rem;
+          }
+        }
+        
+        /* Mobile-specific touch improvements */
+        @media (max-width: 639px) {
+          .flip-card-inner {
+            transition: transform 0.4s; /* Faster transitions on mobile */
+          }
+          
+          .perspective-1000 {
+            perspective: 800px; /* Slightly reduced perspective for mobile */
+          }
         }
       `}</style>
     </div>
