@@ -1,4 +1,4 @@
-import React, { useRef } from "react";
+import React, { useRef, useMemo, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { FileText, Clock, Menu, Home, BarChart2, Play, Pause, Square, BookOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -7,7 +7,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { usePomodoroContext } from "@/hooks/usePomodoroContext";
 import { Progress } from "./ui/progress";
 
-const Navbar = () => {
+const Navbar = React.memo(() => {
   const isMobile = useIsMobile();
   const navigate = useNavigate();
   const navigationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -23,26 +23,26 @@ const Navbar = () => {
     isTimerVisibleInNavbar
   } = usePomodoroContext();
 
-  // Debounced navigation to prevent double-click issues
-  const debouncedNavigate = (path: string) => {
-    if (navigationTimeoutRef.current) {
-      clearTimeout(navigationTimeoutRef.current);
-    }
-    
-    navigationTimeoutRef.current = setTimeout(() => {
-      navigate(path);
-    }, 100);
-  };
+  // Memoized navigation function to prevent re-renders
+  const debouncedNavigate = useCallback((path: string) => {
+    navigate(path);
+  }, [navigate]);
 
-  const timerColor = timerType === 'pomodoro' 
-    ? 'bg-[#FF5C00]' 
-    : timerType === 'shortBreak' 
-      ? 'bg-[#20C997]' 
-      : 'bg-[#9b87f5]';
+  // Memoize timer-related calculations to prevent unnecessary re-renders
+  const timerColor = useMemo(() => {
+    return timerType === 'pomodoro' 
+      ? 'bg-[#FF5C00]' 
+      : timerType === 'shortBreak' 
+        ? 'bg-[#20C997]' 
+        : 'bg-[#9b87f5]';
+  }, [timerType]);
   
-  const percentComplete = Math.round(((initialTime - timer) / initialTime) * 100);
+  const percentComplete = useMemo(() => {
+    return Math.round(((initialTime - timer) / initialTime) * 100);
+  }, [initialTime, timer]);
   
-  const NavLinks = () => (
+  // Memoized navigation component to prevent re-renders from timer updates
+  const NavLinks = useCallback(() => (
     <nav className="flex items-center gap-3">
       {isTimerVisibleInNavbar && (
         <div 
@@ -84,38 +84,28 @@ const Navbar = () => {
         </div>
       )}
       
-      <Link to="/">
-        <Button variant="outline" className="neo-border bg-white hover:bg-gray-100 text-neo-black font-medium flex items-center gap-1.5 sm:gap-2 shadow-neo hover:shadow-neo-lg transition-all hover:-translate-y-0.5 hover:-translate-x-0.5 px-2 sm:px-3 py-1.5 sm:py-2 text-sm sm:text-base">
-          <Home className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-          <span className="hidden sm:inline">Home</span>
-        </Button>
-      </Link>
-      <Link to="/extractor">
-        <Button variant="outline" className="neo-border bg-neo-accent2 hover:bg-neo-accent2/90 text-white font-medium flex items-center gap-1.5 sm:gap-2 shadow-neo hover:shadow-neo-lg transition-all hover:-translate-y-0.5 hover:-translate-x-0.5 px-2 sm:px-3 py-1.5 sm:py-2 text-sm sm:text-base">
-          <FileText className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-          <span className="hidden sm:inline">Reviewer</span>
-        </Button>
-      </Link>
-      <Link to="/pomodoro">
-        <Button variant="outline" className="neo-border bg-neo-accent3 hover:bg-neo-accent3/90 text-neo-black font-medium flex items-center gap-1.5 sm:gap-2 shadow-neo hover:shadow-neo-lg transition-all hover:-translate-y-0.5 hover:-translate-x-0.5 px-2 sm:px-3 py-1.5 sm:py-2 text-sm sm:text-base">
-          <Clock className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-          <span className="hidden sm:inline">Pomodoro</span>
-        </Button>
-      </Link>
-      <Link to="/study">
-        <Button variant="outline" className="neo-border bg-[#9b87f5] hover:bg-[#8A76E5] text-white font-medium flex items-center gap-1.5 sm:gap-2 shadow-neo hover:shadow-neo-lg transition-all hover:-translate-y-0.5 hover:-translate-x-0.5 px-2 sm:px-3 py-1.5 sm:py-2 text-sm sm:text-base">
-          <BookOpen className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-          <span className="hidden sm:inline">Study Center</span>
-        </Button>
-      </Link>
-      <Link to="/dashboard">
-        <Button variant="outline" className="neo-border bg-[#FFC225] hover:bg-[#FFB300] text-neo-black font-medium flex items-center gap-1.5 sm:gap-2 shadow-neo hover:shadow-neo-lg transition-all hover:-translate-y-0.5 hover:-translate-x-0.5 px-2 sm:px-3 py-1.5 sm:py-2 text-sm sm:text-base">
-          <BarChart2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-          <span className="hidden sm:inline">Dashboard</span>
-        </Button>
-      </Link>
+      <Button onClick={() => debouncedNavigate('/')} variant="outline" className="neo-border bg-white hover:bg-gray-100 text-neo-black font-medium flex items-center gap-1.5 sm:gap-2 shadow-neo hover:shadow-neo-lg transition-all hover:-translate-y-0.5 hover:-translate-x-0.5 px-2 sm:px-3 py-1.5 sm:py-2 text-sm sm:text-base">
+        <Home className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+        <span className="hidden sm:inline">Home</span>
+      </Button>
+      <Button onClick={() => debouncedNavigate('/extractor')} variant="outline" className="neo-border bg-neo-accent2 hover:bg-neo-accent2/90 text-white font-medium flex items-center gap-1.5 sm:gap-2 shadow-neo hover:shadow-neo-lg transition-all hover:-translate-y-0.5 hover:-translate-x-0.5 px-2 sm:px-3 py-1.5 sm:py-2 text-sm sm:text-base">
+        <FileText className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+        <span className="hidden sm:inline">Reviewer</span>
+      </Button>
+      <Button onClick={() => debouncedNavigate('/pomodoro')} variant="outline" className="neo-border bg-neo-accent3 hover:bg-neo-accent3/90 text-neo-black font-medium flex items-center gap-1.5 sm:gap-2 shadow-neo hover:shadow-neo-lg transition-all hover:-translate-y-0.5 hover:-translate-x-0.5 px-2 sm:px-3 py-1.5 sm:py-2 text-sm sm:text-base">
+        <Clock className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+        <span className="hidden sm:inline">Pomodoro</span>
+      </Button>
+      <Button onClick={() => debouncedNavigate('/study')} variant="outline" className="neo-border bg-[#9b87f5] hover:bg-[#8A76E5] text-white font-medium flex items-center gap-1.5 sm:gap-2 shadow-neo hover:shadow-neo-lg transition-all hover:-translate-y-0.5 hover:-translate-x-0.5 px-2 sm:px-3 py-1.5 sm:py-2 text-sm sm:text-base">
+        <BookOpen className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+        <span className="hidden sm:inline">Study Center</span>
+      </Button>
+      <Button onClick={() => debouncedNavigate('/dashboard')} variant="outline" className="neo-border bg-[#FFC225] hover:bg-[#FFB300] text-neo-black font-medium flex items-center gap-1.5 sm:gap-2 shadow-neo hover:shadow-neo-lg transition-all hover:-translate-y-0.5 hover:-translate-x-0.5 px-2 sm:px-3 py-1.5 sm:py-2 text-sm sm:text-base">
+        <BarChart2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+        <span className="hidden sm:inline">Dashboard</span>
+      </Button>
     </nav>
-  );
+  ), [debouncedNavigate, isTimerVisibleInNavbar, isRunning, formatTime, timer, toggleTimer, percentComplete, timerColor]);
   
   return (
     <header className="bg-white border-b-2 border-neo-black py-2 sm:py-3 sticky top-0 z-10 shadow-[0_2px_10px_rgba(0,0,0,0.07)]">
@@ -128,7 +118,8 @@ const Navbar = () => {
           
           {isMobile ? (
             <div className="flex items-center gap-2">
-              {isTimerVisibleInNavbar && (                <div 
+              {isTimerVisibleInNavbar && (
+                <div 
                   className="neo-border bg-white rounded-lg shadow-neo px-3 py-2 cursor-pointer touch-target"
                   onClick={() => debouncedNavigate('/pomodoro')}
                 >
@@ -159,11 +150,13 @@ const Navbar = () => {
                       >
                         <Play className="h-4 w-4" />
                       </Button>
-                    )}                  </div>
+                    )}
+                  </div>
                   <Progress value={percentComplete} className={`h-1.5 mt-1 ${timerColor}`} />
                 </div>
               )}
-                <Sheet>                <SheetTrigger asChild>
+              <Sheet>
+                <SheetTrigger asChild>
                   <Button variant="outline" className="neo-border shadow-neo p-2 sm:p-3 min-h-[44px] min-w-[44px] touch-target hover:shadow-neo-lg hover:-translate-y-0.5 hover:-translate-x-0.5 transition-all">
                     <Menu className="h-5 w-5 sm:h-6 sm:w-6" />
                   </Button>
@@ -218,45 +211,37 @@ const Navbar = () => {
                       </div>
                     )}
                     
-                    <Link to="/" className="w-full">
-                      <Button variant="outline" className="neo-border w-full justify-start font-medium p-3 sm:p-4 h-auto min-h-[48px] text-sm sm:text-base">
-                        <Home className="h-4 w-4 sm:h-5 sm:w-5 mr-2 sm:mr-3" />
-                        Home
-                      </Button>
-                    </Link>
-                    <Link to="/extractor" className="w-full">
-                      <Button variant="outline" className="neo-border w-full justify-start font-medium bg-neo-accent2 text-white p-3 sm:p-4 h-auto min-h-[48px] text-sm sm:text-base">
-                        <FileText className="h-4 w-4 sm:h-5 sm:w-5 mr-2 sm:mr-3" />
-                        Reviewer Maker
-                      </Button>
-                    </Link>
-                    <Link to="/pomodoro" className="w-full">
-                      <Button variant="outline" className="neo-border w-full justify-start font-medium bg-neo-accent3 text-neo-black p-3 sm:p-4 h-auto min-h-[48px] text-sm sm:text-base">
-                        <Clock className="h-4 w-4 sm:h-5 sm:w-5 mr-2 sm:mr-3" />
-                        Pomodoro Timer
-                      </Button>
-                    </Link>
-                    <Link to="/study" className="w-full">
-                      <Button variant="outline" className="neo-border w-full justify-start font-medium bg-[#9b87f5] text-white p-3 sm:p-4 h-auto min-h-[48px] text-sm sm:text-base">
-                        <BookOpen className="h-4 w-4 sm:h-5 sm:w-5 mr-2 sm:mr-3" />
-                        Study Center
-                      </Button>
-                    </Link>
-                    <Link to="/dashboard" className="w-full">
-                      <Button variant="outline" className="neo-border w-full justify-start font-medium bg-[#FFC225] text-neo-black p-3 sm:p-4 h-auto min-h-[48px] text-sm sm:text-base">
-                        <BarChart2 className="h-4 w-4 sm:h-5 sm:w-5 mr-2 sm:mr-3" />
-                        Dashboard
-                      </Button>
-                    </Link>
+                    <Button onClick={() => debouncedNavigate('/')} variant="outline" className="neo-border w-full justify-start font-medium p-3 sm:p-4 h-auto min-h-[48px] text-sm sm:text-base">
+                      <Home className="h-4 w-4 sm:h-5 sm:w-5 mr-2 sm:mr-3" />
+                      Home
+                    </Button>
+                    <Button onClick={() => debouncedNavigate('/extractor')} variant="outline" className="neo-border w-full justify-start font-medium bg-neo-accent2 text-white p-3 sm:p-4 h-auto min-h-[48px] text-sm sm:text-base">
+                      <FileText className="h-4 w-4 sm:h-5 sm:w-5 mr-2 sm:mr-3" />
+                      Reviewer Maker
+                    </Button>
+                    <Button onClick={() => debouncedNavigate('/pomodoro')} variant="outline" className="neo-border w-full justify-start font-medium bg-neo-accent3 text-neo-black p-3 sm:p-4 h-auto min-h-[48px] text-sm sm:text-base">
+                      <Clock className="h-4 w-4 sm:h-5 sm:w-5 mr-2 sm:mr-3" />
+                      Pomodoro Timer
+                    </Button>
+                    <Button onClick={() => debouncedNavigate('/study')} variant="outline" className="neo-border w-full justify-start font-medium bg-[#9b87f5] text-white p-3 sm:p-4 h-auto min-h-[48px] text-sm sm:text-base">
+                      <BookOpen className="h-4 w-4 sm:h-5 sm:w-5 mr-2 sm:mr-3" />
+                      Study Center
+                    </Button>
+                    <Button onClick={() => debouncedNavigate('/dashboard')} variant="outline" className="neo-border w-full justify-start font-medium bg-[#FFC225] text-neo-black p-3 sm:p-4 h-auto min-h-[48px] text-sm sm:text-base">
+                      <BarChart2 className="h-4 w-4 sm:h-5 sm:w-5 mr-2 sm:mr-3" />
+                      Dashboard
+                    </Button>
                   </div>
                 </SheetContent>
               </Sheet>
             </div>
-          ) : <NavLinks />}
+          ) : NavLinks()}
         </div>
       </div>
     </header>
   );
-};
+});
+
+Navbar.displayName = 'Navbar';
 
 export default Navbar;
