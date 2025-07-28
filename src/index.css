@@ -5,10 +5,7 @@
  * This file uses Tailwind CSS directives which require PostCSS processing
  * VS Code: Install "PostCSS Language Support" extension for proper syntax highlighting
  */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700;800;900&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+/* Google Fonts are now loaded via HTML link tags in index.html */
 
 /* Tailwind CSS directives - require PostCSS processing */
 @tailwind base;
@@ -377,6 +374,10 @@
   
   .border-3 {
     @apply border-[3px];
+  }
+  
+  .border-4 {
+    @apply border-[4px];
   }
   
   /* New Focus Deep page specific styles */

@@ -20,6 +20,7 @@ const TextInput = ({ onSubmit, isLoading, extractionMode, onResetMode }: TextInp
   const [text, setText] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [mode, setMode] = useState<'text' | 'file' | null>(null);
+  const [isProcessingFile, setIsProcessingFile] = useState(false);
   const { toast } = useToast();
   const fileLimits = getFileLimits();
 
@@ -57,26 +58,17 @@ const TextInput = ({ onSubmit, isLoading, extractionMode, onResetMode }: TextInp
 
         setFile(selectedFile);
         setMode('file');
+        setIsProcessingFile(true);
 
-        // Show loading toast for files over 1MB
-        let loadingToast: { id: string } | undefined;
-        if (selectedFile.size > 1000000) {
-          loadingToast = toast({
-            title: "Processing File with AI",
-            description: `Uploading and extracting content from ${selectedFile.name}...`,
-          });
-        }
+        // Show loading toast for all files
+        const loadingToast = toast({
+          title: "Processing File with AI",
+          description: `Uploading and extracting content from ${selectedFile.name}...`,
+        });
 
         try {
           // Use the new Files API processing
           const result = await processFileWithGemini(selectedFile, extractionMode || "full");
-
-          if (loadingToast) {
-            toast({
-              title: "File Processed Successfully",
-              description: "Content extracted using Gemini Files API",
-            });
-          }
 
           if (!result.success) {
             throw new Error(result.error || "Failed to process file");
@@ -103,6 +95,8 @@ const TextInput = ({ onSubmit, isLoading, extractionMode, onResetMode }: TextInp
           setFile(null);
           setText("");
           setMode(null);
+        } finally {
+          setIsProcessingFile(false);
         }
       }
     }
@@ -124,11 +118,13 @@ const TextInput = ({ onSubmit, isLoading, extractionMode, onResetMode }: TextInp
     setFile(null);
     setText("");
     setMode(null);
+    setIsProcessingFile(false);
   };
 
   const handleClearText = () => {
     setText("");
     setMode(null);
+    setIsProcessingFile(false);
   };
 
   const handlePaste = () => {
@@ -151,6 +147,7 @@ const TextInput = ({ onSubmit, isLoading, extractionMode, onResetMode }: TextInp
 
   const handleBackToModeSelection = () => {
     setMode(null);
+    setIsProcessingFile(false);
     if (extractionMode && onResetMode) {
       onResetMode();
     }
@@ -271,49 +268,82 @@ const TextInput = ({ onSubmit, isLoading, extractionMode, onResetMode }: TextInp
             {!file ? (
               <div
                 {...getRootProps()}
-                className="neo-border border-dashed rounded-lg p-4 sm:p-6 text-center cursor-pointer hover:bg-neo-bg transition-colors min-h-[120px] sm:min-h-[160px] flex flex-col justify-center"
+                className={`neo-border border-dashed rounded-lg p-4 sm:p-6 text-center transition-colors min-h-[120px] sm:min-h-[160px] flex flex-col justify-center ${
+                  isProcessingFile ? 'cursor-not-allowed opacity-50' : 'cursor-pointer hover:bg-neo-bg'
+                }`}
               >
-                <input {...getInputProps()} />
+                <input {...getInputProps()} disabled={isProcessingFile} />
                 <div className="flex flex-col items-center py-2 sm:py-4">
                   <div className="bg-neo-bg p-2 sm:p-3 rounded-full mb-2 sm:mb-3 neo-border">
-                    <Upload className="h-5 w-5 sm:h-6 sm:w-6 text-neo-accent" />
+                    {isProcessingFile ? (
+                      <LoadingSpinner size={20} className="text-neo-accent" />
+                    ) : (
+                      <Upload className="h-5 w-5 sm:h-6 sm:w-6 text-neo-accent" />
+                    )}
                   </div>
-                  <p className="text-sm sm:text-base font-bold text-neo-black mb-1 px-2">
-                    <span className="hidden sm:inline">Drag & drop a file here, or click to select</span>
-                    <span className="sm:hidden">Tap to upload a file</span>
-                  </p>                  <p className="text-xs text-neo-muted hidden sm:block px-2 text-center">
-                    Supported formats: PDF, DOCX, DOC, TXT (up to {fileLimits.maxSizeFormatted})
-                  </p>
-                  <p className="text-xs text-neo-muted sm:hidden px-2 text-center">
-                    PDF, DOCX, DOC, TXT files
-                  </p>
+                  {isProcessingFile ? (
+                    <>
+                      <p className="text-sm sm:text-base font-bold text-neo-black mb-1 px-2">
+                        Processing file...
+                      </p>
+                      <p className="text-xs text-neo-muted px-2 text-center">
+                        Please wait while we extract content from your file
+                      </p>
+                    </>
+                  ) : (
+                    <>
+                      <p className="text-sm sm:text-base font-bold text-neo-black mb-1 px-2">
+                        <span className="hidden sm:inline">Drag & drop a file here, or click to select</span>
+                        <span className="sm:hidden">Tap to upload a file</span>
+                      </p>
+                      <p className="text-xs text-neo-muted hidden sm:block px-2 text-center">
+                        Supported formats: PDF, DOCX, DOC, TXT (up to {fileLimits.maxSizeFormatted})
+                      </p>
+                      <p className="text-xs text-neo-muted sm:hidden px-2 text-center">
+                        PDF, DOCX, DOC, TXT files
+                      </p>
+                    </>
+                  )}
                 </div>
-                <Button
-                  variant="link"
-                  size="sm"
-                  onClick={(e) => { e.stopPropagation(); setMode(null); }}
-                  className="text-xs text-neo-muted hover:text-neo-black mt-1 sm:mt-2 min-h-[32px]"
-                >
-                  Cancel Upload
-                </Button>
+                {!isProcessingFile && (
+                  <Button
+                    variant="link"
+                    size="sm"
+                    onClick={(e) => { e.stopPropagation(); setMode(null); }}
+                    className="text-xs text-neo-muted hover:text-neo-black mt-1 sm:mt-2 min-h-[32px]"
+                  >
+                    Cancel Upload
+                  </Button>
+                )}
               </div>
             ) : (
               <div className="mt-3 sm:mt-4">
                 <div className="p-3 bg-neo-bg neo-border rounded-lg flex items-center justify-between gap-2">
                   <div className="flex items-center overflow-hidden min-w-0 flex-1">
-                    <FileText className="h-4 w-4 sm:h-5 sm:w-5 mr-2 flex-shrink-0 text-neo-accent" />
-                    <span className="text-xs sm:text-sm font-medium truncate text-neo-black">{file.name}</span>
+                    {isProcessingFile ? (
+                      <LoadingSpinner size={16} className="mr-2 flex-shrink-0 text-neo-accent" />
+                    ) : (
+                      <FileText className="h-4 w-4 sm:h-5 sm:w-5 mr-2 flex-shrink-0 text-neo-accent" />
+                    )}
+                    <div className="flex flex-col min-w-0 flex-1">
+                      <span className="text-xs sm:text-sm font-medium truncate text-neo-black">{file.name}</span>
+                      {isProcessingFile && (
+                        <span className="text-xs text-neo-muted">Processing with AI...</span>
+                      )}
+                    </div>
                   </div>
                   <Button
                     variant="ghost"
                     size="icon"
                     onClick={handleClearFile}
-                    className="h-8 w-8 flex-shrink-0 rounded-full hover:bg-red-100 min-h-[32px] min-w-[32px]"
-                    title="Clear file and choose mode again"
+                    disabled={isProcessingFile}
+                    className="h-8 w-8 flex-shrink-0 rounded-full hover:bg-red-100 min-h-[32px] min-w-[32px] disabled:opacity-50 disabled:cursor-not-allowed"
+                    title={isProcessingFile ? "Cannot clear while processing" : "Clear file and choose mode again"}
                   >
                     <X className="h-3 w-3 sm:h-4 sm:w-4" />
-                  </Button>                </div>
-                {text.length > 0 && (
+                  </Button>
+                </div>
+                {text.length > 0 && !isProcessingFile && (
                   <div className="text-xs mt-2 text-right text-neo-muted">
                     Content extracted: {text.length.toLocaleString()} characters
                   </div>
@@ -327,13 +357,18 @@ const TextInput = ({ onSubmit, isLoading, extractionMode, onResetMode }: TextInp
           <div className="flex justify-center sm:justify-end">
             <Button
               onClick={handleSubmit}
-              disabled={isLoading || !text.trim()}
-              className="w-full sm:w-auto font-bold neo-border bg-neo-accent text-neo-black hover:bg-neo-accent/90 shadow-neo-sm hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all rounded-lg py-3 px-6 text-sm sm:text-base min-h-[44px] touch-target"
+              disabled={isLoading || !text.trim() || isProcessingFile}
+              className="w-full sm:w-auto font-bold neo-border bg-neo-accent text-neo-black hover:bg-neo-accent/90 shadow-neo-sm hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all rounded-lg py-3 px-6 text-sm sm:text-base min-h-[44px] touch-target disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isLoading ? (
                 <>
                   <LoadingSpinner size={16} className="mr-2 flex-shrink-0" />
                   <span>Processing...</span>
+                </>
+              ) : isProcessingFile ? (
+                <>
+                  <LoadingSpinner size={16} className="mr-2 flex-shrink-0" />
+                  <span>Uploading File...</span>
                 </>
               ) : (
                 "Extract All Terms"
