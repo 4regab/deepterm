@@ -16,7 +16,8 @@ import Pomodoro from "./pages/Pomodoro";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import Terms from "./pages/Terms";
 import CookieConsentBanner from "./components/CookieConsentBanner";
-import Study from "./pages/Study";
+import Quiz from "./pages/Quiz";
+import Flashcards from "./pages/Flashcards";
 
 const queryClient = new QueryClient();
 
@@ -32,8 +33,8 @@ const AppContent = () => {
         <Route path="/" element={<Home />} />
         <Route path="/extractor" element={<Index />} />
         <Route path="/pomodoro" element={<Pomodoro />} />
-        <Route path="/quiz" element={<Navigate to="/study" replace />} />
-        <Route path="/study" element={<Study />} />
+        <Route path="/quiz" element={<Quiz />} />
+        <Route path="/flashcards" element={<Flashcards />} />
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/privacy-policy" element={<PrivacyPolicy />} />
         <Route path="/terms" element={<Terms />} />

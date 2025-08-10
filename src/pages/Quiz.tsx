@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import { Tabs, TabsContent } from "@/components/ui/tabs";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import QuizCreationForm from "@/components/quiz/QuizCreationForm";
 import QuizTaking from "@/components/quiz/QuizTaking";
 import QuizResults from "@/components/quiz/QuizResults";
@@ -296,7 +296,23 @@ const Quiz = () => {
 
           <div className="space-y-6 sm:space-y-8 max-w-6xl mx-auto">
             <Card className="border-4 border-black bg-white shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] overflow-hidden">
-              <Tabs value={activeTab} onValueChange={handleTabChange} className="p-0">                
+              <Tabs value={activeTab} onValueChange={handleTabChange} className="p-0">
+                <div className="flex justify-center mb-4 sm:mb-6">
+                  <TabsList className="neo-border bg-white shadow-neo h-10 sm:h-12 lg:h-14 p-1 grid grid-cols-2 w-full max-w-xs sm:max-w-md">
+                    <TabsTrigger
+                      value="create"
+                      className="px-3 sm:px-4 lg:px-8 py-1.5 sm:py-2 text-sm sm:text-base lg:text-lg font-bold data-[state=active]:bg-[#FF5C00] data-[state=active]:text-white data-[state=active]:shadow-none transition-all touch-target"
+                    >
+                      Create
+                    </TabsTrigger>
+                    <TabsTrigger
+                      value="take"
+                      className="px-3 sm:px-4 lg:px-8 py-1.5 sm:py-2 text-sm sm:text-base lg:text-lg font-bold data-[state=active]:bg-[#FF5C00] data-[state=active]:text-white data-[state=active]:shadow-none transition-all touch-target"
+                    >
+                      Take
+                    </TabsTrigger>
+                  </TabsList>
+                </div>
                 <TabsContent value="create" className="p-6 sm:p-8">
                   <QuizCreationForm />
                 </TabsContent>

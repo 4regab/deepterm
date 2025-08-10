@@ -96,9 +96,13 @@ const Navbar = React.memo(() => {
         <Clock className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
         <span className="hidden sm:inline">Pomodoro</span>
       </Button>
-      <Button onClick={() => debouncedNavigate('/study')} variant="outline" className="neo-border bg-[#9b87f5] hover:bg-[#8A76E5] text-white font-medium flex items-center gap-1.5 sm:gap-2 shadow-neo hover:shadow-neo-lg transition-all hover:-translate-y-0.5 hover:-translate-x-0.5 px-2 sm:px-3 py-1.5 sm:py-2 text-sm sm:text-base">
+      <Button onClick={() => debouncedNavigate('/quiz')} variant="outline" className="neo-border bg-[#FF5C00] hover:bg-[#E65300] text-white font-medium flex items-center gap-1.5 sm:gap-2 shadow-neo hover:shadow-neo-lg transition-all hover:-translate-y-0.5 hover:-translate-x-0.5 px-2 sm:px-3 py-1.5 sm:py-2 text-sm sm:text-base">
+        <FileText className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+        <span className="hidden sm:inline">Quiz</span>
+      </Button>
+      <Button onClick={() => debouncedNavigate('/flashcards')} variant="outline" className="neo-border bg-[#9b87f5] hover:bg-[#8A76E5] text-white font-medium flex items-center gap-1.5 sm:gap-2 shadow-neo hover:shadow-neo-lg transition-all hover:-translate-y-0.5 hover:-translate-x-0.5 px-2 sm:px-3 py-1.5 sm:py-2 text-sm sm:text-base">
         <BookOpen className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-        <span className="hidden sm:inline">Study Center</span>
+        <span className="hidden sm:inline">Flashcards</span>
       </Button>
       <Button onClick={() => debouncedNavigate('/dashboard')} variant="outline" className="neo-border bg-[#FFC225] hover:bg-[#FFB300] text-neo-black font-medium flex items-center gap-1.5 sm:gap-2 shadow-neo hover:shadow-neo-lg transition-all hover:-translate-y-0.5 hover:-translate-x-0.5 px-2 sm:px-3 py-1.5 sm:py-2 text-sm sm:text-base">
         <BarChart2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
@@ -223,9 +227,13 @@ const Navbar = React.memo(() => {
                       <Clock className="h-4 w-4 sm:h-5 sm:w-5 mr-2 sm:mr-3" />
                       Pomodoro Timer
                     </Button>
-                    <Button onClick={() => debouncedNavigate('/study')} variant="outline" className="neo-border w-full justify-start font-medium bg-[#9b87f5] text-white p-3 sm:p-4 h-auto min-h-[48px] text-sm sm:text-base">
+                    <Button onClick={() => debouncedNavigate('/quiz')} variant="outline" className="neo-border w-full justify-start font-medium bg-[#FF5C00] text-white p-3 sm:p-4 h-auto min-h-[48px] text-sm sm:text-base">
+                      <FileText className="h-4 w-4 sm:h-5 sm:w-5 mr-2 sm:mr-3" />
+                      Quiz
+                    </Button>
+                    <Button onClick={() => debouncedNavigate('/flashcards')} variant="outline" className="neo-border w-full justify-start font-medium bg-[#9b87f5] text-white p-3 sm:p-4 h-auto min-h-[48px] text-sm sm:text-base">
                       <BookOpen className="h-4 w-4 sm:h-5 sm:w-5 mr-2 sm:mr-3" />
-                      Study Center
+                      Flashcards
                     </Button>
                     <Button onClick={() => debouncedNavigate('/dashboard')} variant="outline" className="neo-border w-full justify-start font-medium bg-[#FFC225] text-neo-black p-3 sm:p-4 h-auto min-h-[48px] text-sm sm:text-base">
                       <BarChart2 className="h-4 w-4 sm:h-5 sm:w-5 mr-2 sm:mr-3" />
