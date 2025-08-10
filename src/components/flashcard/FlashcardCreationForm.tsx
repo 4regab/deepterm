@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { Upload, Info, FileText, Wand2, ArrowLeftRight } from "lucide-react";
+import { Upload, Info, FileText, Wand2, ArrowLeftRight, X } from "lucide-react";
 import { toast } from "sonner";
 import { v4 as uuidv4 } from "uuid";
 import ApiKeyInput, { API_KEY_STORAGE_KEY } from "@/components/shared/ApiKeyInput";
@@ -24,7 +24,7 @@ const FlashcardCreationForm = () => {
     setIsGenerating,
     saveFlashcardDeck
   } = useFlashcard();
-  
+
   // Add UserProfile context for achievement tracking
   const { trackFlashcardCreated } = useUserProfile();
 
@@ -33,6 +33,7 @@ const FlashcardCreationForm = () => {
   const [inputMode, setInputMode] = useState<'auto' | 'manual'>('auto');
   const [hasApiKey, setHasApiKey] = useState(false);
   const [showApiKeyInput, setShowApiKeyInput] = useState(false);
+  const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [generatedCards, setGeneratedCards] = useState<Flashcard[]>([]);
   const [showCardsPreview, setShowCardsPreview] = useState(false);
@@ -42,22 +43,22 @@ const FlashcardCreationForm = () => {
     setHasApiKey(keyExists);
     return keyExists;
   };
-  
+
   useEffect(() => {
     checkApiKey();
-    
+
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === API_KEY_STORAGE_KEY) {
         checkApiKey();
       }
     };
-    
+
     window.addEventListener('storage', handleStorageChange);
-    
+
     const intervalCheck = setInterval(() => {
       checkApiKey();
     }, 1000);
-    
+
     return () => {
       window.removeEventListener('storage', handleStorageChange);
       clearInterval(intervalCheck);
@@ -77,8 +78,8 @@ const FlashcardCreationForm = () => {
   };
 
   const handleGenerateFlashcards = async () => {
-    if (!studyMaterial.trim()) {
-      toast.error("Please enter some study material");
+    if (!studyMaterial.trim() && uploadedFiles.length === 0) {
+      toast.error("Please enter some study material or upload a file");
       return;
     }
 
@@ -88,49 +89,100 @@ const FlashcardCreationForm = () => {
       toast.error("API Key required to generate flashcards.");
       return;
     }
-    
+
     setShowApiKeyInput(false);
     const apiKey = localStorage.getItem(API_KEY_STORAGE_KEY);
 
     try {
       setIsGenerating(true);
-      
-      // Import the same quiz generator that will be used for flashcards
-      const { QuizGenerator } = await import("@/services/quizGenerator");
-      const generator = new QuizGenerator(apiKey!);
-      
-      let extractedTerms;
-      if (inputMode === 'manual') {
-        const parsedInput = parseManualInput(studyMaterial);
-        if (parsedInput.terms.length === 0) {
-          toast.error("Could not parse any valid term-definition pairs. Please check your input format.");
-          setIsGenerating(false);
-          return;
+
+      let actualStudyMaterial = studyMaterial;
+      let uploadedImageUris: { uri: string, mimeType: string }[] = [];
+
+      if (uploadedFiles.length > 0) {
+        const { uploadFileToGemini, deleteFileFromGemini } = await import('@/services/geminiService');
+        const imageFiles = uploadedFiles.filter(file => file.type.startsWith('image/'));
+        const textFiles = uploadedFiles.filter(file => !file.type.startsWith('image/'));
+
+        if (textFiles.length > 0) {
+          const loadingToast = toast.loading(`Processing ${textFiles[0].name}...`);
+          try {
+            const { processFileWithGemini } = await import('@/utils/fileProcessing');
+            const result = await processFileWithGemini(textFiles[0], "full");
+            toast.dismiss(loadingToast);
+            if (!result.success) {
+              toast.error(result.error || "Failed to process text file");
+              setIsGenerating(false);
+              return;
+            }
+            actualStudyMaterial += `\n\n--- From ${textFiles[0].name} ---\n${result.text}`;
+          } catch (fileError) {
+            toast.dismiss(loadingToast);
+            toast.error(`Failed to process file: ${fileError instanceof Error ? fileError.message : String(fileError)}`);
+            setIsGenerating(false);
+            return;
+          }
         }
-        extractedTerms = parsedInput.terms;
-      } else {
-        // Use the terms extractor from QuizGenerator
-        const result = await generator.extractTermsAndDefinitions(studyMaterial);
-        
-        if (!result.success) {
-          toast.error(result.error || "Failed to extract terms and definitions");
-          setIsGenerating(false);
-          return;
+
+        if (imageFiles.length > 0) {
+          const loadingToast = toast.loading(`Uploading ${imageFiles.length} image(s)...`);
+          try {
+            const uploadPromises = imageFiles.map(file => uploadFileToGemini(file));
+            const uploadedImageInfos = await Promise.all(uploadPromises);
+            uploadedImageUris = uploadedImageInfos.map(info => ({ uri: info.uri, mimeType: info.mimeType }));
+            toast.dismiss(loadingToast);
+          } catch (uploadError) {
+            toast.dismiss(loadingToast);
+            toast.error(`Failed to upload images: ${uploadError instanceof Error ? uploadError.message : String(uploadError)}`);
+            setIsGenerating(false);
+            return;
+          }
         }
-        
-        extractedTerms = result.data;
       }
-      
-      // Convert extracted terms to flashcards
-      const flashcards = extractedTerms.map(({ term, definition }) => ({
+
+      const generator = new QuizGenerator(apiKey!);
+
+      let result;
+      if (uploadedImageUris.length > 0) {
+        const { generateFromTextAndImages } = await import('@/services/geminiService');
+        result = await generateFromTextAndImages(actualStudyMaterial, uploadedImageUris, "full");
+      } else {
+        if (inputMode === 'manual') {
+          const parsedInput = parseManualInput(studyMaterial);
+          if (parsedInput.terms.length === 0) {
+            toast.error("Could not parse any valid term-definition pairs. Please check your input format.");
+            setIsGenerating(false);
+            return;
+          }
+          const termDefs = await generator.extractTermsAndDefinitions(parsedInput.terms.map(t => `${t.term}: ${t.definition}`).join('\n'));
+          result = { success: true, data: termDefs.data };
+        } else {
+          const termDefs = await generator.extractTermsAndDefinitions(actualStudyMaterial);
+          result = { success: true, data: termDefs.data };
+        }
+      }
+
+      if (uploadedImageUris.length > 0) {
+        const { deleteFileFromGemini } = await import('@/services/geminiService');
+        const deletePromises = uploadedImageUris.map(image => deleteFileFromGemini(image.uri.split("/").pop()!));
+        await Promise.all(deletePromises);
+      }
+
+      if (!result.success) {
+        toast.error(result.error || "Failed to extract terms and definitions");
+        setIsGenerating(false);
+        return;
+      }
+
+      const flashcards = result.data.map(({ term, definition }) => ({
         id: uuidv4(),
         term,
         definition
       }));
-      
+
       setGeneratedCards(flashcards);
       setShowCardsPreview(true);
-      
+
     } catch (error) {
       toast.error("Failed to generate flashcards. Please try again.");
       console.error("Error generating flashcards:", error);
@@ -138,7 +190,7 @@ const FlashcardCreationForm = () => {
       setIsGenerating(false);
     }
   };
-  
+
   const handleSaveFlashcards = () => {
     if (generatedCards.length === 0) {
       toast.error("No flashcards to save");
@@ -164,23 +216,23 @@ const FlashcardCreationForm = () => {
 
   const parseManualInput = (input: string) => {
     const lines = input.split(/\n+/).filter(line => line.trim() !== '');
-    
+
     const terms = lines.map(line => {
       const separatorMatch = line.match(/(.+?)[-–—:;]+(.+)/);
-      
+
       if (separatorMatch) {
         const term = separatorMatch[1].trim();
         const definition = separatorMatch[2].trim();
-        
+
         if (term && definition) {
           return { term, definition };
         }
       }
-      
+
       return null;
     }).filter(Boolean);
-    
-    return { 
+
+    return {
       title: deckTitle || "Manual Flashcards",
       terms: terms as Array<{ term: string, definition: string }>
     };
@@ -189,53 +241,48 @@ const FlashcardCreationForm = () => {
   const handleFileClick = () => {
     fileInputRef.current?.click();
   };
+
+  const handleRemoveFile = (index: number) => {
+    setUploadedFiles(uploadedFiles.filter((_, i) => i !== index));
+  };
+
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-    
+    const files = event.target.files;
+    if (!files) return;
+
+    const newFiles = Array.from(files);
+    if (uploadedFiles.length + newFiles.length > 5) {
+      toast.error("You can upload a maximum of 5 files.");
+      return;
+    }
+
     try {
-      // Import the new file processing utilities
-      const { processFileForFlashcards, isFileTypeSupported, formatFileSize, getFileLimits } = await import('@/utils/fileProcessing');
-      
-      // Validate file type
-      if (!isFileTypeSupported(file)) {
+      // Import file validation utilities
+      const { isFileTypeSupported, formatFileSize, getFileLimits } = await import('@/utils/fileProcessing');
+
+      for (const file of newFiles) {
+        // Validate file type
+        if (!isFileTypeSupported(file)) {
+          const limits = getFileLimits();
+          toast.error(`Unsupported file type: ${file.name}. Please use: ${limits.supportedTypes.join(', ')}`);
+          return;
+        }
+
+        // Validate file size
         const limits = getFileLimits();
-        toast.error(`Unsupported file type. Please use: ${limits.supportedTypes.join(', ')}`);
-        return;
+        if (file.size > limits.maxSize) {
+          toast.error(`File size (${formatFileSize(file.size)}) for ${file.name} exceeds the maximum limit of ${limits.maxSizeFormatted}`);
+          return;
+        }
       }
 
-      // Validate file size
-      const limits = getFileLimits();
-      if (file.size > limits.maxSize) {
-        toast.error(`File size (${formatFileSize(file.size)}) exceeds the maximum limit of ${limits.maxSizeFormatted}`);
-        return;
-      }
-      
-      let loadingToast: ReturnType<typeof toast> | null = null;
-      if (file.size > 500000) {
-        loadingToast = toast.loading(`Processing ${file.name} with Gemini Files API...`);
-      }
-      
-      // Process file using the new Files API approach
-      const result = await processFileForFlashcards(file);
-      
-      if (loadingToast) {
-        toast.dismiss(loadingToast);
-      }
-      
-      if (!result.success) {
-        toast.error(result.error || "Failed to process file");
-        return;
-      }
-      
-      // Set the extracted text
-      setStudyMaterial(result.text || "");
-      
-      toast.success(`Document "${file.name}" processed successfully with Gemini AI`);
-      
+      setUploadedFiles([...uploadedFiles, ...newFiles]);
+
+      toast.success(`${newFiles.length} file(s) uploaded successfully.`);
+
     } catch (error) {
-      console.error("File processing error:", error);
-      toast.error(`Failed to process file: ${error instanceof Error ? error.message : String(error)}`);
+      console.error("File validation error:", error);
+      toast.error(`Failed to validate file: ${error instanceof Error ? error.message : String(error)}`);
     }
   };
 
@@ -274,8 +321,8 @@ const FlashcardCreationForm = () => {
           </p>
           <ApiKeyInput onApiKeySubmit={handleApiKeySubmit} />
         </div>
-        <Button 
-          variant="outline" 
+        <Button
+          variant="outline"
           onClick={() => setShowApiKeyInput(false)}
           className="w-full neo-border shadow-neo-sm hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all"
         >
@@ -294,11 +341,11 @@ const FlashcardCreationForm = () => {
             Name It!
           </span>
         </Label>
-        <Input 
-          placeholder="Enter a title for your flashcard deck..." 
-          className="bg-white neo-border shadow-neo hover:shadow-neo-lg transition-shadow duration-200 placeholder:text-[#8E9196] p-4 text-base sm:text-lg" 
-          value={deckTitle} 
-          onChange={e => setDeckTitle(e.target.value)} 
+        <Input
+          placeholder="Enter a title for your flashcard deck..."
+          className="bg-white neo-border shadow-neo hover:shadow-neo-lg transition-shadow duration-200 placeholder:text-[#8E9196] p-4 text-base sm:text-lg"
+          value={deckTitle}
+          onChange={e => setDeckTitle(e.target.value)}
         />
       </div>
 
@@ -310,21 +357,21 @@ const FlashcardCreationForm = () => {
               Step 1
             </span>
           </Label>
-          
-          <Tabs 
-            value={inputMode} 
-            onValueChange={(value) => setInputMode(value as 'auto' | 'manual')} 
+
+          <Tabs
+            value={inputMode}
+            onValueChange={(value) => setInputMode(value as 'auto' | 'manual')}
             className="mb-2"
           >
             <TabsList className="neo-border bg-white">
-              <TabsTrigger 
-                value="auto" 
+              <TabsTrigger
+                value="auto"
                 className="data-[state=active]:bg-[#9b87f5] data-[state=active]:text-white"
               >
                 Auto Extract
               </TabsTrigger>
-              <TabsTrigger 
-                value="manual" 
+              <TabsTrigger
+                value="manual"
                 className="data-[state=active]:bg-[#9b87f5] data-[state=active]:text-white"
               >
                 Manual Entry
@@ -332,28 +379,28 @@ const FlashcardCreationForm = () => {
             </TabsList>
           </Tabs>
         </div>
-        
+
         <div className="relative">
           {inputMode === 'auto' ? (
-            <Textarea 
-              placeholder="Paste your study material here... All key terms will be automatically extracted into flashcards." 
-              className="min-h-[150px] sm:min-h-[200px] bg-white neo-border shadow-neo hover:shadow-neo-lg transition-shadow duration-200 resize-none placeholder:text-[#8E9196] p-4 text-base sm:text-lg" 
-              value={studyMaterial} 
-              onChange={e => setStudyMaterial(e.target.value)} 
+            <Textarea
+              placeholder="Paste your study material here... All key terms will be automatically extracted into flashcards."
+              className="min-h-[150px] sm:min-h-[200px] bg-white neo-border shadow-neo hover:shadow-neo-lg transition-shadow duration-200 resize-none placeholder:text-[#8E9196] p-4 text-base sm:text-lg"
+              value={studyMaterial}
+              onChange={e => setStudyMaterial(e.target.value)}
             />
           ) : (
-            <Textarea 
-              placeholder="Enter term-definition pairs in format: Term - Definition (or Term : Definition). One per line." 
-              className="min-h-[150px] sm:min-h-[200px] bg-white neo-border shadow-neo hover:shadow-neo-lg transition-shadow duration-200 resize-none placeholder:text-[#8E9196] p-4 text-base sm:text-lg" 
-              value={studyMaterial} 
-              onChange={e => setStudyMaterial(e.target.value)} 
+            <Textarea
+              placeholder="Enter term-definition pairs in format: Term - Definition (or Term : Definition). One per line."
+              className="min-h-[150px] sm:min-h-[200px] bg-white neo-border shadow-neo hover:shadow-neo-lg transition-shadow duration-200 resize-none placeholder:text-[#8E9196] p-4 text-base sm:text-lg"
+              value={studyMaterial}
+              onChange={e => setStudyMaterial(e.target.value)}
             />
           )}
-          <input type="file" ref={fileInputRef} onChange={handleFileUpload} accept=".txt,.pdf,.docx" className="hidden" />
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={handleFileClick} 
+          <input type="file" ref={fileInputRef} onChange={handleFileUpload} accept=".txt,.pdf,.docx,.jpg,.jpeg,.png,.webp,.heic,.heif" className="hidden" multiple />
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleFileClick}
             className="absolute top-4 right-4 bg-white neo-border shadow-neo-sm hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all"
             title="Upload .txt, .pdf, or .docx files"
           >
@@ -361,7 +408,36 @@ const FlashcardCreationForm = () => {
             Upload File
           </Button>
         </div>
-        
+
+        {uploadedFiles.length > 0 && (
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
+            {uploadedFiles.map((file, index) => (
+              <div key={index} className="relative group">
+                {file.type.startsWith("image/") ? (
+                  <img
+                    src={URL.createObjectURL(file)}
+                    alt={`preview ${index}`}
+                    className="w-full h-24 object-cover rounded-md neo-border"
+                  />
+                ) : (
+                  <div className="w-full h-24 flex flex-col items-center justify-center bg-gray-100 rounded-md neo-border">
+                    <FileText className="h-8 w-8 text-gray-500" />
+                    <span className="text-xs text-gray-600 mt-1 truncate px-1">{file.name}</span>
+                  </div>
+                )}
+                <Button
+                  variant="destructive"
+                  size="icon"
+                  className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                  onClick={() => handleRemoveFile(index)}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            ))}
+          </div>
+        )}
+
         {inputMode === 'manual' && (
           <div className="bg-[#E5DEFF] p-4 rounded-md neo-border shadow-neo-sm">
             <div className="flex items-center gap-2">
@@ -376,7 +452,7 @@ const FlashcardCreationForm = () => {
           </div>
         )}
       </div>
-      
+
       <div className="space-y-4">
         <Label className="text-lg sm:text-xl font-bold text-[#1A1F2C] flex flex-wrap items-center gap-2">
           Flashcard Display Mode
@@ -396,7 +472,7 @@ const FlashcardCreationForm = () => {
           >
             <span className="font-bold">Term → Definition</span>
           </Button>
-          
+
           <Button
             type="button"
             onClick={() => setDisplayMode("definition-first")}
@@ -411,7 +487,7 @@ const FlashcardCreationForm = () => {
         </div>
         <p className="text-sm text-[#6B7280] italic">Choose which side of the flashcard you want to see first</p>
       </div>
-      
+
       <div className="bg-[#F9F6FF] neo-border shadow-neo p-4 rounded-md">
         <div className="flex items-center gap-3 mb-2">
           <Wand2 className="h-5 w-5 text-[#9b87f5]" />
@@ -424,9 +500,9 @@ const FlashcardCreationForm = () => {
         </ul>
       </div>
 
-      <Button 
-        onClick={handleGenerateFlashcards} 
-        disabled={!studyMaterial.trim() || isGenerating} 
+      <Button
+        onClick={handleGenerateFlashcards}
+        disabled={(!studyMaterial.trim() && uploadedFiles.length === 0) || isGenerating}
         className="w-full bg-[#9b87f5] hover:bg-[#7E69AB] text-white neo-border shadow-neo-lg hover:shadow-none hover:translate-x-[4px] hover:translate-y-[4px] transition-all text-lg sm:text-xl font-bold py-4 sm:py-6"
       >
         {isGenerating ? (
@@ -438,7 +514,7 @@ const FlashcardCreationForm = () => {
           "Generate Flashcards ✨"
         )}
       </Button>
-      
+
       {/* Flashcard Preview Dialog */}
       <Dialog open={showCardsPreview} onOpenChange={setShowCardsPreview}>
         <DialogContent className="max-w-4xl w-[90vw] max-h-[90vh] overflow-y-auto bg-white neo-border shadow-neo">
@@ -448,24 +524,24 @@ const FlashcardCreationForm = () => {
               Edit your cards before saving them to your deck. You can add, edit, or remove cards as needed.
             </DialogDescription>
           </DialogHeader>
-          
+
           {/* Action buttons - moved above cards */}
           <div className="flex flex-col sm:flex-row gap-4 justify-between mb-6 mt-2">
-            <Button 
+            <Button
               onClick={handleAddBlankCard}
               className="bg-white text-[#9b87f5] hover:bg-[#E5DEFF] neo-border shadow-neo-sm hover:shadow-none transition-all font-bold"
             >
               + Add Blank Card
             </Button>
             <div className="flex gap-3">
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 onClick={() => setShowCardsPreview(false)}
                 className="neo-border shadow-neo-sm hover:shadow-none transition-all"
               >
                 Cancel
               </Button>
-              <Button 
+              <Button
                 onClick={handleSaveFlashcards}
                 disabled={generatedCards.length === 0}
                 className="bg-[#9b87f5] hover:bg-[#7E69AB] text-white neo-border shadow-neo-lg hover:shadow-none transition-all font-bold"
@@ -474,7 +550,7 @@ const FlashcardCreationForm = () => {
               </Button>
             </div>
           </div>
-          
+
           <div className="space-y-6">
             {generatedCards.length > 0 ? (
               generatedCards.map((card, index) => (
@@ -482,7 +558,7 @@ const FlashcardCreationForm = () => {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label className="font-medium">Term</Label>
-                      <Textarea 
+                      <Textarea
                         value={card.term}
                         onChange={(e) => handleUpdateFlashcard(index, 'term', e.target.value)}
                         className="min-h-[100px] bg-white neo-border shadow-neo-sm resize-none"
@@ -490,7 +566,7 @@ const FlashcardCreationForm = () => {
                     </div>
                     <div className="space-y-2">
                       <Label className="font-medium">Definition</Label>
-                      <Textarea 
+                      <Textarea
                         value={card.definition}
                         onChange={(e) => handleUpdateFlashcard(index, 'definition', e.target.value)}
                         className="min-h-[100px] bg-white neo-border shadow-neo-sm resize-none"
@@ -498,9 +574,9 @@ const FlashcardCreationForm = () => {
                     </div>
                   </div>
                   <div className="mt-3 flex justify-end">
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
+                    <Button
+                      variant="outline"
+                      size="sm"
                       onClick={() => handleDeleteFlashcard(index)}
                       className="bg-white neo-border shadow-neo-sm text-[#FF5C00] hover:bg-[#FFDEE2] hover:shadow-none transition-all"
                     >

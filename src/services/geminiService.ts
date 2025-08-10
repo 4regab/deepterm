@@ -599,3 +599,125 @@ export const extractKeyTermsFromFile = async (
     throw new Error(`Failed to extract terms from file: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 };
+
+export const generateFromTextAndImages = async (
+  text: string,
+  images: { uri: string; mimeType: string }[],
+  mode: ExtractionMode = "full"
+): Promise<ExtractionResult> => {
+  if (!genAI) {
+    throw new Error("Gemini client not initialized. Please set your API key first.");
+  }
+
+  try {
+    console.log(`Processing text and ${images.length} images for extraction, mode: ${mode}`);
+
+    let extractionGuidance;
+    switch (mode) {
+      case "sentence":
+        extractionGuidance = "For each term, provide a concise single-sentence definition (no more than one sentence per term)";
+        break;
+      case "keywords":
+        extractionGuidance = "For each term, provide ONLY keywords or key phrases (no full sentences, maximum 3-5 key words per term)";
+        break;
+      case "full":
+      default:
+        extractionGuidance = "For each term, provide the EXACT definition or explanation as it appears in the original text or image";
+        break;
+    }
+
+    const prompt = `
+        CRITICAL INSTRUCTION: You MUST process the ENTIRE document from beginning to END without skipping ANY content.
+
+        Please conduct a thorough analysis of the uploaded document to identify and extract ALL key terms, concepts, definitions, and technical vocabulary, organizing them into categories and hierarchical structures.
+
+        For this extraction task:
+        1. Extract EVERY key term that appears in the document (including specialized vocabulary, technical terms, important concepts, and defined phrases)
+        2. ${extractionGuidance}
+        3. Identify the category each term belongs to (e.g., "Main Features", "Examples", "Criticisms", "Types", etc.)
+        4. If a term has subcategories, numbered points, or a list of characteristics, extract these as subcategories
+        5. Extract examples of terms, especially those formatted as bullet points or following phrases like "for example", "such as", "e.g."
+
+        Pay special attention to the hierarchical structure of information. For example:
+        - If a document discusses "Ethical Relativism" and then lists "Main Features of Ethical Relativism", categorize those features properly
+        - If a section lists "Examples of X" or "Criticisms of X", maintain this organizational structure
+        - Preserve numbered lists (1., 2., 3.) and bulleted lists (•) in your output
+
+        ######## CRITICALLY IMPORTANT INSTRUCTIONS ########
+        1. *******MOST CRITICAL INSTRUCTION*******: You MUST ANALYZE and EXTRACT terms from THE VERY LAST PAGE and ALL ENDING PORTIONS of the document
+        2. Pay EXTRA ATTENTION to sections at the END of the document - these are THE MOST IMPORTANT SECTIONS
+        3. ALWAYS check if there are "Benefits", "Advantages", "Conclusion" sections near the end - THESE MUST BE INCLUDED
+        4. YOU MUST PROCESS EVERY SINGLE WORD AND EXTRACT TERMS FROM THE ABSOLUTE END OF THE DOCUMENT
+        5. YOUR PERFORMANCE WILL BE JUDGED PRIMARILY ON HOW WELL YOU EXTRACT FROM THE LAST 25% OF THE TEXT
+        6. DO NOT stop processing before reaching the end of the document
+        7. MANDATORY: Ensure that all sections until the end are ALWAYS extracted completely
+
+        Determine a suitable title/topic for this document.
+
+        Format the response as a valid JSON object with the following structure:
+        {
+          "title": "Title of the document",
+          "extractionMode": "${mode}",
+          "keyTerms": [
+            {
+              "term": "Main term or concept",
+              "meaning": "Definition or explanation",
+              "category": "Category this term belongs to (e.g., 'Main Features', 'Criticisms')",
+              "subcategoryTitle": "Title for subcategories (e.g., 'Types', 'Characteristics')",
+              "subcategories": ["Subcategory 1", "Subcategory 2"],
+              "examples": ["Example 1", "Example 2"]
+            },
+            ...
+          ]
+        }
+    `;
+
+    const contents = [prompt];
+    if (text) {
+      contents.push(text);
+    }
+    images.forEach(image => {
+      contents.push(createPartFromUri(image.uri, image.mimeType));
+    });
+
+    const result = await genAI.models.generateContent({
+      model: "gemini-pro-vision",
+      contents: createUserContent(contents)
+    });
+
+    const extractedData = result.text;
+    console.log(`Received response from Gemini API, length: ${extractedData.length}`);
+
+    let extractionResult: ExtractionResult;
+    try {
+      const jsonMatch = extractedData.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        const jsonString = jsonMatch[0];
+        extractionResult = JSON.parse(jsonString);
+      } else {
+        throw new Error("No JSON object found in response");
+      }
+    } catch (parseError) {
+      console.warn("JSON parsing failed, attempting to create fallback result:", parseError);
+      extractionResult = {
+        title: "Document Analysis",
+        extractionMode: mode,
+        keyTerms: []
+      };
+    }
+
+    if (!extractionResult.title) {
+      extractionResult.title = "Document Analysis";
+    }
+    if (!extractionResult.keyTerms) {
+      extractionResult.keyTerms = [];
+    }
+
+    console.log(`Extraction completed: ${extractionResult.keyTerms.length} terms found`);
+    return extractionResult;
+
+  } catch (error) {
+    console.error("File-based extraction error:", error);
+    throw new Error(`Failed to extract terms from file: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  }
+};

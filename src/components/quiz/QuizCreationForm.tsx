@@ -5,7 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Upload, Info, Wand2, Check, ChevronDown, ChevronUp, FileText, Edit, Pencil, Trash2 } from "lucide-react";
+import { Upload, Info, Wand2, Check, ChevronDown, ChevronUp, FileText, Edit, Pencil, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 import { QuizGenerator } from "@/services/quizGenerator";
 import { QuestionType, useQuiz, QuizQuestion } from "@/context/QuizContext";
@@ -58,7 +58,7 @@ const QuizCreationForm = () => {
     setQuizPhase,
     saveQuiz // Ensure saveQuiz is destructured
   } = useQuiz();
-  
+
   // Add the user profile context to track achievements
   const { trackQuizCreated } = useUserProfile();
     const [quizTitle, setQuizTitle] = useState(activeQuiz?.title || "");
@@ -69,7 +69,7 @@ const QuizCreationForm = () => {
   const [verbatimMode, setVerbatimMode] = useState<boolean>(false);  const [hasApiKey, setHasApiKey] = useState(false);
   const [showApiKeyInput, setShowApiKeyInput] = useState(false);
   const [inputMode, setInputMode] = useState<'auto' | 'manual'>(activeQuiz?.settings?.inputMode as ('auto' | 'manual') || 'auto');
-  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+  const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isQuestionTypeExpanded, setIsQuestionTypeExpanded] = useState(false);
     // New state variables for quiz review functionality
@@ -136,22 +136,22 @@ const QuizCreationForm = () => {
     setHasApiKey(keyExists);
     return keyExists;
   };
-  
+
   useEffect(() => {
     checkApiKey();
-    
+
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === API_KEY_STORAGE_KEY) {
         checkApiKey();
       }
     };
-    
+
     window.addEventListener('storage', handleStorageChange);
-    
+
     const intervalCheck = setInterval(() => {
       checkApiKey();
     }, 1000);
-    
+
     return () => {
       window.removeEventListener('storage', handleStorageChange);
       clearInterval(intervalCheck);
@@ -173,7 +173,7 @@ const QuizCreationForm = () => {
   const handleUpdateQuiz = () => {
     console.log("[handleUpdateQuiz] Starting update."); // Log start
     isUpdatingRef.current = true; // Set updating flag to prevent dialog flickering
-    
+
     if (!activeQuiz) {
       toast.error("Cannot update: No active quiz selected for editing.");
       console.error("[handleUpdateQuiz] Error: No activeQuiz found."); // Log error
@@ -238,7 +238,7 @@ const QuizCreationForm = () => {
   // Extracted generation logic into its own function
   const generateNewQuiz = async () => {
     // Check if we have either study material text or an uploaded file
-    if (!studyMaterial.trim() && !uploadedFile) {
+    if (!studyMaterial.trim() && uploadedFiles.length === 0) {
       toast.error("Please enter some study material or upload a file");
       return;
     }
@@ -249,61 +249,75 @@ const QuizCreationForm = () => {
       toast.error("API Key required to generate quiz.");
       return;
     }
-    
-    setShowApiKeyInput(false); 
+
+    setShowApiKeyInput(false);
 
     const apiKey = localStorage.getItem(API_KEY_STORAGE_KEY);
 
     try {
       setIsGenerating(true);
-      
+
       let actualStudyMaterial = studyMaterial;
-      
-      // If a file was uploaded, process it first
-      if (uploadedFile) {
-        console.log(`[QuizCreationForm] Processing uploaded file: ${uploadedFile.name}`);
-        const loadingToast = toast.loading(`Processing ${uploadedFile.name} with Gemini Files API...`);
-        
-        try {
-          const { processFileWithGemini } = await import('@/utils/fileProcessing');
-          const result = await processFileWithGemini(uploadedFile, "full");
-          
-          toast.dismiss(loadingToast);
-          
-          if (!result.success) {
-            toast.error(result.error || "Failed to process uploaded file");
+      let uploadedImageUris: { uri: string, mimeType: string }[] = [];
+
+      if (uploadedFiles.length > 0) {
+        const { uploadFileToGemini, deleteFileFromGemini } = await import('@/services/geminiService');
+        const imageFiles = uploadedFiles.filter(file => file.type.startsWith('image/'));
+        const textFiles = uploadedFiles.filter(file => !file.type.startsWith('image/'));
+
+        if (textFiles.length > 0) {
+          const loadingToast = toast.loading(`Processing ${textFiles[0].name}...`);
+          try {
+            const { processFileWithGemini } = await import('@/utils/fileProcessing');
+            const result = await processFileWithGemini(textFiles[0], "full");
+            toast.dismiss(loadingToast);
+            if (!result.success) {
+              toast.error(result.error || "Failed to process text file");
+              setIsGenerating(false);
+              return;
+            }
+            actualStudyMaterial += `\n\n--- From ${textFiles[0].name} ---\n${result.text}`;
+          } catch (fileError) {
+            toast.dismiss(loadingToast);
+            toast.error(`Failed to process file: ${fileError instanceof Error ? fileError.message : String(fileError)}`);
             setIsGenerating(false);
             return;
           }
-          
-          // Use the extracted text from the file
-          actualStudyMaterial = result.text || "";
-          console.log(`[QuizCreationForm] File processed successfully, extracted ${actualStudyMaterial.length} characters`);
-          
-        } catch (fileError) {
-          toast.dismiss(loadingToast);
-          console.error("File processing error:", fileError);
-          toast.error(`Failed to process file: ${fileError instanceof Error ? fileError.message : String(fileError)}`);
-          setIsGenerating(false);
-          return;
+        }
+
+        if (imageFiles.length > 0) {
+          const loadingToast = toast.loading(`Uploading ${imageFiles.length} image(s)...`);
+          try {
+            const uploadPromises = imageFiles.map(file => uploadFileToGemini(file));
+            const uploadedImageInfos = await Promise.all(uploadPromises);
+            uploadedImageUris = uploadedImageInfos.map(info => ({ uri: info.uri, mimeType: info.mimeType }));
+            toast.dismiss(loadingToast);
+          } catch (uploadError) {
+            toast.dismiss(loadingToast);
+            toast.error(`Failed to upload images: ${uploadError instanceof Error ? uploadError.message : String(uploadError)}`);
+            setIsGenerating(false);
+            return;
+          }
         }
       }
-      
+
       const generator = new QuizGenerator(apiKey!);
-      
       const numQuestionsParam = isAutoQuestionCount ? undefined : numberOfQuestions;
-      
-      // *** ADD LOGGING HERE ***
+
       console.log(`[QuizCreationForm] Generating quiz with settings:`, {
         numQuestions: numQuestionsParam,
         quizType: questionType,
-        verbatimMode, // Log the state value
-        source: uploadedFile ? `file: ${uploadedFile.name}` : (studyMaterial ? 'studyMaterial' : 'manualInput'),
-        textLength: actualStudyMaterial.length
+        verbatimMode,
+        source: uploadedFiles.length > 0 ? `files: ${uploadedFiles.map(f => f.name).join(', ')}` : (studyMaterial ? 'studyMaterial' : 'manualInput'),
+        textLength: actualStudyMaterial.length,
+        imageCount: uploadedImageUris.length,
       });
 
       let result;
-      try {
+      if (uploadedImageUris.length > 0) {
+        const { generateFromTextAndImages } = await import('@/services/geminiService');
+        result = await generateFromTextAndImages(actualStudyMaterial, uploadedImageUris, "full");
+      } else {
         if (inputMode === 'manual') {
           const parsedStudyMaterial = parseManualInput(actualStudyMaterial);
           if (parsedStudyMaterial.terms.length === 0) {
@@ -311,13 +325,14 @@ const QuizCreationForm = () => {
             setIsGenerating(false);
             return;
           }
-          
+
           result = await generator.generateQuizFromManualInput(
             parsedStudyMaterial,
             numQuestionsParam,
             questionType,
             verbatimMode
-          );        } else {
+          );
+        } else {
           result = await generator.extractAndGenerateQuiz(
             actualStudyMaterial,
             numQuestionsParam,
@@ -325,11 +340,12 @@ const QuizCreationForm = () => {
             verbatimMode
           );
         }
-      } catch (generationError) {
-        console.error("Quiz generation error:", generationError);
-        toast.error("Failed to generate quiz. Please check your study material and API key.");
-        setIsGenerating(false);
-        return;
+      }
+
+      if (uploadedImageUris.length > 0) {
+        const { deleteFileFromGemini } = await import('@/services/geminiService');
+        const deletePromises = uploadedImageUris.map(image => deleteFileFromGemini(image.uri.split("/").pop()!));
+        await Promise.all(deletePromises);
       }
 
       if (!result || !result.success) {
@@ -353,11 +369,10 @@ const QuizCreationForm = () => {
         type: q.type as QuestionType || questionType
       }));
 
-      // Instead of immediately creating a quiz, set the generated questions and show the preview
       setGeneratedQuestions(convertedQuestions);
       setShowQuestionsPreview(true);
       toast.success(`Generated ${convertedQuestions.length} questions successfully! Please review them.`);
-      
+
     } catch (error) {
       console.error("Error generating quiz:", error);
       toast.error("Failed to generate quiz. Please try again.");
@@ -368,23 +383,23 @@ const QuizCreationForm = () => {
 
   const parseManualInput = (input: string) => {
     const lines = input.split(/\n+/).filter(line => line.trim() !== '');
-    
+
     const terms = lines.map(line => {
       const separatorMatch = line.match(/(.+?)[-–—:;]+(.+)/);
-      
+
       if (separatorMatch) {
         const term = separatorMatch[1].trim();
         const definition = separatorMatch[2].trim();
-        
+
         if (term && definition) {
           return { term, definition };
         }
       }
-      
+
       return null;
     }).filter(Boolean);
-    
-    return { 
+
+    return {
       title: quizTitle || "Manual Quiz",
       terms: terms as Array<{ term: string, definition: string }>
     };
@@ -392,36 +407,46 @@ const QuizCreationForm = () => {
 
   const handleFileClick = () => {
     fileInputRef.current?.click();
-  };  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-    
+  };
+
+  const handleRemoveFile = (index: number) => {
+    setUploadedFiles(uploadedFiles.filter((_, i) => i !== index));
+  };
+
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files) return;
+
+    const newFiles = Array.from(files);
+    if (uploadedFiles.length + newFiles.length > 5) {
+      toast.error("You can upload a maximum of 5 files.");
+      return;
+    }
+
     try {
       // Import file validation utilities
       const { isFileTypeSupported, formatFileSize, getFileLimits } = await import('@/utils/fileProcessing');
-      
-      // Validate file type
-      if (!isFileTypeSupported(file)) {
+
+      for (const file of newFiles) {
+        // Validate file type
+        if (!isFileTypeSupported(file)) {
+          const limits = getFileLimits();
+          toast.error(`Unsupported file type: ${file.name}. Please use: ${limits.supportedTypes.join(', ')}`);
+          return;
+        }
+
+        // Validate file size
         const limits = getFileLimits();
-        toast.error(`Unsupported file type. Please use: ${limits.supportedTypes.join(', ')}`);
-        return;
+        if (file.size > limits.maxSize) {
+          toast.error(`File size (${formatFileSize(file.size)}) for ${file.name} exceeds the maximum limit of ${limits.maxSizeFormatted}`);
+          return;
+        }
       }
 
-      // Validate file size
-      const limits = getFileLimits();
-      if (file.size > limits.maxSize) {
-        toast.error(`File size (${formatFileSize(file.size)}) exceeds the maximum limit of ${limits.maxSizeFormatted}`);
-        return;
-      }
-      
-      // Store the file for later processing (don't process yet)
-      setUploadedFile(file);
-      
-      // Set placeholder text to indicate file is ready
-      setStudyMaterial(`File "${file.name}" uploaded successfully. Click "Generate Quiz" to process with Gemini AI.`);
-      
-      toast.success(`Document "${file.name}" ready for processing`);
-      
+      setUploadedFiles([...uploadedFiles, ...newFiles]);
+
+      toast.success(`${newFiles.length} file(s) uploaded successfully.`);
+
     } catch (error) {
       console.error("File validation error:", error);
       toast.error(`Failed to validate file: ${error instanceof Error ? error.message : String(error)}`);
@@ -483,7 +508,7 @@ const QuizCreationForm = () => {
     console.log("[handleSaveQuiz] Calling setShowQuestionsPreview(false) for new quiz."); // Log close dialog new
     setShowQuestionsPreview(false);
     toast.success(`Quiz saved successfully with ${generatedQuestions.length} questions!`);
-    
+
     // Track quiz creation for achievements
     trackQuizCreated();
   };
@@ -493,7 +518,7 @@ const QuizCreationForm = () => {
       toast.error("No questions to start quiz");
       return;
     }
-    
+
     const newQuiz = {
       id: uuidv4(),
       title: quizTitle.trim() || `Quiz ${new Date().toLocaleDateString()}`,
@@ -513,14 +538,14 @@ const QuizCreationForm = () => {
     setActiveQuiz(newQuiz);
     setQuizPhase("taking");
     setShowQuestionsPreview(false);
-    
+
     // Track quiz creation for achievements
     trackQuizCreated();
   };
   const handleUpdateQuestion = useCallback((index: number, field: keyof QuizQuestion, value: string | string[]) => {
     // Prevent interference by batching updates
     setIsEditing(true);
-    
+
     setGeneratedQuestions(prev => {
       const updatedQuestions = [...prev];
       updatedQuestions[index] = {
@@ -529,7 +554,7 @@ const QuizCreationForm = () => {
       };
       return updatedQuestions;
     });
-    
+
     // Reset editing state after a brief delay to prevent rapid re-renders
     setTimeout(() => setIsEditing(false), 100);
   }, []);
@@ -538,7 +563,7 @@ const QuizCreationForm = () => {
     const updatedQuestions = [...generatedQuestions];
     updatedQuestions.splice(index, 1);
     setGeneratedQuestions(updatedQuestions);
-    
+
     if (editingQuestionIndex === index) {
       setEditingQuestionIndex(null);
     } else if (editingQuestionIndex !== null && editingQuestionIndex > index) {
@@ -555,7 +580,7 @@ const QuizCreationForm = () => {
       explanation: "",
       type: questionType
     };
-    
+
     setGeneratedQuestions([...generatedQuestions, newQuestion]);
     setEditingQuestionIndex(generatedQuestions.length);
   };
@@ -569,8 +594,8 @@ const QuizCreationForm = () => {
           </p>
           <ApiKeyInput onApiKeySubmit={handleApiKeySubmit} />
         </div>
-        <Button 
-          variant="outline" 
+        <Button
+          variant="outline"
           onClick={() => setShowApiKeyInput(false)}
           className="w-full neo-border shadow-neo-sm hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all"
         >
@@ -619,11 +644,11 @@ const QuizCreationForm = () => {
             {isEditMode ? "Edit Title" : "Name It!"}
           </span>
         </Label>
-        <Input 
-          placeholder="Enter a title for your quiz..." 
-          className="bg-white neo-border shadow-neo hover:shadow-neo-lg transition-shadow duration-200 placeholder:text-[#8E9196] p-4 text-base sm:text-lg" 
-          value={quizTitle} 
-          onChange={e => setQuizTitle(e.target.value)} 
+        <Input
+          placeholder="Enter a title for your quiz..."
+          className="bg-white neo-border shadow-neo hover:shadow-neo-lg transition-shadow duration-200 placeholder:text-[#8E9196] p-4 text-base sm:text-lg"
+          value={quizTitle}
+          onChange={e => setQuizTitle(e.target.value)}
         />
       </div>
 
@@ -635,21 +660,21 @@ const QuizCreationForm = () => {
               Step 1
             </span>
           </Label>
-          
-          <Tabs 
-            value={inputMode} 
-            onValueChange={(value) => setInputMode(value as 'auto' | 'manual')} 
+
+          <Tabs
+            value={inputMode}
+            onValueChange={(value) => setInputMode(value as 'auto' | 'manual')}
             className="mb-2"
           >
             <TabsList className="neo-border bg-white">
-              <TabsTrigger 
-                value="auto" 
+              <TabsTrigger
+                value="auto"
                 className="data-[state=active]:bg-[#9b87f5] data-[state=active]:text-white"
               >
                 Auto Extract
               </TabsTrigger>
-              <TabsTrigger 
-                value="manual" 
+              <TabsTrigger
+                value="manual"
                 className="data-[state=active]:bg-[#FF5C00] data-[state=active]:text-white"
               >
                 Manual Entry
@@ -657,28 +682,28 @@ const QuizCreationForm = () => {
             </TabsList>
           </Tabs>
         </div>
-        
+
         <div className="relative">
           {inputMode === 'auto' ? (
-            <Textarea 
-              placeholder="Paste your study material here... All key terms will be automatically extracted." 
-              className="min-h-[150px] sm:min-h-[200px] bg-white neo-border shadow-neo hover:shadow-neo-lg transition-shadow duration-200 resize-none placeholder:text-[#8E9196] p-4 text-base sm:text-lg" 
-              value={studyMaterial} 
-              onChange={e => setStudyMaterial(e.target.value)} 
+            <Textarea
+              placeholder="Paste your study material here... All key terms will be automatically extracted."
+              className="min-h-[150px] sm:min-h-[200px] bg-white neo-border shadow-neo hover:shadow-neo-lg transition-shadow duration-200 resize-none placeholder:text-[#8E9196] p-4 text-base sm:text-lg"
+              value={studyMaterial}
+              onChange={e => setStudyMaterial(e.target.value)}
             />
           ) : (
-            <Textarea 
-              placeholder="Enter term-definition pairs in format: Term - Definition (or Term : Definition). One per line." 
-              className="min-h-[150px] sm:min-h-[200px] bg-white neo-border shadow-neo hover:shadow-neo-lg transition-shadow duration-200 resize-none placeholder:text-[#8E9196] p-4 text-base sm:text-lg" 
-              value={studyMaterial} 
-              onChange={e => setStudyMaterial(e.target.value)} 
+            <Textarea
+              placeholder="Enter term-definition pairs in format: Term - Definition (or Term : Definition). One per line."
+              className="min-h-[150px] sm:min-h-[200px] bg-white neo-border shadow-neo hover:shadow-neo-lg transition-shadow duration-200 resize-none placeholder:text-[#8E9196] p-4 text-base sm:text-lg"
+              value={studyMaterial}
+              onChange={e => setStudyMaterial(e.target.value)}
             />
           )}
-          <input type="file" ref={fileInputRef} onChange={handleFileUpload} accept=".txt,.pdf,.docx" className="hidden" />
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={handleFileClick} 
+          <input type="file" ref={fileInputRef} onChange={handleFileUpload} accept=".txt,.pdf,.docx,.jpg,.jpeg,.png,.webp,.heic,.heif" className="hidden" multiple />
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleFileClick}
             className="absolute top-4 right-4 bg-white neo-border shadow-neo-sm hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all"
             title="Upload .txt, .pdf, or .docx files"
           >
@@ -686,7 +711,36 @@ const QuizCreationForm = () => {
             Upload File
           </Button>
         </div>
-        
+
+        {uploadedFiles.length > 0 && (
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
+            {uploadedFiles.map((file, index) => (
+              <div key={index} className="relative group">
+                {file.type.startsWith("image/") ? (
+                  <img
+                    src={URL.createObjectURL(file)}
+                    alt={`preview ${index}`}
+                    className="w-full h-24 object-cover rounded-md neo-border"
+                  />
+                ) : (
+                  <div className="w-full h-24 flex flex-col items-center justify-center bg-gray-100 rounded-md neo-border">
+                    <FileText className="h-8 w-8 text-gray-500" />
+                    <span className="text-xs text-gray-600 mt-1 truncate px-1">{file.name}</span>
+                  </div>
+                )}
+                <Button
+                  variant="destructive"
+                  size="icon"
+                  className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                  onClick={() => handleRemoveFile(index)}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            ))}
+          </div>
+        )}
+
         {inputMode === 'manual' && (
           <div className="bg-[#FFF9EB] p-4 rounded-md neo-border shadow-neo-sm">
             <div className="flex items-center gap-2">
@@ -710,23 +764,23 @@ const QuizCreationForm = () => {
               Step 2
             </span>
           </Label>
-          
+
           <div className="space-y-4">
             <div className="flex items-center justify-between bg-[#E5DEFF] neo-border shadow-neo p-4 rounded-md">
               <div className="flex items-center gap-2">
                 <Wand2 className="h-5 w-5 text-[#9b87f5]" />
                 <span className="font-medium text-sm sm:text-base">Auto Determine Question Count</span>
               </div>
-              <Switch 
-                checked={isAutoQuestionCount} 
-                onCheckedChange={setIsAutoQuestionCount} 
-                className="data-[state=checked]:bg-[#9b87f5] neo-border" 
+              <Switch
+                checked={isAutoQuestionCount}
+                onCheckedChange={setIsAutoQuestionCount}
+                className="data-[state=checked]:bg-[#9b87f5] neo-border"
               />
             </div>
 
             {!isAutoQuestionCount && (
-              <Select 
-                value={numberOfQuestions.toString()} 
+              <Select
+                value={numberOfQuestions.toString()}
                 onValueChange={value => setNumberOfQuestions(parseInt(value))}
               >
                 <SelectTrigger className="w-full neo-border bg-white shadow-neo hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all p-4">
@@ -753,7 +807,7 @@ const QuizCreationForm = () => {
           </Label>
 
           <div className="bg-white neo-border shadow-neo rounded-md overflow-hidden">
-            <button 
+            <button
               onClick={toggleQuestionTypeAccordion}
               className="w-full p-4 flex items-center justify-between bg-[#FFDE59] hover:bg-[#FFD226] transition-colors focus:outline-none focus:ring-2 focus:ring-black"
               type="button"
@@ -775,10 +829,10 @@ const QuizCreationForm = () => {
               </div>
             </button>
 
-            <div 
+            <div
               className={`transition-all duration-300 overflow-hidden ${
-                isQuestionTypeExpanded 
-                  ? 'max-h-[500px] border-t-2 border-black' 
+                isQuestionTypeExpanded
+                  ? 'max-h-[500px] border-t-2 border-black'
                   : 'max-h-0'
               }`}
             >
@@ -822,16 +876,16 @@ const QuizCreationForm = () => {
             </div>
           </Label>
         </div>
-        <Switch 
-          checked={verbatimMode} 
-          onCheckedChange={setVerbatimMode} 
-          className="data-[state=checked]:bg-[#9b87f5] neo-border h-5 w-10" 
+        <Switch
+          checked={verbatimMode}
+          onCheckedChange={setVerbatimMode}
+          className="data-[state=checked]:bg-[#9b87f5] neo-border h-5 w-10"
         />
       </div>
 
       <Button
         onClick={handleGenerateOrUpdateQuiz} // Use the combined handler
-        disabled={isGenerating || (inputMode === 'auto' && !studyMaterial.trim()) || (inputMode === 'manual' && !studyMaterial.trim() && !isEditMode)} // Disable if generating or no material (unless editing)
+        disabled={isGenerating || (inputMode === 'auto' && !studyMaterial.trim() && uploadedFiles.length === 0) || (inputMode === 'manual' && !studyMaterial.trim() && !isEditMode)} // Disable if generating or no material (unless editing)
         className={`w-full neo-border shadow-neo-lg hover:shadow-none hover:translate-x-[4px] hover:translate-y-[4px] transition-all text-lg sm:text-xl font-bold py-4 sm:py-6 ${
           isEditMode
             ? "bg-blue-500 hover:bg-blue-600 text-white"
@@ -866,18 +920,18 @@ const QuizCreationForm = () => {
               Edit your questions before taking or saving the quiz. You can add, edit, or remove questions as needed.
             </DialogDescription>
           </DialogHeader>
-          
+
           {/* Action buttons - above questions */}
           <div className="flex flex-col sm:flex-row gap-4 justify-between mb-6 mt-2">
-            <Button 
+            <Button
               onClick={handleAddBlankQuestion}
               className="bg-white text-[#9b87f5] hover:bg-[#E5DEFF] neo-border shadow-neo-sm hover:shadow-none transition-all font-bold"
             >
               + Add Question
             </Button>
             <div className="flex gap-3">
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 onClick={() => setShowQuestionsPreview(false)}
                 className="neo-border shadow-neo-sm hover:shadow-none transition-all"
               >
@@ -900,8 +954,8 @@ const QuizCreationForm = () => {
                   <div className="flex items-center justify-between mb-4">
                     <h3 className="font-bold text-lg">Question {index + 1}</h3>
                     <div className="flex gap-2">
-                      <Button 
-                        variant="outline" 
+                      <Button
+                        variant="outline"
                         size="sm"
                         onClick={() => setEditingQuestionIndex(editingQuestionIndex === index ? null : index)}
                         className="bg-white neo-border shadow-neo-sm text-[#9b87f5] hover:bg-[#E5DEFF] hover:shadow-none transition-all"
@@ -909,9 +963,9 @@ const QuizCreationForm = () => {
                         <Pencil className="h-4 w-4 mr-1" />
                         {editingQuestionIndex === index ? "Done" : "Edit"}
                       </Button>
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
+                      <Button
+                        variant="outline"
+                        size="sm"
                         onClick={() => handleDeleteQuestion(index)}
                         className="bg-white neo-border shadow-neo-sm text-[#FF5C00] hover:bg-[#FFDEE2] hover:shadow-none transition-all"
                       >
@@ -920,18 +974,18 @@ const QuizCreationForm = () => {
                       </Button>
                     </div>
                   </div>
-                  
+
                   {editingQuestionIndex === index ? (
                     <div className="space-y-4">
                       <div className="space-y-2">
                         <Label className="font-medium">Question</Label>
-                        <Textarea 
+                        <Textarea
                           value={question.question}
                           onChange={(e) => handleUpdateQuestion(index, 'question', e.target.value)}
                           className="min-h-[80px] bg-white neo-border shadow-neo-sm resize-none"
                         />
                       </div>
-                      
+
                       {question.type === "multiple" && (
                         <div className="space-y-2">
                           <Label className="font-medium">Options</Label>
@@ -967,7 +1021,7 @@ const QuizCreationForm = () => {
                           </div>
                         </div>
                       )}
-                      
+
                       {question.type === "truefalse" && (
                         <div className="space-y-2">
                           <Label className="font-medium">Answer</Label>
@@ -999,7 +1053,7 @@ const QuizCreationForm = () => {
                           </div>
                         </div>
                       )}
-                      
+
                       {question.type === "identification" && (
                         <div className="space-y-2">
                           <Label className="font-medium">Answer</Label>
@@ -1010,7 +1064,7 @@ const QuizCreationForm = () => {
                           />
                         </div>
                       )}
-                      
+
                       <div className="space-y-2">
                         <Label className="font-medium">Explanation (Optional)</Label>
                         <Textarea
@@ -1024,15 +1078,15 @@ const QuizCreationForm = () => {
                   ) : (
                     <div>
                       <p className="mb-4">{question.question}</p>
-                      
+
                       {question.type === "multiple" && question.options && (
                         <div className="ml-4 space-y-2 mb-4">
                           {question.options.map((option, i) => (
-                            <div 
-                              key={i} 
+                            <div
+                              key={i}
                               className={`p-2 border rounded-md ${
-                                option === question.answer 
-                                  ? "border-[#9b87f5] bg-[#F0EAFF]" 
+                                option === question.answer
+                                  ? "border-[#9b87f5] bg-[#F0EAFF]"
                                   : "border-gray-200"
                               }`}
                             >
@@ -1044,12 +1098,12 @@ const QuizCreationForm = () => {
                           ))}
                         </div>
                       )}
-                      
+
                       {question.type === "truefalse" && (
                         <div className="ml-4 flex gap-4 mb-4">
                           <div className={`p-2 border rounded-md flex-1 text-center ${
-                            question.answer === "True" 
-                              ? "border-[#9b87f5] bg-[#F0EAFF]" 
+                            question.answer === "True"
+                              ? "border-[#9b87f5] bg-[#F0EAFF]"
                               : "border-gray-200"
                           }`}>
                             {question.answer === "True" && (
@@ -1058,8 +1112,8 @@ const QuizCreationForm = () => {
                             True
                           </div>
                           <div className={`p-2 border rounded-md flex-1 text-center ${
-                            question.answer === "False" 
-                              ? "border-[#9b87f5] bg-[#F0EAFF]" 
+                            question.answer === "False"
+                              ? "border-[#9b87f5] bg-[#F0EAFF]"
                               : "border-gray-200"
                           }`}>
                             {question.answer === "False" && (
@@ -1069,7 +1123,7 @@ const QuizCreationForm = () => {
                           </div>
                         </div>
                       )}
-                      
+
                       {question.type === "identification" && (
                         <div className="ml-4 mb-4">
                           <div className="p-2 border border-[#9b87f5] bg-[#F0EAFF] rounded-md">
@@ -1077,7 +1131,7 @@ const QuizCreationForm = () => {
                           </div>
                         </div>
                       )}
-                      
+
                       {question.explanation && (
                         <div className="ml-4 p-2 border-t border-dashed border-gray-300 mt-3 pt-3">
                           <span className="font-medium">Explanation:</span> {question.explanation}

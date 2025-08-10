@@ -26,7 +26,13 @@ export const SUPPORTED_FILE_TYPES = {
   'application/pdf': ['.pdf'],
   'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx'],
   'text/plain': ['.txt'],
-  'application/msword': ['.doc']
+  'application/msword': ['.doc'],
+  // Add image types
+  'image/jpeg': ['.jpeg', '.jpg'],
+  'image/png': ['.png'],
+  'image/webp': ['.webp'],
+  'image/heic': ['.heic'],
+  'image/heif': ['.heif'],
 };
 
 /**
@@ -61,7 +67,7 @@ export const processFileWithGemini = async (
     if (!isFileTypeSupported(file)) {
       return {
         success: false,
-        error: `Unsupported file type: ${file.type}. Supported types: PDF, DOCX, DOC, TXT`
+        error: `Unsupported file type: ${file.type}. Supported types: PDF, DOCX, DOC, TXT, JPG, PNG, WEBP, HEIC, HEIF`
       };
     }
 
@@ -155,7 +161,7 @@ export const processTextContent = (text: string): FileProcessingResult => {
 export const getFileLimits = () => ({
   maxSize: 50 * 1024 * 1024, // 50MB
   maxSizeFormatted: "50MB",
-  supportedTypes: ["PDF", "DOCX", "DOC", "TXT"]
+  supportedTypes: ["PDF", "DOCX", "DOC", "TXT", "JPG", "PNG", "WEBP", "HEIC", "HEIF"]
 });
 
 /**
