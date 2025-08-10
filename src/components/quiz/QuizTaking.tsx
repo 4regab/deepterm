@@ -76,7 +76,7 @@ const QuizTaking = () => {
       const newIndex = getInitialQuestionIndex();
       setCurrentQuestionIndex(newIndex);
     }
-  }, [activeQuiz, getInitialQuestionIndex]);
+  }, [activeQuiz?.id, getInitialQuestionIndex]);
   
   // Save progress whenever the current question index changes
   useEffect(() => {
