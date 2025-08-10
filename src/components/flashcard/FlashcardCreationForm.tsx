@@ -155,10 +155,10 @@ const FlashcardCreationForm = () => {
             return;
           }
           const termDefs = await generator.extractTermsAndDefinitions(parsedInput.terms.map(t => `${t.term}: ${t.definition}`).join('\n'));
-          result = { success: true, data: termDefs.data };
+          result = { success: true, keyTerms: termDefs.data };
         } else {
           const termDefs = await generator.extractTermsAndDefinitions(actualStudyMaterial);
-          result = { success: true, data: termDefs.data };
+          result = { success: true, keyTerms: termDefs.data };
         }
       }
 
