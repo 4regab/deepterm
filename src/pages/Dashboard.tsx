@@ -32,6 +32,11 @@ interface CalendarDay {
 const RESULTS_STORAGE_KEY = 'extraction_results';
 
 const Dashboard = () => {
+  // Set document title on mount
+  useEffect(() => {
+    document.title = "Dashboard";
+  }, []);
+
   const { studyStreak, studySessions, totalStudyTimeToday, formatDuration } = usePomodoroContext();
   const { 
     userProfile, 

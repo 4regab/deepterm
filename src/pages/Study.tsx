@@ -24,6 +24,11 @@ export type { QuestionType, QuizQuestion, Quiz };
 export { QuizContext };
 
 const Study = () => {
+  // Set document title on mount
+  useEffect(() => {
+    document.title = "Study Center";
+  }, []);
+
   // State for the main tabs
   const [activeStudyTab, setActiveStudyTab] = useState<"quiz" | "flashcard">("quiz");
   
