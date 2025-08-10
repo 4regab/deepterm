@@ -26,7 +26,7 @@ export { QuizContext };
 const Study = () => {
   // Set document title on mount
   useEffect(() => {
-    document.title = "Study Center | StudyMind";
+    document.title = "Study Center";
   }, []);
 
   // State for the main tabs

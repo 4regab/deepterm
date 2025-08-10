@@ -230,7 +230,7 @@ const Pomodoro = () => {
 
   // Show timer in browser tab title only when timer is running
   useEffect(() => {
-    const originalTitle = "Pomodoro | StudyMind";
+    const originalTitle = "Pomodoro";
     let label = '';
     switch (timerType) {
       case 'pomodoro':
