@@ -174,10 +174,10 @@ const FlashcardCreationForm = () => {
         return;
       }
 
-      const flashcards = result.data.map(({ term, definition }) => ({
+      const flashcards = result.keyTerms.map(({ term, meaning }) => ({
         id: uuidv4(),
         term,
-        definition
+        definition: meaning
       }));
 
       setGeneratedCards(flashcards);

@@ -354,19 +354,19 @@ const QuizCreationForm = () => {
         return;
       }
 
-      if (!result.questions || result.questions.length === 0) {
+      if (!result.keyTerms || result.keyTerms.length === 0) {
         toast.error("No questions could be generated. Try with different study material.");
         setIsGenerating(false);
         return;
       }
 
-      const convertedQuestions = result.questions.map(q => ({
+      const convertedQuestions = result.keyTerms.map(q => ({
         id: String(q.id || uuidv4()),
-        question: q.question || "Question unavailable",
-        options: q.options || [],
-        answer: q.answer || "",
-        explanation: q.explanation || "",
-        type: q.type as QuestionType || questionType
+        question: q.term || "Question unavailable",
+        options: q.examples || [],
+        answer: q.meaning || "",
+        explanation: q.category || "",
+        type: "multiple"
       }));
 
       setGeneratedQuestions(convertedQuestions);
