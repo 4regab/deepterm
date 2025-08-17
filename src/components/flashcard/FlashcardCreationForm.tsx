@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { Upload, Info, FileText, Wand2, ArrowLeftRight } from "lucide-react";
+import { Upload, FileText, Wand2 } from "lucide-react";
 import { toast } from "sonner";
 import { v4 as uuidv4 } from "uuid";
 import ApiKeyInput, { API_KEY_STORAGE_KEY } from "@/components/shared/ApiKeyInput";
@@ -12,14 +12,11 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useFlashcard } from "@/context/FlashcardContextDefinition";
 import { useUserProfile } from "@/hooks/useUserProfile"; // Add UserProfileHook
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Flashcard, FlashcardDeck, FlashcardDisplayMode } from "@/types/flashcard";
 
 const FlashcardCreationForm = () => {
   const {
     activeDeck,
-    setActiveDeck,
-    savedDecks,
     isGenerating,
     setIsGenerating,
     saveFlashcardDeck
@@ -31,16 +28,13 @@ const FlashcardCreationForm = () => {
   const [deckTitle, setDeckTitle] = useState(activeDeck?.title || "");
   const [studyMaterial, setStudyMaterial] = useState(activeDeck?.studyMaterial || "");
   const [inputMode, setInputMode] = useState<'auto' | 'manual'>('auto');
-  const [hasApiKey, setHasApiKey] = useState(false);
   const [showApiKeyInput, setShowApiKeyInput] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [generatedCards, setGeneratedCards] = useState<Flashcard[]>([]);
   const [showCardsPreview, setShowCardsPreview] = useState(false);
   const [displayMode, setDisplayMode] = useState<FlashcardDisplayMode>(activeDeck?.displayMode || "term-first");
     const checkApiKey = () => {
-    const keyExists = serviceCheckApiKey();
-    setHasApiKey(keyExists);
-    return keyExists;
+    return serviceCheckApiKey();
   };
   
   useEffect(() => {
@@ -67,7 +61,6 @@ const FlashcardCreationForm = () => {
     localStorage.setItem(API_KEY_STORAGE_KEY, apiKey);
     // Initialize the Gemini service with the new API key
     const initialized = initializeGemini(apiKey);
-    setHasApiKey(initialized);
     setShowApiKeyInput(false);
     if (initialized) {
       toast.success("API Key saved and initialized successfully");
@@ -122,6 +115,12 @@ const FlashcardCreationForm = () => {
       }
       
       // Convert extracted terms to flashcards
+      if (!extractedTerms) {
+        toast.error("Failed to extract terms for flashcards");
+        setIsGenerating(false);
+        return;
+      }
+      
       const flashcards = extractedTerms.map(({ term, definition }) => ({
         id: uuidv4(),
         term,
@@ -133,7 +132,10 @@ const FlashcardCreationForm = () => {
       
     } catch (error) {
       toast.error("Failed to generate flashcards. Please try again.");
-      console.error("Error generating flashcards:", error);
+      // Log error for debugging in development
+      if (process.env.NODE_ENV === 'development') {
+        console.error("Error generating flashcards:", error);
+      }
     } finally {
       setIsGenerating(false);
     }
@@ -148,7 +150,7 @@ const FlashcardCreationForm = () => {
     // Prepare data according to the expected type for saveFlashcardDeck
     // Let the context handle ID generation for new decks and all timestamps
     const deckDataToSave: Omit<FlashcardDeck, 'id' | 'dateCreated' | 'lastModified'> & { id?: string } = {
-      id: activeDeck?.id, // Pass existing ID only if updating, otherwise undefined
+      ...(activeDeck?.id ? { id: activeDeck.id } : {}), // Only include id if it exists
       title: deckTitle.trim() || `Flashcards ${new Date().toLocaleDateString()}`,
       cards: generatedCards,
       studyMaterial,
@@ -168,7 +170,7 @@ const FlashcardCreationForm = () => {
     const terms = lines.map(line => {
       const separatorMatch = line.match(/(.+?)[-–—:;]+(.+)/);
       
-      if (separatorMatch) {
+      if (separatorMatch && separatorMatch[1] && separatorMatch[2]) {
         const term = separatorMatch[1].trim();
         const definition = separatorMatch[2].trim();
         
@@ -234,18 +236,25 @@ const FlashcardCreationForm = () => {
       toast.success(`Document "${file.name}" processed successfully with Gemini AI`);
       
     } catch (error) {
-      console.error("File processing error:", error);
+      // Log error for debugging in development
+      if (process.env.NODE_ENV === 'development') {
+        console.error("File processing error:", error);
+      }
       toast.error(`Failed to process file: ${error instanceof Error ? error.message : String(error)}`);
     }
   };
 
   const handleUpdateFlashcard = (index: number, field: 'term' | 'definition', value: string) => {
     const updatedCards = [...generatedCards];
-    updatedCards[index] = {
-      ...updatedCards[index],
-      [field]: value
-    };
-    setGeneratedCards(updatedCards);
+    const currentCard = updatedCards[index];
+    if (currentCard) {
+      updatedCards[index] = {
+        id: currentCard.id,
+        term: field === 'term' ? value : currentCard.term,
+        definition: field === 'definition' ? value : currentCard.definition
+      };
+      setGeneratedCards(updatedCards);
+    }
   };
 
   const handleDeleteFlashcard = (index: number) => {

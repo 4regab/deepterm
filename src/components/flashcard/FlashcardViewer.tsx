@@ -30,6 +30,8 @@ const FlashcardViewer = () => {
   
   // Refs for touch events
   const cardRef = useRef<HTMLDivElement>(null);
+  // Ref for the inner flipping wrapper to apply transient swipe feedback without conflicting with flip rotation
+  const innerRef = useRef<HTMLDivElement>(null);
   const frontContentRef = useRef<HTMLDivElement>(null);
   const backContentRef = useRef<HTMLDivElement>(null);
   const touchStartX = useRef<number | null>(null);
@@ -168,12 +170,14 @@ const FlashcardViewer = () => {
     touchEndY.current = e.touches[0].clientY;
     
     // Optional: add visual feedback while swiping
-    if (cardRef.current && touchStartX.current && touchEndX.current) {
+    if (innerRef.current && touchStartX.current && touchEndX.current) {
       const distance = touchEndX.current - touchStartX.current;
       if (Math.abs(distance) > 30) {
         // Limit the rotation angle
         const rotationAngle = Math.min(Math.max(distance / 20, -7.5), 7.5);
-        cardRef.current.style.transform = `rotateY(${flipped ? 180 : 0}deg) rotateZ(${rotationAngle}deg)`;
+        // Apply only a slight Z-rotation and horizontal translation to the inner wrapper.
+        // IMPORTANT: Do NOT set rotateY here. rotateY is controlled by the flipped class.
+        innerRef.current.style.transform = `translateX(${distance / 25}px) rotateZ(${rotationAngle}deg)`;
       }
     }
   };
@@ -209,9 +213,9 @@ const FlashcardViewer = () => {
     touchStartY.current = null;
     touchEndY.current = null;
     
-    // Reset any transform applied during swiping
-    if (cardRef.current) {
-      cardRef.current.style.transform = flipped ? 'rotateY(180deg)' : '';
+    // Reset any transient transform applied during swiping (keep flip state intact)
+    if (innerRef.current) {
+      innerRef.current.style.transform = '';
     }
   };
 
@@ -292,8 +296,27 @@ const FlashcardViewer = () => {
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
+        role="button"
+        tabIndex={0}
+        aria-pressed={flipped}
+        aria-label="Flashcard. Tap or press Space/Enter to flip. Swipe left or right to change card."
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            handleFlipCard();
+          }
+          if (e.key === 'ArrowLeft') {
+            e.preventDefault();
+            handlePrevCard();
+          }
+          if (e.key === 'ArrowRight') {
+            e.preventDefault();
+            handleNextCard();
+          }
+        }}
       >
         <div 
+          ref={innerRef}
           className={`w-full h-full flip-card-inner ${flipped ? 'flipped' : ''}`}
         >
           {/* Front of card */}
@@ -436,10 +459,12 @@ const FlashcardViewer = () => {
           height: 100%;
           transition: transform 0.6s;
           transform-style: preserve-3d;
+          -webkit-transform-style: preserve-3d; /* Safari compatibility */
         }
         
         .flipped {
           transform: rotateY(180deg);
+          -webkit-transform: rotateY(180deg); /* Safari compatibility */
         }
         
         /* Add swipe animation hints */
@@ -463,6 +488,12 @@ const FlashcardViewer = () => {
           align-items: center;
           justify-content: center;
           padding: 1rem; /* Add padding inside the card */
+        }
+        
+        /* Critical: Back face must be rotated 180 degrees initially */
+        .flip-card-back {
+          transform: rotateY(180deg);
+          -webkit-transform: rotateY(180deg); /* Safari compatibility */
         }
         
         /* Ensure text container within card can scroll independently */

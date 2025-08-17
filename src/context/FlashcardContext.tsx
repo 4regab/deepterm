@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { FlashcardDeck } from "@/types/flashcard";
 import { v4 as uuidv4 } from 'uuid';
 import { toast } from "sonner";
@@ -54,7 +54,7 @@ export const FlashcardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   }, [activeDeck]);
 
   // Function to save or update a deck (adapts to useLocalStorage setter)
-  const saveFlashcardDeck = useCallback((deckData: Omit<FlashcardDeck, 'id' | 'dateCreated'> & { id?: string }) => {
+  const saveFlashcardDeck = useCallback((deckData: Omit<FlashcardDeck, 'id' | 'dateCreated' | 'lastModified'> & { id?: string }) => {
     const now = new Date().toISOString();
     let updatedDeck: FlashcardDeck | null = null;
     
@@ -65,25 +65,45 @@ export const FlashcardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       // Update existing deck
       const index = prevDecks.findIndex(d => d.id === deckData.id);
       if (index !== -1) {
-        updatedDeck = { 
-          ...prevDecks[index], 
-          ...deckData, 
-          lastModified: now 
+        // Exclude optional id from deckData to avoid overwriting required id with undefined
+        const { id: _ignoredId, ...rest } = deckData as Omit<FlashcardDeck, 'id' | 'dateCreated' | 'lastModified'> & { id?: string };
+        const base = prevDecks[index]!;
+
+        // Required fields
+        let merged: FlashcardDeck = {
+          id: base.id,
+          dateCreated: base.dateCreated,
+          title: (rest as Partial<FlashcardDeck>).title ?? base.title,
+          cards: (rest as Partial<FlashcardDeck>).cards ?? base.cards,
+          lastModified: now,
         };
-        prevDecks[index] = updatedDeck;
+
+        // Optional fields: include only when defined to avoid assigning undefined
+        const studyMaterialVal = (rest as Partial<FlashcardDeck>).studyMaterial ?? base.studyMaterial;
+        if (studyMaterialVal !== undefined) {
+          merged = { ...merged, studyMaterial: studyMaterialVal };
+        }
+        const displayModeVal = (rest as Partial<FlashcardDeck>).displayMode ?? base.displayMode;
+        if (displayModeVal !== undefined) {
+          merged = { ...merged, displayMode: displayModeVal };
+        }
+
+        updatedDeck = merged;
+        prevDecks[index] = merged;
         toast.success(`Deck "${deckData.title}" updated.`);
       }
     } else {
       // Add new deck
-      updatedDeck = {
+      const created: FlashcardDeck = {
         ...deckData,
         id: deckData.id || uuidv4(),
         dateCreated: now,
         lastModified: now,
         cards: deckData.cards || []
       };
-      prevDecks.push(updatedDeck);
-      toast.success(`Deck "${updatedDeck.title}" saved.`);
+      updatedDeck = created;
+      prevDecks.push(created);
+      toast.success(`Deck "${created.title}" saved.`);
     }
     
     // Set the entire new array
@@ -127,7 +147,7 @@ export const FlashcardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     setActiveDeck(null);
   }, []);
 
-  const value = {
+  const value = useMemo(() => ({
     activeDeck,
     setActiveDeck,
     savedDecks,
@@ -138,7 +158,7 @@ export const FlashcardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     saveFlashcardDeck,
     loadDeck,
     handleCreateNewDeck,
-  };
+  }), [activeDeck, savedDecks, isGenerating, setSavedDecks, setIsGenerating, deleteFlashcardDeck, saveFlashcardDeck, loadDeck, handleCreateNewDeck]);
 
   return (
     <FlashcardContext.Provider value={value}>
