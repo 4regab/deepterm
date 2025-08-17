@@ -46,7 +46,7 @@ const QuizTaking = () => {
       return null;
     }
     return activeQuiz.questions[currentQuestionIndex];
-  }, [activeQuiz?.questions?.length, currentQuestionIndex, activeQuiz?.questions?.[currentQuestionIndex]]);
+  }, [activeQuiz?.questions, currentQuestionIndex]);
 
   // Optimized updateAnswer function to eliminate state cascade and reduce flickering
   const updateAnswer = useCallback((answer: string) => {

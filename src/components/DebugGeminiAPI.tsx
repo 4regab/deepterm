@@ -3,11 +3,24 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { testApiKey, testFileUpload, checkApiKey } from '@/services/geminiService';
 
+interface TestResult {
+  testName: string;
+  result: {
+    success?: boolean;
+    error?: string;
+    details?: unknown;
+    data?: unknown;
+    hasApiKey?: boolean;
+    [key: string]: unknown; // Allow additional properties for flexibility
+  };
+  timestamp: string;
+}
+
 const DebugGeminiAPI = () => {
-  const [testResults, setTestResults] = useState<any[]>([]);
+  const [testResults, setTestResults] = useState<TestResult[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
-  const addResult = (testName: string, result: any) => {
+  const addResult = (testName: string, result: TestResult['result']) => {
     const timestamp = new Date().toLocaleTimeString();
     setTestResults(prev => [...prev, { testName, result, timestamp }]);
   };

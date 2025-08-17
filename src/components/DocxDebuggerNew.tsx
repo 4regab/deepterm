@@ -16,7 +16,7 @@ const DocxDebuggerNew: React.FC = () => {
   const [extractionMode, setExtractionMode] = useState<ExtractionMode>('full');
   const [results, setResults] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
-  const [uploadedFileInfo, setUploadedFileInfo] = useState<any>(null);
+  const [uploadedFileInfo, setUploadedFileInfo] = useState<unknown>(null);
   const [apiKeyStatus, setApiKeyStatus] = useState<string>('');
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -76,7 +76,7 @@ const DocxDebuggerNew: React.FC = () => {
     setResults('🔍 Extracting content...');
 
     try {
-      const extraction = await extractKeyTermsFromFile(uploadedFileInfo, extractionMode);
+      const extraction = await extractKeyTermsFromFile(uploadedFileInfo, extractionMode || undefined);
       setResults(`✅ Extraction successful!\n\nResults:\n${JSON.stringify(extraction, null, 2)}`);
     } catch (error) {
       setResults(`❌ Extraction failed: ${error}`);
@@ -103,7 +103,7 @@ const DocxDebuggerNew: React.FC = () => {
 
       // Step 2: Extract
       setResults(prev => prev + '🔍 Step 2: Extracting content...\n');
-      const extraction = await extractKeyTermsFromFile(fileInfo, extractionMode);
+      const extraction = await extractKeyTermsFromFile(fileInfo, extractionMode || undefined);
       setResults(prev => prev + `✅ Extraction successful! Found ${extraction.keyTerms.length} terms\n\n`);
       
       // Step 3: Display results
@@ -197,7 +197,10 @@ const DocxDebuggerNew: React.FC = () => {
           
           <div>
             <Label htmlFor="extraction-mode">Extraction Mode</Label>
-            <Select value={extractionMode} onValueChange={(value: ExtractionMode) => setExtractionMode(value)}>
+            <Select 
+              value={extractionMode || ""} 
+              onValueChange={(value: string) => setExtractionMode(value as ExtractionMode)}
+            >
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>

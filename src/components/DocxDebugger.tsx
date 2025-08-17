@@ -7,7 +7,7 @@ import { uploadFileToGemini, extractKeyTermsFromFile, deleteFileFromGemini } fro
 interface TestResult {
   step: string;
   success: boolean;
-  data?: any;
+  data?: unknown;
   error?: string;
   timing?: number;
 }
@@ -43,7 +43,7 @@ const DocxDebugger: React.FC = () => {
       });
 
       // Step 1: Test file upload
-      let uploadStart = Date.now();
+      const uploadStart = Date.now();
       addResult({ step: 'Upload - Starting', success: true, data: { fileName: selectedFile.name, size: selectedFile.size, type: selectedFile.type }});
 
       try {
@@ -81,7 +81,7 @@ const DocxDebugger: React.FC = () => {
         }
 
         // Step 3: Test extraction
-        let extractStart = Date.now();
+        const extractStart = Date.now();
         addResult({ step: 'Extraction - Starting', success: true });
 
         try {
@@ -113,8 +113,10 @@ const DocxDebugger: React.FC = () => {
 
         // Step 4: Cleanup
         try {
-          await deleteFileFromGemini(uploadResult.name);
-          addResult({ step: 'Cleanup - Complete', success: true });
+          if (uploadResult.name) {
+            await deleteFileFromGemini(uploadResult.name);
+            addResult({ step: 'Cleanup - Complete', success: true });
+          }
         } catch (cleanupError) {
           addResult({ 
             step: 'Cleanup - Failed', 
@@ -165,7 +167,7 @@ const DocxDebugger: React.FC = () => {
           termCount: result.extractionResult?.keyTerms?.length || 0,
           textLength: result.text?.length || 0
         } : undefined,
-        error: result.success ? undefined : result.error 
+        ...(result.success ? {} : { error: result.error || "Unknown error" })
       });
 
     } catch (error) {
@@ -253,10 +255,13 @@ const DocxDebugger: React.FC = () => {
                     </div>
                   )}
                   
-                  {result.data && (
+                  {result.data !== undefined && (
                     <div className="text-gray-700 text-sm">
                       <pre className="bg-gray-100 p-2 rounded text-xs overflow-auto">
-                        {JSON.stringify(result.data, null, 2)}
+                        {typeof result.data === 'string' 
+                          ? result.data 
+                          : JSON.stringify(result.data, null, 2)
+                        }
                       </pre>
                     </div>
                   )}

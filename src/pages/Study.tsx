@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -12,7 +12,7 @@ import FlashcardCreationForm from "@/components/flashcard/FlashcardCreationForm"
 import FlashcardViewer from "@/components/flashcard/FlashcardViewer";
 import FlashcardSavedList from "@/components/flashcard/FlashcardSavedList";
 import { toast } from "sonner"; 
-import { QuizContext, QuizPhase, Quiz, QuizQuestion, QuestionType, useQuiz } from "@/context/QuizContext";
+import { QuizContext, QuizPhase, Quiz, QuizQuestion, QuestionType } from "@/context/QuizContext";
 import { useFlashcard } from "@/context/FlashcardContextDefinition";
 import { useLocation } from "react-router-dom";
 
@@ -48,57 +48,63 @@ const Study = () => {
   // Get location for URL parameters
   const location = useLocation();
   
-  // On initial load, try to restore UI state from local storage
+  // One-time flag to avoid re-running restore
+  const restoredRef = useRef(false);
+
+  // On initial load only, try to restore UI state from local storage
   useEffect(() => {
+    if (restoredRef.current) return;
+    restoredRef.current = true;
     try {
       const savedState = localStorage.getItem(FLASHCARD_UI_STATE_KEY);
       if (savedState) {
         const state = JSON.parse(savedState);
-        // Restore UI state
-        if (state.activeStudyTab) {
+        // Restore UI state (guard against redundant sets)
+        if (state.activeStudyTab && state.activeStudyTab !== activeStudyTab) {
           setActiveStudyTab(state.activeStudyTab);
         }
-        if (state.flashcardSubTab) {
+        if (state.flashcardSubTab && state.flashcardSubTab !== flashcardSubTab) {
           setFlashcardSubTab(state.flashcardSubTab);
-        }
-        
-        // If we have an active deck, set the flashcard tab as active
-        if (flashcardContext.activeDeck) {
-          setActiveStudyTab("flashcard");
-          setFlashcardSubTab("view");
         }
       }
     } catch (error) {
       console.error("Failed to restore UI state:", error);
     }
-  }, [flashcardContext.activeDeck]); // Add flashcardContext.activeDeck as dependency
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-  // Handle URL-based navigation and tab changes
+  // Handle URL-based navigation and tab changes (guard redundant updates)
+  // Include relevant state in deps to avoid stale closures; conditions below prevent loops.
   useEffect(() => {
     const urlParams = new URLSearchParams(location.search);
     const mode = urlParams.get('mode');
     const viewing = urlParams.get('viewing');
     const deckId = urlParams.get('deckId');
-    
-    // Check for special create mode parameter - this has priority
+
+    // Special create mode parameter - highest priority
     if (mode === 'flashcard-create') {
-      setActiveStudyTab("flashcard");
-      setFlashcardSubTab("create");
+      if (activeStudyTab !== "flashcard") setActiveStudyTab("flashcard");
+      if (flashcardSubTab !== "create") setFlashcardSubTab("create");
       return;
     }
-    
-    // Handle direct link to view flashcards
+
+    // Direct link to view flashcards
     if (viewing === 'flashcard') {
-      setActiveStudyTab("flashcard");
-      
+      if (activeStudyTab !== "flashcard") setActiveStudyTab("flashcard");
       // If we have an activeDeck loaded, go to view mode
-      // This happens when "Study Now" is clicked
-      if (flashcardContext.activeDeck || deckId) {
+      if ((flashcardContext.activeDeck || deckId) && flashcardSubTab !== "view") {
         setFlashcardSubTab("view");
       }
     }
-    // Add flashcardContext.activeDeck to dependency array to fix ESLint warning
-  }, [location.search, flashcardContext.activeDeck]);
+  }, [location.search, flashcardContext.activeDeck, activeStudyTab, flashcardSubTab]);
+
+  // When an active deck becomes available, ensure Flashcards/View is selected
+  useEffect(() => {
+    if (flashcardContext.activeDeck) {
+      if (activeStudyTab !== "flashcard") setActiveStudyTab("flashcard");
+      if (flashcardSubTab !== "view") setFlashcardSubTab("view");
+    }
+  }, [flashcardContext.activeDeck, activeStudyTab, flashcardSubTab]);
 
   // Quiz handlers
   const deleteQuiz = (quizId: string) => {
@@ -177,23 +183,25 @@ const Study = () => {
     }
   };
 
-  const handleQuizSubTabChange = (value: "create" | "take") => {
-    if (value === "take" && (!activeQuiz || !activeQuiz?.questions?.length)) {
+  const handleQuizSubTabChange = (value: string) => {
+    const v = (value === "create" || value === "take") ? value : "create";
+    if (v === "take" && (!activeQuiz || (activeQuiz?.questions?.length ?? 0) === 0)) {
       toast.error("Please create a quiz first!");
       return;
     }
-    setQuizSubTab(value);
-    if (value === "create") {
+    setQuizSubTab(v);
+    if (v === "create") {
       setQuizPhase("creation");
     }
   };
 
-  const handleFlashcardSubTabChange = (value: "create" | "view") => {
-    if (value === "view" && !flashcardContext.activeDeck) {
+  const handleFlashcardSubTabChange = (value: string) => {
+    const v = (value === "create" || value === "view") ? value : "create";
+    if (v === "view" && !flashcardContext.activeDeck) {
       toast.error("Please select a flashcard deck first!");
       return;
     }
-    setFlashcardSubTab(value);
+    setFlashcardSubTab(v);
   };
 
   // Save UI state to localStorage whenever it changes
@@ -273,7 +281,7 @@ const Study = () => {
                     </TabsContent>
                     
                     <TabsContent value="take" className="p-4 sm:p-6 lg:p-8">
-                      {quizPhase === "taking" && activeQuiz?.questions?.length > 0 ? (
+                      {quizPhase === "taking" && ((activeQuiz?.questions?.length ?? 0) > 0) ? (
                         <QuizTaking />
                       ) : quizPhase === "results" && activeQuiz?.score ? (
                         <QuizResults />

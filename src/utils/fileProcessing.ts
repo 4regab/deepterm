@@ -7,7 +7,8 @@ import {
   uploadFileToGemini, 
   extractKeyTermsFromFile, 
   deleteFileFromGemini,
-  checkApiKey 
+  checkApiKey,
+  getFileInfo
 } from '@/services/geminiService';
 import { ExtractionMode, ExtractionResult } from '@/types';
 
@@ -16,7 +17,7 @@ export interface FileProcessingResult {
   text?: string;
   extractionResult?: ExtractionResult;
   error?: string;
-  fileId?: string;
+  fileId?: string | undefined;
 }
 
 /**
@@ -110,7 +111,6 @@ PDF files provide the most reliable text extraction for AI processing.`
         
         // Check file status
         try {
-          const { getFileInfo } = await import('@/services/geminiService');
           const updatedFileInfo = await getFileInfo(fileInfo.name!);
           console.log(`[Step 1.5] Updated file status:`, updatedFileInfo.state);
           fileInfo = updatedFileInfo;
@@ -145,14 +145,16 @@ PDF files provide the most reliable text extraction for AI processing.`
         await new Promise(resolve => setTimeout(resolve, 3000)); // Extra wait for DOCX
       }
       
-      const extractionResult = await extractKeyTermsFromFile(fileInfo, mode);
+      const extractionResult = await extractKeyTermsFromFile(fileInfo, mode || undefined);
       console.log(`[Step 2] ✅ Content extraction successful: ${extractionResult.keyTerms.length} terms found`);
       
       // Step 3: Clean up the uploaded file
       try {
         console.log(`[Step 3] Cleaning up uploaded file...`);
-        await deleteFileFromGemini(fileInfo.name);
-        console.log(`[Step 3] ✅ File ${fileInfo.name} cleaned up successfully`);
+        if (fileInfo.name) {
+          await deleteFileFromGemini(fileInfo.name);
+          console.log(`[Step 3] ✅ File ${fileInfo.name} cleaned up successfully`);
+        }
       } catch (cleanupError) {
         console.warn(`[Step 3] ⚠️ Failed to clean up file ${fileInfo.name}:`, cleanupError);
         // Don't fail the entire operation if cleanup fails
@@ -167,19 +169,21 @@ PDF files provide the most reliable text extraction for AI processing.`
         success: true,
         text: extractedText,
         extractionResult,
-        fileId: fileInfo.name
+        fileId: fileInfo.name || undefined
       };
     } catch (processingError) {
       console.error(`[Step 2] ❌ Content extraction failed:`, processingError);
       
       // Simplified error message for PDF files
-      let errorMessage = `PDF processing failed: ${processingError instanceof Error ? processingError.message : 'Unknown extraction error'}`;
+      const errorMessage = `PDF processing failed: ${processingError instanceof Error ? processingError.message : 'Unknown extraction error'}`;
       
       // If processing fails, still try to clean up the uploaded file
       try {
         console.log(`[Step 3] Attempting cleanup after extraction failure...`);
-        await deleteFileFromGemini(fileInfo.name);
-        console.log(`[Step 3] ✅ File ${fileInfo.name} cleaned up after processing error`);
+        if (fileInfo.name) {
+          await deleteFileFromGemini(fileInfo.name);
+          console.log(`[Step 3] ✅ File ${fileInfo.name} cleaned up after processing error`);
+        }
       } catch (cleanupError) {
         console.warn(`[Step 3] ⚠️ Failed to clean up file ${fileInfo.name} after processing error:`, cleanupError);
       }

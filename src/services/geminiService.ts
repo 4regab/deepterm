@@ -4,19 +4,6 @@ import { GoogleGenAI, createUserContent, createPartFromUri } from "@google/genai
 
 // Note: Using the unified @google/genai SDK (v1.5.1) which replaces the deprecated @google/generative-ai
 // Ensure we're using the correct client for Gemini Files API operations
-enum HarmCategory {
-  HARM_CATEGORY_HARASSMENT = 'HARM_CATEGORY_HARASSMENT',
-  HARM_CATEGORY_HATE_SPEECH = 'HARM_CATEGORY_HATE_SPEECH',
-  HARM_CATEGORY_SEXUALLY_EXPLICIT = 'HARM_CATEGORY_SEXUALLY_EXPLICIT',
-  HARM_CATEGORY_DANGEROUS_CONTENT = 'HARM_CATEGORY_DANGEROUS_CONTENT'
-}
-
-enum HarmBlockThreshold {
-  BLOCK_NONE = 'BLOCK_NONE',
-  BLOCK_LOW_AND_ABOVE = 'BLOCK_LOW_AND_ABOVE',
-  BLOCK_MEDIUM_AND_ABOVE = 'BLOCK_MEDIUM_AND_ABOVE',
-  BLOCK_ONLY_HIGH = 'BLOCK_ONLY_HIGH'
-}
 
 // Single API key storage
 let apiKey: string = "";
@@ -86,7 +73,7 @@ export const checkApiKey = (): boolean => {
 };
 
 // Test API key with a simple request to validate it works
-export const testApiKey = async (): Promise<{ success: boolean; error?: string; details?: any }> => {
+export const testApiKey = async (): Promise<{ success: boolean; error?: string; details?: unknown }> => {
   if (!checkApiKey()) {
     return { 
       success: false, 
@@ -208,15 +195,17 @@ export const uploadFileToGemini = async (file: File) => {
       // Log detailed error for analysis
       if (primaryError && typeof primaryError === 'object') {
         console.error("Error details:", {
-          message: (primaryError as any).message,
-          status: (primaryError as any).status,
-          code: (primaryError as any).code,
-          stack: (primaryError as any).stack
+          message: primaryError instanceof Error ? primaryError.message : 'Unknown message',
+          status: 'status' in (primaryError as object) ? (primaryError as { status: unknown }).status : 'unknown',
+          code: 'code' in (primaryError as object) ? (primaryError as { code: unknown }).code : 'unknown',
+          stack: primaryError instanceof Error ? primaryError.stack : 'No stack trace'
         });
       }
       
       // Re-throw the original error with more context
-      throw new Error(`File upload failed with ${(primaryError as any).status || 'unknown status'}: ${(primaryError as any).message || primaryError}`);
+      const status = 'status' in (primaryError as object) ? (primaryError as { status: unknown }).status : 'unknown status';
+      const message = primaryError instanceof Error ? primaryError.message : String(primaryError);
+      throw new Error(`File upload failed with ${status}: ${message}`);
     }
     
     // Validate that the upload result has required properties
@@ -254,7 +243,9 @@ export const uploadFileToGemini = async (file: File) => {
         try {
           // Check file status
           const fileInfo = await genAI.files.get({ name: uploadResult.name! });
-          uploadResult.state = fileInfo.state;
+          if (fileInfo.state) {
+            uploadResult.state = fileInfo.state;
+          }
           console.log(`[DOCX] File state check #${retries + 1}: ${uploadResult.state}`);
         } catch (statusError) {
           console.warn(`[DOCX] Could not check file status:`, statusError);
@@ -470,8 +461,13 @@ export const extractKeyTerms = async (
         // This case should theoretically not be reached if the logic above is correct.
         console.error("Reached end of retry logic without a result or error being thrown.");
         throw new Error(`Failed to generate content after ${maxRetries} attempts. Unknown state.`);
-    }    // Extract JSON from the response
-    const textResponse = result!.text;
+    }    
+    
+    // Extract JSON from the response with proper null checking
+    const textResponse = result?.text;
+    if (!textResponse) {
+      throw new Error("No text content received from Gemini API");
+    }
 
     console.log(`Received response from Gemini, length: ${textResponse.length}`);
 
@@ -564,7 +560,7 @@ export const extractKeyTerms = async (
             
             // Last resort: create a minimal valid structure with available data
             const titleMatch = textResponse.match(/"title"\s*:\s*"([^"]+)"/);
-            const title = titleMatch ? titleMatch[1] : "Extracted Content";
+            const title = titleMatch?.[1] ?? "Extracted Content";
             
             extractionResult = {
               title,
@@ -841,6 +837,9 @@ Extract ALL terms from the entire document, paying special attention to sections
     }
 
     const extractedData = result.text;
+    if (!extractedData) {
+      throw new Error("No text content received from Gemini API");
+    }
 
     console.log(`Received response from Gemini API, length: ${extractedData.length}`);
 
@@ -910,8 +909,10 @@ export const testFileUpload = async (): Promise<{ success: boolean; error?: stri
     
     // Clean up the test file
     try {
-      await deleteFileFromGemini(uploadResult.name);
-      console.log("Test file cleaned up successfully");
+      if (uploadResult.name) {
+        await deleteFileFromGemini(uploadResult.name);
+        console.log("Test file cleaned up successfully");
+      }
     } catch (cleanupError) {
       console.warn("Failed to clean up test file:", cleanupError);
     }

@@ -8,28 +8,18 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useToast } from "@/components/ui/use-toast";
 import { 
-  BACKGROUND_SOUNDS, // Import background sounds
-  BackgroundSoundId, // Import type if needed for casting
-  DEFAULT_SETTINGS, 
-  NOTIFICATION_SOUND_URL, 
-  StudySession, 
-  TimerType, // Import TimerType directly from here
+  BACKGROUND_SOUNDS,
+  TimerType,
   formatDuration, 
-  formatTime, 
   getFormattedDate 
 } from "@/context/pomodoroUtils";
-import { usePomodoroContext } from "@/hooks/usePomodoroContext"; // Corrected import path
-import { useIsMobile } from "@/hooks/use-mobile";
-import { CheckCircle2, Clock, Coffee, Flame, InfoIcon, Pause, Play, RefreshCcw, Settings, Timer, Volume2, VolumeX, ChevronRight, Music } from "lucide-react"; // Added Music icon
+import { usePomodoroContext } from "@/hooks/usePomodoroContext";
+import { CheckCircle2, Clock, Coffee, Flame, InfoIcon, Pause, Play, RefreshCcw, Settings, Timer, ChevronRight, Music } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
-// Import Select components
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-// Import DropdownMenu components
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 
@@ -40,7 +30,6 @@ const Pomodoro = () => {
     timerType,
     isRunning,
     completedPomodoros,
-    isMuted,
     initialTime,
     isTimerCompleted,
     isPlayingSound,
@@ -49,13 +38,9 @@ const Pomodoro = () => {
     resetTimer,
     handleTimerTypeChange,
     handleStartNextPhase,
-    toggleMute,
     nextTimerType,
-    DEFAULT_SETTINGS,
-    NOTIFICATION_SOUND_URL,
     setIsTimerCompleted,
     audioRef,
-    stopSound,
     userSettings,
     updateUserSettings,
     isSettingsDialogOpen,
@@ -68,8 +53,6 @@ const Pomodoro = () => {
     isStreakDialogOpen,
     setIsStreakDialogOpen,
     totalStudyTimeToday,
-    formatDuration,
-    getFormattedDate,
     // Background Sound
     selectedSoundId,
     selectBackgroundSound
@@ -91,8 +74,6 @@ const Pomodoro = () => {
 
   const [isExpanded, setIsExpanded] = useState(true);
 
-  const isMobile = useIsMobile();
-
   // Effect to save todo list visibility state to localStorage
   useEffect(() => {
     localStorage.setItem('pomodoro-todos-minimized', JSON.stringify(!isTodoListVisible));
@@ -109,11 +90,6 @@ const Pomodoro = () => {
       });
     }
   }, [isSettingsDialogOpen, userSettings.pomodoro, userSettings.shortBreak, userSettings.longBreak, userSettings.pomodorosUntilLongBreak]);
-
-  // Toggle todo list visibility
-  const toggleTodoListVisibility = () => {
-    setIsTodoListVisible(prev => !prev);
-  };
   // Handle settings form submission
   const handleSaveSettings = () => {
     // Validate inputs - ensure values are numbers and within range
@@ -174,26 +150,20 @@ const Pomodoro = () => {
     return Math.round((1 - timer / initialTime) * 100);
   };
 
-  // Get background and icon based on timer type
+  // Get background based on timer type
   const getTimerTypeStyles = () => {
     switch (timerType) {
       case 'pomodoro':
         return {
-          bgColor: 'bg-[#FF5C00]',
-          iconColor: 'text-[#FF5C00]',
-          borderColor: 'border-[#FF5C00]'
+          bgColor: 'bg-[#FF5C00]'
         };
       case 'shortBreak':
         return {
-          bgColor: 'bg-[#00C6C2]',
-          iconColor: 'text-[#00C6C2]',
-          borderColor: 'border-[#00C6C2]'
+          bgColor: 'bg-[#00C6C2]'
         };
       case 'longBreak':
         return {
-          bgColor: 'bg-[#8B5CF6]',
-          iconColor: 'text-[#8B5CF6]',
-          borderColor: 'border-[#8B5CF6]'
+          bgColor: 'bg-[#8B5CF6]'
         };
     }
   };
@@ -225,12 +195,11 @@ const Pomodoro = () => {
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   };
 
-  const { bgColor, iconColor, borderColor } = getTimerTypeStyles();
+  const { bgColor } = getTimerTypeStyles();
   const progress = calculateProgress();
 
   // Show timer in browser tab title only when timer is running
   useEffect(() => {
-    const originalTitle = "Pomodoro";
     let label = '';
     switch (timerType) {
       case 'pomodoro':
@@ -292,7 +261,7 @@ const Pomodoro = () => {
       {/* Hidden audio element for notification sound */}
       <audio
         ref={audioRef}
-        src={NOTIFICATION_SOUND_URL}
+        src="/notification.mp3"
         preload="auto"
         className="hidden"
       />
@@ -524,273 +493,262 @@ const Pomodoro = () => {
           </div>
         </div>
 
-        <div className={`grid grid-cols-1 ${isTodoListVisible ? 'lg:grid-cols-3' : 'lg:grid-cols-1'} gap-6 max-w-6xl mx-auto`}>
-          <div className={isTodoListVisible ? 'lg:col-span-2' : 'lg:col-span-1'}>
-            <div className={`${isTodoListVisible ? 'max-w-2xl mx-auto lg:max-w-none' : 'max-w-2xl mx-auto'}`}>
+        <div className={`grid grid-cols-1 gap-6 max-w-6xl mx-auto`}>
+          <div className="max-w-2xl mx-auto">
 
-              {/* Timer Type Tabs */}
-              <Tabs
-                defaultValue="pomodoro"
-                value={timerType}
-                onValueChange={(value) => handleTimerTypeChange(value as TimerType)}
-                className="mb-8"
-              >
-                <TabsList className="grid grid-cols-3 w-full max-w-md mx-auto neo-border overflow-hidden p-1 bg-white shadow-neo">
-                  <TabsTrigger
-                    value="pomodoro"
-                    className="data-[state=active]:bg-[#FF5C00] data-[state=active]:text-white"
-                  >
-                    Pomodoro
-                  </TabsTrigger>
-                  <TabsTrigger
-                    value="shortBreak"
-                    className="data-[state=active]:bg-[#00C6C2] data-[state=active]:text-white"
-                  >
-                    Short Break
-                  </TabsTrigger>
-                  <TabsTrigger
-                    value="longBreak"
-                    className="data-[state=active]:bg-[#8B5CF6] data-[state=active]:text-white"
-                  >
-                    Long Break
-                  </TabsTrigger>
-                </TabsList>
-              </Tabs>
+            {/* Timer Type Tabs */}
+            <Tabs
+              defaultValue="pomodoro"
+              value={timerType}
+              onValueChange={(value) => handleTimerTypeChange(value as TimerType)}
+              className="mb-8"
+            >
+              <TabsList className="grid grid-cols-3 w-full max-w-md mx-auto neo-border overflow-hidden p-1 bg-white shadow-neo">
+                <TabsTrigger
+                  value="pomodoro"
+                  className="data-[state=active]:bg-[#FF5C00] data-[state=active]:text-white"
+                >
+                  Pomodoro
+                </TabsTrigger>
+                <TabsTrigger
+                  value="shortBreak"
+                  className="data-[state=active]:bg-[#00C6C2] data-[state=active]:text-white"
+                >
+                  Short Break
+                </TabsTrigger>
+                <TabsTrigger
+                  value="longBreak"
+                  className="data-[state=active]:bg-[#8B5CF6] data-[state=active]:text-white"
+                >
+                  Long Break
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
 
-              {/* Redesigned Timer Card */}
-              <Card className="mb-8 neo-box overflow-hidden bg-white">
-                <CardContent className="p-4 sm:p-6">
-                  {/* Card Header: Title, Streak, Controls */}
-                  <div className="flex flex-wrap justify-between items-center gap-y-3 mb-4 sm:mb-6">
-                    {/* Left Side: Title & Streak */}
-                    <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
-                      <h2 className="text-lg font-semibold order-1 sm:order-none">
-                        {timerType === 'pomodoro' ? 'Focus Time' : timerType === 'shortBreak' ? 'Short Break' : 'Long Break'}
-                      </h2>
-                      {/* MOVED Streak Display Back Here */}
-                      <button 
-                        onClick={() => setIsStreakDialogOpen(true)}
-                        className="flex items-center gap-2 hover:bg-accent p-1.5 rounded-md transition-colors order-2 sm:order-none -ml-1.5 sm:ml-0"
-                        title="View study history"
-                      >
-                        <div className={`p-1.5 rounded-md bg-[#FFA726] shadow-neo-xs neo-border flex-shrink-0`}>
-                          <Flame 
-                            className={`w-4 h-4 ${
-                              studyStreak === 0 
-                                ? 'text-gray-300/70' // Dimmed when no streak
-                                : studyStreak === 1 
-                                  ? 'text-white/50' // 50% opacity for 1 day
-                                  : studyStreak === 2 
-                                    ? 'text-white/75' // 75% opacity for 2 days
-                                    : 'text-white' // Full opacity for 3+ days
-                            }`} 
-                          />
-                        </div>
-                        <div className="text-left leading-tight">
-                          <h3 className="font-bold text-sm">
-                            {studyStreak > 0 ? `${studyStreak} day streak` : 'No streak'}
-                          </h3>
-                          <p className="text-xs text-gray-600">
-                            {totalStudyTimeToday > 0 
-                              ? `Today: ${formatDuration(totalStudyTimeToday)}` 
-                              : 'No focus today'}
-                          </p>
-                        </div>
-                        {/* Subtle history indicator */}
-                        <ChevronRight className="w-3 h-3 text-gray-400 ml-1 flex-shrink-0" />
-                      </button>
-                    </div>
-
-                    {/* Right Side: Controls */}
-                    <div className="flex items-center space-x-1 sm:space-x-2 order-3 sm:order-none ml-auto sm:ml-0 pl-2 sm:pl-0">
-                      {/* Background Sound Selector Button */}
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="text-gray-600 hover:text-gray-900 w-8 h-8 sm:w-9 sm:h-9">
-                            <Music className="h-4 w-4 sm:h-5 sm:w-5" />
-                            <span className="sr-only">Select Background Sound</span>
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          {BACKGROUND_SOUNDS.map((sound) => (
-                            <DropdownMenuItem 
-                              key={sound.id} 
-                              onSelect={() => selectBackgroundSound(sound.id)}
-                              className={selectedSoundId === sound.id ? "bg-accent" : ""}
-                            >
-                              {sound.name}
-                            </DropdownMenuItem>
-                          ))}
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                      {/* Settings Button */}
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => setIsSettingsDialogOpen(true)}
-                        className="text-gray-600 hover:text-gray-900 w-8 h-8 sm:w-9 sm:h-9" // Slightly smaller icons
-                      >
-                        <Settings className="h-4 w-4 sm:h-5 sm:w-5" />
-                        <span className="sr-only">Customize Timer Settings</span>
-                      </Button>
-                    </div>
-                  </div>
-
-                  {/* REMOVED Centered Streak Display from here */}
-                  {/* 
-                  <div className="flex justify-center mb-4 sm:mb-6">
-                    <button ... > ... </button>
-                  </div>
-                  */}
-
-                  {/* Timer Display */}
-                  <div className="relative mx-auto w-full max-w-md mb-6 sm:mb-8">
-                    {/* Progress Bar */}
-                    <Progress
-                      value={progress}
-                      className="h-5 sm:h-6 mb-4 bg-gray-100 neo-border" // Adjusted background
-                      indicatorClassName={bgColor}
-                    />
-
-                    {/* Timer Display Text */}
-                    <div className="flex flex-col items-center justify-center">
-                      <div className="font-mono text-5xl sm:text-6xl font-bold mb-3 sm:mb-4 text-[#1a1a1a] neo-border px-4 sm:px-8 py-3 sm:py-5 rounded-lg bg-white shadow-neo">
-                        {formatTime(getDisplayTime())}
+            {/* Redesigned Timer Card */}
+            <Card className="mb-8 neo-box overflow-hidden bg-white">
+              <CardContent className="p-4 sm:p-6">
+                {/* Card Header: Title, Streak, Controls */}
+                <div className="flex flex-wrap justify-between items-center gap-y-3 mb-4 sm:mb-6">
+                  {/* Left Side: Title & Streak */}
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+                    <h2 className="text-lg font-semibold order-1 sm:order-none">
+                      {timerType === 'pomodoro' ? 'Focus Time' : timerType === 'shortBreak' ? 'Short Break' : 'Long Break'}
+                    </h2>
+                    {/* MOVED Streak Display Back Here */}
+                    <button 
+                      onClick={() => setIsStreakDialogOpen(true)}
+                      className="flex items-center gap-2 hover:bg-accent p-1.5 rounded-md transition-colors order-2 sm:order-none -ml-1.5 sm:ml-0"
+                      title="View study history"
+                    >
+                      <div className={`p-1.5 rounded-md bg-[#FFA726] shadow-neo-xs neo-border flex-shrink-0`}>
+                        <Flame 
+                          className={`w-4 h-4 ${
+                            studyStreak === 0 
+                              ? 'text-gray-300/70' // Dimmed when no streak
+                              : studyStreak === 1 
+                                ? 'text-white/50' // 50% opacity for 1 day
+                                : studyStreak === 2 
+                                  ? 'text-white/75' // 75% opacity for 2 days
+                                  : 'text-white' // Full opacity for 3+ days
+                          }`} 
+                        />
                       </div>
-                      <span className="text-xs sm:text-sm text-gray-700 font-medium px-3 py-1.5 bg-white rounded-full neo-border">
-                        {isRunning ? 'Time remaining' : timer === initialTime ? 'Ready to start' : 'Paused'}
-                      </span>
-                    </div>
+                      <div className="text-left leading-tight">
+                        <h3 className="font-bold text-sm">
+                          {studyStreak > 0 ? `${studyStreak} day streak` : 'No streak'}
+                        </h3>
+                        <p className="text-xs text-gray-600">
+                          {totalStudyTimeToday > 0 
+                            ? `Today: ${formatDuration(totalStudyTimeToday)}` 
+                            : 'No focus today'}
+                        </p>
+                      </div>
+                      {/* Subtle history indicator */}
+                      <ChevronRight className="w-3 h-3 text-gray-400 ml-1 flex-shrink-0" />
+                    </button>
                   </div>
 
-                  {/* Controls */}
-                  <div className="flex justify-center gap-4">
+                  {/* Right Side: Controls */}
+                  <div className="flex items-center space-x-1 sm:space-x-2 order-3 sm:order-none ml-auto sm:ml-0 pl-2 sm:pl-0">
+                    {/* Background Sound Selector Button */}
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="text-gray-600 hover:text-gray-900 w-8 h-8 sm:w-9 sm:h-9">
+                          <Music className="h-4 w-4 sm:h-5 sm:w-5" />
+                          <span className="sr-only">Select Background Sound</span>
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        {BACKGROUND_SOUNDS.map((sound) => (
+                          <DropdownMenuItem 
+                            key={sound.id} 
+                            onSelect={() => selectBackgroundSound(sound.id)}
+                            className={selectedSoundId === sound.id ? "bg-accent" : ""}
+                          >
+                            {sound.name}
+                          </DropdownMenuItem>
+                        ))}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                    {/* Settings Button */}
                     <Button
-                      onClick={toggleTimer}
-                      className={`w-16 h-16 rounded-lg ${bgColor} text-white shadow-neo neo-border`}
+                      variant="ghost"
                       size="icon"
+                      onClick={() => setIsSettingsDialogOpen(true)}
+                      className="text-gray-600 hover:text-gray-900 w-8 h-8 sm:w-9 sm:h-9" // Slightly smaller icons
                     >
-                      {isRunning ? (
-                        <Pause className="w-8 h-8" />
-                      ) : (
-                        <Play className="w-8 h-8 ml-1" />
-                      )}
-                    </Button>
-                    <Button
-                      onClick={resetTimer}
-                      className="w-16 h-16 rounded-lg bg-white text-[#1a1a1a] shadow-neo neo-border"
-                      variant="outline"
-                      size="icon"
-                    >
-                      <RefreshCcw className="w-7 h-7" />
+                      <Settings className="h-4 w-4 sm:h-5 sm:w-5" />
+                      <span className="sr-only">Customize Timer Settings</span>
                     </Button>
                   </div>
-                </CardContent>
-              </Card>
+                </div>
 
-              {/* Pomodoro Progress */}
-              <Card className="mb-8 neo-box overflow-hidden">
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-lg font-bold flex items-center gap-2">
-                      <div className="w-6 h-6 flex items-center justify-center bg-[#FFC225] rounded-md neo-border shadow-neo-sm">
-                        <CheckCircle2 className="w-3.5 h-3.5 text-[#1a1a1a]" />
-                      </div>
-                      Today's Progress
-                    </h3>
-                    <div className="bg-white rounded-md py-1 px-3 text-sm font-medium neo-border shadow-neo-sm">
-                      {completedPomodoros} completed
+                {/* Timer Display */}
+                <div className="relative mx-auto w-full max-w-md mb-6 sm:mb-8">
+                  {/* Progress Bar */}
+                  <Progress
+                    value={progress}
+                    className="h-5 sm:h-6 mb-4 bg-gray-100 neo-border" // Adjusted background
+                    indicatorClassName={bgColor}
+                  />
+
+                  {/* Timer Display Text */}
+                  <div className="flex flex-col items-center justify-center">
+                    <div className="font-mono text-5xl sm:text-6xl font-bold mb-3 sm:mb-4 text-[#1a1a1a] neo-border px-4 sm:px-8 py-3 sm:py-5 rounded-lg bg-white shadow-neo">
+                      {formatTime(getDisplayTime())}
                     </div>
+                    <span className="text-xs sm:text-sm text-gray-700 font-medium px-3 py-1.5 bg-white rounded-full neo-border">
+                      {isRunning ? 'Time remaining' : timer === initialTime ? 'Ready to start' : 'Paused'}
+                    </span>
                   </div>
+                </div>
 
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4">
-                    {Array.from({ length: userSettings.pomodorosUntilLongBreak }).map((_, i) => {
-                      const isCompleted = i < completedPomodoros % userSettings.pomodorosUntilLongBreak;
-                      return (
-                        <div
-                          key={i}
-                          className={`h-10 rounded-md flex items-center justify-center neo-border shadow-neo-sm transition-all ${isCompleted ? 'bg-[#FF5C00] text-white translate-y-[-2px] translate-x-[-2px] shadow-neo' : 'bg-white'
-                            }`}
-                        >
-                          {isCompleted && <CheckCircle2 className="w-5 h-5" />}
-                        </div>
-                      );
-                    })}
-                  </div>
-
-                  <div className="text-sm text-gray-600 bg-[#FFF9EB] p-2 rounded-md neo-border inline-block">
-                    <p className="font-medium">Cycle: {Math.ceil(completedPomodoros / userSettings.pomodorosUntilLongBreak) || 1}</p>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Technique Explanation - Now Collapsible */}
-              <Card className="overflow-hidden bg-white neo-box">
-                <Collapsible open={isExpanded} onOpenChange={setIsExpanded}>
-                  <CollapsibleTrigger 
-                    className="w-full flex items-center justify-between p-4 hover:bg-gray-50 transition-colors"
+                {/* Controls */}
+                <div className="flex justify-center gap-4 mb-6">
+                  <Button
+                    onClick={toggleTimer}
+                    className={`w-16 h-16 rounded-lg ${bgColor} text-white shadow-neo neo-border`}
+                    size="icon"
                   >
-                    <div className="flex items-center gap-2">
-                      <InfoIcon className="w-5 h-5 text-[#FF5C00]" />
-                      <h3 className="text-xl font-bold">What is the Pomodoro Technique?</h3>
-                    </div>
-                    {isExpanded ? (
-                      <ChevronUp className="w-5 h-5" />
+                    {isRunning ? (
+                      <Pause className="w-8 h-8" />
                     ) : (
-                      <ChevronDown className="w-5 h-5" />
+                      <Play className="w-8 h-8 ml-1" />
                     )}
-                  </CollapsibleTrigger>
-                
-                  <CollapsibleContent>
-                    <div className="p-6">
-                      <p className="mb-4 text-gray-700">
-                        The Pomodoro Technique is a time management method developed by Francesco Cirillo
-                        in the late 1980s. It uses a timer to break work into intervals, traditionally
-                        25 minutes in length, separated by short breaks. Combined with our task management tool,
-                        you can track what you're working on during each session.
-                      </p>
+                  </Button>
+                  <Button
+                    onClick={resetTimer}
+                    className="w-16 h-16 rounded-lg bg-white text-[#1a1a1a] shadow-neo neo-border"
+                    variant="outline"
+                    size="icon"
+                  >
+                    <RefreshCcw className="w-7 h-7" />
+                  </Button>
+                </div>
 
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
-                        <div className="p-4 bg-[#FFF9EB] rounded-md neo-border shadow-neo-sm">
-                          <h4 className="font-bold mb-2 flex items-center gap-2">
-                            <div className="w-5 h-5 flex items-center justify-center bg-[#FF5C00] rounded-md text-white text-xs font-bold">1</div>
-                            How to use it:
-                          </h4>
-                          <ol className="list-decimal pl-5 space-y-1 text-gray-700">
-                            <li>Choose a task to work on</li>
-                            <li>Start the Pomodoro (customizable)</li>
-                            <li>Work until the timer rings</li>
-                            <li>Take a short break (customizable)</li>
-                            <li>After {userSettings.pomodorosUntilLongBreak} pomodoros, take a longer break (customizable)</li>
-                          </ol>
-                        </div>
+                {/* Todo List Component - Now inside timer card */}
+                <div className="border-t border-gray-200 pt-6">
+                  <TodoList onVisibilityChange={setIsTodoListVisible} />
+                </div>
+              </CardContent>
+            </Card>
 
-                        <div className="p-4 bg-[#FFF9EB] rounded-md neo-border shadow-neo-sm">
-                          <h4 className="font-bold mb-2 flex items-center gap-2">
-                            <div className="w-5 h-5 flex items-center justify-center bg-[#00C6C2] rounded-md text-white text-xs font-bold">2</div>
-                            Benefits:
-                          </h4>
-                          <ul className="list-disc pl-5 space-y-1 text-gray-700">
-                            <li>Improved focus and concentration</li>
-                            <li>Reduced mental fatigue</li>
-                            <li>Increased productivity</li>
-                            <li>Better work/break balance</li>
-                            <li>Enhanced time awareness</li>
-                          </ul>
-                        </div>
+            {/* Pomodoro Progress */}
+            <Card className="mb-8 neo-box overflow-hidden">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-bold flex items-center gap-2">
+                    <div className="w-6 h-6 flex items-center justify-center bg-[#FFC225] rounded-md neo-border shadow-neo-sm">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-[#1a1a1a]" />
+                    </div>
+                    Today's Progress
+                  </h3>
+                  <div className="bg-white rounded-md py-1 px-3 text-sm font-medium neo-border shadow-neo-sm">
+                    {completedPomodoros} completed
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4">
+                  {Array.from({ length: userSettings.pomodorosUntilLongBreak }).map((_, i) => {
+                    const isCompleted = i < completedPomodoros % userSettings.pomodorosUntilLongBreak;
+                    return (
+                      <div
+                        key={i}
+                        className={`h-10 rounded-md flex items-center justify-center neo-border shadow-neo-sm transition-all ${isCompleted ? 'bg-[#FF5C00] text-white translate-y-[-2px] translate-x-[-2px] shadow-neo' : 'bg-white'
+                          }`}
+                      >
+                        {isCompleted && <CheckCircle2 className="w-5 h-5" />}
+                      </div>
+                    );
+                  })}
+                </div>
+
+                <div className="text-sm text-gray-600 bg-[#FFF9EB] p-2 rounded-md neo-border inline-block">
+                  <p className="font-medium">Cycle: {Math.ceil(completedPomodoros / userSettings.pomodorosUntilLongBreak) || 1}</p>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Technique Explanation - Now Collapsible */}
+            <Card className="overflow-hidden bg-white neo-box">
+              <Collapsible open={isExpanded} onOpenChange={setIsExpanded}>
+                <CollapsibleTrigger 
+                  className="w-full flex items-center justify-between p-4 hover:bg-gray-50 transition-colors"
+                >
+                  <div className="flex items-center gap-2">
+                    <InfoIcon className="w-5 h-5 text-[#FF5C00]" />
+                    <h3 className="text-xl font-bold">What is the Pomodoro Technique?</h3>
+                  </div>
+                  {isExpanded ? (
+                    <ChevronUp className="w-5 h-5" />
+                  ) : (
+                    <ChevronDown className="w-5 h-5" />
+                  )}
+                </CollapsibleTrigger>
+              
+                <CollapsibleContent>
+                  <div className="p-6">
+                    <p className="mb-4 text-gray-700">
+                      The Pomodoro Technique is a time management method developed by Francesco Cirillo
+                      in the late 1980s. It uses a timer to break work into intervals, traditionally
+                      25 minutes in length, separated by short breaks. Combined with our task management tool,
+                      you can track what you're working on during each session.
+                    </p>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
+                      <div className="p-4 bg-[#FFF9EB] rounded-md neo-border shadow-neo-sm">
+                        <h4 className="font-bold mb-2 flex items-center gap-2">
+                          <div className="w-5 h-5 flex items-center justify-center bg-[#FF5C00] rounded-md text-white text-xs font-bold">1</div>
+                          How to use it:
+                        </h4>
+                        <ol className="list-decimal pl-5 space-y-1 text-gray-700">
+                          <li>Choose a task to work on</li>
+                          <li>Start the Pomodoro (customizable)</li>
+                          <li>Work until the timer rings</li>
+                          <li>Take a short break (customizable)</li>
+                          <li>After {userSettings.pomodorosUntilLongBreak} pomodoros, take a longer break (customizable)</li>
+                        </ol>
+                      </div>
+
+                      <div className="p-4 bg-[#FFF9EB] rounded-md neo-border shadow-neo-sm">
+                        <h4 className="font-bold mb-2 flex items-center gap-2">
+                          <div className="w-5 h-5 flex items-center justify-center bg-[#00C6C2] rounded-md text-white text-xs font-bold">2</div>
+                          Benefits:
+                        </h4>
+                        <ul className="list-disc pl-5 space-y-1 text-gray-700">
+                          <li>Improved focus and concentration</li>
+                          <li>Reduced mental fatigue</li>
+                          <li>Increased productivity</li>
+                          <li>Better work/break balance</li>
+                          <li>Enhanced time awareness</li>
+                        </ul>
                       </div>
                     </div>
-                  </CollapsibleContent>
-                </Collapsible>
-              </Card>
-            </div>
-          </div>
-
-          {/* Todo List Component - Right side on desktop, below on mobile */}
-          <div className={`flex flex-col ${!isTodoListVisible ? 'lg:absolute lg:right-4 lg:top-24' : ''}`}>
-            <div className="flex-grow">
-              <TodoList onVisibilityChange={setIsTodoListVisible} />
-            </div>
+                  </div>
+                </CollapsibleContent>
+              </Collapsible>
+            </Card>
           </div>
         </div>
       </main>

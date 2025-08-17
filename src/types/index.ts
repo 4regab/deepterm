@@ -9,7 +9,7 @@ export interface KeyTerm {
   keywords?: string[];
 }
 
-export type ExtractionMode = "full" | "sentence" | "keywords" | null;
+export type ExtractionMode = "full" | "sentence" | "keywords" | null | undefined;
 
 export interface ExtractionResult {
   title: string;

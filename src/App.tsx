@@ -2,10 +2,11 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Route, Routes, Navigate, useLocation } from "react-router-dom";
+import { BrowserRouter, Route, Routes, Navigate } from "react-router-dom";
 import { PomodoroProvider } from "./context/PomodoroContext";
 import { UserProfileProvider } from "./context/UserProfileContext";
 import { FlashcardProvider } from "./context/FlashcardContext";
+import ErrorBoundary from "./components/ErrorBoundary";
 import About from "./pages/About";
 import Contact from "./pages/Contact";
 import Dashboard from "./pages/Dashboard";
@@ -24,9 +25,6 @@ import DocxDebuggerNew from "./components/DocxDebuggerNew";
 const queryClient = new QueryClient();
 
 const AppContent = () => {
-  const location = useLocation();
-  const isHomePage = location.pathname === "/";
-
   return (
     <>
       <Toaster />
@@ -53,19 +51,21 @@ const AppContent = () => {
 
 const App = () => {
   return (
-    <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
-        <UserProfileProvider>
-          <PomodoroProvider>
-            <FlashcardProvider>
-              <TooltipProvider>
-                <AppContent />
-              </TooltipProvider>
-            </FlashcardProvider>
-          </PomodoroProvider>
-        </UserProfileProvider>
-      </BrowserRouter>
-    </QueryClientProvider>
+    <ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <BrowserRouter>
+          <UserProfileProvider>
+            <PomodoroProvider>
+              <FlashcardProvider>
+                <TooltipProvider>
+                  <AppContent />
+                </TooltipProvider>
+              </FlashcardProvider>
+            </PomodoroProvider>
+          </UserProfileProvider>
+        </BrowserRouter>
+      </QueryClientProvider>
+    </ErrorBoundary>
   );
 };
 

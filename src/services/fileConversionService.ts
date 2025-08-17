@@ -7,8 +7,8 @@ export const convertDocxToText = async (file: File): Promise<string> => {
   // a proper DOCX parsing library like mammoth.js or docx-preview
   
   try {
-    // Read file as array buffer
-    const arrayBuffer = await file.arrayBuffer();
+    // Read file as array buffer (currently unused, but required for future DOCX parsing)
+    // const arrayBuffer = await file.arrayBuffer();
     
     // For now, return a message indicating we need a conversion service
     // In a real implementation, you would use a library like mammoth.js:
@@ -66,8 +66,12 @@ export const processDocxAlternative = async (
 };
 
 // Enhanced error handling with specific DOCX guidance
-export const getDocxErrorGuidance = (error: any): string => {
-  const errorMessage = error?.message || error?.toString() || 'Unknown error';
+export const getDocxErrorGuidance = (error: Error | unknown): string => {
+  const errorMessage = error instanceof Error 
+    ? error.message 
+    : typeof error === 'string' 
+      ? error 
+      : 'Unknown error';
   
   if (errorMessage.includes('INVALID_ARGUMENT')) {
     return `DOCX File Processing Error: The Gemini API encountered an issue processing this DOCX file.

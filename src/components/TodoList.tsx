@@ -1,10 +1,8 @@
 import React, { useState, useEffect } from "react";
-import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
-import { PlusIcon, Trash2, ChevronDown, ChevronUp, ChevronRight, ChevronLeft, ListTodo } from "lucide-react";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { PlusIcon, Trash2, ChevronDown, ChevronUp, ListTodo } from "lucide-react";
 import { useUserProfile } from "@/hooks/useUserProfile"; // Import the useUserProfile hook
 
 type TodoItem = {
@@ -33,8 +31,6 @@ export const TodoList: React.FC<TodoListProps> = ({ onVisibilityChange }) => {
     // Default to minimized (true) if not set
     return savedState ? JSON.parse(savedState) : true;
   });
-  
-  const isMobile = useIsMobile();
   
   // Save todos to localStorage whenever they change
   useEffect(() => {
@@ -103,40 +99,26 @@ export const TodoList: React.FC<TodoListProps> = ({ onVisibilityChange }) => {
 
   // If todolist is minimized, render a compact button
   if (isMinimized) {
-    // Apply fixed positioning only on mobile
-    const mobileFixedClasses = isMobile ? "fixed bottom-4 right-4 z-[9999]" : "w-full";
-    const mobileJustify = isMobile ? "justify-end" : "justify-start";
-
     return (
-      <div className={`flex ${mobileJustify} h-full`}>
+      <div className="flex justify-center">
         <Button
           variant="outline"
           onClick={() => setIsMinimized(false)}
-          className={`neo-border shadow-neo bg-white hover:bg-gray-50 transition-colors py-3 sm:py-4 px-3 min-h-[44px] touch-target ${mobileFixedClasses}`}
-          aria-label="Expand task list"
+          className="neo-border shadow-neo bg-gray-50 hover:bg-gray-100 transition-colors py-3 px-4 min-h-[44px] w-full max-w-sm"
+          aria-label="Expand focus tasks"
         >
-          <div className="flex flex-row items-center gap-1.5 sm:gap-2">
-            <div className="w-6 h-6 sm:w-8 sm:h-8 flex items-center justify-center rounded-md bg-[#FFC225] neo-border flex-shrink-0">
-              <ListTodo className="h-3 w-3 sm:h-4 sm:w-4 text-[#1a1a1a]" />
+          <div className="flex items-center gap-2 justify-center">
+            <div className="w-6 h-6 flex items-center justify-center rounded-md bg-[#FFC225] neo-border flex-shrink-0">
+              <ListTodo className="h-4 w-4 text-[#1a1a1a]" />
             </div>
-            <span className="text-xs sm:text-sm font-medium hidden sm:inline">
-              To do list{todos.filter(todo => !todo.completed).length > 0 && (
-                <span className="ml-1 bg-gray-100 px-1.5 sm:px-2 py-0.5 rounded-full text-xs">
+            <span className="text-sm font-medium">
+              Focus Tasks{todos.filter(todo => !todo.completed).length > 0 && (
+                <span className="ml-2 bg-gray-100 px-2 py-0.5 rounded-full text-xs">
                   {todos.filter(todo => !todo.completed).length}
                 </span>
               )}
             </span>
-            {/* Show count on mobile when text is hidden */}
-            {isMobile && todos.filter(todo => !todo.completed).length > 0 && (
-              <span className="bg-gray-100 px-1.5 py-0.5 rounded-full text-xs font-medium">
-                {todos.filter(todo => !todo.completed).length}
-              </span>
-            )}
-            {isMobile ? (
-              <ChevronUp className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
-            ) : (
-              <ChevronLeft className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
-            )}
+            <ChevronDown className="h-4 w-4 flex-shrink-0" />
           </div>
         </Button>
       </div>
@@ -144,8 +126,8 @@ export const TodoList: React.FC<TodoListProps> = ({ onVisibilityChange }) => {
   }
   
   return (
-    <Card className="neo-box overflow-hidden h-full w-[95%] mx-auto max-w-[800px]">
-      <CardContent className="p-3 sm:p-4 md:p-6 flex flex-col">
+    <div className={`${todos.length === 0 ? 'h-auto' : 'h-full'} w-full`}>
+      <div className="flex flex-col">
         <div className="flex items-center justify-between mb-3 sm:mb-4">
           <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
             <div className="w-5 h-5 sm:w-6 sm:h-6 flex items-center justify-center bg-[#FFC225] rounded-md neo-border shadow-neo-sm flex-shrink-0">
@@ -158,10 +140,16 @@ export const TodoList: React.FC<TodoListProps> = ({ onVisibilityChange }) => {
                 <path d="M2 12a10 10 0 0 0 17.54 6.77" />
               </svg>
             </div>
-            <h3 className="text-base sm:text-lg font-bold text-neo-black truncate">To Do</h3>
+            <h3 className="text-base sm:text-lg font-bold text-neo-black truncate">Focus Tasks</h3>
             <span className="text-xs bg-gray-100 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full text-neo-black font-medium flex-shrink-0">
-              <span className="hidden sm:inline">{todos.filter(todo => !todo.completed).length} remaining</span>
-              <span className="sm:hidden">{todos.filter(todo => !todo.completed).length}</span>
+              {todos.filter(todo => !todo.completed).length > 0 ? (
+                <>
+                  <span className="hidden sm:inline">{todos.filter(todo => !todo.completed).length} remaining</span>
+                  <span className="sm:hidden">{todos.filter(todo => !todo.completed).length}</span>
+                </>
+              ) : (
+                <span className="text-xs text-gray-500">Empty</span>
+              )}
             </span>
           </div>
           
@@ -172,11 +160,7 @@ export const TodoList: React.FC<TodoListProps> = ({ onVisibilityChange }) => {
             onClick={() => setIsMinimized(true)}
             aria-label="Minimize task list"
           >
-            {isMobile ? (
-              <ChevronDown className="h-4 w-4 sm:h-5 sm:w-5" />
-            ) : (
-              <ChevronRight className="h-4 w-4 sm:h-5 sm:w-5" />
-            )}
+            <ChevronUp className="h-4 w-4 sm:h-5 sm:w-5" />
           </Button>
         </div>
         
@@ -184,7 +168,7 @@ export const TodoList: React.FC<TodoListProps> = ({ onVisibilityChange }) => {
           <Input
             value={newTodoText}
             onChange={(e) => setNewTodoText(e.target.value)}
-            placeholder="Add a task..."
+            placeholder="Add a focus task..."
             className="neo-border text-sm sm:text-base min-h-[40px] sm:min-h-[44px] touch-target"
           />
           <Button 
@@ -196,18 +180,20 @@ export const TodoList: React.FC<TodoListProps> = ({ onVisibilityChange }) => {
           </Button>
         </form>
         
-        <div className="flex-1 min-h-0 overflow-hidden">
-          <div className="h-full space-y-2 sm:space-y-3 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent pr-1 sm:pr-2 pb-1">
-            {todos.length === 0 ? (
-              <p className="text-neo-muted text-center py-4 sm:py-6 text-xs sm:text-sm leading-relaxed px-2">
-                Add tasks to track during your Pomodoro sessions
-              </p>
-            ) : (
-              todos.map(todo => (
+        {todos.length === 0 ? (
+          <div className="py-3 sm:py-4">
+            <p className="text-neo-muted text-center text-xs sm:text-sm leading-relaxed px-2">
+              Add tasks to track during your focus sessions
+            </p>
+          </div>
+        ) : (
+          <div className="max-h-40 overflow-hidden">
+            <div className="space-y-2 sm:space-y-3 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent pr-1 sm:pr-2 pb-1">
+              {todos.map(todo => (
                 <div 
                   key={todo.id} 
-                  className={`flex items-center gap-2 sm:gap-3 p-2 sm:p-3 rounded-md neo-border shadow-neo-sm transition-all min-h-[44px] ${
-                    todo.completed ? 'bg-gray-50 text-gray-500' : 'bg-white'
+                  className={`flex items-center gap-2 sm:gap-3 p-2 sm:p-3 rounded-md border-2 border-gray-200 shadow-sm transition-all min-h-[44px] ${
+                    todo.completed ? 'bg-gray-50 text-gray-500' : 'bg-gray-50/50'
                   }`}
                 >
                   <Checkbox
@@ -227,12 +213,12 @@ export const TodoList: React.FC<TodoListProps> = ({ onVisibilityChange }) => {
                     <Trash2 className="w-3 h-3 sm:w-4 sm:h-4" />
                   </Button>
                 </div>
-              ))
-            )}
+              ))}
+            </div>
           </div>
-        </div>
-      </CardContent>
-    </Card>
+        )}
+      </div>
+    </div>
   );
 };
 

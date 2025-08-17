@@ -5,7 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Upload, Info, Wand2, Check, ChevronDown, ChevronUp, FileText, Edit, Pencil, Trash2 } from "lucide-react";
+import { Upload, Info, Wand2, ChevronDown, ChevronUp, FileText, Edit, Pencil, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { QuizGenerator } from "@/services/quizGenerator";
 import { QuestionType, useQuiz, QuizQuestion } from "@/context/QuizContext";
@@ -55,7 +55,6 @@ const QuizCreationForm = () => {
     activeQuiz,
     isGenerating,
     setIsGenerating,
-    setQuizPhase,
     saveQuiz // Ensure saveQuiz is destructured
   } = useQuiz();
   
@@ -66,7 +65,7 @@ const QuizCreationForm = () => {
   const [numberOfQuestions, setNumberOfQuestions] = useState<number>(activeQuiz?.settings?.numberOfQuestions || 5);
   const [isAutoQuestionCount, setIsAutoQuestionCount] = useState(activeQuiz ? false : true);
   const [questionType, setQuestionType] = useState<QuestionType>(activeQuiz?.settings?.questionType || "multiple");
-  const [verbatimMode, setVerbatimMode] = useState<boolean>(false);  const [hasApiKey, setHasApiKey] = useState(false);
+  const [verbatimMode, setVerbatimMode] = useState<boolean>(false);
   const [showApiKeyInput, setShowApiKeyInput] = useState(false);
   const [inputMode, setInputMode] = useState<'auto' | 'manual'>(activeQuiz?.settings?.inputMode as ('auto' | 'manual') || 'auto');
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
@@ -76,7 +75,6 @@ const QuizCreationForm = () => {
   const [generatedQuestions, setGeneratedQuestions] = useState<QuizQuestion[]>([]);
   const [showQuestionsPreview, setShowQuestionsPreview] = useState(false);
   const [editingQuestionIndex, setEditingQuestionIndex] = useState<number | null>(null);
-  const [isEditing, setIsEditing] = useState(false); // Track editing state to prevent interference
   const isUpdatingRef = useRef(false); // Track if we're in the middle of an update operation
 
   // Determine if we are in edit mode based *only* on the presence of an activeQuiz from context.
@@ -133,7 +131,6 @@ const QuizCreationForm = () => {
   const checkApiKey = () => {
     const keyExists = serviceCheckApiKey();
     console.log("API key check: exists =", keyExists);
-    setHasApiKey(keyExists);
     return keyExists;
   };
   
@@ -161,7 +158,6 @@ const QuizCreationForm = () => {
     localStorage.setItem(API_KEY_STORAGE_KEY, apiKey);
     // Initialize the Gemini service with the new API key
     const initialized = initializeGemini(apiKey);
-    setHasApiKey(initialized);
     setShowApiKeyInput(false);
     if (initialized) {
       toast.success("API Key saved and initialized successfully");
@@ -372,7 +368,7 @@ const QuizCreationForm = () => {
     const terms = lines.map(line => {
       const separatorMatch = line.match(/(.+?)[-–—:;]+(.+)/);
       
-      if (separatorMatch) {
+      if (separatorMatch && separatorMatch[1] && separatorMatch[2]) {
         const term = separatorMatch[1].trim();
         const definition = separatorMatch[2].trim();
         
@@ -496,59 +492,29 @@ const QuizCreationForm = () => {
       isUpdatingRef.current = false;
     }, 100);
   };
-
-  const handleStartQuiz = () => {
-    if (generatedQuestions.length === 0) {
-      toast.error("No questions to start quiz");
-      return;
-    }
-    
-    // FIX: Set updating flag to prevent useEffect interference when setting activeQuiz
-    isUpdatingRef.current = true;
-    
-    const newQuiz = {
-      id: uuidv4(),
-      title: quizTitle.trim() || `Quiz ${new Date().toLocaleDateString()}`,
-      studyMaterial,
-      questions: generatedQuestions,
-      dateCreated: new Date().toISOString(),
-      lastModified: new Date().toISOString(),
-      settings: {
-        questionType,
-        numberOfQuestions: generatedQuestions.length,
-        verbatimMode,
-        inputMode
-      }
-    };
-
-    // Set active quiz and move to taking phase without saving
-    setActiveQuiz(newQuiz);
-    setQuizPhase("taking");
-    setShowQuestionsPreview(false);
-    
-    // Track quiz creation for achievements
-    trackQuizCreated();
-    
-    // Reset the updating flag after a small delay
-    setTimeout(() => {
-      isUpdatingRef.current = false;
-    }, 100);
-  };
   const handleUpdateQuestion = useCallback((index: number, field: keyof QuizQuestion, value: string | string[]) => {
     // Prevent interference by batching updates
-    setIsEditing(true);
     
     setGeneratedQuestions(prev => {
       const updatedQuestions = [...prev];
-      updatedQuestions[index] = {
-        ...updatedQuestions[index],
-        [field]: value
-      };
+      const currentQuestion = updatedQuestions[index];
+      if (currentQuestion) {
+        // Handle type conversion based on field type
+        const stringValue = Array.isArray(value) ? value.join('\n') : value;
+        
+        updatedQuestions[index] = {
+          id: currentQuestion.id,
+          type: currentQuestion.type,
+          question: field === 'question' ? stringValue : currentQuestion.question,
+          options: field === 'options' ? stringValue.split('\n').filter((opt: string) => opt.trim()) : (currentQuestion.options || []),
+          answer: field === 'answer' ? stringValue : currentQuestion.answer,
+          explanation: field === 'explanation' ? stringValue : (currentQuestion.explanation || '')
+        };
+      }
       return updatedQuestions;
     });
     
     // Reset editing state after a brief delay to prevent rapid re-renders
-    setTimeout(() => setIsEditing(false), 100);
   }, []);
 
   const handleDeleteQuestion = (index: number) => {
@@ -790,10 +756,10 @@ const QuizCreationForm = () => {
               aria-expanded={isQuestionTypeExpanded}
             >
               <div className="flex items-center gap-3">
-                <span className="text-xl" role="img" aria-hidden="true">{selectedType.emoji}</span>
+                <span className="text-xl" role="img" aria-hidden="true">{selectedType?.emoji || '❓'}</span>
                 <div className="text-left">
-                  <div className="font-bold">{selectedType.label}</div>
-                  <div className="text-xs text-gray-700">{selectedType.description}</div>
+                  <div className="font-bold">{selectedType?.label || 'Unknown Type'}</div>
+                  <div className="text-xs text-gray-700">{selectedType?.description || 'No description available'}</div>
                 </div>
               </div>
               <div className="bg-[#FF5C00] h-8 w-8 flex items-center justify-center rounded-md border-2 border-black transform transition-transform duration-200">

@@ -19,4 +19,25 @@ export default defineConfig(({ mode }) => ({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          // Separate chunk for heavy utilities
+          'file-processing': ['@/utils/fileProcessing', '@/utils/docxProcessor'],
+          // Separate chunk for AI services
+          'ai-services': ['@/services/geminiService', '@/services/quizGenerator'],
+          // Separate chunk for UI components
+          'ui-components': ['lucide-react'],
+          // Separate vendor chunks
+          'vendor-utils': ['uuid', 'dompurify'],
+          'vendor-charts': ['html2canvas'],
+        },
+      },
+    },
+    // Performance optimizations
+    minify: 'esbuild',
+    sourcemap: false,
+    reportCompressedSize: false,
+  },
 }));

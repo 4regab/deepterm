@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback } from 'react';
 
 export function useLocalStorage<T>(key: string, initialValue: T): [T, (value: T) => void] {
   // Get from local storage then parse stored json
+  // Note: Do NOT depend on initialValue here to keep this callback stable across renders
   const readValue = useCallback((): T => {
     if (typeof window === 'undefined') {
       return initialValue;
@@ -15,10 +16,10 @@ export function useLocalStorage<T>(key: string, initialValue: T): [T, (value: T)
       console.warn(`Error reading localStorage key "${key}":`, error);
       return initialValue;
     }
-  }, [key, initialValue]);
+  }, [key]);
 
-  // State to store our value
-  const [storedValue, setStoredValue] = useState<T>(readValue);
+  // State to store our value; lazy initialize to avoid double parsing and ensure first render uses current storage
+  const [storedValue, setStoredValue] = useState<T>(() => readValue());
 
   // Return a wrapped version of useState's setter function that persists the new value to localStorage
   const setValue = (value: T) => {
@@ -34,8 +35,11 @@ export function useLocalStorage<T>(key: string, initialValue: T): [T, (value: T)
       console.warn(`Error setting localStorage key "${key}":`, error);
     }
   };
+  
+  // Refresh state if the key changes or when running on mount to sync with existing storage
   useEffect(() => {
-    setStoredValue(readValue());
+    const current = readValue();
+    setStoredValue(current);
   }, [readValue]);
 
   return [storedValue, setValue];
