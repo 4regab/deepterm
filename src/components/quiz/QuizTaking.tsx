@@ -24,14 +24,14 @@ const QuizTaking = () => {
   
   const { trackQuizTaken } = useUserProfile();
 
-  // Initialize from saved progress if available, but prioritize activeQuiz progress
+  // Stabilized getInitialQuestionIndex to prevent unnecessary callback recreations
   const getInitialQuestionIndex = useCallback(() => {
     if (activeQuiz?.progress?.currentQuestionIndex !== undefined) {
       return activeQuiz.progress.currentQuestionIndex;
     }
     const savedProgress = activeQuiz?.id ? loadProgress(activeQuiz.id) : undefined;
     return savedProgress || 0;
-  }, [activeQuiz?.progress?.currentQuestionIndex, activeQuiz?.id, loadProgress]);
+  }, [activeQuiz?.id, activeQuiz?.progress?.currentQuestionIndex, loadProgress]);
   
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(() => 
     activeQuiz?.progress?.currentQuestionIndex ?? 0
@@ -40,48 +40,69 @@ const QuizTaking = () => {
   const [quizTitle, setQuizTitle] = useState(activeQuiz?.title || "");
   const [isTransitioning, setIsTransitioning] = useState(false);
 
-  // Memoize current question to prevent unnecessary re-renders
+  // Optimize currentQuestion memoization to prevent cascading re-renders
   const currentQuestion = useMemo(() => {
-    return activeQuiz?.questions[currentQuestionIndex];
-  }, [activeQuiz?.questions, currentQuestionIndex]);
+    if (!activeQuiz?.questions || currentQuestionIndex >= activeQuiz.questions.length) {
+      return null;
+    }
+    return activeQuiz.questions[currentQuestionIndex];
+  }, [activeQuiz?.questions?.length, currentQuestionIndex, activeQuiz?.questions?.[currentQuestionIndex]]);
 
-  // Optimized updateAnswer function to reduce flickering
+  // Optimized updateAnswer function to eliminate state cascade and reduce flickering
   const updateAnswer = useCallback((answer: string) => {
     if (!activeQuiz || !currentQuestion) return;
     
+    // Single state update with batched changes to prevent cascade
     const updatedQuestions = [...activeQuiz.questions];
     updatedQuestions[currentQuestionIndex] = {
       ...updatedQuestions[currentQuestionIndex],
       userAnswer: answer
     };
-      setActiveQuiz({
+    
+    const updatedQuiz = {
       ...activeQuiz,
       questions: updatedQuestions
-    });
+    };
+    
+    setActiveQuiz(updatedQuiz);
 
-    // Only auto-advance for non-identification questions
+    // Auto-advance logic with proper state batching - only for non-identification questions
     if (currentQuestionIndex < activeQuiz.questions.length - 1 && 
         currentQuestion.type !== "identification") {
+      // Use React's batching to prevent multiple re-renders
       setIsTransitioning(true);
-      setTimeout(() => {
-        setCurrentQuestionIndex(prev => prev + 1);
-        setIsTransitioning(false);
-      }, 200); // Reduced timeout for better UX
+      
+      // Use requestAnimationFrame for smoother transition without race conditions
+      requestAnimationFrame(() => {
+        setTimeout(() => {
+          setCurrentQuestionIndex(prev => prev + 1);
+          setIsTransitioning(false);
+        }, 150); // Reduced timeout for better UX
+      });
     }
   }, [activeQuiz, currentQuestionIndex, currentQuestion, setActiveQuiz]);
 
-  // Reset question index when activeQuiz changes (handles retake scenario)
-  useEffect(() => {
-    if (activeQuiz) {
-      const newIndex = getInitialQuestionIndex();
-      setCurrentQuestionIndex(newIndex);
-    }
-  }, [activeQuiz, getInitialQuestionIndex]);
-  
-  // Save progress whenever the current question index changes
+  // Optimized useEffect to prevent circular dependencies and reduce re-renders
+  // Only reset question index when activeQuiz ID changes (new quiz) or on initial load
   useEffect(() => {
     if (activeQuiz?.id) {
-      saveProgress(activeQuiz.id, currentQuestionIndex);
+      const initialIndex = getInitialQuestionIndex();
+      // Only update if the index actually needs to change to prevent unnecessary re-renders
+      if (initialIndex !== currentQuestionIndex) {
+        setCurrentQuestionIndex(initialIndex);
+      }
+    }
+  }, [activeQuiz?.id]); // Removed activeQuiz from dependencies to prevent cascade
+  
+  // Optimized progress saving - only save when question index actually changes
+  useEffect(() => {
+    if (activeQuiz?.id && currentQuestionIndex >= 0) {
+      // Use a ref to prevent circular updates
+      const timeoutId = setTimeout(() => {
+        saveProgress(activeQuiz.id, currentQuestionIndex);
+      }, 100); // Debounce progress saving
+      
+      return () => clearTimeout(timeoutId);
     }
   }, [currentQuestionIndex, activeQuiz?.id, saveProgress]);
 

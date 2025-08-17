@@ -79,6 +79,7 @@
     "jspdf": "^3.0.1",
     "jspdf-autotable": "^5.0.2",
     "lucide-react": "^0.462.0",
+    "mammoth": "^1.10.0",
     "next-themes": "^0.3.0",
     "papaparse": "^5.5.2",
     "playwright": "^1.54.1",

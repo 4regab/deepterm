@@ -239,7 +239,7 @@ const QuizCreationForm = () => {
   const generateNewQuiz = async () => {
     // Check if we have either study material text or an uploaded file
     if (!studyMaterial.trim() && !uploadedFile) {
-      toast.error("Please enter some study material or upload a file");
+      toast.error("Please enter some study material or upload a PDF file");
       return;
     }
 
@@ -283,7 +283,7 @@ const QuizCreationForm = () => {
         } catch (fileError) {
           toast.dismiss(loadingToast);
           console.error("File processing error:", fileError);
-          toast.error(`Failed to process file: ${fileError instanceof Error ? fileError.message : String(fileError)}`);
+          toast.error(`Failed to process PDF file: ${fileError instanceof Error ? fileError.message : String(fileError)}`);
           setIsGenerating(false);
           return;
         }
@@ -460,6 +460,10 @@ const QuizCreationForm = () => {
 
     // --- Logic for saving a NEW quiz (after generation and review) ---
     console.log("[handleSaveQuiz] Entering new quiz save branch."); // Log branch
+    
+    // FIX: Set updating flag to prevent useEffect from showing dialog again
+    isUpdatingRef.current = true;
+    
     const newQuiz = {
       id: uuidv4(),
       title: quizTitle.trim() || `Quiz ${new Date().toLocaleDateString()}`,
@@ -486,6 +490,11 @@ const QuizCreationForm = () => {
     
     // Track quiz creation for achievements
     trackQuizCreated();
+    
+    // Reset the updating flag after a small delay to ensure all state updates are complete
+    setTimeout(() => {
+      isUpdatingRef.current = false;
+    }, 100);
   };
 
   const handleStartQuiz = () => {
@@ -493,6 +502,9 @@ const QuizCreationForm = () => {
       toast.error("No questions to start quiz");
       return;
     }
+    
+    // FIX: Set updating flag to prevent useEffect interference when setting activeQuiz
+    isUpdatingRef.current = true;
     
     const newQuiz = {
       id: uuidv4(),
@@ -516,6 +528,11 @@ const QuizCreationForm = () => {
     
     // Track quiz creation for achievements
     trackQuizCreated();
+    
+    // Reset the updating flag after a small delay
+    setTimeout(() => {
+      isUpdatingRef.current = false;
+    }, 100);
   };
   const handleUpdateQuestion = useCallback((index: number, field: keyof QuizQuestion, value: string | string[]) => {
     // Prevent interference by batching updates
@@ -674,17 +691,30 @@ const QuizCreationForm = () => {
               onChange={e => setStudyMaterial(e.target.value)} 
             />
           )}
-          <input type="file" ref={fileInputRef} onChange={handleFileUpload} accept=".txt,.pdf,.docx" className="hidden" />
+          <input type="file" ref={fileInputRef} onChange={handleFileUpload} accept=".pdf,application/pdf" className="hidden" />
           <Button 
             variant="outline" 
             size="sm" 
             onClick={handleFileClick} 
             className="absolute top-4 right-4 bg-white neo-border shadow-neo-sm hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all"
-            title="Upload .txt, .pdf, or .docx files"
+            title="Upload PDF files only"
           >
             <Upload className="h-4 w-4 mr-2" />
-            Upload File
+            Upload PDF
           </Button>
+        </div>
+        
+        {/* PDF Only Notice */}
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mt-2">
+          <div className="flex items-center gap-2">
+            <Info className="h-4 w-4 text-blue-600 flex-shrink-0" />
+            <div className="text-sm text-blue-800">
+              <span className="font-medium">File uploads:</span> Only PDF files are supported for reliable text extraction. 
+              <span className="block mt-1">
+                💡 <strong>Convert to PDF:</strong> Word/Google Docs → File → Save As → PDF
+              </span>
+            </div>
+          </div>
         </div>
         
         {inputMode === 'manual' && (

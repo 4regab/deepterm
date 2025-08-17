@@ -17,6 +17,9 @@ import PrivacyPolicy from "./pages/PrivacyPolicy";
 import Terms from "./pages/Terms";
 import CookieConsentBanner from "./components/CookieConsentBanner";
 import Study from "./pages/Study";
+import DebugGeminiAPI from "./components/DebugGeminiAPI";
+import DocxDebugger from "./components/DocxDebugger";
+import DocxDebuggerNew from "./components/DocxDebuggerNew";
 
 const queryClient = new QueryClient();
 
@@ -35,6 +38,9 @@ const AppContent = () => {
         <Route path="/quiz" element={<Navigate to="/study" replace />} />
         <Route path="/study" element={<Study />} />
         <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/debug" element={<DebugGeminiAPI />} />
+        <Route path="/docx-debug" element={<DocxDebugger />} />
+        <Route path="/docx-debug-new" element={<DocxDebuggerNew />} />
         <Route path="/privacy-policy" element={<PrivacyPolicy />} />
         <Route path="/terms" element={<Terms />} />
         <Route path="/contact" element={<Contact />} />

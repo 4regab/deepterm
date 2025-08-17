@@ -115,23 +115,16 @@ const Quiz = () => {
     setActiveTab("create");
   };
 
-  // Save quiz progress to sessionStorage for persistence between page navigations
+  // Optimized saveProgress to prevent circular activeQuiz updates and eliminate feedback loops
   const saveProgress = (quizId: string, currentQuestionIndex: number) => {
     try {
       const progressMap = JSON.parse(sessionStorage.getItem(QUIZ_PROGRESS_KEY) || '{}');
       progressMap[quizId] = currentQuestionIndex;
       sessionStorage.setItem(QUIZ_PROGRESS_KEY, JSON.stringify(progressMap));
       
-      // Also update the activeQuiz state
-      if (activeQuiz && activeQuiz.id === quizId) {
-        setActiveQuiz({
-          ...activeQuiz,
-          progress: { 
-            ...activeQuiz.progress,
-            currentQuestionIndex 
-          }
-        });
-      }
+      // Eliminated circular update - don't modify activeQuiz here to prevent cascade
+      // The progress is already saved to sessionStorage and will be loaded when needed
+      // This prevents the circular dependency that was causing flickering
     } catch (error) {
       console.error('Error saving quiz progress:', error);
     }
@@ -207,21 +200,20 @@ const Quiz = () => {
     // Removed loadQuiz from deps as it causes infinite loops if defined inside component
     // loadProgress is also defined inside, but seems stable. Consider moving helpers outside.
   }, [location.search, previousPagePath, savedQuizzes, activeQuiz, quizPhase]);
-  // This effect ensures the correct tab is shown based on quiz phase
+  // Optimized effect to prevent unnecessary tab/phase changes that could trigger cascades
   useEffect(() => {
     if (quizPhase === "taking" || quizPhase === "results") {
-      // Ensure we're on the take tab for both taking and results phases
+      // Only change tab if needed and quiz has questions
       if (activeQuiz?.questions?.length > 0 && activeTab !== "take") {
         console.log("Switching to take tab due to quiz phase:", quizPhase);
         setActiveTab("take");
       }
-    } else if (quizPhase === "creation" && activeQuiz && activeTab !== "create") {
-      // If we are in creation phase AND have an active quiz, it means we are editing.
-      // Switch to the create tab.
+    } else if (quizPhase === "creation" && activeQuiz?.id && activeTab !== "create") {
+      // Only switch to create tab if we have an actual quiz to edit
       console.log("Switching to create tab for editing quiz:", activeQuiz.id);
       setActiveTab("create");
     }
-  }, [quizPhase, activeQuiz, activeTab]);
+  }, [quizPhase, activeQuiz?.questions?.length, activeQuiz?.id, activeTab]); // Optimized dependencies
 
   // Debug logging for tab changes and quiz phases
   useEffect(() => {

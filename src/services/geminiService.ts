@@ -2,8 +2,8 @@
 import { ExtractionResult } from "@/types";
 import { GoogleGenAI, createUserContent, createPartFromUri } from "@google/genai";
 
-// Define HarmCategory and HarmBlockThreshold enums for use in the code
-// These match the values from the Google Generative AI package
+// Note: Using the unified @google/genai SDK (v1.5.1) which replaces the deprecated @google/generative-ai
+// Ensure we're using the correct client for Gemini Files API operations
 enum HarmCategory {
   HARM_CATEGORY_HARASSMENT = 'HARM_CATEGORY_HARASSMENT',
   HARM_CATEGORY_HATE_SPEECH = 'HARM_CATEGORY_HATE_SPEECH',
@@ -40,9 +40,25 @@ export const initializeGemini = (key: string): boolean => {
     return false;
   }
   apiKey = key;
-  genAI = new GoogleGenAI({ apiKey: key });
-  console.log("API key initialized successfully");
-  return true;
+  
+  try {
+    genAI = new GoogleGenAI({ apiKey: key });
+    console.log("API key initialized successfully for Gemini Gen AI SDK");
+    
+    // Log some debug info about the client
+    console.log("GenAI client created:", { 
+      hasFiles: !!genAI.files, 
+      hasModels: !!genAI.models,
+      sdkVersion: "@google/genai v1.5.1"
+    });
+    
+    return true;
+  } catch (error) {
+    console.error("Failed to initialize GoogleGenAI client:", error);
+    apiKey = "";
+    genAI = null;
+    return false;
+  }
 };
 
 // Check if a valid API key exists
@@ -69,6 +85,45 @@ export const checkApiKey = (): boolean => {
   return false;
 };
 
+// Test API key with a simple request to validate it works
+export const testApiKey = async (): Promise<{ success: boolean; error?: string; details?: any }> => {
+  if (!checkApiKey()) {
+    return { 
+      success: false, 
+      error: "No API key configured" 
+    };
+  }
+
+  try {
+    console.log("Testing API key with a simple request...");
+    
+    // Simple test: try to generate content with text only
+    const result = await genAI!.models.generateContent({
+      model: "gemini-2.5-flash-preview-05-20",
+      contents: "Just respond with 'API test successful'"
+    });
+    
+    const response = result.text;
+    console.log("API test response:", response);
+    
+    return { 
+      success: true, 
+      details: { 
+        response: response,
+        model: "gemini-2.5-flash-preview-05-20"
+      }
+    };
+  } catch (error) {
+    console.error("API key test failed:", error);
+    
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : 'Unknown error',
+      details: error
+    };
+  }
+};
+
 // Clear API key and reset client (for security/logout)
 export const clearApiKey = (): void => {
   apiKey = "";
@@ -87,19 +142,152 @@ export const uploadFileToGemini = async (file: File) => {
 
   try {
     console.log(`Uploading file: ${file.name} (${file.size} bytes) to Gemini Files API`);
-    
-    // Upload file to Gemini Files API using the correct pattern from documentation
-    const uploadResult = await genAI.files.upload({
-      file: file,
-      config: {
-        mimeType: file.type,
-        displayName: file.name
-      }
+    console.log(`File details:`, {
+      name: file.name,
+      type: file.type,
+      size: file.size,
+      lastModified: file.lastModified
     });
-      console.log(`File uploaded successfully: ${uploadResult.name}, URI: ${uploadResult.uri}`);
+    
+    // Validate file before upload
+    if (!file.type) {
+      console.warn("File has no MIME type, attempting to infer from extension");
+    }
+    
+    // Enhanced handling for Office documents - DOCX requires special attention
+    let mimeType = file.type;
+    const fileExtension = '.' + file.name.split('.').pop()?.toLowerCase();
+    
+    if (fileExtension === '.docx') {
+      // Force the correct MIME type for DOCX files
+      const correctDocxMimeType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+      if (!mimeType || mimeType === 'application/octet-stream' || mimeType === '') {
+        console.log(`[DOCX Fix] Correcting MIME type from "${mimeType}" to "${correctDocxMimeType}"`);
+        mimeType = correctDocxMimeType;
+      }
+      
+      // Additional DOCX file validation
+      console.log(`[DOCX] Processing DOCX file: ${file.name}, size: ${file.size} bytes`);
+      
+      // Check file size - very large DOCX files might cause issues
+      if (file.size > 50 * 1024 * 1024) { // 50MB limit
+        throw new Error("DOCX file is too large (>50MB). Please use a smaller document.");
+      }
+      
+      // Check if file is actually a DOCX (basic validation)
+      if (file.size < 100) {
+        throw new Error("DOCX file appears to be corrupted or empty.");
+      }
+      
+    } else if (fileExtension === '.doc') {
+      const correctDocMimeType = 'application/msword';
+      if (!mimeType || mimeType === 'application/octet-stream' || mimeType === '') {
+        console.log(`[DOC Fix] Correcting MIME type from "${mimeType}" to "${correctDocMimeType}"`);
+        mimeType = correctDocMimeType;
+      }
+    }
+    
+    console.log(`[Upload] Using MIME type: "${mimeType}" for file: ${file.name}`);
+    
+    // Try the upload with more explicit error handling for different potential issues
+    let uploadResult;
+    
+    try {
+      // Primary approach: Use the current SDK pattern
+      console.log("Attempting upload with @google/genai SDK pattern...");
+      uploadResult = await genAI.files.upload({
+        file: file,  // File/Blob object directly
+        config: {
+          mimeType: mimeType, // Use corrected MIME type
+          displayName: file.name
+        }
+      });
+    } catch (primaryError) {
+      console.error("Primary upload method failed:", primaryError);
+      
+      // Log detailed error for analysis
+      if (primaryError && typeof primaryError === 'object') {
+        console.error("Error details:", {
+          message: (primaryError as any).message,
+          status: (primaryError as any).status,
+          code: (primaryError as any).code,
+          stack: (primaryError as any).stack
+        });
+      }
+      
+      // Re-throw the original error with more context
+      throw new Error(`File upload failed with ${(primaryError as any).status || 'unknown status'}: ${(primaryError as any).message || primaryError}`);
+    }
+    
+    // Validate that the upload result has required properties
+    if (!uploadResult) {
+      throw new Error("Upload failed: No result returned from Gemini Files API");
+    }
+    
+    if (!uploadResult.uri) {
+      throw new Error("Upload successful but no URI returned from Gemini Files API");
+    }
+    
+    if (!uploadResult.mimeType) {
+      throw new Error("Upload successful but no mimeType returned from Gemini Files API");
+    }
+    
+    console.log(`File uploaded successfully:`, {
+      name: uploadResult.name,
+      uri: uploadResult.uri,
+      mimeType: uploadResult.mimeType,
+      sizeBytes: uploadResult.sizeBytes,
+      state: uploadResult.state
+    });
+    
+    // Special handling for DOCX files - they may need extra processing time
+    if (fileExtension === '.docx' && uploadResult.state === 'PROCESSING') {
+      console.log(`[DOCX] File is still processing, waiting for completion...`);
+      
+      // Wait longer for DOCX files as they may need more processing time
+      let retries = 0;
+      const maxRetries = 10;
+      
+      while (uploadResult.state === 'PROCESSING' && retries < maxRetries) {
+        await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2 seconds
+        
+        try {
+          // Check file status
+          const fileInfo = await genAI.files.get({ name: uploadResult.name! });
+          uploadResult.state = fileInfo.state;
+          console.log(`[DOCX] File state check #${retries + 1}: ${uploadResult.state}`);
+        } catch (statusError) {
+          console.warn(`[DOCX] Could not check file status:`, statusError);
+          break;
+        }
+        
+        retries++;
+      }
+      
+      if (uploadResult.state === 'PROCESSING') {
+        console.warn(`[DOCX] File still processing after ${maxRetries * 2} seconds, proceeding anyway...`);
+      } else if (uploadResult.state === 'FAILED') {
+        throw new Error(`DOCX file processing failed. The file may be corrupted or in an unsupported format.`);
+      } else if (uploadResult.state === 'ACTIVE') {
+        console.log(`[DOCX] File processing completed successfully.`);
+      }
+    }
+    
     return uploadResult; // Return complete file object with uri and mimeType
   } catch (error) {
-    console.error("File upload failed:", error);
+    console.error("File upload failed - detailed error:", error);
+    
+    // Log additional error details if available
+    if (error instanceof Error) {
+      console.error("Error message:", error.message);
+      console.error("Error stack:", error.stack);
+    }
+    
+    // Check if it's an API error with status code
+    if (error && typeof error === 'object' && 'status' in error) {
+      console.error("API Error status:", (error as any).status);
+    }
+    
     throw new Error(`Failed to upload file: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 };
@@ -487,6 +675,25 @@ export const extractKeyTermsFromFile = async (
 
   try {
     console.log(`Processing uploaded file for extraction: ${fileInfo.name || 'unnamed'}, mode: ${mode}`);
+    
+    // Validate fileInfo has required properties
+    if (!fileInfo.uri) {
+      throw new Error("File URI is required but not provided");
+    }
+    
+    if (!fileInfo.mimeType) {
+      throw new Error("File mimeType is required but not provided");
+    }
+    
+    console.log(`File details - URI: ${fileInfo.uri}, MIME Type: ${fileInfo.mimeType}`);
+
+    // Check if this is a DOCX file and apply special handling
+    const isDocxFile = fileInfo.mimeType.includes('wordprocessingml') || 
+                       fileInfo.name?.toLowerCase().endsWith('.docx');
+    
+    if (isDocxFile) {
+      console.log(`[DOCX] Detected DOCX file, applying specialized extraction approach...`);
+    }
 
     // Generate extraction guidance based on mode
     let extractionGuidance;
@@ -503,61 +710,135 @@ export const extractKeyTermsFromFile = async (
         break;
     }
 
-    // Enhanced prompt for file-based extraction
-    const prompt = `
-        CRITICAL INSTRUCTION: You MUST process the ENTIRE document from beginning to END without skipping ANY content.
-        
-        Please conduct a thorough analysis of the uploaded document to identify and extract ALL key terms, concepts, definitions, and technical vocabulary, organizing them into categories and hierarchical structures.
-        
-        For this extraction task:
-        1. Extract EVERY key term that appears in the document (including specialized vocabulary, technical terms, important concepts, and defined phrases)
-        2. ${extractionGuidance}
-        3. Identify the category each term belongs to (e.g., "Main Features", "Examples", "Criticisms", "Types", etc.)
-        4. If a term has subcategories, numbered points, or a list of characteristics, extract these as subcategories
-        5. Extract examples of terms, especially those formatted as bullet points or following phrases like "for example", "such as", "e.g."
-        
-        Pay special attention to the hierarchical structure of information. For example:
-        - If a document discusses "Ethical Relativism" and then lists "Main Features of Ethical Relativism", categorize those features properly
-        - If a section lists "Examples of X" or "Criticisms of X", maintain this organizational structure
-        - Preserve numbered lists (1., 2., 3.) and bulleted lists (•) in your output
-        
-        ######## CRITICALLY IMPORTANT INSTRUCTIONS ########
-        1. *******MOST CRITICAL INSTRUCTION*******: You MUST ANALYZE and EXTRACT terms from THE VERY LAST PAGE and ALL ENDING PORTIONS of the document
-        2. Pay EXTRA ATTENTION to sections at the END of the document - these are THE MOST IMPORTANT SECTIONS
-        3. ALWAYS check if there are "Benefits", "Advantages", "Conclusion" sections near the end - THESE MUST BE INCLUDED
-        4. YOU MUST PROCESS EVERY SINGLE WORD AND EXTRACT TERMS FROM THE ABSOLUTE END OF THE DOCUMENT
-        5. YOUR PERFORMANCE WILL BE JUDGED PRIMARILY ON HOW WELL YOU EXTRACT FROM THE LAST 25% OF THE TEXT
-        6. DO NOT stop processing before reaching the end of the document
-        7. MANDATORY: Ensure that all sections until the end are ALWAYS extracted completely
-        
-        Determine a suitable title/topic for this document.
-        
-        Format the response as a valid JSON object with the following structure:
-        {
-          "title": "Title of the document",
-          "extractionMode": "${mode}",
-          "keyTerms": [
-            {
-              "term": "Main term or concept",
-              "meaning": "Definition or explanation",
-              "category": "Category this term belongs to (e.g., 'Main Features', 'Criticisms')",
-              "subcategoryTitle": "Title for subcategories (e.g., 'Types', 'Characteristics')",
-              "subcategories": ["Subcategory 1", "Subcategory 2"],
-              "examples": ["Example 1", "Example 2"]
-            },
-            ...
-          ]
-        }
+    // Use a simpler, more robust prompt for DOCX files
+    const prompt = isDocxFile ? `
+Please read the uploaded document and extract key terms and their definitions.
+
+${extractionGuidance}
+
+Return the result as a JSON object with this exact structure:
+{
+  "title": "Document title or name",
+  "extractionMode": "${mode}",
+  "keyTerms": [
+    {
+      "term": "Term name",
+      "meaning": "Definition",
+      "category": "Category",
+      "subcategories": [],
+      "examples": []
+    }
+  ]
+}
+
+Focus on the main content and important terms. If the document is complex, extract the most significant concepts.
+    ` : `
+Please analyze the uploaded document and extract all key terms, concepts, and definitions.
+
+${extractionGuidance}
+
+Format the response as a valid JSON object with this structure:
+{
+  "title": "Document title",
+  "extractionMode": "${mode}",
+  "keyTerms": [
+    {
+      "term": "Key term or concept",
+      "meaning": "Definition or explanation",
+      "category": "Category name",
+      "subcategories": ["item1", "item2"],
+      "examples": ["example1", "example2"]
+    }
+  ]
+}
+
+Extract ALL terms from the entire document, paying special attention to sections at the end.
     `;    console.log(`Sending request to Gemini API with file reference...`);
+    console.log(`Request details:`, {
+      model: "gemini-2.5-flash",
+      fileUri: fileInfo.uri,
+      fileMimeType: fileInfo.mimeType,
+      promptLength: prompt.length,
+      isDocxFile: isDocxFile
+    });
     
     // Generate content using the uploaded file - use the correct pattern from official examples
-    const result = await genAI.models.generateContent({
-      model: "gemini-2.5-flash-preview-05-20",
-      contents: createUserContent([
-        prompt,
-        createPartFromUri(fileInfo.uri!, fileInfo.mimeType || "application/octet-stream") // Use file URI and actual mime type
-      ])
-    });
+    // IMPORTANT: File part must come FIRST, then the text prompt
+    let result;
+    let lastError;
+    
+    // For DOCX files, try multiple approaches
+    const modelsToTry = isDocxFile ? 
+      ["gemini-2.5-flash", "gemini-1.5-flash", "gemini-1.5-pro"] : 
+      ["gemini-2.5-flash", "gemini-1.5-flash"];
+    
+    for (const modelName of modelsToTry) {
+      try {
+        console.log(`[${isDocxFile ? 'DOCX' : 'FILE'}] Attempting with ${modelName} model...`);
+        
+        result = await genAI.models.generateContent({
+          model: modelName,
+          contents: createUserContent([
+            createPartFromUri(fileInfo.uri!, fileInfo.mimeType!), // File FIRST
+            prompt // Text prompt SECOND
+          ])
+        });
+        
+        console.log(`✅ Content generation successful with ${modelName}`);
+        break; // Success, exit the loop
+        
+      } catch (apiError) {
+        console.error(`❌ ${modelName} failed:`, apiError);
+        lastError = apiError;
+        
+        // For DOCX files, if we get INVALID_ARGUMENT, try a different approach
+        if (isDocxFile && apiError && typeof apiError === 'object' && 
+            ((apiError as any).status === 400 || (apiError as any).message?.includes('INVALID_ARGUMENT'))) {
+          
+          console.log(`[DOCX] Trying alternative prompt structure for ${modelName}...`);
+          
+          try {
+            // Try with a much simpler prompt
+            const simplePrompt = `Extract key terms and definitions from this document. Return as JSON: {"title": "Document", "keyTerms": [{"term": "name", "meaning": "definition"}]}`;
+            
+            result = await genAI.models.generateContent({
+              model: modelName,
+              contents: createUserContent([
+                createPartFromUri(fileInfo.uri!, fileInfo.mimeType!),
+                simplePrompt
+              ])
+            });
+            
+            console.log(`✅ DOCX extraction successful with simplified prompt and ${modelName}`);
+            break;
+            
+          } catch (simpleError) {
+            console.error(`❌ Simple prompt also failed with ${modelName}:`, simpleError);
+            lastError = simpleError;
+          }
+        }
+        
+        // If this is the last model to try, we'll throw the error below
+        if (modelName === modelsToTry[modelsToTry.length - 1]) {
+          break;
+        }
+        
+        // Wait a bit before trying the next model
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      }
+    }
+    
+    // If no model succeeded, throw the last error
+    if (!result) {
+      console.error(`❌ All models failed for ${isDocxFile ? 'DOCX' : 'file'} extraction:`, lastError);
+      
+      // Special error message for DOCX files
+      if (isDocxFile) {
+        throw new Error(`DOCX file extraction failed. This might be due to:\n1. Complex document structure\n2. Large file size\n3. Protected/encrypted content\n4. Unsupported DOCX features\n\nTry saving as PDF or plain text for better compatibility.`);
+      } else {
+        throw new Error(`Content generation failed with all models: ${(lastError as any)?.message || lastError}`);
+      }
+    }
 
     const extractedData = result.text;
 
@@ -597,5 +878,58 @@ export const extractKeyTermsFromFile = async (
   } catch (error) {
     console.error("File-based extraction error:", error);
     throw new Error(`Failed to extract terms from file: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  }
+};
+
+// Test file upload capability with a simple test file
+export const testFileUpload = async (): Promise<{ success: boolean; error?: string; details?: any }> => {
+  if (!checkApiKey()) {
+    return { 
+      success: false, 
+      error: "No API key configured" 
+    };
+  }
+
+  try {
+    console.log("Testing file upload capability...");
+    
+    // Create a simple test file (plain text)
+    const testContent = "This is a test file for Gemini Files API upload capability testing.";
+    const testFile = new File([testContent], "test.txt", { type: "text/plain" });
+    
+    console.log("Created test file:", {
+      name: testFile.name,
+      type: testFile.type,
+      size: testFile.size
+    });
+    
+    // Test the upload
+    const uploadResult = await uploadFileToGemini(testFile);
+    
+    console.log("Test file upload successful:", uploadResult);
+    
+    // Clean up the test file
+    try {
+      await deleteFileFromGemini(uploadResult.name);
+      console.log("Test file cleaned up successfully");
+    } catch (cleanupError) {
+      console.warn("Failed to clean up test file:", cleanupError);
+    }
+    
+    return { 
+      success: true, 
+      details: {
+        uploadResult: uploadResult,
+        message: "File upload capability confirmed"
+      }
+    };
+  } catch (error) {
+    console.error("File upload test failed:", error);
+    
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : 'Unknown error',
+      details: error
+    };
   }
 };

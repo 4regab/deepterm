@@ -21,24 +21,31 @@ export interface FileProcessingResult {
 
 /**
  * Supported file types for Gemini Files API
+ * Restricted to PDF only for maximum reliability
  */
 export const SUPPORTED_FILE_TYPES = {
-  'application/pdf': ['.pdf'],
-  'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx'],
-  'text/plain': ['.txt'],
-  'application/msword': ['.doc']
+  'application/pdf': ['.pdf']
 };
 
 /**
  * Check if a file type is supported by the Files API
+ * Now only accepts PDF files for reliable processing
  */
 export const isFileTypeSupported = (file: File): boolean => {
   const fileType = file.type;
   const fileExtension = '.' + file.name.split('.').pop()?.toLowerCase();
   
-  return Object.entries(SUPPORTED_FILE_TYPES).some(([mimeType, extensions]) => 
-    fileType === mimeType || extensions.includes(fileExtension)
-  );
+  console.log(`[File Type Check] Checking PDF file support:`, {
+    fileName: file.name,
+    detectedMimeType: fileType,
+    detectedExtension: fileExtension
+  });
+  
+  // Only allow PDF files
+  const isPdf = fileType === 'application/pdf' || fileExtension === '.pdf';
+  
+  console.log(`[File Type Check] PDF validation result: ${isPdf}`);
+  return isPdf;
 };
 
 /**
@@ -61,7 +68,15 @@ export const processFileWithGemini = async (
     if (!isFileTypeSupported(file)) {
       return {
         success: false,
-        error: `Unsupported file type: ${file.type}. Supported types: PDF, DOCX, DOC, TXT`
+        error: `Only PDF files are supported. Please convert your document to PDF format and try again.
+
+📄 To convert your document to PDF:
+• Microsoft Word: File → Save As → PDF
+• Google Docs: File → Download → PDF Document (.pdf)  
+• Online tools: Use SmallPDF, ILovePDF, or similar converters
+
+💡 Why PDF only?
+PDF files provide the most reliable text extraction for AI processing.`
       };
     }
 
@@ -74,17 +89,74 @@ export const processFileWithGemini = async (
       };
     }
 
-    console.log(`Processing file with Gemini Files API: ${file.name} (${file.size} bytes)`);    // Step 1: Upload file to Gemini Files API
-    const fileInfo = await uploadFileToGemini(file);
-    console.log(`File uploaded successfully with ID: ${fileInfo.name}, URI: ${fileInfo.uri}`);
+    console.log(`Processing file with Gemini Files API: ${file.name} (${file.size} bytes)`);
+    
+    // Step 1: Upload file to Gemini Files API
+    let fileInfo;
+    try {
+      console.log(`[Step 1] Attempting to upload file to Gemini Files API...`);
+      fileInfo = await uploadFileToGemini(file);
+      console.log(`[Step 1] ✅ File upload successful:`, {
+        name: fileInfo.name,
+        uri: fileInfo.uri,
+        mimeType: fileInfo.mimeType,
+        state: fileInfo.state
+      });
+      
+      // Check if file needs time to process
+      if (fileInfo.state && fileInfo.state === 'PROCESSING') {
+        console.log(`[Step 1.5] File is still processing, waiting 2 seconds...`);
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        
+        // Check file status
+        try {
+          const { getFileInfo } = await import('@/services/geminiService');
+          const updatedFileInfo = await getFileInfo(fileInfo.name!);
+          console.log(`[Step 1.5] Updated file status:`, updatedFileInfo.state);
+          fileInfo = updatedFileInfo;
+        } catch (statusError) {
+          console.warn(`[Step 1.5] Could not check file status:`, statusError);
+          // Continue anyway
+        }
+      }
+    } catch (uploadError) {
+      console.error(`[Step 1] ❌ File upload failed:`, uploadError);
+      return {
+        success: false,
+        error: `File upload failed: ${uploadError instanceof Error ? uploadError.message : 'Unknown upload error'}`
+      };
+    }
 
     try {
       // Step 2: Extract content using the Files API
+      console.log(`[Step 2] Attempting to extract content from uploaded file...`);
+      console.log(`[Step 2] File details for extraction:`, {
+        name: fileInfo.name,
+        uri: fileInfo.uri,
+        mimeType: fileInfo.mimeType,
+        state: fileInfo.state,
+        sizeBytes: fileInfo.sizeBytes
+      });
+      
+      // Special handling for DOCX files - they might need additional wait time
+      const fileExtension = '.' + file.name.split('.').pop()?.toLowerCase();
+      if (fileExtension === '.docx' && fileInfo.state === 'PROCESSING') {
+        console.log(`[Step 2] DOCX file detected, waiting additional time for processing...`);
+        await new Promise(resolve => setTimeout(resolve, 3000)); // Extra wait for DOCX
+      }
+      
       const extractionResult = await extractKeyTermsFromFile(fileInfo, mode);
+      console.log(`[Step 2] ✅ Content extraction successful: ${extractionResult.keyTerms.length} terms found`);
       
       // Step 3: Clean up the uploaded file
-      await deleteFileFromGemini(fileInfo.name);
-      console.log(`File ${fileInfo.name} cleaned up successfully`);
+      try {
+        console.log(`[Step 3] Cleaning up uploaded file...`);
+        await deleteFileFromGemini(fileInfo.name);
+        console.log(`[Step 3] ✅ File ${fileInfo.name} cleaned up successfully`);
+      } catch (cleanupError) {
+        console.warn(`[Step 3] ⚠️ Failed to clean up file ${fileInfo.name}:`, cleanupError);
+        // Don't fail the entire operation if cleanup fails
+      }
 
       // For backward compatibility, also provide extracted text
       const extractedText = extractionResult.keyTerms
@@ -96,15 +168,26 @@ export const processFileWithGemini = async (
         text: extractedText,
         extractionResult,
         fileId: fileInfo.name
-      };    } catch (processingError) {
+      };
+    } catch (processingError) {
+      console.error(`[Step 2] ❌ Content extraction failed:`, processingError);
+      
+      // Simplified error message for PDF files
+      let errorMessage = `PDF processing failed: ${processingError instanceof Error ? processingError.message : 'Unknown extraction error'}`;
+      
       // If processing fails, still try to clean up the uploaded file
       try {
+        console.log(`[Step 3] Attempting cleanup after extraction failure...`);
         await deleteFileFromGemini(fileInfo.name);
-        console.log(`File ${fileInfo.name} cleaned up after processing error`);
+        console.log(`[Step 3] ✅ File ${fileInfo.name} cleaned up after processing error`);
       } catch (cleanupError) {
-        console.warn(`Failed to clean up file ${fileInfo.name}:`, cleanupError);
+        console.warn(`[Step 3] ⚠️ Failed to clean up file ${fileInfo.name} after processing error:`, cleanupError);
       }
-      throw processingError;
+      
+      return {
+        success: false,
+        error: errorMessage
+      };
     }
 
   } catch (error) {
