@@ -30,6 +30,11 @@ const MAX_EXTRACTIONS_PER_DAY = 10; // Rate limit constant
 const RATE_LIMIT_WINDOW_MS = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
 
 const Index = () => {
+  // Set document title on mount
+  useEffect(() => {
+    document.title = "Text Reviewer - DeepTerm";
+  }, []);
+
   const [apiKeyProvided, setApiKeyProvided] = useState(false); // Keep for internal logic, but won't block UI
   const [isLoading, setIsLoading] = useState(false);
   const [result, setResult] = useState < ExtractionResult | null > (null);

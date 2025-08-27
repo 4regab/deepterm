@@ -56,6 +56,7 @@ export interface QuizContextType {
   setQuizPhase: (phase: QuizPhase) => void;
   saveQuiz: (quiz: Quiz) => void;
   loadQuiz: (quizId: string) => void;
+  takeQuiz: (quizId: string) => void;
   deleteQuiz: (quizId: string) => void;
   handleCreateNewQuiz: () => void;
   saveProgress: (quizId: string, currentQuestionIndex: number) => void;
@@ -74,6 +75,7 @@ export const QuizContext = createContext<QuizContextType>({
   setQuizPhase: () => {},
   saveQuiz: () => {},
   loadQuiz: () => {},
+  takeQuiz: () => {},
   deleteQuiz: () => {},
   handleCreateNewQuiz: () => {},
   saveProgress: () => {},

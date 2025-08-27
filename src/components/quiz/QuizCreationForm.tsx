@@ -80,6 +80,23 @@ const QuizCreationForm = () => {
   // Determine if we are in edit mode based *only* on the presence of an activeQuiz from context.
   const isEditMode = !!activeQuiz?.id;
 
+  // Helper function to generate quiz title based on uploaded file or fallback to date
+  const generateQuizTitle = () => {
+    if (quizTitle.trim()) {
+      return quizTitle.trim();
+    }
+    
+    if (uploadedFile) {
+      // Remove file extension and use file name as title
+      const fileName = uploadedFile.name;
+      const nameWithoutExt = fileName.substring(0, fileName.lastIndexOf('.')) || fileName;
+      return `Quiz: ${nameWithoutExt}`;
+    }
+    
+    // Fallback to date-based title
+    return `Quiz ${new Date().toLocaleDateString()}`;
+  };
+
   const questionCountOptions = Array.from({ length: 96 }, (_, i) => i + 5);
 
   // Effect to populate form state when activeQuiz changes (for editing)
@@ -187,7 +204,7 @@ const QuizCreationForm = () => {
 
     const updatedQuizData = {
       ...activeQuiz,
-      title: quizTitle.trim() || `Quiz ${new Date().toLocaleDateString()}`,
+      title: generateQuizTitle(),
       studyMaterial,
       questions: generatedQuestions, // Use the potentially edited questions
       lastModified: new Date().toISOString(),
@@ -208,13 +225,16 @@ const QuizCreationForm = () => {
     saveQuiz(updatedQuizData); // Use the context save function which handles updates
     console.log("[handleUpdateQuiz] Returned from saveQuiz."); // Log after save
 
-    toast.success(`Quiz "${updatedQuizData.title}" updated successfully!`);    console.log("[handleUpdateQuiz] Calling setActiveQuiz(null)..."); // Log before setActiveQuiz
-    setActiveQuiz(null);
-    console.log("[handleUpdateQuiz] Returned from setActiveQuiz(null)."); // Log after setActiveQuiz
-
+    toast.success(`Quiz "${updatedQuizData.title}" updated successfully!`);
+    
+    // Close the dialog immediately and reset state
     console.log("[handleUpdateQuiz] Calling setShowQuestionsPreview(false)..."); // Log before setShowQuestionsPreview
     setShowQuestionsPreview(false);
-    console.log("[handleUpdateQuiz] Returned from setShowQuestionsPreview(false). Update finished."); // Log end    // Reset the updating flag after a small delay to ensure all state updates are complete
+    console.log("[handleUpdateQuiz] Returned from setShowQuestionsPreview(false)."); // Log
+    
+    console.log("[handleUpdateQuiz] Calling setActiveQuiz(null)..."); // Log before setActiveQuiz
+    setActiveQuiz(null);
+    console.log("[handleUpdateQuiz] Returned from setActiveQuiz(null). Update finished."); // Log end    // Reset the updating flag after a small delay to ensure all state updates are complete
     setTimeout(() => {
       isUpdatingRef.current = false;
       console.log("[handleUpdateQuiz] Reset updating flag."); // Log flag reset
@@ -464,7 +484,7 @@ const QuizCreationForm = () => {
     
     const newQuiz = {
       id: uuidv4(),
-      title: quizTitle.trim() || `Quiz ${new Date().toLocaleDateString()}`,
+      title: generateQuizTitle(),
       studyMaterial,
       questions: generatedQuestions,
       dateCreated: new Date().toISOString(),
@@ -670,19 +690,6 @@ const QuizCreationForm = () => {
             <Upload className="h-4 w-4 mr-2" />
             Upload PDF
           </Button>
-        </div>
-        
-        {/* PDF Only Notice */}
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mt-2">
-          <div className="flex items-center gap-2">
-            <Info className="h-4 w-4 text-blue-600 flex-shrink-0" />
-            <div className="text-sm text-blue-800">
-              <span className="font-medium">File uploads:</span> Only PDF files are supported for reliable text extraction. 
-              <span className="block mt-1">
-                💡 <strong>Convert to PDF:</strong> Word/Google Docs → File → Save As → PDF
-              </span>
-            </div>
-          </div>
         </div>
         
         {inputMode === 'manual' && (

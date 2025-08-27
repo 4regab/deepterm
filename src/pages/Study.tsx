@@ -1,330 +1,115 @@
-import { useState, useEffect, useRef } from "react";
+import { useEffect } from "react";
+import { Link } from "react-router-dom";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card } from "@/components/ui/card";
-import { useLocalStorage } from "@/hooks/use-local-storage";
-import QuizCreationForm from "@/components/quiz/QuizCreationForm";
-import QuizTaking from "@/components/quiz/QuizTaking";
-import QuizResults from "@/components/quiz/QuizResults";
-import QuizSavedList from "@/components/quiz/QuizSavedList";
-import FlashcardCreationForm from "@/components/flashcard/FlashcardCreationForm";
-import FlashcardViewer from "@/components/flashcard/FlashcardViewer";
-import FlashcardSavedList from "@/components/flashcard/FlashcardSavedList";
-import { toast } from "sonner"; 
-import { QuizContext, QuizPhase, Quiz, QuizQuestion, QuestionType } from "@/context/QuizContext";
-import { useFlashcard } from "@/context/FlashcardContextDefinition";
-import { useLocation } from "react-router-dom";
-
-// Constant for storing UI state in local storage
-const FLASHCARD_UI_STATE_KEY = 'flashcard-ui-state';
-
-// Export the quiz types to maintain compatibility
-export type { QuestionType, QuizQuestion, Quiz };
-export { QuizContext };
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { FileText, Brain, BookOpen, ArrowRight } from "lucide-react";
 
 const Study = () => {
   // Set document title on mount
   useEffect(() => {
-    document.title = "Study Center";
+    document.title = "Study Center - DeepTerm";
   }, []);
 
-  // State for the main tabs
-  const [activeStudyTab, setActiveStudyTab] = useState<"quiz" | "flashcard">("quiz");
-  
-  // State for sub-tabs in each section
-  const [quizSubTab, setQuizSubTab] = useState<"create" | "take">("create");
-  const [flashcardSubTab, setFlashcardSubTab] = useState<"create" | "view">("create");
-  
-  // Quiz states (reusing from Quiz.tsx)
-  const [activeQuiz, setActiveQuiz] = useState<Quiz | null>(null);
-  const [savedQuizzes, setSavedQuizzes] = useLocalStorage<Quiz[]>("quizzes", []);
-  const [isGeneratingQuiz, setIsGeneratingQuiz] = useState(false);
-  const [quizPhase, setQuizPhase] = useState<QuizPhase>("creation");
-
-  // Get the flashcard context from the main provider
-  const flashcardContext = useFlashcard();
-  
-  // Get location for URL parameters
-  const location = useLocation();
-  
-  // One-time flag to avoid re-running restore
-  const restoredRef = useRef(false);
-
-  // On initial load only, try to restore UI state from local storage
-  useEffect(() => {
-    if (restoredRef.current) return;
-    restoredRef.current = true;
-    try {
-      const savedState = localStorage.getItem(FLASHCARD_UI_STATE_KEY);
-      if (savedState) {
-        const state = JSON.parse(savedState);
-        // Restore UI state (guard against redundant sets)
-        if (state.activeStudyTab && state.activeStudyTab !== activeStudyTab) {
-          setActiveStudyTab(state.activeStudyTab);
-        }
-        if (state.flashcardSubTab && state.flashcardSubTab !== flashcardSubTab) {
-          setFlashcardSubTab(state.flashcardSubTab);
-        }
-      }
-    } catch (error) {
-      console.error("Failed to restore UI state:", error);
+  const studyTools = [
+    {
+      title: "Text Reviewer",
+      description: "Extract key terms and create study materials from documents and text",
+      icon: FileText,
+      link: "/extractor",
+      color: "bg-[#20C997]",
+      hoverColor: "hover:bg-[#1BA085]",
+      features: ["PDF & DOCX upload", "AI key term extraction", "Study material creation", "Save & export results"]
+    },
+    {
+      title: "Quiz Maker",
+      description: "Create and take AI-generated quizzes based on your study materials",
+      icon: Brain,
+      link: "/quiz",
+      color: "bg-[#FF5C00]",
+      hoverColor: "hover:bg-[#E54700]",
+      features: ["Multiple choice & true/false", "Auto-generated questions", "Progress tracking", "Performance analytics"]
+    },
+    {
+      title: "Flashcard Creator",
+      description: "Build and study flashcard decks with spaced repetition learning",
+      icon: BookOpen,
+      link: "/flashcards",
+      color: "bg-[#9b87f5]",
+      hoverColor: "hover:bg-[#8A76E5]",
+      features: ["AI-powered flashcards", "Spaced repetition", "Progress tracking", "Multiple study modes"]
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // Handle URL-based navigation and tab changes (guard redundant updates)
-  // Include relevant state in deps to avoid stale closures; conditions below prevent loops.
-  useEffect(() => {
-    const urlParams = new URLSearchParams(location.search);
-    const mode = urlParams.get('mode');
-    const viewing = urlParams.get('viewing');
-    const deckId = urlParams.get('deckId');
-
-    // Special create mode parameter - highest priority
-    if (mode === 'flashcard-create') {
-      if (activeStudyTab !== "flashcard") setActiveStudyTab("flashcard");
-      if (flashcardSubTab !== "create") setFlashcardSubTab("create");
-      return;
-    }
-
-    // Direct link to view flashcards
-    if (viewing === 'flashcard') {
-      if (activeStudyTab !== "flashcard") setActiveStudyTab("flashcard");
-      // If we have an activeDeck loaded, go to view mode
-      if ((flashcardContext.activeDeck || deckId) && flashcardSubTab !== "view") {
-        setFlashcardSubTab("view");
-      }
-    }
-  }, [location.search, flashcardContext.activeDeck, activeStudyTab, flashcardSubTab]);
-
-  // When an active deck becomes available, ensure Flashcards/View is selected
-  useEffect(() => {
-    if (flashcardContext.activeDeck) {
-      if (activeStudyTab !== "flashcard") setActiveStudyTab("flashcard");
-      if (flashcardSubTab !== "view") setFlashcardSubTab("view");
-    }
-  }, [flashcardContext.activeDeck, activeStudyTab, flashcardSubTab]);
-
-  // Quiz handlers
-  const deleteQuiz = (quizId: string) => {
-    const updatedQuizzes = savedQuizzes.filter(q => q.id !== quizId);
-    setSavedQuizzes(updatedQuizzes);
-    if (activeQuiz && activeQuiz.id === quizId) {
-      setActiveQuiz(null);
-      setQuizPhase("creation");
-    }
-    toast.success("Quiz deleted successfully!");
-  };
-
-  const saveQuiz = (quiz: Quiz) => {
-    const updatedQuiz = {
-      ...quiz,
-      lastModified: new Date().toISOString()
-    };
-    
-    const existingIndex = savedQuizzes.findIndex(q => q.id === quiz.id);
-    if (existingIndex !== -1) {
-      const updatedQuizzes = [...savedQuizzes];
-      updatedQuizzes[existingIndex] = updatedQuiz;
-      setSavedQuizzes(updatedQuizzes);
-    } else {
-      setSavedQuizzes([...savedQuizzes, updatedQuiz]);
-    }
-    
-    toast.success("Quiz saved successfully!");
-    setActiveQuiz(updatedQuiz);
-  };
-
-  const loadQuiz = (quizId: string) => {
-    const quiz = savedQuizzes.find(q => q.id === quizId);
-    if (quiz) {
-      setActiveQuiz(quiz);
-      setQuizPhase(quiz.score?.completed ? "results" : "taking");
-      setQuizSubTab("take");
-      toast.success(`"${quiz.title}" loaded successfully!`);
-    }
-  };
-
-  const handleCreateNewQuiz = () => {
-    setActiveQuiz(null);
-    setQuizPhase("creation");
-    setQuizSubTab("create");
-  };
-
-  // Save progress functions for quiz
-  const saveProgress = (quizId: string, currentQuestionIndex: number) => {
-    try {
-      const progressMap = JSON.parse(sessionStorage.getItem('quiz-temp-progress') || '{}');
-      progressMap[quizId] = currentQuestionIndex;
-      sessionStorage.setItem('quiz-temp-progress', JSON.stringify(progressMap));
-      
-      if (activeQuiz && activeQuiz.id === quizId) {
-        setActiveQuiz({
-          ...activeQuiz,
-          progress: { 
-            ...activeQuiz.progress,
-            currentQuestionIndex 
-          }
-        });
-      }
-    } catch (error) {
-      console.error('Error saving quiz progress:', error);
-    }
-  };
-  
-  const loadProgress = (quizId: string) => {
-    try {
-      const progressMap = JSON.parse(sessionStorage.getItem('quiz-temp-progress') || '{}');
-      return progressMap[quizId];
-    } catch (error) {
-      console.error('Error loading quiz progress:', error);
-      return undefined;
-    }
-  };
-
-  const handleQuizSubTabChange = (value: string) => {
-    const v = (value === "create" || value === "take") ? value : "create";
-    if (v === "take" && (!activeQuiz || (activeQuiz?.questions?.length ?? 0) === 0)) {
-      toast.error("Please create a quiz first!");
-      return;
-    }
-    setQuizSubTab(v);
-    if (v === "create") {
-      setQuizPhase("creation");
-    }
-  };
-
-  const handleFlashcardSubTabChange = (value: string) => {
-    const v = (value === "create" || value === "view") ? value : "create";
-    if (v === "view" && !flashcardContext.activeDeck) {
-      toast.error("Please select a flashcard deck first!");
-      return;
-    }
-    setFlashcardSubTab(v);
-  };
-
-  // Save UI state to localStorage whenever it changes
-  useEffect(() => {
-    try {
-      const uiState = {
-        activeStudyTab,
-        flashcardSubTab,
-      };
-      localStorage.setItem(FLASHCARD_UI_STATE_KEY, JSON.stringify(uiState));
-    } catch (error) {
-      console.error("Failed to save UI state:", error);
-    }
-  }, [activeStudyTab, flashcardSubTab]);
+  ];
 
   return (
     <div className="min-h-screen flex flex-col bg-[#fff6e5]">
       <Navbar />
       
       <main className="container mx-auto px-3 sm:px-4 lg:px-8 py-6 sm:py-8 lg:py-12 flex-grow">
-        <div className="text-center mb-6 sm:mb-8 lg:mb-12">
-          <div className="inline-block -rotate-2 p-3 sm:p-4 lg:p-6 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] sm:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] border-3 sm:border-4 border-black mb-4 sm:mb-6 bg-[#9b87f5]">
-            <h1 className="text-2xl sm:text-3xl lg:text-5xl font-black tracking-tight text-white relative rotate-2">
+        <div className="text-center mb-8 sm:mb-12 lg:mb-16">
+          <div className="inline-block -rotate-2 p-3 sm:p-4 lg:p-6 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] sm:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] border-3 sm:border-4 border-black mb-4 sm:mb-6 bg-[#FFC225]">
+            <h1 className="text-2xl sm:text-3xl lg:text-5xl font-black tracking-tight text-black relative rotate-2">
               Study Center
             </h1>
           </div>
           <p className="text-[#1A1F2C] mt-4 sm:mt-6 text-base sm:text-lg lg:text-xl font-medium px-3 sm:px-4 py-1.5 sm:py-2 bg-white inline-block border-3 sm:border-4 border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] sm:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
-            Create and practice with quizzes and flashcards to master any subject
+            Your all-in-one hub for AI-powered study tools
           </p>
         </div>
 
-        <div className="space-y-4 sm:space-y-6 lg:space-y-8 max-w-6xl mx-auto">
-          {/* Main tabs for Quiz vs Flashcards */}
-          <Tabs 
-            value={activeStudyTab} 
-            onValueChange={(value) => setActiveStudyTab(value as "quiz" | "flashcard")} 
-            className="mx-auto"
-          >
-            <div className="flex justify-center mb-4 sm:mb-6">
-              <TabsList className="neo-border bg-white shadow-neo h-10 sm:h-12 lg:h-14 p-1 grid grid-cols-2 w-full max-w-xs sm:max-w-md">
-                <TabsTrigger 
-                  value="quiz" 
-                  className="px-3 sm:px-4 lg:px-8 py-1.5 sm:py-2 text-sm sm:text-base lg:text-lg font-bold data-[state=active]:bg-[#FF5C00] data-[state=active]:text-white data-[state=active]:shadow-none transition-all touch-target"
-                >
-                  Quiz
-                </TabsTrigger>
-                <TabsTrigger 
-                  value="flashcard" 
-                  className="px-3 sm:px-4 lg:px-8 py-1.5 sm:py-2 text-sm sm:text-base lg:text-lg font-bold data-[state=active]:bg-[#9b87f5] data-[state=active]:text-white data-[state=active]:shadow-none transition-all touch-target"
-                >
-                  Flashcards
-                </TabsTrigger>
-              </TabsList>
-            </div>
-            {/* Quiz Content */}
-            <TabsContent value="quiz" className="mt-0">
-              <QuizContext.Provider value={{
-                activeQuiz,
-                setActiveQuiz,
-                savedQuizzes,
-                setSavedQuizzes,
-                isGenerating: isGeneratingQuiz,
-                setIsGenerating: setIsGeneratingQuiz,
-                quizPhase,
-                setQuizPhase,
-                saveQuiz,
-                loadQuiz,
-                deleteQuiz: deleteQuiz,
-                handleCreateNewQuiz,
-                saveProgress,
-                loadProgress
-              }}>
-                <Card className="border-3 sm:border-4 border-black bg-white shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] sm:shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] overflow-hidden">
-                  <Tabs value={quizSubTab} onValueChange={handleQuizSubTabChange} className="p-0">
-                    <TabsContent value="create" className="p-4 sm:p-6 lg:p-8">
-                      <QuizCreationForm />
-                    </TabsContent>
-                    
-                    <TabsContent value="take" className="p-4 sm:p-6 lg:p-8">
-                      {quizPhase === "taking" && ((activeQuiz?.questions?.length ?? 0) > 0) ? (
-                        <QuizTaking />
-                      ) : quizPhase === "results" && activeQuiz?.score ? (
-                        <QuizResults />
-                      ) : (
-                        <div className="text-center py-6 sm:py-8 lg:py-16">
-                          <p className="text-lg sm:text-xl lg:text-2xl font-bold px-4 sm:px-6 py-3 sm:py-4 bg-[#FFDEE2] inline-block border-3 sm:border-4 border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] sm:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] rounded">
-                            Select a saved quiz to take or create a new one
-                          </p>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 max-w-7xl mx-auto">
+          {studyTools.map((tool, index) => {
+            const IconComponent = tool.icon;
+            return (
+              <Link key={index} to={tool.link} className="group block">
+                <Card className="h-full border-3 sm:border-4 border-black bg-white shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] sm:shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] transition-all duration-300 hover:shadow-[12px_12px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-1 hover:-translate-x-1 overflow-hidden">
+                  <CardHeader className={`${tool.color} ${tool.hoverColor} transition-colors duration-300 p-4 sm:p-6`}>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3 sm:gap-4">
+                        <div className="p-2 sm:p-3 bg-white rounded-lg shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] border-2 border-black">
+                          <IconComponent className="h-6 w-6 sm:h-8 sm:w-8 text-black" />
                         </div>
-                      )}
-                    </TabsContent>
-                  </Tabs>
-                </Card>
-
-                {quizPhase === "creation" && <QuizSavedList />}
-              </QuizContext.Provider>
-            </TabsContent>
-            
-            {/* Flashcard Content */}
-            <TabsContent value="flashcard" className="mt-0">
-                <Card className="border-3 sm:border-4 border-black bg-white shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] sm:shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] overflow-hidden">
-                  <Tabs value={flashcardSubTab} onValueChange={handleFlashcardSubTabChange} className="p-0">
-                    <TabsContent value="create" className="p-4 sm:p-6 lg:p-8">
-                      <FlashcardCreationForm />
-                    </TabsContent>
+                        <CardTitle className="text-lg sm:text-xl lg:text-2xl font-black text-white">
+                          {tool.title}
+                        </CardTitle>
+                      </div>
+                      <ArrowRight className="h-5 w-5 sm:h-6 sm:w-6 text-white opacity-70 group-hover:opacity-100 transition-opacity duration-300" />
+                    </div>
+                  </CardHeader>
+                  
+                  <CardContent className="p-4 sm:p-6">
+                    <p className="text-sm sm:text-base text-[#1A1F2C] font-medium mb-4 sm:mb-6 leading-relaxed">
+                      {tool.description}
+                    </p>
                     
-                    <TabsContent value="view" className="p-4 sm:p-6 lg:p-8">
-                      {flashcardContext.activeDeck ? (
-                        <FlashcardViewer />
-                      ) : (
-                        <div className="text-center py-6 sm:py-8 lg:py-16">
-                          <p className="text-lg sm:text-xl lg:text-2xl font-bold px-4 sm:px-6 py-3 sm:py-4 bg-[#E5DEFF] inline-block border-3 sm:border-4 border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] sm:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] rounded">
-                            Select a flashcard deck to study or create a new one
-                          </p>
+                    <div className="space-y-2 sm:space-y-3">
+                      <h4 className="text-sm sm:text-base font-bold text-[#1A1F2C] mb-2 sm:mb-3">Key Features:</h4>
+                      <ul className="space-y-1 sm:space-y-2">
+                        {tool.features.map((feature, featureIndex) => (
+                          <li key={featureIndex} className="flex items-center text-xs sm:text-sm text-[#1A1F2C]">
+                            <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-[#1A1F2C] rounded-full mr-2 sm:mr-3 flex-shrink-0"></div>
+                            {feature}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                    
+                    <div className="mt-4 sm:mt-6 pt-3 sm:pt-4 border-t-2 border-gray-200">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs sm:text-sm font-bold text-[#1A1F2C]">
+                          Get Started
+                        </span>
+                        <div className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm font-medium text-[#1A1F2C] group-hover:text-black transition-colors">
+                          <span>Launch Tool</span>
+                          <ArrowRight className="h-3 w-3 sm:h-4 sm:w-4 group-hover:translate-x-1 transition-transform duration-300" />
                         </div>
-                      )}
-                    </TabsContent>
-                  </Tabs>
+                      </div>
+                    </div>
+                  </CardContent>
                 </Card>
-
-                <FlashcardSavedList />
-            </TabsContent>
-          </Tabs>
+              </Link>
+            );
+          })}
         </div>
       </main>
 

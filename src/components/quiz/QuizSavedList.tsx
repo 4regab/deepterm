@@ -7,7 +7,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 
 const QuizSavedList = () => {
-  const { savedQuizzes, loadQuiz, deleteQuiz, setActiveQuiz, setQuizPhase } = useQuiz();
+  const { savedQuizzes, loadQuiz, takeQuiz, deleteQuiz, setActiveQuiz, setQuizPhase } = useQuiz();
   const [quizToDelete, setQuizToDelete] = useState<string | null>(null);
   const [quizToEdit, setQuizToEdit] = useState<string | null>(null);
   
@@ -87,7 +87,7 @@ const QuizSavedList = () => {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => loadQuiz(quiz.id)}
+                        onClick={() => quiz.score?.completed ? loadQuiz(quiz.id) : takeQuiz(quiz.id)}
                         className="flex-1 border border-[#D6BCFA] hover:bg-[#E5DEFF] text-xs h-8"
                       >
                         <Play className="w-3 h-3 mr-1" />

@@ -246,6 +246,15 @@ export class QuizGenerator extends GeminiCore {
       12. PRESERVE EXACT CAPITALIZATION of key terms
       13. CRITICAL: Generate questions from EVERY section of the material - don't focus only on the beginning
       14. DO NOT generate duplicate questions. Each question in the array must be unique.
+      15. EXPLANATION REQUIREMENT: Every question MUST include a brief 1-sentence explanation in the "explanation" field that explains why the answer is correct. NO "No explanation provided" responses allowed.
+      
+      JSON Format for each question:
+      {
+        "question": "question text",
+        "options": ["A", "B", "C", "D"] (for multiple choice only),
+        "answer": "correct answer",
+        "explanation": "Brief 1-sentence explanation of why this answer is correct"
+      }
       
       ONLY return the raw JSON array with no additional text.
     `;
@@ -320,7 +329,7 @@ export class QuizGenerator extends GeminiCore {
           question: (q.question as string) || "Question unavailable",
           options: Array.isArray(q.options) ? q.options as string[] : [],
           answer: (q.answer as string) || "",
-          explanation: (q.explanation as string) || "No explanation provided"
+          explanation: (q.explanation as string) || "Brief explanation of the correct answer"
         };
         
         // Handle verbatim formatting

@@ -1,6 +1,6 @@
 import React, { useRef, useMemo, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { FileText, Clock, Menu, Home, BarChart2, Play, Pause, Square, BookOpen } from "lucide-react";
+import { Clock, Menu, Home, BarChart2, Play, Pause, Square, BookOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -87,10 +87,6 @@ const Navbar = React.memo(() => {
       <Button onClick={() => debouncedNavigate('/')} variant="outline" className="neo-border bg-white hover:bg-gray-100 text-neo-black font-medium flex items-center gap-1.5 sm:gap-2 shadow-neo hover:shadow-neo-lg transition-all hover:-translate-y-0.5 hover:-translate-x-0.5 px-2 sm:px-3 py-1.5 sm:py-2 text-sm sm:text-base">
         <Home className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
         <span className="hidden sm:inline">Home</span>
-      </Button>
-      <Button onClick={() => debouncedNavigate('/extractor')} variant="outline" className="neo-border bg-neo-accent2 hover:bg-neo-accent2/90 text-white font-medium flex items-center gap-1.5 sm:gap-2 shadow-neo hover:shadow-neo-lg transition-all hover:-translate-y-0.5 hover:-translate-x-0.5 px-2 sm:px-3 py-1.5 sm:py-2 text-sm sm:text-base">
-        <FileText className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-        <span className="hidden sm:inline">Reviewer</span>
       </Button>
       <Button onClick={() => debouncedNavigate('/pomodoro')} variant="outline" className="neo-border bg-neo-accent3 hover:bg-neo-accent3/90 text-neo-black font-medium flex items-center gap-1.5 sm:gap-2 shadow-neo hover:shadow-neo-lg transition-all hover:-translate-y-0.5 hover:-translate-x-0.5 px-2 sm:px-3 py-1.5 sm:py-2 text-sm sm:text-base">
         <Clock className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
@@ -214,10 +210,6 @@ const Navbar = React.memo(() => {
                     <Button onClick={() => debouncedNavigate('/')} variant="outline" className="neo-border w-full justify-start font-medium p-3 sm:p-4 h-auto min-h-[48px] text-sm sm:text-base">
                       <Home className="h-4 w-4 sm:h-5 sm:w-5 mr-2 sm:mr-3" />
                       Home
-                    </Button>
-                    <Button onClick={() => debouncedNavigate('/extractor')} variant="outline" className="neo-border w-full justify-start font-medium bg-neo-accent2 text-white p-3 sm:p-4 h-auto min-h-[48px] text-sm sm:text-base">
-                      <FileText className="h-4 w-4 sm:h-5 sm:w-5 mr-2 sm:mr-3" />
-                      Reviewer Maker
                     </Button>
                     <Button onClick={() => debouncedNavigate('/pomodoro')} variant="outline" className="neo-border w-full justify-start font-medium bg-neo-accent3 text-neo-black p-3 sm:p-4 h-auto min-h-[48px] text-sm sm:text-base">
                       <Clock className="h-4 w-4 sm:h-5 sm:w-5 mr-2 sm:mr-3" />
