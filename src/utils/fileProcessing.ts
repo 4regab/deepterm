@@ -106,17 +106,17 @@ PDF files provide the most reliable text extraction for AI processing.`
       
       // Check if file needs time to process
       if (fileInfo.state && fileInfo.state === 'PROCESSING') {
-        console.log(`[Step 1.5] File is still processing, waiting 2 seconds...`);
-        await new Promise(resolve => setTimeout(resolve, 2000));
+        console.log(`[Step 1.5] File is still processing, waiting 1 second...`); // Reduced from 2 seconds
+        await new Promise(resolve => setTimeout(resolve, 1000)); // Reduced wait time
         
-        // Check file status
+        // Check file status (single check instead of loop)
         try {
           const updatedFileInfo = await getFileInfo(fileInfo.name!);
           console.log(`[Step 1.5] Updated file status:`, updatedFileInfo.state);
           fileInfo = updatedFileInfo;
         } catch (statusError) {
-          console.warn(`[Step 1.5] Could not check file status:`, statusError);
-          // Continue anyway
+          console.warn(`[Step 1.5] Could not check file status, proceeding anyway:`, statusError);
+          // Continue anyway instead of failing
         }
       }
     } catch (uploadError) {
@@ -141,8 +141,8 @@ PDF files provide the most reliable text extraction for AI processing.`
       // Special handling for DOCX files - they might need additional wait time
       const fileExtension = '.' + file.name.split('.').pop()?.toLowerCase();
       if (fileExtension === '.docx' && fileInfo.state === 'PROCESSING') {
-        console.log(`[Step 2] DOCX file detected, waiting additional time for processing...`);
-        await new Promise(resolve => setTimeout(resolve, 3000)); // Extra wait for DOCX
+        console.log(`[Step 2] DOCX file detected, waiting 1 second for processing...`); // Reduced from 3 seconds
+        await new Promise(resolve => setTimeout(resolve, 1000)); // Reduced wait time
       }
       
       const extractionResult = await extractKeyTermsFromFile(fileInfo, mode || undefined);

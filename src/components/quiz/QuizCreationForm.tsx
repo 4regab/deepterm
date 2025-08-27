@@ -289,11 +289,11 @@ const QuizCreationForm = () => {
       
       const numQuestionsParam = isAutoQuestionCount ? undefined : numberOfQuestions;
       
-      // *** ADD LOGGING HERE ***
-      console.log(`[QuizCreationForm] Generating quiz with settings:`, {
+      // *** PERFORMANCE OPTIMIZATION: Direct quiz generation ***
+      console.log(`[QuizCreationForm] Generating quiz with optimized direct approach:`, {
         numQuestions: numQuestionsParam,
         quizType: questionType,
-        verbatimMode, // Log the state value
+        verbatimMode,
         source: uploadedFile ? `file: ${uploadedFile.name}` : (studyMaterial ? 'studyMaterial' : 'manualInput'),
         textLength: actualStudyMaterial.length
       });
@@ -314,7 +314,9 @@ const QuizCreationForm = () => {
             questionType,
             verbatimMode
           );        } else {
-          result = await generator.extractAndGenerateQuiz(
+          // *** CRITICAL OPTIMIZATION: Use direct quiz generation instead of extract-then-generate ***
+          // This eliminates the double API call that was causing extreme delays
+          result = await generator.generateQuizQuestions(
             actualStudyMaterial,
             numQuestionsParam,
             questionType,

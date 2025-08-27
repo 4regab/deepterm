@@ -1,8 +1,7 @@
 import GeminiCore from "./geminiCore";
 import { QuizGenerationResponse, QuizQuestion } from "../types/quiz";
 import { v4 as uuidv4 } from "uuid";
-import { ExtractionMode, extractKeyTerms, initializeGemini } from "./geminiService";
-import { ExtractionResult, KeyTerm } from "@/types";
+import { initializeGemini } from "./geminiService";
 
 // Constants - using the same API key name as in ApiKeyInput.tsx
 const API_KEY_STORAGE_KEY = 'gemini-api-key';
@@ -53,16 +52,17 @@ export class QuizGenerator extends GeminiCore {
         initializeGemini(storedKey);
       }
       
-      // First extract all key terms from the study material
-      const extractionResult = await extractKeyTerms(studyMaterial, "full");
+      // OPTIMIZATION: Direct single-call quiz generation instead of double processing
+      // Skip extraction step and generate quiz directly from study material
+      console.log("🚀 Using optimized direct quiz generation...");
       
-      // Auto-determine number of questions if needed
+      // Auto-determine number of questions if needed based on text length
       if (numQuestions === undefined) {
-        numQuestions = this.determineOptimalQuestionCount(extractionResult);
+        numQuestions = this.determineOptimalQuestionCountFromText(studyMaterial);
       }
       
-      // Use the extracted key terms to generate a better quiz
-      return this.generateQuizFromExtractedTerms(extractionResult, numQuestions, quizType, verbatim);
+      // Generate quiz directly from study material in one API call
+      return this.generateQuizQuestions(studyMaterial, numQuestions, quizType, verbatim);
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : "Failed to process text";
       console.error("Error in extract and generate quiz:", errorMessage);
@@ -70,145 +70,54 @@ export class QuizGenerator extends GeminiCore {
     }
   }
 
-  private determineOptimalQuestionCount(extractionResult: ExtractionResult): number {
-    // Count all meaningful terms, including main terms, subcategories, and examples
-    const allMeaningfulTerms = this.getAllMeaningfulTerms(extractionResult);
-    const totalMeaningfulTerms = allMeaningfulTerms.length;
+  // Optimized method to determine question count based on text length
+  private determineOptimalQuestionCountFromText(studyMaterial: string): number {
+    const textLength = studyMaterial.length;
+    const wordCount = studyMaterial.split(/\s+/).length;
     
-    console.log(`Total meaningful terms identified for quiz: ${totalMeaningfulTerms}`);
+    console.log(`Auto-determining question count for text: ${textLength} chars, ${wordCount} words`);
     
-    // IMPROVED: Ensure we generate enough questions to cover most or all terms
-    // For larger sets, we want to cover at least 80-90% of terms
     let questionCount: number;
     
-    if (totalMeaningfulTerms === 0) {
-      // Fallback if no terms were identified
-      questionCount = 10;
-    } else if (totalMeaningfulTerms <= 5) {
-      // For very few terms, use at least 2 questions per term
-      questionCount = totalMeaningfulTerms * 2;
-    } else if (totalMeaningfulTerms <= 15) {
-      // For small sets, use at least 1.5 questions per term to ensure coverage
-      questionCount = Math.ceil(totalMeaningfulTerms * 1.5);
-    } else if (totalMeaningfulTerms <= 30) {
-      // For medium sets, ensure we cover at least 90% of terms
-      questionCount = Math.ceil(totalMeaningfulTerms * 0.9);
-    } else if (totalMeaningfulTerms <= 50) {
-      // For larger sets, ensure we cover at least 85% of terms
-      questionCount = Math.ceil(totalMeaningfulTerms * 0.85);
+    if (wordCount <= 100) {
+      questionCount = 5; // Very short text
+    } else if (wordCount <= 300) {
+      questionCount = 10; // Short text
+    } else if (wordCount <= 800) {
+      questionCount = 15; // Medium text
+    } else if (wordCount <= 1500) {
+      questionCount = 20; // Long text
     } else {
-      // For very large sets, ensure we cover at least 80% of terms
-      questionCount = Math.ceil(totalMeaningfulTerms * 0.8);
+      questionCount = 25; // Very long text
     }
     
-    // Ensure we have a reasonable number, but raise the maximum to better handle larger term sets
-    questionCount = Math.max(10, Math.min(Math.round(questionCount), 100));
+    // Cap at reasonable limits
+    questionCount = Math.max(5, Math.min(questionCount, 30));
     
-    console.log(`Auto-determined question count: ${questionCount} to cover ${totalMeaningfulTerms} terms`);
+    console.log(`Auto-determined question count: ${questionCount}`);
     return questionCount;
   }
 
-  // Helper method to extract all meaningful terms (main terms, subcategories, examples) that have definitions
-  private getAllMeaningfulTerms(extractionResult: ExtractionResult): Array<{term: string, meaning: string}> {
-    const allTerms: Array<{term: string, meaning: string}> = [];
-    
-    // Process each main key term
-    extractionResult.keyTerms.forEach(term => {
-      // Add main term if it has a meaning
-      if (term.term && term.meaning) {
-        allTerms.push({
-          term: term.term,
-          meaning: term.meaning
-        });
-      }
-      
-      // Process subcategories if they exist
-      if (term.subcategories && Array.isArray(term.subcategories) && term.subcategories.length > 0) {
-        // For subcategories, we'll use the main term's meaning as context
-        term.subcategories.forEach(subcat => {
-          if (subcat && subcat.trim()) {
-            allTerms.push({
-              term: subcat,
-              meaning: `${subcat} is a subcategory of ${term.term}. ${term.meaning}`
-            });
-          }
-        });
-      }
-      
-      // Process examples if they exist
-      if (term.examples && Array.isArray(term.examples) && term.examples.length > 0) {
-        // For examples, we'll use the main term for context
-        term.examples.forEach(example => {
-          if (example && example.trim()) {
-            allTerms.push({
-              term: example,
-              meaning: `${example} is an example of ${term.term}. ${term.meaning}`
-            });
-          }
-        });
-      }
-    });
-    
-    return allTerms;
+  private determineOptimalQuestionCount(extractionResult: any): number {
+    // Legacy method - kept for compatibility but not used in optimized flow
+    return 10;
+  }
+
+  // Helper method to extract all meaningful terms (legacy - not used in optimized flow)
+  private getAllMeaningfulTerms(extractionResult: any): Array<{term: string, meaning: string}> {
+    // Legacy method - kept for compatibility but not used in optimized flow  
+    return [];
   }
 
   async generateQuizFromExtractedTerms(
-    extractionResult: ExtractionResult,
+    extractionResult: any,
     numQuestions?: number,
     quizType: "multiple" | "truefalse" | "identification" | "statementTrueFalse" | "mixed" = "multiple",
     verbatim: boolean = false
   ): Promise<QuizGenerationResponse> {
-    // Get all meaningful terms including main terms, subcategories, and examples
-    const allMeaningfulTerms = this.getAllMeaningfulTerms(extractionResult);
-    
-    // Create a formatted study material from all extracted meaningful terms
-    let formattedMaterial = "";
-    
-    // Add title
-    formattedMaterial += `${extractionResult.title}\\n\\n`;
-    
-    // Include ALL meaningful terms with their meanings
-    allMeaningfulTerms.forEach(item => {
-      formattedMaterial += `${item.term} - ${item.meaning}\\n\\n`;
-    });
-    
-    // Additionally, include the original hierarchical structure for context
-    formattedMaterial += "\\n--- Original Structure ---\\n\\n";
-    extractionResult.keyTerms.forEach(term => {
-      formattedMaterial += `${term.term} - ${term.meaning}\\n`;
-      
-      // Include category if available
-      if (term.category) {
-        formattedMaterial += `Category: ${term.category}\\n`;
-      }
-      
-      // Include all subcategories with their title
-      if (term.subcategories && term.subcategories.length > 0) {
-        if (term.subcategoryTitle) {
-          formattedMaterial += `${term.subcategoryTitle}:\\n`;
-        } else {
-          formattedMaterial += `Subcategories:\\n`;
-        }
-        term.subcategories.forEach(subcat => {
-          formattedMaterial += `- ${subcat}\\n`;
-        });
-      }
-      
-      // Include all examples
-      if (term.examples && term.examples.length > 0) {
-        formattedMaterial += `Examples:\\n`;
-        term.examples.forEach(example => {
-          formattedMaterial += `- ${example}\\n`;
-        });
-      }
-      
-      formattedMaterial += "\\n";
-    });
-    
-    console.log(`Creating quiz from ${allMeaningfulTerms.length} meaningful terms`);
-    
-    // Generate quiz using the enhanced formatted material, passing all meaningful terms
-    return this.generateQuizQuestions(formattedMaterial, numQuestions, quizType, verbatim, undefined, allMeaningfulTerms);
+    // Legacy method - not used in optimized flow
+    console.warn("Using legacy extraction method - consider using direct generation for better performance");
+    return this.generateQuizQuestions("", numQuestions, quizType, verbatim);
   }
 
   async generateQuizQuestions(
@@ -353,9 +262,15 @@ export class QuizGenerator extends GeminiCore {
         return { success: false, error: result.error || "API call failed" };
       }
 
-      const responseText = result.data.candidates[0].content.parts[0].text.trim();
+      // Fix type casting for API response
+      const apiData = result.data as any;
+      const responseText = apiData?.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+      
+      if (!responseText) {
+        return { success: false, error: "No response received from API" };
+      }
+
       console.log("Raw API response (first 500 chars):", responseText.substring(0, 500) + (responseText.length > 500 ? "..." : ""));
-      console.log("Raw API response length:", responseText.length);
       
       let jsonString = responseText;
       
@@ -370,45 +285,20 @@ export class QuizGenerator extends GeminiCore {
           if (objectMatch && objectMatch[1]) {
               jsonString = objectMatch[1];
               console.warn("Extracted JSON object structure instead of array.");
-          } else {
-              console.warn("Could not reliably extract JSON array/object structure. Proceeding with the full string, which might cause parsing errors.");
           }
       }
-      
-      console.log("Cleaned JSON string (first 500 chars):", jsonString.substring(0, 500) + (jsonString.length > 500 ? "..." : ""));
-      console.log("Cleaned JSON string length:", jsonString.length);
       
       let questions;
       try {
         questions = JSON.parse(jsonString);
         console.log("Successfully parsed JSON on first attempt.");
       } catch (parseError: unknown) {
-        const errorMessage = parseError instanceof Error ? parseError.message : String(parseError);
-        console.error("Initial JSON parse error:", errorMessage);
-        if (errorMessage.includes('position')) {
-            const positionMatch = errorMessage.match(/position (\d+)/);
-            if (positionMatch && positionMatch[1]) {
-                const errorPos = parseInt(positionMatch[1], 10);
-                const contextWindow = 50;
-                const errorContext = jsonString.substring(Math.max(0, errorPos - contextWindow), Math.min(jsonString.length, errorPos + contextWindow));
-                console.error(`Error near position ${errorPos}: ...${errorContext}...`);
-            }
-        }
-        console.error("Attempting to fix JSON...");
-        console.log("Problematic JSON string (first 1000 chars):", jsonString.substring(0, 1000) + (jsonString.length > 1000 ? "..." : ""));
-
-        const errorToPass = parseError instanceof Error ? parseError : new Error(String(parseError));
-        const fixedJson = this.attemptToFixJson(jsonString, errorToPass);
-        if (fixedJson) {
-          console.log("Successfully parsed JSON after fix attempt.");
-          questions = fixedJson;
-        } else {
-          console.error("Failed to parse JSON even after fix attempts.");
-          return {
-            success: false,
-            error: `Failed to parse the generated quiz response. The API might have returned invalid JSON. Original error: ${errorMessage}. Please check the study material for unusual formatting or try simplifying it.`
-          };
-        }
+        console.error("JSON parse error:", parseError);
+        // Simplified error - just return the error instead of complex repair logic
+        return {
+          success: false,
+          error: `Failed to parse quiz response. Please try again with simpler content.`
+        };
       }
       
       if (!Array.isArray(questions)) {
@@ -416,19 +306,17 @@ export class QuizGenerator extends GeminiCore {
             console.warn("Parsed result was a single object, wrapping in an array.");
             questions = [questions];
          } else {
-            console.error("Parsed result is not an array or object:", questions);
-            return { success: false, error: "Parsed response is not a valid JSON array or object." };
+            return { success: false, error: "Invalid response format from AI." };
          }
       }
       
-      // Step 1: Map and validate raw questions from AI
-      const initialValidatedQuestions: QuizQuestion[] = questions.map((q: Record<string, unknown>, index: number) => {
-        // Create base question
+      // Simplified validation and mapping
+      const validatedQuestions: QuizQuestion[] = questions.map((q: Record<string, unknown>) => {
         const question: QuizQuestion = {
-          id: (q.id as string | number) || uuidv4(),
+          id: (q.id as string) || uuidv4(),
           type: (q.type && ["multiple", "truefalse", "identification", "statementTrueFalse"].includes(q.type as string)) 
             ? q.type as "multiple" | "truefalse" | "identification" | "statementTrueFalse" 
-            : quizType === "mixed" ? "multiple" : quizType, // Default to the requested quizType if type is invalid
+            : quizType === "mixed" ? "multiple" : quizType,
           question: (q.question as string) || "Question unavailable",
           options: Array.isArray(q.options) ? q.options as string[] : [],
           answer: (q.answer as string) || "",
@@ -438,10 +326,9 @@ export class QuizGenerator extends GeminiCore {
         // Handle verbatim formatting
         if (verbatim) {
           question.question = question.question.replace(/["""''`]/g, '');
-          question.question = question.question.replace(/^_+\s*[-–—:]\s*/, '__________ ');
           if (!question.question.trim().startsWith('__________')) {
             const dashMatch = question.question.match(/(.+?)[-–—:](.+)/);
-            if (dashMatch) {
+            if (dashMatch && dashMatch[2]) {
               question.question = `__________ ${dashMatch[2].trim()}`;
             } else {
               question.question = `__________ ${question.question.trim()}`;
@@ -465,123 +352,36 @@ export class QuizGenerator extends GeminiCore {
             "D. Both statements are false."
           ];
           if (!question.options.includes(question.answer)) {
-            question.answer = question.options[0];
+            question.answer = question.options[0] || "A. The first statement is true, the second statement is false.";
           }
         }
         
-        // Fix for multiple choice questions - ensure options are from the material
+        // Fix for multiple choice - simplified approach
         if (question.type === "multiple") {
           const correctAnswer = (question.answer || "").trim();
-          let potentialDistractors: string[] = [];
-          console.log(`[MC Options - ${question.id}] Q: ${question.question}, Answer: \\"${correctAnswer}\\"`);
-
-          // Determine the source of terms for distractors
-          let termSource: Array<{ term: string, definition?: string, meaning?: string }> = [];
-          if (manualSourceTerms && manualSourceTerms.length > 0) {
-            console.log(`[MC Options - ${question.id}] Using manualSourceTerms (count: ${manualSourceTerms.length})`);
-            termSource = manualSourceTerms;
-          } else if (allExtractedTerms && allExtractedTerms.length > 0) {
-            console.log(`[MC Options - ${question.id}] Using allExtractedTerms (count: ${allExtractedTerms.length})`);
-            termSource = allExtractedTerms.map(t => ({ term: t.term, definition: t.meaning }));
-          } else {
-             console.warn(`[MC Options - ${question.id}] No primary term source (manual or extracted). Attempting fallback using other answers.`);
-             potentialDistractors = questions
-               .filter((oq: Record<string, unknown>) => oq.id !== q.id && typeof oq.answer === 'string' && (oq.answer as string).trim() !== '')
-               .map((oq: Record<string, unknown>) => (oq.answer as string).trim())
-               .filter((opt: string) => opt.toLowerCase() !== correctAnswer.toLowerCase());
-             console.log(`[MC Options - ${question.id}] Potential distractors from other answers:`, potentialDistractors);
+          
+          if (!question.options.includes(correctAnswer) && correctAnswer) {
+            // Add correct answer if it's not already in options
+            question.options = [correctAnswer, ...question.options.slice(0, 3)];
           }
-
-          // If we have a primary term source, extract distractors from it
-          if (termSource.length > 0) {
-              potentialDistractors = termSource
-                .map(t => (t.term || "").trim()) // Get the term string and trim whitespace
-                .filter(term => term !== '' && term.toLowerCase() !== correctAnswer.toLowerCase()); // Filter out empty strings and the correct answer (case-insensitive)
-              console.log(`[MC Options - ${question.id}] Potential distractors from primary source:`, potentialDistractors);
-          }
-
-          // Ensure uniqueness (case-insensitive)
-          const uniqueDistractors = potentialDistractors.reduce((acc: string[], current: string) => {
-            if (current && !acc.some(d => d.toLowerCase() === current.toLowerCase())) {
-              acc.push(current);
-            }
-            return acc;
-          }, []);
-          console.log(`[MC Options - ${question.id}] Unique distractors after filtering:`, uniqueDistractors);
-
-          // Start building options with the correct answer
-          const newOptions: string[] = [];
-          if (correctAnswer) { // Only add if the correct answer is not empty
-              newOptions.push(correctAnswer);
-          }
-
-          // Add up to 3 unique distractors from the material
-          const shuffledDistractors = this.shuffleArray(uniqueDistractors);
-          let addedCount = 0;
-          for (const distractor of shuffledDistractors) {
-            // Ensure distractor is valid and not already in newOptions (case-insensitive)
-            if (distractor && typeof distractor === 'string' && distractor.trim() !== '' && !newOptions.some(o => o.toLowerCase() === distractor.toLowerCase())) {
-              newOptions.push(distractor.trim());
-              addedCount++;
-              if (addedCount >= 3) break; // Aim for 4 options total (1 correct + 3 distractors)
-            }
-          }
-          console.log(`[MC Options - ${question.id}] Options after adding ${addedCount} distractors:`, newOptions);
-
-          // REMOVED the fallback logic that added "Incorrect Option A/B/C" or "Option X"
-
-          // Shuffle the final options. This might result in fewer than 4 options if not enough unique distractors were found.
-          question.options = this.shuffleArray(newOptions);
-          console.log(`[MC Options - ${question.id}] Final shuffled options (count: ${question.options.length}):`, question.options);
-
-          // Optional: Add a check here if a minimum number of options is strictly required.
-          // For now, we allow fewer than 4 options if they are material-based.
+          
+          // Shuffle options
+          question.options = this.shuffleArray(question.options);
+          
+          // Ensure we have at least 2 options
           if (question.options.length < 2) {
-              console.warn(`[MC Options - ${question.id}] Generated question has fewer than 2 options (${question.options.length}). This might indicate insufficient unique terms in the source material or an issue with the generated question/answer pair.`);
-              // Decide how to handle this: filter out later, or allow it?
-              // For now, allowing it, but logging the warning.
-          }
-        }
-        
-        // If we're enforcing question type and it doesn't match what was requested, fix it
-        if (quizType !== "mixed" && question.type !== quizType) {
-          console.warn(`[Type Fix] AI returned type ${question.type}, but requested ${quizType}. Forcing type.`); // Log
-          question.type = quizType;
-
-          // If we're forcing to multiple choice, ensure we have options AND shuffle them
-          if (quizType === "multiple" && (!question.options || question.options.length < 4)) {
-            console.warn(`[Type Fix] Forcing multiple choice options and shuffling.`); // Log
-            const defaultOptions = [question.answer, `Option 1`, `Option 2`, `Option 3`];
-            question.options = this.shuffleArray(defaultOptions); // Shuffle the default options
-          } else if (quizType === "truefalse") {
-            question.options = ["True", "False"];
-            // Ensure answer is one of the options
-            question.answer = question.answer === "False" ? "False" : "True";
+            question.options = [correctAnswer, "Other option"];
           }
         }
         
         return question;
       });
       
-      // Step 2: Deduplicate questions based on the question text
-      const uniqueQuestions: QuizQuestion[] = [];
-      const seenQuestions = new Set<string>();
-      
-      for (const q of initialValidatedQuestions) {
-          const questionText = q.question.trim().toLowerCase(); // Normalize for comparison
-          if (!seenQuestions.has(questionText)) {
-              seenQuestions.add(questionText);
-              uniqueQuestions.push(q);
-          } else {
-              console.warn(`[Deduplication] Duplicate question removed: \\"${q.question}\\"`);
-          }
-      }
-      
-      console.log(`Generated ${uniqueQuestions.length} unique questions successfully (out of ${initialValidatedQuestions.length} initial).`);
-      return { success: true, questions: uniqueQuestions }; // Return the deduplicated list
+      console.log(`Generated ${validatedQuestions.length} questions successfully.`);
+      return { success: true, questions: validatedQuestions };
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : "Failed to process quiz questions.";
-      console.error("Failed to parse quiz generation result:", errorMessage);
+      console.error("Failed to generate quiz:", errorMessage);
       return { 
         success: false, 
         error: errorMessage 

@@ -141,9 +141,10 @@ export const sendSecureGeminiRequest = async (options: ProxyRequestOptions): Pro
                 onProgress(i + 1, totalChunks);
             }
             
-            // Add a delay between requests to avoid rate limiting and reduce server load
-            if (i < totalChunks - 1) {
-                await new Promise(resolve => setTimeout(resolve, 500)); // 500ms delay
+            // Removed artificial delay for faster processing
+            // Only add delay if there are many chunks to avoid rate limiting
+            if (i < totalChunks - 1 && totalChunks > 5) {
+                await new Promise(resolve => setTimeout(resolve, 200)); // Reduced from 500ms to 200ms, only for large chunks
             }
         }
 

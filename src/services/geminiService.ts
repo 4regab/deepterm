@@ -416,8 +416,10 @@ export const extractKeyTerms = async (
     console.log("Sending prompt to Gemini API");
 
     let result;
-    const maxRetries = 3;
-    let retryCount = 0;    while (retryCount < maxRetries) {
+    const maxRetries = 2; // Reduced from 3 to 2 for faster failure
+    let retryCount = 0;
+
+    while (retryCount < maxRetries) {
       try {
         result = await genAI.models.generateContent({
           model: "gemini-2.5-flash-preview-05-20",
@@ -429,28 +431,26 @@ export const extractKeyTerms = async (
         retryCount++;
         console.error(`Error on attempt ${retryCount}:`, error instanceof Error ? error.message : String(error));
 
-        // Check if it's a 503 error and if we should retry
+        // Only retry for 503 errors, fail fast for other errors
         const isServiceUnavailable = error instanceof Error && error.message.includes('[503]');
 
         if (isServiceUnavailable && retryCount < maxRetries) {
-          // Wait before retrying with exponential backoff only for 503
-          const backoffTime = 1000 * Math.pow(2, retryCount - 1); // e.g., 1s, 2s, 4s
+          // Reduced wait time for faster retries
+          const backoffTime = 500 * retryCount; // Reduced from exponential to linear: 500ms, 1000ms
           console.log(`Service unavailable (503). Retrying attempt ${retryCount + 1} in ${backoffTime}ms...`);
           await new Promise(resolve => setTimeout(resolve, backoffTime));
         } else {
-          // If it's not a 503 error or retries exhausted, prepare to re-throw
+          // Fail fast for non-retryable errors
           let finalError = error;
           if (isServiceUnavailable && retryCount >= maxRetries) {
               console.error(`Failed after ${maxRetries} attempts due to service unavailability (503).`);
-              finalError = new Error(`Failed after ${maxRetries} attempts due to service unavailability (503). Original error: ${error instanceof Error ? error.message : String(error)}`);
+              finalError = new Error(`Service temporarily unavailable. Please try again. (Failed after ${maxRetries} attempts)`);
           } else {
-              console.error(`Non-retryable error or unexpected issue on attempt ${retryCount}.`);
-              // Ensure we're throwing an actual Error object
+              console.error(`Non-retryable error on attempt ${retryCount}.`);
               if (!(error instanceof Error)) {
                 finalError = new Error(`An unexpected error occurred: ${String(error)}`);
               }
           }
-          // Re-throw the original or wrapped error to be handled upstream
           throw finalError;
         }
       }
