@@ -1,4 +1,4 @@
-import { Coffee, Mail } from "lucide-react"; // Changed Github to Coffee
+import { Coffee, Mail, Github } from "lucide-react";
 import { Link } from "react-router-dom";
 const Footer = () => {
   return <footer className="bg-white neo-border-t mt-auto py-6 sm:py-8 lg:py-10">
@@ -49,6 +49,11 @@ const Footer = () => {
             <a href="mailto:deeptermai@gmail.com" className="text-neo-muted hover:text-[#FF5C00] transition-colors flex items-center justify-start gap-2 text-sm sm:text-base min-h-[44px] py-1 touch-target">
               <Mail className="h-4 w-4 flex-shrink-0" />
               <span>Email Us</span>
+            </a>
+            {/* GitHub repository link */}
+            <a href="https://github.com/4regab/deepterm" target="_blank" rel="noopener noreferrer" className="text-neo-muted hover:text-[#FF5C00] transition-colors flex items-center justify-start gap-2 text-sm sm:text-base min-h-[44px] py-1 touch-target">
+              <Github className="h-4 w-4 flex-shrink-0" />
+              <span>GitHub</span>
             </a>
             {/* Donate link */}
             <a href="https://ko-fi.com/deepterm" target="_blank" rel="noopener noreferrer" className="text-neo-muted hover:text-[#FF5C00] transition-colors flex items-center justify-start gap-2 text-sm sm:text-base min-h-[44px] py-1 touch-target">
