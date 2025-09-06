@@ -15,16 +15,16 @@ export class QuizGenerator extends GeminiCore {
       initializeGemini(apiKey);
       return;
     }
-    
+
     // Otherwise, try to load from localStorage if we're in a browser environment
     let localStorageKey = "";
     if (typeof window !== 'undefined' && window.localStorage) {
       localStorageKey = localStorage.getItem(API_KEY_STORAGE_KEY) || "";
       console.log("Retrieved API key from localStorage:", localStorageKey ? "Key found" : "No key found");
     }
-    
+
     super(localStorageKey);
-    
+
     // Also initialize the geminiService with this key
     if (localStorageKey) {
       initializeGemini(localStorageKey);
@@ -42,25 +42,25 @@ export class QuizGenerator extends GeminiCore {
       if (typeof window !== 'undefined' && window.localStorage) {
         const storedKey = localStorage.getItem(API_KEY_STORAGE_KEY);
         if (!storedKey) {
-          return { 
-            success: false, 
-            error: "No API key found. Please set your Gemini API key in the settings." 
+          return {
+            success: false,
+            error: "No API key found. Please set your Gemini API key in the settings."
           };
         }
-        
+
         // Re-initialize with the stored key to ensure it's set
         initializeGemini(storedKey);
       }
-      
+
       // OPTIMIZATION: Direct single-call quiz generation instead of double processing
       // Skip extraction step and generate quiz directly from study material
       console.log("🚀 Using optimized direct quiz generation...");
-      
+
       // Auto-determine number of questions if needed based on text length
       if (numQuestions === undefined) {
         numQuestions = this.determineOptimalQuestionCountFromText(studyMaterial);
       }
-      
+
       // Generate quiz directly from study material in one API call
       return this.generateQuizQuestions(studyMaterial, numQuestions, quizType, verbatim);
     } catch (error: unknown) {
@@ -74,11 +74,11 @@ export class QuizGenerator extends GeminiCore {
   private determineOptimalQuestionCountFromText(studyMaterial: string): number {
     const textLength = studyMaterial.length;
     const wordCount = studyMaterial.split(/\s+/).length;
-    
+
     console.log(`Auto-determining question count for text: ${textLength} chars, ${wordCount} words`);
-    
+
     let questionCount: number;
-    
+
     if (wordCount <= 100) {
       questionCount = 5; // Very short text
     } else if (wordCount <= 300) {
@@ -90,10 +90,10 @@ export class QuizGenerator extends GeminiCore {
     } else {
       questionCount = 25; // Very long text
     }
-    
+
     // Cap at reasonable limits
     questionCount = Math.max(5, Math.min(questionCount, 30));
-    
+
     console.log(`Auto-determined question count: ${questionCount}`);
     return questionCount;
   }
@@ -104,7 +104,7 @@ export class QuizGenerator extends GeminiCore {
   }
 
   // Helper method to extract all meaningful terms (legacy - not used in optimized flow)
-  private getAllMeaningfulTerms(extractionResult: any): Array<{term: string, meaning: string}> {
+  private getAllMeaningfulTerms(extractionResult: any): Array<{ term: string, meaning: string }> {
     // Legacy method - kept for compatibility but not used in optimized flow  
     return [];
   }
@@ -131,58 +131,91 @@ export class QuizGenerator extends GeminiCore {
     allExtractedTerms?: Array<{ term: string, meaning: string }>
   ): Promise<QuizGenerationResponse> {
     const questionCount = numQuestions ? `${numQuestions}` : "an appropriate number of";
-    
-    const verbatimInstruction = verbatim 
-      ? `VERY IMPORTANT: Your task is to identify KEY TERMS and create fill-in-the-blank questions where the BLANK replaces the term, directly followed by the definition/explanation.
 
-      HOW TO IDENTIFY KEY TERMS:
-      - Look for bold or italicized terms
-      - Look for numbered or bulleted items with a term followed by a dash (–) or colon (:)
-      - Look for lines that start with a clear term followed by explanation
-      - Look for section headings or subheadings that define concepts
-      - YOU MUST INCLUDE ALL categories, subcategories, and examples as potential terms
-      - YOU MUST CREATE QUESTIONS from ALL examples and types mentioned in the study material
-      
-      FORMAT YOUR QUESTIONS:
-      1. For each term you identify, create a question like this:
-         "__________ [EXACT explanation/definition that follows the term]"
-      2. NEVER include any dash (–) or colon (:) between the blank and the text
-      3. The blank must be directly followed by the explanation text
-      4. DO NOT include the term in the question text
-      
-      CRUCIAL RULES:
-      - The blank ALWAYS represents the key term
-      - The text after the blank MUST be EXACT verbatim passages from the study material
-      - DO NOT modify any words from the source material's explanation part
-      - Pay special attention to lines that follow this pattern: "Term – explanation" or "Term : explanation"
-      - For numbered or bulleted lists that define terms, use the term as the answer
-      - YOU MUST CREATE QUESTIONS from ALL examples and categories - these are crucial for comprehensive coverage
-      
-      Examples:
-      
-      Source text: "Ethical relativism argues that moral values are shaped by social, cultural, and individual perspectives."
-      
-      CORRECT question: "__________ argues that moral values are shaped by social, cultural, and individual perspectives."
-      CORRECT answer: "Ethical relativism"
-      
-      Source text: "Intentionality – The individual's intention behind an action is important in determining moral responsibility. Actions done with deliberate intent carry more moral weight than those done accidentally."
-      
-      CORRECT question: "__________ The individual's intention behind an action is important in determining moral responsibility. Actions done with deliberate intent carry more moral weight than those done accidentally."
-      CORRECT answer: "Intentionality"
-      
-      Source text: "Eco-Friendly Packaging – Companies using biodegradable materials to reduce environmental impact."
-      
-      CORRECT question: "__________ Companies using biodegradable materials to reduce environmental impact."
-      CORRECT answer: "Eco-Friendly Packaging"
-      
-      The ANSWER must ONLY be the key term that would fill in the blank.
-      
-      EXTREMELY IMPORTANT: Preserve the EXACT capitalization of the key terms as they appear in the source material. Do not lowercase or change any capitalization.
-      
-      NEVER TRUNCATE OR SPLIT THE TERM. If a term includes a dash (like "Term-Based Analysis"), keep the ENTIRE term as the answer.`
+    const verbatimInstruction = verbatim
+      ? (quizType === "truefalse"
+        ? `IMPORTANT: For TRUE/FALSE questions, create complete statements that can be evaluated as true or false.
+        
+        HOW TO CREATE TRUE/FALSE QUESTIONS FROM VERBATIM MATERIAL:
+        - Look for key terms and their definitions/explanations in the study material
+        - Create complete statements using the EXACT text from the source material
+        - Make statements that are either clearly true or clearly false based on the material
+        - Use the exact wording and capitalization from the source material
+        
+        FORMAT YOUR TRUE/FALSE QUESTIONS:
+        1. Create complete statements like: "[Term] [exact explanation from source material]"
+        2. Use EXACT verbatim text from the source material
+        3. Ensure each statement can be definitively evaluated as true or false
+        4. DO NOT create fill-in-the-blank questions for true/false type
+        
+        Examples:
+        
+        Source text: "Cheat/hack clients – not allowed, players found breaking this rule will face a warning first then permanent ban."
+        
+        CORRECT TRUE statement: "Cheat/hack clients are not allowed, players found breaking this rule will face a warning first then permanent ban."
+        CORRECT FALSE statement: "Cheat/hack clients are allowed without any consequences."
+        
+        Source text: "X-Ray – not allowed, players found breaking this rule will face a warning first then permanent ban."
+        
+        CORRECT TRUE statement: "X-Ray is not allowed, players found breaking this rule will face a warning first then permanent ban."
+        CORRECT FALSE statement: "X-Ray is permitted for all players to use."
+        
+        CRUCIAL RULES:
+        - Create COMPLETE statements, not fill-in-the-blank questions
+        - Use EXACT verbatim text from the source material when creating true statements
+        - For false statements, modify the meaning while keeping similar structure
+        - Preserve EXACT capitalization of terms as they appear in source material
+        - Answer must be either "True" or "False"`
+        : `VERY IMPORTANT: Your task is to identify KEY TERMS and create fill-in-the-blank questions where the BLANK replaces the term, directly followed by the definition/explanation.
+
+        HOW TO IDENTIFY KEY TERMS:
+        - Look for bold or italicized terms
+        - Look for numbered or bulleted items with a term followed by a dash (–) or colon (:)
+        - Look for lines that start with a clear term followed by explanation
+        - Look for section headings or subheadings that define concepts
+        - YOU MUST INCLUDE ALL categories, subcategories, and examples as potential terms
+        - YOU MUST CREATE QUESTIONS from ALL examples and types mentioned in the study material
+        
+        FORMAT YOUR QUESTIONS:
+        1. For each term you identify, create a question like this:
+           "__________ [EXACT explanation/definition that follows the term]"
+        2. NEVER include any dash (–) or colon (:) between the blank and the text
+        3. The blank must be directly followed by the explanation text
+        4. DO NOT include the term in the question text
+        
+        CRUCIAL RULES:
+        - The blank ALWAYS represents the key term
+        - The text after the blank MUST be EXACT verbatim passages from the study material
+        - DO NOT modify any words from the source material's explanation part
+        - Pay special attention to lines that follow this pattern: "Term – explanation" or "Term : explanation"
+        - For numbered or bulleted lists that define terms, use the term as the answer
+        - YOU MUST CREATE QUESTIONS from ALL examples and categories - these are crucial for comprehensive coverage
+        
+        Examples:
+        
+        Source text: "Ethical relativism argues that moral values are shaped by social, cultural, and individual perspectives."
+        
+        CORRECT question: "__________ argues that moral values are shaped by social, cultural, and individual perspectives."
+        CORRECT answer: "Ethical relativism"
+        
+        Source text: "Intentionality – The individual's intention behind an action is important in determining moral responsibility. Actions done with deliberate intent carry more moral weight than those done accidentally."
+        
+        CORRECT question: "__________ The individual's intention behind an action is important in determining moral responsibility. Actions done with deliberate intent carry more moral weight than those done accidentally."
+        CORRECT answer: "Intentionality"
+        
+        Source text: "Eco-Friendly Packaging – Companies using biodegradable materials to reduce environmental impact."
+        
+        CORRECT question: "__________ Companies using biodegradable materials to reduce environmental impact."
+        CORRECT answer: "Eco-Friendly Packaging"
+        
+        The ANSWER must ONLY be the key term that would fill in the blank.
+        
+        EXTREMELY IMPORTANT: Preserve the EXACT capitalization of the key terms as they appear in the source material. Do not lowercase or change any capitalization.
+        
+        NEVER TRUNCATE OR SPLIT THE TERM. If a term includes a dash (like "Term-Based Analysis"), keep the ENTIRE term as the answer.`)
       : `Generate questions that test understanding of the concepts in the study material. Questions can rephrase or reframe the material to test deeper understanding. MOST IMPORTANTLY: INCLUDE ALL key terms, examples, subcategories, and concepts from the material in your question set - make sure every term has at least one question.`;
-    
-    const statementTrueFalseInstructions = quizType === "statementTrueFalse" || quizType === "mixed" 
+
+    const statementTrueFalseInstructions = quizType === "statementTrueFalse" || quizType === "mixed"
       ? `
       For "Statement True/False" questions:
       - Create questions with TWO statements about the material
@@ -196,22 +229,24 @@ export class QuizGenerator extends GeminiCore {
       - Make sure the answer is one of these four options
       `
       : "";
-    
+
+
+
     const systemPrompt = `
       You are an expert quiz generator. Generate ${questionCount} quiz questions based on the study material provided.
       
-      Quiz Type: ${quizType === "mixed" ? "Mix of Multiple Choice, True/False, Statement True/False, and Identification" : 
-                   quizType === "multiple" ? "Multiple Choice" : 
-                   quizType === "truefalse" ? "True/False" :
-                   quizType === "statementTrueFalse" ? "Statement True/False" : 
-                   "Identification"}
+      Quiz Type: ${quizType === "mixed" ? "Mix of Multiple Choice, True/False, Statement True/False, and Identification" :
+        quizType === "multiple" ? "Multiple Choice" :
+          quizType === "truefalse" ? "True/False" :
+            quizType === "statementTrueFalse" ? "Statement True/False" :
+              "Identification"}
       
       ${verbatimInstruction}
       
       ${statementTrueFalseInstructions}
       
-      ${numQuestions ? `IMPORTANT: You MUST generate EXACTLY ${numQuestions} questions, no more and no less.` : 
-      `IMPORTANT: Generate a comprehensive set of questions that thoroughly covers the material provided.
+      ${numQuestions ? `IMPORTANT: You MUST generate EXACTLY ${numQuestions} questions, no more and no less.` :
+        `IMPORTANT: Generate a comprehensive set of questions that thoroughly covers the material provided.
        - For short materials (< 500 words), generate at least 10-15 questions
        - For medium materials (500-1500 words), generate at least 20-30 questions
        - For long materials (> 1500 words), generate at least 30-60 questions
@@ -266,7 +301,7 @@ export class QuizGenerator extends GeminiCore {
         topK: 40,
         topP: 0.95
       });
-      
+
       if (!result.success) {
         return { success: false, error: result.error || "API call failed" };
       }
@@ -274,29 +309,29 @@ export class QuizGenerator extends GeminiCore {
       // Fix type casting for API response
       const apiData = result.data as any;
       const responseText = apiData?.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
-      
+
       if (!responseText) {
         return { success: false, error: "No response received from API" };
       }
 
       console.log("Raw API response (first 500 chars):", responseText.substring(0, 500) + (responseText.length > 500 ? "..." : ""));
-      
+
       let jsonString = responseText;
-      
+
       jsonString = jsonString.replace(/^```(?:json)?\s*/, "").replace(/\s*```$/, "");
-      
+
       const arrayMatch = jsonString.match(/(\[[\s\S]*\])/);
       if (arrayMatch && arrayMatch[1]) {
-          jsonString = arrayMatch[1];
-          console.log("Extracted JSON array structure.");
+        jsonString = arrayMatch[1];
+        console.log("Extracted JSON array structure.");
       } else {
-          const objectMatch = jsonString.match(/(\{[\s\S]*\})/);
-          if (objectMatch && objectMatch[1]) {
-              jsonString = objectMatch[1];
-              console.warn("Extracted JSON object structure instead of array.");
-          }
+        const objectMatch = jsonString.match(/(\{[\s\S]*\})/);
+        if (objectMatch && objectMatch[1]) {
+          jsonString = objectMatch[1];
+          console.warn("Extracted JSON object structure instead of array.");
+        }
       }
-      
+
       let questions;
       try {
         questions = JSON.parse(jsonString);
@@ -309,50 +344,71 @@ export class QuizGenerator extends GeminiCore {
           error: `Failed to parse quiz response. Please try again with simpler content.`
         };
       }
-      
+
       if (!Array.isArray(questions)) {
-         if (typeof questions === 'object' && questions !== null) {
-            console.warn("Parsed result was a single object, wrapping in an array.");
-            questions = [questions];
-         } else {
-            return { success: false, error: "Invalid response format from AI." };
-         }
+        if (typeof questions === 'object' && questions !== null) {
+          console.warn("Parsed result was a single object, wrapping in an array.");
+          questions = [questions];
+        } else {
+          return { success: false, error: "Invalid response format from AI." };
+        }
       }
-      
+
+
+
       // Simplified validation and mapping
-      const validatedQuestions: QuizQuestion[] = questions.map((q: Record<string, unknown>) => {
+      const validatedQuestions: QuizQuestion[] = questions.map((q: Record<string, unknown>, index: number) => {
         const question: QuizQuestion = {
           id: (q.id as string) || uuidv4(),
-          type: (q.type && ["multiple", "truefalse", "identification", "statementTrueFalse"].includes(q.type as string)) 
-            ? q.type as "multiple" | "truefalse" | "identification" | "statementTrueFalse" 
+          type: (q.type && ["multiple", "truefalse", "identification", "statementTrueFalse"].includes(q.type as string))
+            ? q.type as "multiple" | "truefalse" | "identification" | "statementTrueFalse"
             : quizType === "mixed" ? "multiple" : quizType,
           question: (q.question as string) || "Question unavailable",
           options: Array.isArray(q.options) ? q.options as string[] : [],
           answer: (q.answer as string) || "",
           explanation: (q.explanation as string) || "Brief explanation of the correct answer"
         };
-        
+
+
+
         // Handle verbatim formatting
         if (verbatim) {
           question.question = question.question.replace(/["""''`]/g, '');
-          if (!question.question.trim().startsWith('__________')) {
-            const dashMatch = question.question.match(/(.+?)[-–—:](.+)/);
-            if (dashMatch && dashMatch[2]) {
-              question.question = `__________ ${dashMatch[2].trim()}`;
-            } else {
-              question.question = `__________ ${question.question.trim()}`;
+
+          // For True/False questions, don't apply fill-in-the-blank formatting
+          if (question.type === "truefalse") {
+            // Keep the question as a complete statement for True/False
+            // The AI should have already generated complete statements
+            // Just clean up any unwanted characters
+            question.question = question.question.trim();
+
+            // Ensure the answer is either "True" or "False"
+            if (question.answer && !["True", "False"].includes(question.answer.trim())) {
+              // If the answer is not True/False, default to True
+              question.answer = "True";
+            }
+          } else {
+            // For other question types, apply the fill-in-the-blank formatting
+            if (!question.question.trim().startsWith('__________')) {
+              const dashMatch = question.question.match(/(.+?)[-–—:](.+)/);
+              if (dashMatch && dashMatch[2]) {
+                question.question = `__________ ${dashMatch[2].trim()}`;
+              } else {
+                question.question = `__________ ${question.question.trim()}`;
+              }
+            }
+            if (question.answer) {
+              question.answer = question.answer.replace(/[.,;:!?]$/, '');
             }
           }
-          if (question.answer) {
-            question.answer = question.answer.replace(/[.,;:!?]$/, '');
-          }
+
         }
-        
+
         // Ensure proper options for different question types
         if (question.type === "truefalse") {
           question.options = ["True", "False"];
         }
-        
+
         if (question.type === "statementTrueFalse") {
           question.options = [
             "A. The first statement is true, the second statement is false.",
@@ -364,40 +420,40 @@ export class QuizGenerator extends GeminiCore {
             question.answer = question.options[0] || "A. The first statement is true, the second statement is false.";
           }
         }
-        
+
         // Fix for multiple choice - simplified approach
         if (question.type === "multiple") {
           const correctAnswer = (question.answer || "").trim();
-          
+
           if (!question.options.includes(correctAnswer) && correctAnswer) {
             // Add correct answer if it's not already in options
             question.options = [correctAnswer, ...question.options.slice(0, 3)];
           }
-          
+
           // Shuffle options
           question.options = this.shuffleArray(question.options);
-          
+
           // Ensure we have at least 2 options
           if (question.options.length < 2) {
             question.options = [correctAnswer, "Other option"];
           }
         }
-        
+
         return question;
       });
-      
+
       console.log(`Generated ${validatedQuestions.length} questions successfully.`);
       return { success: true, questions: validatedQuestions };
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : "Failed to process quiz questions.";
       console.error("Failed to generate quiz:", errorMessage);
-      return { 
-        success: false, 
-        error: errorMessage 
+      return {
+        success: false,
+        error: errorMessage
       };
     }
   }
-  
+
   /**
    * Extract terms and definitions from study material
    * This function is used by the FlashcardCreationForm component to generate flashcards
@@ -407,23 +463,23 @@ export class QuizGenerator extends GeminiCore {
       if (!studyMaterial.trim()) {
         return { success: false, error: "No study material provided" };
       }
-      
+
       // Use the existing extractKeyTerms function from geminiService
       const extractionResult = await extractKeyTerms(studyMaterial, "full");
-      
+
       if (!extractionResult || !extractionResult.keyTerms || !Array.isArray(extractionResult.keyTerms)) {
         return { success: false, error: "Failed to extract terms from study material" };
       }
-      
+
       // Convert the key terms to the format expected by flashcards
       const flashcardTerms = extractionResult.keyTerms.map(term => ({
         term: term.term,
         definition: term.meaning
       }));
-      
-      return { 
-        success: true, 
-        data: flashcardTerms 
+
+      return {
+        success: true,
+        data: flashcardTerms
       };
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "Unknown error occurred";
@@ -449,52 +505,52 @@ export class QuizGenerator extends GeminiCore {
     }
 
     try {
-        console.log("Fix attempt 2: Escaping newlines, tabs, and quotes within strings");
-        let potentiallyFixed = "";
-        let inString = false;
-        let escapeNext = false;
-        for (let i = 0; i < currentJsonString.length; i++) {
-            const char = currentJsonString[i];
+      console.log("Fix attempt 2: Escaping newlines, tabs, and quotes within strings");
+      let potentiallyFixed = "";
+      let inString = false;
+      let escapeNext = false;
+      for (let i = 0; i < currentJsonString.length; i++) {
+        const char = currentJsonString[i];
 
-            if (escapeNext) {
-                potentiallyFixed += char;
-                escapeNext = false;
-                continue;
-            }
-
-            if (char === '\\') {
-                potentiallyFixed += char;
-                escapeNext = true;
-                continue;
-            }
-
-            if (char === '"') {
-                inString = !inString;
-                potentiallyFixed += char;
-            } else if (inString) {
-                if (char === '\n') {
-                    potentiallyFixed += '\\n';
-                } else if (char === '\r') {
-                    potentiallyFixed += '\\r';
-                } else if (char === '\t') {
-                    potentiallyFixed += '\\t';
-                } else if (char === '"') {
-                    potentiallyFixed += '\\"';
-                }
-                 else {
-                    potentiallyFixed += char;
-                }
-            } else {
-                potentiallyFixed += char;
-            }
+        if (escapeNext) {
+          potentiallyFixed += char;
+          escapeNext = false;
+          continue;
         }
-        const fixedJson2 = potentiallyFixed.replace(/,\s*([}\]])/g, '$1');
-        const parsed2 = JSON.parse(fixedJson2);
-        console.log("Fix attempt 2 successful.");
-        return Array.isArray(parsed2) ? parsed2 : [parsed2];
+
+        if (char === '\\') {
+          potentiallyFixed += char;
+          escapeNext = true;
+          continue;
+        }
+
+        if (char === '"') {
+          inString = !inString;
+          potentiallyFixed += char;
+        } else if (inString) {
+          if (char === '\n') {
+            potentiallyFixed += '\\n';
+          } else if (char === '\r') {
+            potentiallyFixed += '\\r';
+          } else if (char === '\t') {
+            potentiallyFixed += '\\t';
+          } else if (char === '"') {
+            potentiallyFixed += '\\"';
+          }
+          else {
+            potentiallyFixed += char;
+          }
+        } else {
+          potentiallyFixed += char;
+        }
+      }
+      const fixedJson2 = potentiallyFixed.replace(/,\s*([}\]])/g, '$1');
+      const parsed2 = JSON.parse(fixedJson2);
+      console.log("Fix attempt 2 successful.");
+      return Array.isArray(parsed2) ? parsed2 : [parsed2];
     } catch (e: unknown) {
-        const errorMessage = e instanceof Error ? e.message : String(e);
-        console.warn("Fix attempt 2 failed:", errorMessage);
+      const errorMessage = e instanceof Error ? e.message : String(e);
+      console.warn("Fix attempt 2 failed:", errorMessage);
     }
 
     try {
@@ -505,26 +561,26 @@ export class QuizGenerator extends GeminiCore {
         const fixedObjects: Record<string, unknown>[] = [];
         let successfulParses = 0;
         objectMatches.forEach((objStr, index) => {
-            try {
-                const cleanedObjStr = objStr.replace(/,\s*}/g, '}');
-                fixedObjects.push(JSON.parse(cleanedObjStr));
-                successfulParses++;
-            } catch(objParseError: unknown) {
-                const errorMessage = objParseError instanceof Error ? objParseError.message : String(objParseError);
-                console.warn(`Fix attempt 3: Failed to parse object ${index + 1}: ${errorMessage}`);
-                console.warn(`Problematic object string: ${objStr.substring(0, 200)}...`);
-            }
+          try {
+            const cleanedObjStr = objStr.replace(/,\s*}/g, '}');
+            fixedObjects.push(JSON.parse(cleanedObjStr));
+            successfulParses++;
+          } catch (objParseError: unknown) {
+            const errorMessage = objParseError instanceof Error ? objParseError.message : String(objParseError);
+            console.warn(`Fix attempt 3: Failed to parse object ${index + 1}: ${errorMessage}`);
+            console.warn(`Problematic object string: ${objStr.substring(0, 200)}...`);
+          }
         });
 
         if (successfulParses > 0) {
-             console.log(`Fix attempt 3 successful (parsed ${successfulParses}/${objectMatches.length} individual objects).`);
-             return fixedObjects;
+          console.log(`Fix attempt 3 successful (parsed ${successfulParses}/${objectMatches.length} individual objects).`);
+          return fixedObjects;
         } else {
-             console.warn("Fix attempt 3: No objects could be parsed successfully via regex.");
+          console.warn("Fix attempt 3: No objects could be parsed successfully via regex.");
         }
 
       } else {
-         console.warn("Fix attempt 3: No potential objects matched the regex pattern.");
+        console.warn("Fix attempt 3: No potential objects matched the regex pattern.");
       }
     } catch (e: unknown) {
       const errorMessage = e instanceof Error ? e.message : String(e);
@@ -553,19 +609,19 @@ export class QuizGenerator extends GeminiCore {
     try {
       // Prepare the study material in a format that's usable for the quiz generation
       let formattedMaterial = `${parsedInput.title}\\n\\n`;
-      
+
       // Add all terms and definitions
       parsedInput.terms.forEach(item => {
         formattedMaterial += `${item.term} - ${item.definition}\\n\\n`;
       });
-      
+
       console.log(`Creating quiz from ${parsedInput.terms.length} manually entered terms`);
-      
+
       // Auto-determine number of questions if needed, based on the number of terms
       if (numQuestions === undefined) {
         // For manual input, we want to create at least one question per term
         const termCount = parsedInput.terms.length;
-        
+
         if (termCount <= 5) {
           // For very few terms, create 2 questions per term
           numQuestions = termCount * 2;
@@ -576,13 +632,13 @@ export class QuizGenerator extends GeminiCore {
           // For larger sets, aim for at least one question per term
           numQuestions = termCount;
         }
-        
+
         // Cap the maximum number of questions at 50
         numQuestions = Math.min(numQuestions, 50);
-        
+
         console.log(`Auto-determined question count for manual input: ${numQuestions} for ${termCount} terms`);
       }
-      
+
       // Generate quiz based on the formatted material, passing the original terms as manualSourceTerms
       return this.generateQuizQuestions(formattedMaterial, numQuestions, quizType, verbatim, parsedInput.terms, undefined);
     } catch (error: unknown) {
@@ -613,28 +669,28 @@ export async function generateQuiz(
     IMPORTANT: Return ONLY valid JSON without any markdown formatting, code blocks, or additional text.`;
 
     const result = await geminiService.generateContent(prompt, "");
-    
+
     if (!result.success) {
       throw new Error(result.error || "Failed to generate quiz.");
     }
 
-    if (!result.data || 
-        !result.data.candidates || 
-        !result.data.candidates[0] || 
-        !result.data.candidates[0].content || 
-        !result.data.candidates[0].content.parts || 
-        !result.data.candidates[0].content.parts[0]) {
+    if (!result.data ||
+      !result.data.candidates ||
+      !result.data.candidates[0] ||
+      !result.data.candidates[0].content ||
+      !result.data.candidates[0].content.parts ||
+      !result.data.candidates[0].content.parts[0]) {
       console.error("Unexpected API response structure:", result.data);
       throw new Error("Unexpected API response structure");
     }
-    
+
     const responseText = result.data.candidates[0].content.parts[0].text.trim();
-    
+
     const cleanedResponse = responseText.replace(/```json\s*/g, '')
-                                    .replace(/```\s*$/g, '')
-                                    .replace(/```\s*/g, '')
-                                    .trim();
-    
+      .replace(/```\s*$/g, '')
+      .replace(/```\s*/g, '')
+      .trim();
+
     const quizData = JSON.parse(cleanedResponse);
     return quizData;
   } catch (error: unknown) {
