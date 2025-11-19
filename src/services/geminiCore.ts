@@ -12,7 +12,7 @@ class GeminiCore {
   private model: string;
   constructor(apiKey: string) {
     this.genAI = new GoogleGenerativeAI(apiKey);
-    this.model = "gemini-2.5-flash-preview-05-20"; // Updated to use the latest Gemini 2.5 Flash Preview model
+    this.model = "gemini-flash-latest"; // Updated to use the latest Gemini Flash model
   }
 
   async generateContent(
@@ -42,7 +42,7 @@ class GeminiCore {
         { text: systemPrompt },
         { text: userPrompt }
       ]);
-      
+
       return {
         success: true,
         data: {

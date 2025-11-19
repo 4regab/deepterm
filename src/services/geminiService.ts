@@ -86,7 +86,7 @@ export const testApiKey = async (): Promise<{ success: boolean; error?: string; 
     
     // Simple test: try to generate content with text only
     const result = await genAI!.models.generateContent({
-      model: "gemini-2.5-flash-preview-05-20",
+      model: "gemini-flash-latest",
       contents: "Just respond with 'API test successful'"
     });
     
@@ -97,7 +97,7 @@ export const testApiKey = async (): Promise<{ success: boolean; error?: string; 
       success: true, 
       details: { 
         response: response,
-        model: "gemini-2.5-flash-preview-05-20"
+        model: "gemini-flash-latest"
       }
     };
   } catch (error) {
@@ -422,7 +422,7 @@ export const extractKeyTerms = async (
     while (retryCount < maxRetries) {
       try {
         result = await genAI.models.generateContent({
-          model: "gemini-2.5-flash-preview-05-20",
+          model: "gemini-flash-latest",
           contents: prompt
         });
         console.log(`Successfully processed content on attempt ${retryCount + 1}`);
@@ -751,7 +751,7 @@ Format the response as a valid JSON object with this structure:
 Extract ALL terms from the entire document, paying special attention to sections at the end.
     `;    console.log(`Sending request to Gemini API with file reference...`);
     console.log(`Request details:`, {
-      model: "gemini-2.5-flash",
+      model: "gemini-flash-latest",
       fileUri: fileInfo.uri,
       fileMimeType: fileInfo.mimeType,
       promptLength: prompt.length,
@@ -765,8 +765,8 @@ Extract ALL terms from the entire document, paying special attention to sections
     
     // For DOCX files, try multiple approaches
     const modelsToTry = isDocxFile ? 
-      ["gemini-2.5-flash", "gemini-1.5-flash", "gemini-1.5-pro"] : 
-      ["gemini-2.5-flash", "gemini-1.5-flash"];
+      ["gemini-flash-latest"] : 
+      ["gemini-flash-latest"];
     
     for (const modelName of modelsToTry) {
       try {
