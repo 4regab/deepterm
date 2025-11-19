@@ -291,7 +291,7 @@ const DocxDebuggerNew: React.FC = () => {
           <ul className="space-y-1">
             <li>✅ DOCX-specific MIME type correction</li>
             <li>✅ Extended processing wait times for DOCX files</li>
-            <li>✅ Using gemini-flash-latest model</li>
+            <li>✅ Using gemini-2.5-flash model</li>
             <li>✅ Simplified prompt structure for complex documents</li>
             <li>✅ File size and validation checks</li>
             <li>✅ Detailed error messages with troubleshooting suggestions</li>

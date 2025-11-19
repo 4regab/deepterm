@@ -12,7 +12,7 @@ class GeminiCore {
   private model: string;
   constructor(apiKey: string) {
     this.genAI = new GoogleGenerativeAI(apiKey);
-    this.model = "gemini-flash-latest"; // Updated to use the latest Gemini Flash model
+    this.model = "gemini-2.5-flash"; // Updated to use the latest Gemini Flash model
   }
 
   async generateContent(
