@@ -44,7 +44,6 @@ export default function PomodoroPage() {
     showToast,
     toastMessage,
     showConfetti,
-    pendingPhasePrompt,
     setSettings,
     toggleTimer,
     resetTimer,

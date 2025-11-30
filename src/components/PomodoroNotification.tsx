@@ -30,6 +30,10 @@ const getStoredValue = <T,>(key: string, defaultValue: T): T => {
   }
 };
 
+// Module-level subscription to avoid re-subscribing on each render
+let subscriptionInitialized = false;
+let notificationCallback: (() => void) | null = null;
+
 export default function PomodoroNotification() {
   const {
     pendingPhasePrompt,
@@ -39,23 +43,51 @@ export default function PomodoroNotification() {
     dismissPhasePrompt,
   } = usePomodoroStore();
 
-  // Track previous state to detect changes
-  const prevPendingRef = useRef(false);
+  const [shouldPlaySound, setShouldPlaySound] = useState(false);
+  const playNotificationRef = useRef<(() => void) | null>(null);
   
   // Get notification volume from localStorage
   const [notificationVolume] = useState(() =>
     getStoredValue(STORAGE_KEYS.NOTIFICATION_VOLUME, DEFAULT_NOTIFICATION_VOLUME)
   );
 
-  const [playNotification] = useSound(NOTIFICATION_SOUND, {
+  const [playNotification, { stop: stopNotification }] = useSound(NOTIFICATION_SOUND, {
     volume: notificationVolume,
   });
 
-  // Play sound when pendingPhasePrompt transitions from false to true
-  if (pendingPhasePrompt && !prevPendingRef.current) {
-    playNotification();
+  // Store playNotification in ref for subscription callback
+  playNotificationRef.current = playNotification;
+
+  // Initialize subscription once at module level
+  if (!subscriptionInitialized) {
+    subscriptionInitialized = true;
+    usePomodoroStore.subscribe((state, prevState) => {
+      if (state.pendingPhasePrompt && !prevState.pendingPhasePrompt) {
+        notificationCallback?.();
+      }
+    });
   }
-  prevPendingRef.current = pendingPhasePrompt;
+
+  // Update the callback reference
+  notificationCallback = () => setShouldPlaySound(true);
+
+  // Play sound when flag is set, then reset
+  if (shouldPlaySound) {
+    playNotification();
+    setShouldPlaySound(false);
+  }
+
+  // Handler to stop notification sound and dismiss prompt
+  const handleDismiss = () => {
+    stopNotification();
+    dismissPhasePrompt();
+  };
+
+  // Handler to stop notification sound and start next phase
+  const handleStartNextPhase = () => {
+    stopNotification();
+    startNextPhase();
+  };
 
   if (!pendingPhasePrompt || !pendingNextPhase) return null;
 
@@ -85,7 +117,7 @@ export default function PomodoroNotification() {
                 </p>
               </div>
               <button
-                onClick={dismissPhasePrompt}
+                onClick={handleDismiss}
                 className="p-1.5 hover:bg-white/10 rounded-lg transition-colors flex-shrink-0"
                 aria-label="Dismiss"
               >
@@ -95,13 +127,13 @@ export default function PomodoroNotification() {
           </div>
           <div className="flex border-t border-white/10">
             <button
-              onClick={dismissPhasePrompt}
+              onClick={handleDismiss}
               className="flex-1 py-3 text-sm font-medium text-white/70 hover:bg-white/5 transition-colors"
             >
               Later
             </button>
             <button
-              onClick={startNextPhase}
+              onClick={handleStartNextPhase}
               className="flex-1 py-3 text-sm font-medium bg-white/10 hover:bg-white/20 transition-colors flex items-center justify-center gap-2"
             >
               <Play size={14} />

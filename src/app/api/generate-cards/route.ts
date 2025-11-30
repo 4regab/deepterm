@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { GoogleGenAI, FileState } from "@google/genai";
+import { FileState } from "@google/genai";
 import { checkAndIncrementAIUsage } from "@/services/rateLimit";
+import { generateContentWithRotation, uploadFileWithRotation, getApiKeyCount } from "@/services/geminiClient";
 import { z } from "zod";
-
-const apiKey = process.env.GEMINI_API_KEY;
 
 // File size limits (in bytes)
 const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20MB
@@ -18,8 +17,8 @@ const GenerateCardsInputSchema = z.object({
 const ALLOWED_MIME_TYPES = ["application/pdf"] as const;
 
 export async function POST(request: NextRequest) {
-  if (!apiKey) {
-    return NextResponse.json({ error: "GEMINI_API_KEY not configured" }, { status: 500 });
+  if (getApiKeyCount() === 0) {
+    return NextResponse.json({ error: "No Gemini API keys configured" }, { status: 500 });
   }
 
   // Atomic rate limit check and increment
@@ -70,7 +69,6 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const ai = new GoogleGenAI({ apiKey });
     let fileUri: string | null = null;
     let mimeType: string | null = null;
 
@@ -83,7 +81,7 @@ export async function POST(request: NextRequest) {
       const arrayBuffer = await file.arrayBuffer();
       const blob = new Blob([arrayBuffer], { type: validMimeType });
 
-      const uploadedFile = await ai.files.upload({
+      const { uploadedFile, ai } = await uploadFileWithRotation({
         file: blob,
         config: { mimeType: validMimeType, displayName: file.name },
       });
@@ -138,7 +136,7 @@ Example output format:
       });
     }
 
-    const response = await ai.models.generateContent({
+    const { text: responseText } = await generateContentWithRotation({
       model: "gemini-2.5-flash-lite",
       contents,
       config: {
@@ -147,8 +145,6 @@ Example output format:
         maxOutputTokens: 50000,
       },
     });
-
-    const responseText = response.text || "";
 
     // Parse JSON from response
     const jsonMatch = responseText.match(/\[[\s\S]*\]/);

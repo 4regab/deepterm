@@ -30,13 +30,23 @@ const securityHeaders = [
     value: 'camera=(), microphone=(), geolocation=()'
   },
   {
+    key: 'Cross-Origin-Opener-Policy',
+    value: 'same-origin'
+  },
+  {
+    key: 'Cross-Origin-Resource-Policy',
+    value: 'same-origin'
+  },
+  {
     key: 'Content-Security-Policy',
     value: [
       "default-src 'self'",
+      // Note: unsafe-inline/unsafe-eval required by Next.js React Compiler, framer-motion, gsap, three.js
+      // TODO: Implement nonce-based CSP when these dependencies support it
       "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
-      "style-src 'self' 'unsafe-inline'",
+      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
       "img-src 'self' data: blob: https://lh3.googleusercontent.com https://*.googleusercontent.com",
-      "font-src 'self' data:",
+      "font-src 'self' data: https://fonts.gstatic.com",
       "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://generativelanguage.googleapis.com",
       "frame-ancestors 'self'",
       "base-uri 'self'",

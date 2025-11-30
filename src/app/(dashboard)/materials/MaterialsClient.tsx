@@ -6,9 +6,11 @@ import {
     MoreVertical,
     Clock,
     Trash2,
-    Edit,
     FolderOpen,
-    Plus
+    Plus,
+    Share2,
+    Filter,
+    ChevronDown
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useMaterialsStore } from "@/lib/stores";
@@ -45,17 +47,23 @@ function EmptyState({ onCreateClick }: { onCreateClick: () => void }) {
 }
 
 import { useState } from "react";
+import ShareModal from "@/components/ShareModal";
+import { createClient } from "@/config/supabase/client";
 
 export default function MaterialsClient({ initialItems }: MaterialsClientProps) {
     const router = useRouter();
     const [initialized, setInitialized] = useState(false);
+    const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+    const [shareItem, setShareItem] = useState<MaterialItem | null>(null);
+    const [showFilterMenu, setShowFilterMenu] = useState(false);
     const {
         items,
         searchQuery,
         activeFilter,
         setSearchQuery,
         setActiveFilter,
-        setItems
+        setItems,
+        removeItem
     } = useMaterialsStore();
 
     // Initialize store with server data (one-time, synchronously during render)
@@ -78,32 +86,83 @@ export default function MaterialsClient({ initialItems }: MaterialsClientProps) 
 
     const handleCreateClick = () => router.push("/materials/create");
 
+    const handleDelete = async (item: MaterialItem) => {
+        const supabase = createClient();
+        const table = item.type === "Flashcards" ? "flashcard_sets" : "reviewers";
+        await supabase.from(table).delete().eq("id", item.id);
+        removeItem(item.id);
+    };
+
     return (
         <>
-            <div className="flex flex-col md:flex-row gap-4 mb-8">
-                <div className="relative flex-1">
-                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[#171d2b]/40" size={20} />
-                    <input
-                        type="text"
-                        placeholder="Search by title..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="w-full pl-12 pr-4 py-3 rounded-xl border border-[#171d2b]/10 focus:border-[#171d2b] outline-none bg-white transition-all focus:shadow-sm"
-                    />
-                </div>
-                <div className="flex gap-2 overflow-x-auto pb-2 md:pb-0">
-                    {FILTERS.map((filter) => (
+            <div className="flex flex-col gap-4 mb-8">
+                {/* Mobile: Search + Filter dropdown */}
+                <div className="flex gap-2 md:hidden">
+                    <div className="relative flex-1">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[#171d2b]/40" size={18} />
+                        <input
+                            type="text"
+                            placeholder="Search..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            className="w-full pl-9 pr-3 py-3 rounded-xl border border-[#171d2b]/10 focus:border-[#171d2b] outline-none bg-white transition-all focus:shadow-sm text-sm"
+                        />
+                    </div>
+                    <div className="relative">
                         <button
-                            key={filter}
-                            onClick={() => setActiveFilter(filter)}
-                            className={`px-4 py-3 rounded-xl font-medium transition-all whitespace-nowrap ${activeFilter === filter
-                                ? "bg-[#171d2b] text-white shadow-md"
-                                : "bg-white text-[#171d2b]/60 hover:bg-[#171d2b]/5 hover:text-[#171d2b] border border-[#171d2b]/10"
-                                }`}
+                            onClick={() => setShowFilterMenu(!showFilterMenu)}
+                            className="flex items-center gap-1 px-3 py-3 rounded-xl border border-[#171d2b]/10 bg-white text-[#171d2b]/60 text-sm"
                         >
-                            {filter === "All" ? "All Items" : filter}
+                            <Filter size={16} />
+                            <ChevronDown size={14} />
                         </button>
-                    ))}
+                        {showFilterMenu && (
+                            <div className="absolute right-0 top-full mt-1 bg-white rounded-lg shadow-lg border border-[#171d2b]/10 py-1 z-50 min-w-[120px]">
+                                {FILTERS.map((filter) => (
+                                    <button
+                                        key={filter}
+                                        onClick={() => {
+                                            setActiveFilter(filter);
+                                            setShowFilterMenu(false);
+                                        }}
+                                        className={`w-full px-3 py-2 text-left text-sm flex items-center gap-2 ${activeFilter === filter
+                                            ? "bg-[#171d2b]/5 text-[#171d2b] font-medium"
+                                            : "text-[#171d2b]/60 hover:bg-[#171d2b]/5"
+                                            }`}
+                                    >
+                                        {filter === "All" ? "All Items" : filter}
+                                    </button>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                </div>
+                {/* Desktop: Search + Filter buttons in same row */}
+                <div className="hidden md:flex gap-4">
+                    <div className="relative flex-1">
+                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[#171d2b]/40" size={20} />
+                        <input
+                            type="text"
+                            placeholder="Search by title..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            className="w-full pl-12 pr-4 py-3 rounded-xl border border-[#171d2b]/10 focus:border-[#171d2b] outline-none bg-white transition-all focus:shadow-sm"
+                        />
+                    </div>
+                    <div className="flex gap-2">
+                        {FILTERS.map((filter) => (
+                            <button
+                                key={filter}
+                                onClick={() => setActiveFilter(filter)}
+                                className={`px-4 py-3 rounded-xl font-medium transition-all whitespace-nowrap ${activeFilter === filter
+                                    ? "bg-[#171d2b] text-white shadow-md"
+                                    : "bg-white text-[#171d2b]/60 hover:bg-[#171d2b]/5 hover:text-[#171d2b] border border-[#171d2b]/10"
+                                    }`}
+                            >
+                                {filter === "All" ? "All Items" : filter}
+                            </button>
+                        ))}
+                    </div>
                 </div>
             </div>
 
@@ -129,39 +188,55 @@ export default function MaterialsClient({ initialItems }: MaterialsClientProps) 
                                         }`}>
                                         {item.type === "Flashcards" ? "Cards" : item.type} · {getItemLabel(item.type, item.itemsCount)}
                                     </span>
-                                    <button
-                                        className="p-1 rounded-full hover:bg-[#171d2b]/5 text-[#171d2b]/30 hover:text-[#171d2b] transition-colors"
-                                        onClick={(e) => e.stopPropagation()}
-                                        aria-label="More options"
-                                    >
-                                        <MoreVertical size={14} />
-                                    </button>
+                                    <div className="relative">
+                                        <button
+                                            className="p-1 rounded-full hover:bg-[#171d2b]/5 text-[#171d2b]/30 hover:text-[#171d2b] transition-colors"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                setOpenMenuId(openMenuId === item.id ? null : item.id);
+                                            }}
+                                            aria-label="More options"
+                                        >
+                                            <MoreVertical size={14} />
+                                        </button>
+                                        {openMenuId === item.id && (
+                                            <div 
+                                                className="absolute right-0 top-full mt-1 bg-white rounded-lg shadow-lg border border-[#171d2b]/10 py-1 z-50 min-w-[120px]"
+                                                onClick={(e) => e.stopPropagation()}
+                                            >
+                                                <button
+                                                    className="w-full px-3 py-2 text-left text-sm text-[#171d2b] hover:bg-[#171d2b]/5 flex items-center gap-2"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        setOpenMenuId(null);
+                                                        setShareItem(item);
+                                                    }}
+                                                >
+                                                    <Share2 size={14} />
+                                                    Share
+                                                </button>
+                                                <button
+                                                    className="w-full px-3 py-2 text-left text-sm text-[#171d2b] hover:bg-[#171d2b]/5 flex items-center gap-2"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        setOpenMenuId(null);
+                                                        handleDelete(item);
+                                                    }}
+                                                >
+                                                    <Trash2 size={14} />
+                                                    Delete
+                                                </button>
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
                                 <div className="mb-2">
                                     <h3 className="font-sora font-semibold text-sm text-[#171d2b] line-clamp-2">{item.title}</h3>
                                 </div>
-                                <div className="flex items-center justify-between text-[#171d2b]/40 text-xs">
+                                <div className="flex items-center text-[#171d2b]/40 text-xs">
                                     <div className="flex items-center gap-1">
                                         <Clock size={12} />
                                         <span>{item.lastAccessed}</span>
-                                    </div>
-                                    <div className="flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                                        <button
-                                            className="hover:text-blue-600 transition-colors"
-                                            title="Edit"
-                                            onClick={(e) => e.stopPropagation()}
-                                            aria-label="Edit"
-                                        >
-                                            <Edit size={14} />
-                                        </button>
-                                        <button
-                                            className="hover:text-red-500 transition-colors"
-                                            title="Delete"
-                                            onClick={(e) => e.stopPropagation()}
-                                            aria-label="Delete"
-                                        >
-                                            <Trash2 size={14} />
-                                        </button>
                                     </div>
                                 </div>
                             </motion.div>
@@ -170,6 +245,16 @@ export default function MaterialsClient({ initialItems }: MaterialsClientProps) 
                 </div>
             ) : (
                 <EmptyState onCreateClick={handleCreateClick} />
+            )}
+
+            {shareItem && (
+                <ShareModal
+                    isOpen={!!shareItem}
+                    onClose={() => setShareItem(null)}
+                    materialId={shareItem.id}
+                    materialType={shareItem.type === "Flashcards" ? "flashcard_set" : "reviewer"}
+                    materialTitle={shareItem.title}
+                />
             )}
         </>
     );

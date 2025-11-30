@@ -110,9 +110,6 @@ export default async function MaterialsPage() {
         <div>
             <div className="mb-8">
                 <h1 className="text-4xl font-sora font-bold text-[#171d2b] mb-2">Materials</h1>
-                <p className="text-[#171d2b]/60 font-sans text-lg">
-                    Manage and organize your study materials
-                </p>
             </div>
             <Suspense fallback={<LoadingFallback />}>
                 <MaterialsClient initialItems={materials} />

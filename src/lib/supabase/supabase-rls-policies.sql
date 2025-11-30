@@ -1,14 +1,16 @@
 -- ============================================================
 -- SUPABASE ROW-LEVEL SECURITY (RLS) POLICIES
+-- Single Source of Truth for all RLS policies
 -- Run this script in Supabase SQL Editor
 -- ============================================================
 -- WARNING: This will restrict ALL data access to authenticated users only
 -- Backup your data before running in production
 -- ============================================================
--- SECURITY FIXES APPLIED:
--- 1. material_shares - restricted anonymous access (CRITICAL)
--- 2. unlimited_users - restricted anonymous access (HIGH)
--- 3. Secure share access via RPC function (HIGH)
+-- SECURITY FIXES APPLIED (2025-12-01):
+-- VULN-001: material_shares - removed anonymous access (HIGH)
+-- VULN-002: unlimited_users - removed public access (HIGH)
+-- Added secure RPC functions for share access
+-- Added check_user_is_unlimited() helper function
 -- ============================================================
 
 -- ============================================================
@@ -129,11 +131,14 @@ DROP POLICY IF EXISTS "Users can delete own material_shares" ON material_shares;
 DROP POLICY IF EXISTS "unlimited_users_public_select" ON unlimited_users;
 DROP POLICY IF EXISTS "unlimited_users_anon_select" ON unlimited_users;
 DROP POLICY IF EXISTS "Users can view own unlimited_users" ON unlimited_users;
+DROP POLICY IF EXISTS "Allow read access for rate limit check" ON unlimited_users;
+DROP POLICY IF EXISTS "Users can check own unlimited status" ON unlimited_users;
 
 -- Drop existing insecure RPC functions if they exist
 DROP FUNCTION IF EXISTS get_shared_flashcards(text);
 DROP FUNCTION IF EXISTS get_shared_flashcard_set(text);
 DROP FUNCTION IF EXISTS validate_share_code(text);
+DROP FUNCTION IF EXISTS check_user_is_unlimited(uuid);
 
 -- ============================================================
 -- STEP 3: CREATE RLS POLICIES FOR EACH TABLE
@@ -359,9 +364,10 @@ CREATE POLICY "Users can delete own material_shares" ON material_shares
 -- ------------------------------------------------------------
 -- UNLIMITED_USERS (SECURITY FIX - HIGH)
 -- Only users can check their own premium status.
+-- Previous insecure policy exposed all premium user IDs to anonymous users.
 -- ------------------------------------------------------------
-CREATE POLICY "Users can view own unlimited_users" ON unlimited_users
-    FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "Users can check own unlimited status" ON unlimited_users
+    FOR SELECT TO authenticated USING (auth.uid() = user_id);
 
 -- ============================================================
 -- STEP 4: SECURE RPC FUNCTIONS FOR SHARE ACCESS
@@ -442,6 +448,26 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 GRANT EXECUTE ON FUNCTION validate_share_code(text) TO anon, authenticated;
 GRANT EXECUTE ON FUNCTION get_shared_flashcard_set(text) TO anon, authenticated;
 GRANT EXECUTE ON FUNCTION get_shared_flashcards(text) TO anon, authenticated;
+
+-- ============================================================
+-- STEP 5: HELPER FUNCTIONS
+-- ============================================================
+
+-- Check if user has unlimited access (SECURITY DEFINER bypasses RLS)
+CREATE OR REPLACE FUNCTION public.check_user_is_unlimited(p_user_id uuid)
+RETURNS boolean
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = ''
+AS $$
+BEGIN
+  RETURN EXISTS (
+    SELECT 1 FROM public.unlimited_users WHERE user_id = p_user_id
+  );
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.check_user_is_unlimited(uuid) TO authenticated;
 
 -- ============================================================
 -- VERIFICATION QUERIES

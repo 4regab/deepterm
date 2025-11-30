@@ -11,6 +11,7 @@ interface MaterialsState {
 
 interface MaterialsActions {
   setItems: (items: MaterialItem[]) => void
+  removeItem: (id: string) => void
   setSearchQuery: (query: string) => void
   setActiveFilter: (filter: MaterialFilter) => void
   setLoading: (loading: boolean) => void
@@ -28,6 +29,8 @@ export const useMaterialsStore = create<MaterialsStore>()((set, get) => ({
   error: null,
 
   setItems: (items) => set({ items }),
+
+  removeItem: (id) => set((state) => ({ items: state.items.filter((item) => item.id !== id) })),
   
   setSearchQuery: (query) => set({ searchQuery: query }),
   

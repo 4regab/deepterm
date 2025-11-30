@@ -5,11 +5,12 @@ import { useRouter } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
 import { 
   Copy, Check, ChevronDown, ChevronUp, Loader2, 
-  BookOpen, User, Calendar, ExternalLink
+  BookOpen, User, Calendar, ExternalLink, Download
 } from "lucide-react"
 import Link from "next/link"
 import type { SharedMaterialData } from "@/lib/schemas/sharing"
 import { createClient } from "@/config/supabase/client"
+import { exportToPDF, exportToDOCX } from "@/utils/exportReviewer"
 
 interface Props {
   data: SharedMaterialData
@@ -113,6 +114,7 @@ export default function SharePreviewClient({ data, shareCode }: Props) {
   const [, setCopying] = useState(false)
   const [copied, setCopied] = useState(false)
   const [adding, setAdding] = useState(false)
+  const [showDownloadMenu, setShowDownloadMenu] = useState(false)
 
   const shareUrl = typeof window !== 'undefined' 
     ? `${window.location.origin}/share/${shareCode}`
@@ -124,6 +126,26 @@ export default function SharePreviewClient({ data, shareCode }: Props) {
     setCopied(true)
     setCopying(false)
     setTimeout(() => setCopied(false), 2000)
+  }
+
+  const handleExportPDF = () => {
+    if (data.type !== 'reviewer') return
+    const exportCategories = data.categories.map(c => ({
+      name: c.name,
+      terms: c.terms.map(t => ({ front: t.term, back: t.definition }))
+    }))
+    exportToPDF({ title: data.material.title, terms: [], categories: exportCategories })
+    setShowDownloadMenu(false)
+  }
+
+  const handleExportDOCX = () => {
+    if (data.type !== 'reviewer') return
+    const exportCategories = data.categories.map(c => ({
+      name: c.name,
+      terms: c.terms.map(t => ({ front: t.term, back: t.definition }))
+    }))
+    exportToDOCX({ title: data.material.title, terms: [], categories: exportCategories })
+    setShowDownloadMenu(false)
   }
 
   const handleAddToCollection = async () => {
@@ -178,18 +200,53 @@ export default function SharePreviewClient({ data, shareCode }: Props) {
             <div className="w-[28px] h-[28px] flex items-center justify-center">
               <div className="rotate-[292deg]">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img alt="DeepTerm Logo" className="w-[22px] h-[22px]" src="/favicon-32x32.png" />
+                <img alt="DeepTerm Logo" className="w-[22px] h-[22px]" src="/assets/logo.svg" />
               </div>
             </div>
             <span className="font-sora text-xl text-[#171d2b]">deepterm</span>
           </Link>
-          <button
-            onClick={handleCopyLink}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg border border-[#171d2b]/10 hover:bg-[#171d2b]/5 transition-colors text-sm"
-          >
-            {copied ? <Check size={16} className="text-green-600" /> : <Copy size={16} />}
-            {copied ? 'Copied!' : 'Copy Link'}
-          </button>
+          <div className="flex items-center gap-2">
+            {data.type === 'reviewer' && (
+              <div className="relative">
+                <button
+                  onClick={() => setShowDownloadMenu(!showDownloadMenu)}
+                  className="flex items-center gap-2 px-4 py-2 rounded-lg border border-[#171d2b]/10 hover:bg-[#171d2b]/5 transition-colors text-sm"
+                  title="Download"
+                >
+                  <Download size={16} />
+                  <span className="hidden sm:inline">Download</span>
+                </button>
+                {showDownloadMenu && (
+                  <>
+                    <div className="fixed inset-0 z-40" onClick={() => setShowDownloadMenu(false)} />
+                    <div className="absolute right-0 top-full mt-1 z-50">
+                      <div className="bg-white rounded-lg border border-[#171d2b]/10 shadow-lg py-1 min-w-[140px]">
+                        <button
+                          onClick={handleExportPDF}
+                          className="w-full px-4 py-2 text-left text-sm text-[#171d2b] hover:bg-[#171d2b]/5 transition-colors"
+                        >
+                          Download PDF
+                        </button>
+                        <button
+                          onClick={handleExportDOCX}
+                          className="w-full px-4 py-2 text-left text-sm text-[#171d2b] hover:bg-[#171d2b]/5 transition-colors"
+                        >
+                          Download DOCX
+                        </button>
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
+            <button
+              onClick={handleCopyLink}
+              className="flex items-center gap-2 px-4 py-2 rounded-lg border border-[#171d2b]/10 hover:bg-[#171d2b]/5 transition-colors text-sm"
+            >
+              {copied ? <Check size={16} className="text-green-600" /> : <Copy size={16} />}
+              {copied ? 'Copied!' : 'Copy Link'}
+            </button>
+          </div>
         </div>
       </header>
 

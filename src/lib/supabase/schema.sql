@@ -364,8 +364,9 @@ create table if not exists public.unlimited_users (
 
 alter table public.unlimited_users enable row level security;
 
--- Allow public read access for rate limit checks
-create policy "Allow read access for rate limit check" on public.unlimited_users for select to public using (true);
+-- SECURITY FIX (VULN-002): Users can only check their own unlimited status
+-- Previous policy allowed anonymous enumeration of all premium users
+create policy "Users can check own unlimited status" on public.unlimited_users for select to authenticated using ((select auth.uid()) = user_id);
 
 -- ============================================
 -- SECTION 5: MATERIAL SHARING
@@ -393,7 +394,8 @@ create policy "Users can view own shares" on public.material_shares for select t
 create policy "Users can insert own shares" on public.material_shares for insert to authenticated with check ((select auth.uid()) = user_id);
 create policy "Users can update own shares" on public.material_shares for update to authenticated using ((select auth.uid()) = user_id);
 create policy "Users can delete own shares" on public.material_shares for delete to authenticated using ((select auth.uid()) = user_id);
-create policy "Anyone can view active shares by code" on public.material_shares for select to anon using (is_active = true);
+-- SECURITY FIX (VULN-001): Removed anonymous SELECT policy that exposed all share codes, user IDs, and material IDs
+-- Share access is now exclusively through the secure get_shared_material() RPC function
 
 
 -- ============================================

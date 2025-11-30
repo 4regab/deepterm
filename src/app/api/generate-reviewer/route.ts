@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { GoogleGenAI, FileState } from "@google/genai";
+import { FileState } from "@google/genai";
 import { checkAndIncrementAIUsage } from "@/services/rateLimit";
-
-const apiKey = process.env.GEMINI_API_KEY;
+import { generateContentWithRotation, uploadFileWithRotation, getApiKeyCount } from "@/services/geminiClient";
 
 // File size limits (in bytes)
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB - reduced for faster processing
@@ -12,8 +11,8 @@ const MAX_TEXT_LENGTH = 100000; // 100k characters
 const VALID_EXTRACTION_MODES = ['full', 'sentence', 'keywords'] as const;
 
 export async function POST(request: NextRequest) {
-    if (!apiKey) {
-        return NextResponse.json({ error: "GEMINI_API_KEY not configured" }, { status: 500 });
+    if (getApiKeyCount() === 0) {
+        return NextResponse.json({ error: "No Gemini API keys configured" }, { status: 500 });
     }
 
     // Atomic rate limit check and increment
@@ -55,7 +54,6 @@ export async function POST(request: NextRequest) {
             }, { status: 400 });
         }
 
-        const ai = new GoogleGenAI({ apiKey });
         let fileUri: string | null = null;
         let mimeType: string | null = null;
 
@@ -69,7 +67,7 @@ export async function POST(request: NextRequest) {
             const arrayBuffer = await file.arrayBuffer();
             const blob = new Blob([arrayBuffer], { type: mimeType });
 
-            const uploadedFile = await ai.files.upload({
+            const { uploadedFile, ai } = await uploadFileWithRotation({
                 file: blob,
                 config: { mimeType, displayName: file.name },
             });
@@ -155,7 +153,7 @@ COLOR OPTIONS: #E0F2FE, #DCFCE7, #FEF3C7, #FCE7F3, #E0E7FF, #F3E8FF`;
             });
         }
 
-        const response = await ai.models.generateContent({
+        const { text: responseText } = await generateContentWithRotation({
             model: "gemini-2.5-flash-lite",
             contents,
             config: {
@@ -165,8 +163,6 @@ COLOR OPTIONS: #E0F2FE, #DCFCE7, #FEF3C7, #FCE7F3, #E0E7FF, #F3E8FF`;
                 responseMimeType: "application/json",
             },
         });
-
-        const responseText = response.text || "";
 
         // Check for empty response
         if (!responseText.trim()) {

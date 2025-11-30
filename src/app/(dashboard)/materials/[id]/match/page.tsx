@@ -8,12 +8,15 @@ import SessionResultPage from "@/components/SessionResultPage";
 import ExitPopup from "@/components/ExitPopup";
 import { createClient } from "@/config/supabase/client";
 import { useXPStore } from "@/lib/stores";
-import { addXP, recordStudyActivity, XP_REWARDS } from "@/services/activity";
+import { addXP, recordStudyActivity, updateFlashcardStatus, XP_REWARDS } from "@/services/activity";
+
+type CardStatus = 'new' | 'learning' | 'review' | 'mastered';
 
 interface FlashcardData {
     id: string;
     term: string;
     definition: string;
+    status: CardStatus;
 }
 
 interface MatchCard {
@@ -65,12 +68,12 @@ export default function MatchPage() {
                 const supabase = createClient();
                 const { data } = await supabase
                     .from("flashcards")
-                    .select("id, front, back")
+                    .select("id, front, back, status")
                     .eq("set_id", params.id)
                     .order("created_at");
 
                 if (data && data.length > 0) {
-                    const fcData: FlashcardData[] = data.map(c => ({ id: c.id, term: c.front, definition: c.back }));
+                    const fcData: FlashcardData[] = data.map(c => ({ id: c.id, term: c.front, definition: c.back, status: (c.status || 'new') as CardStatus }));
                     setFlashcardData(fcData);
                     setCards(createGameCards(fcData));
                     setStage("playing");
@@ -121,7 +124,15 @@ export default function MatchPage() {
             setSelectedCards([firstCard, card]);
 
             if (firstCard.pairId === card.pairId) {
-                // Match found
+                // Match found - update flashcard status
+                const matchedCard = flashcardData.find(c => c.id === firstCard.pairId);
+                if (matchedCard) {
+                    const newStatus: CardStatus = matchedCard.status === 'new' ? 'learning' 
+                        : matchedCard.status === 'learning' ? 'review' : 'mastered';
+                    updateFlashcardStatus(matchedCard.id, newStatus);
+                    setFlashcardData(prev => prev.map(c => c.id === matchedCard.id ? { ...c, status: newStatus } : c));
+                }
+
                 setTimeout(() => {
                     const updated = cards.map(c => (c.id === firstCard.id || c.id === card.id) ? { ...c, isMatched: true } : c);
                     const allMatched = updated.every(c => c.isMatched);

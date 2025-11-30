@@ -46,14 +46,8 @@ describe('Achievement Utility Functions', () => {
           return progress === 0;
         }
         
-        const totalProgress = achievements.reduce((sum, a) => sum + a.progress, 0);
-        const totalRequired = achievements.reduce((sum, a) => sum + a.requirement_value, 0);
-        
-        if (totalRequired <= 0) {
-          return progress === 0;
-        }
-        
-        const expected = Math.min(100, Math.max(0, Math.round((totalProgress / totalRequired) * 100)));
+        const unlockedCount = achievements.filter(a => a.unlocked).length;
+        const expected = Math.min(100, Math.max(0, Math.round((unlockedCount / achievements.length) * 100)));
         return progress === expected;
       }),
       { numRuns: 100 }
@@ -88,7 +82,8 @@ describe('Achievement Utility Functions', () => {
         requirement_value: 100,
         unlocked: false,
       };
-      expect(calculateOverallProgress([achievement])).toBe(50);
+      // 0 unlocked out of 1 = 0%
+      expect(calculateOverallProgress([achievement])).toBe(0);
     });
   });
 
@@ -160,9 +155,9 @@ describe('Achievement Components Logic', () => {
         { id: '2', title: 'B', description: '', icon: 'Star', color: '', bg: '', progress: 100, requirement_value: 100, unlocked: true },
       ];
       
-      // Total progress: 150, Total required: 200, Expected: 75%
+      // 1 unlocked out of 2 = 50%
       const progress = calculateOverallProgress(achievements);
-      expect(progress).toBe(75);
+      expect(progress).toBe(50);
     });
 
     it('should return 100% when all achievements complete', () => {

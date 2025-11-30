@@ -7,19 +7,15 @@ import type { Achievement } from '@/lib/schemas/achievements';
 
 /**
  * Calculates overall progress percentage across all achievements.
- * Formula: (sum of all progress / sum of all requirement_values) * 100
+ * Formula: (unlocked count / total count) * 100
  * @param achievements - Array of achievements
  * @returns Progress percentage (0-100)
  */
 export function calculateOverallProgress(achievements: Achievement[]): number {
   if (achievements.length === 0) return 0;
   
-  const totalProgress = achievements.reduce((sum, a) => sum + a.progress, 0);
-  const totalRequired = achievements.reduce((sum, a) => sum + a.requirement_value, 0);
-  
-  if (totalRequired <= 0) return 0;
-  
-  const percent = (totalProgress / totalRequired) * 100;
+  const unlockedCount = achievements.filter(a => a.unlocked).length;
+  const percent = (unlockedCount / achievements.length) * 100;
   return Math.min(100, Math.max(0, Math.round(percent)));
 }
 

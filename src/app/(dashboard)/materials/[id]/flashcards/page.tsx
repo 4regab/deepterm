@@ -124,6 +124,16 @@ export default function FlashcardsPage() {
     const frontLabel = settings.frontSide === 'definition' ? 'Definition' : 'Term';
     const backLabel = settings.frontSide === 'definition' ? 'Term' : 'Definition';
 
+    // Dynamic font size based on text length for mobile responsiveness
+    const getResponsiveFontSize = (text: string) => {
+        const len = text.length;
+        if (len < 50) return 'clamp(1.25rem, 5vw, 1.875rem)';
+        if (len < 100) return 'clamp(1rem, 4vw, 1.5rem)';
+        if (len < 200) return 'clamp(0.875rem, 3.5vw, 1.25rem)';
+        if (len < 400) return 'clamp(0.75rem, 3vw, 1rem)';
+        return 'clamp(0.625rem, 2.5vw, 0.875rem)';
+    };
+
     const handleRate = async (correct: boolean) => {
         if (!studySession) return;
         
@@ -240,16 +250,20 @@ export default function FlashcardsPage() {
                         style={{ transformStyle: "preserve-3d" }}
                     >
                         {/* Front */}
-                        <div className="absolute inset-0 backface-hidden bg-white rounded-3xl shadow-xl border border-[#171d2b]/5 flex flex-col items-center justify-center px-8 pt-16 pb-12 text-center hover:shadow-2xl transition-shadow overflow-hidden">
-                            <span className="absolute top-6 left-6 text-xs font-bold text-[#171d2b]/20 uppercase tracking-widest">{frontLabel}</span>
-                            <p className="text-xl md:text-2xl lg:text-3xl font-sora font-medium text-[#171d2b] leading-relaxed line-clamp-6 overflow-y-auto max-h-full">{frontContent}</p>
-                            <span className="absolute bottom-6 text-xs text-[#171d2b]/40 opacity-0 group-hover:opacity-100 transition-opacity">Click to flip</span>
+                        <div className="absolute inset-0 backface-hidden bg-white rounded-3xl shadow-xl border border-[#171d2b]/5 flex flex-col items-center justify-center px-4 sm:px-8 pt-12 sm:pt-16 pb-10 sm:pb-12 text-center hover:shadow-2xl transition-shadow overflow-hidden">
+                            <span className="absolute top-4 sm:top-6 left-4 sm:left-6 text-xs font-bold text-[#171d2b]/20 uppercase tracking-widest">{frontLabel}</span>
+                            <div className="w-full h-full flex items-center justify-center overflow-y-auto">
+                                <p className="font-sora font-medium text-[#171d2b] leading-relaxed break-words" style={{ fontSize: getResponsiveFontSize(frontContent) }}>{frontContent}</p>
+                            </div>
+                            <span className="absolute bottom-4 sm:bottom-6 text-xs text-[#171d2b]/40 opacity-0 group-hover:opacity-100 transition-opacity">Click to flip</span>
                         </div>
 
                         {/* Back */}
-                        <div className="absolute inset-0 backface-hidden bg-[#171d2b] rounded-3xl shadow-xl flex flex-col items-center justify-center px-8 pt-16 pb-12 text-center overflow-hidden" style={{ transform: "rotateY(180deg)" }}>
-                            <span className="absolute top-6 left-6 text-xs font-bold text-white/20 uppercase tracking-widest">{backLabel}</span>
-                            <p className="text-xl md:text-2xl lg:text-3xl font-sora font-medium text-white leading-relaxed line-clamp-6 overflow-y-auto max-h-full">{backContent}</p>
+                        <div className="absolute inset-0 backface-hidden bg-[#171d2b] rounded-3xl shadow-xl flex flex-col items-center justify-center px-4 sm:px-8 pt-12 sm:pt-16 pb-10 sm:pb-12 text-center overflow-hidden" style={{ transform: "rotateY(180deg)" }}>
+                            <span className="absolute top-4 sm:top-6 left-4 sm:left-6 text-xs font-bold text-white/20 uppercase tracking-widest">{backLabel}</span>
+                            <div className="w-full h-full flex items-center justify-center overflow-y-auto">
+                                <p className="font-sora font-medium text-white leading-relaxed break-words" style={{ fontSize: getResponsiveFontSize(backContent) }}>{backContent}</p>
+                            </div>
                         </div>
                     </motion.div>
                 </div>

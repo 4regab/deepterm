@@ -10,14 +10,17 @@ import ExitPopup from "@/components/ExitPopup";
 import PracticeSettingsModal, { PracticeSettings } from "@/components/PracticeSettingsModal";
 import { createClient } from "@/config/supabase/client";
 import { useXPStore } from "@/lib/stores";
-import { addXP, recordStudyActivity, XP_REWARDS } from "@/services/activity";
+import { addXP, recordStudyActivity, updateFlashcardStatus, XP_REWARDS } from "@/services/activity";
 
 type QuestionType = "multipleChoice" | "trueFalse" | "fillBlank";
+
+type CardStatus = 'new' | 'learning' | 'review' | 'mastered';
 
 interface FlashcardData {
     id: string;
     term: string;
     definition: string;
+    status: CardStatus;
 }
 
 interface Question {
@@ -120,12 +123,12 @@ export default function PracticePage() {
         const supabase = createClient();
         const { data } = await supabase
             .from("flashcards")
-            .select("id, front, back")
+            .select("id, front, back, status")
             .eq("set_id", params.id)
             .order("created_at");
 
         if (data && data.length > 0) {
-            const cards = data.map(c => ({ id: c.id, term: c.front, definition: c.back }));
+            const cards = data.map(c => ({ id: c.id, term: c.front, definition: c.back, status: (c.status || 'new') as CardStatus }));
             setFlashcardData(cards);
             // Show config screen first
             setStage("config");
@@ -196,7 +199,7 @@ export default function PracticePage() {
         }
     }, [currentQuestionIndex, questions]);
 
-    const handleAnswer = (answer: string) => {
+    const handleAnswer = async (answer: string) => {
         const updated = [...questions];
         updated[currentQuestionIndex].userAnswer = answer;
         const current = updated[currentQuestionIndex];
@@ -206,6 +209,19 @@ export default function PracticePage() {
         updated[currentQuestionIndex].isCorrect = isCorrect;
         setQuestions(updated);
         setShowAnswer(true);
+
+        // Update flashcard status in database
+        const cardIndex = flashcardData.findIndex(c => c.id === current.id);
+        if (cardIndex !== -1) {
+            const card = flashcardData[cardIndex];
+            const newStatus: CardStatus = isCorrect
+                ? (card.status === 'new' ? 'learning' : card.status === 'learning' ? 'review' : 'mastered')
+                : 'learning';
+            await updateFlashcardStatus(card.id, newStatus);
+            const updatedCards = [...flashcardData];
+            updatedCards[cardIndex] = { ...card, status: newStatus };
+            setFlashcardData(updatedCards);
+        }
 
         if (isCorrect) {
             const newStreak = streak + 1;

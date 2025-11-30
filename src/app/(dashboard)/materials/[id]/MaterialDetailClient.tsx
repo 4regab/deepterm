@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence, Reorder } from "framer-motion";
 import {
@@ -384,6 +384,34 @@ export default function MaterialDetailClient(props: Props) {
     const [categories, setCategories] = useState<ReviewerCategory[]>(props.materialType === 'reviewer' ? props.initialCategories : []);
     const [expandedCategories, setExpandedCategories] = useState<string[]>(props.materialType === 'reviewer' ? props.initialCategories.map(c => c.id) : []);
     const [filterText, setFilterText] = useState("");
+
+    // Refresh flashcard statuses on mount to get latest progress after study sessions
+    useSyncExternalStore(
+        useCallback(() => {
+            if (materialType !== 'flashcard') return () => {};
+            let mounted = true;
+            const refresh = async () => {
+                const supabase = createClient();
+                const { data } = await supabase
+                    .from("flashcards")
+                    .select("id, front, back, status")
+                    .eq("set_id", material.id)
+                    .order("created_at");
+                if (data && mounted) {
+                    setTerms(data.map(card => ({
+                        id: card.id,
+                        front: card.front,
+                        back: card.back,
+                        stage: (card.status || 'new') as LearnStage,
+                    })));
+                }
+            };
+            refresh();
+            return () => { mounted = false; };
+        }, [materialType, material.id]),
+        () => null,
+        () => null
+    );
     
     const toggleCategory = (id: string) => {
         setExpandedCategories(prev => prev.includes(id) ? prev.filter(c => c !== id) : [...prev, id]);
@@ -494,9 +522,61 @@ export default function MaterialDetailClient(props: Props) {
                 materialTitle={material.title}
             />
             <div className="mb-5">
-                <button onClick={() => router.back()} className="flex items-center gap-2 text-[#171d2b]/50 hover:text-[#171d2b] mb-3 transition-colors">
-                    <ArrowLeft size={16} /><span className="font-sans text-sm">Back to Materials</span>
-                </button>
+                <div className="flex items-center justify-between mb-3">
+                    <button onClick={() => router.back()} className="flex items-center gap-2 text-[#171d2b]/50 hover:text-[#171d2b] transition-colors">
+                        <ArrowLeft size={16} /><span className="font-sans text-sm">Back to Materials</span>
+                    </button>
+                    <div className="flex gap-2 md:hidden">
+                        {materialType === 'reviewer' && (
+                            <div className="relative">
+                                <button 
+                                    onClick={() => setShowDownloadMenu(!showDownloadMenu)}
+                                    className="p-2 rounded-lg border border-[#171d2b]/10 hover:bg-[#171d2b]/5 text-[#171d2b]/60 transition-colors" 
+                                    title="Download"
+                                >
+                                    <Download size={18} />
+                                </button>
+                                {showDownloadMenu && (
+                                    <>
+                                        <div className="fixed inset-0 z-40" onClick={() => setShowDownloadMenu(false)} />
+                                        <div className="absolute right-0 top-full mt-1 z-50">
+                                            <div className="bg-white rounded-lg border border-[#171d2b]/10 shadow-lg py-1 min-w-[140px]">
+                                                <button 
+                                                    onClick={() => { 
+                                                        const exportCategories = categories.map(c => ({
+                                                            name: c.name,
+                                                            terms: c.terms.map(t => ({ front: t.term, back: t.definition }))
+                                                        }));
+                                                        exportToPDF({ title: material.title, terms: [], categories: exportCategories });
+                                                        setShowDownloadMenu(false);
+                                                    }} 
+                                                    className="w-full px-4 py-2 text-left text-sm text-[#171d2b] hover:bg-[#171d2b]/5 transition-colors"
+                                                >
+                                                    Download PDF
+                                                </button>
+                                                <button 
+                                                    onClick={() => { 
+                                                        const exportCategories = categories.map(c => ({
+                                                            name: c.name,
+                                                            terms: c.terms.map(t => ({ front: t.term, back: t.definition }))
+                                                        }));
+                                                        exportToDOCX({ title: material.title, terms: [], categories: exportCategories });
+                                                        setShowDownloadMenu(false);
+                                                    }} 
+                                                    className="w-full px-4 py-2 text-left text-sm text-[#171d2b] hover:bg-[#171d2b]/5 transition-colors"
+                                                >
+                                                    Download DOCX
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </>
+                                )}
+                            </div>
+                        )}
+                        <button onClick={() => setShowShareModal(true)} className="p-2 rounded-lg border border-[#171d2b]/10 hover:bg-[#171d2b]/5 text-[#171d2b]/60 transition-colors" title="Share"><Share2 size={18} /></button>
+                        <button onClick={() => setShowDeleteConfirm(true)} className="p-2 rounded-lg border border-[#171d2b]/10 hover:bg-red-50 hover:border-red-200 text-red-500 transition-colors" title="Delete"><Trash2 size={18} /></button>
+                    </div>
+                </div>
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
                     <div>
                         <h1 className="text-2xl md:text-3xl font-sora font-bold text-[#171d2b] mb-1">{material.title}</h1>
@@ -504,7 +584,7 @@ export default function MaterialDetailClient(props: Props) {
                             <span>{materialType === 'flashcard' ? terms.length : categories.reduce((sum, c) => sum + c.terms.length, 0)} terms</span><span>•</span><span>Last updated {formatTimeAgo(new Date(material.updated_at))}</span>
                         </div>
                     </div>
-                    <div className="flex gap-2 self-end md:self-auto">
+                    <div className="hidden md:flex gap-2">
                         {materialType === 'reviewer' && (
                             <div className="relative">
                                 <button 
