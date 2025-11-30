@@ -1,0 +1,13 @@
+# https://www.robotstxt.org/robotstxt.html
+User-agent: *
+Allow: /
+
+# Disallow sensitive paths
+Disallow: /api/
+Disallow: /auth/
+Disallow: /dashboard/
+Disallow: /materials/
+Disallow: /account/
+
+# Sitemap
+# Sitemap: https://deepterm.app/sitemap.xml
