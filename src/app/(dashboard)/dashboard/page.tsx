@@ -14,14 +14,6 @@ const DynamicStudyCalendar = dynamic(
     }
 );
 
-const DynamicAllAchievements = dynamic(
-    () => import("@/components/Dashboard/AllAchievements"),
-    {
-        loading: () => <AllAchievementsSkeleton />,
-        ssr: false
-    }
-);
-
 function StudyCalendarSkeleton() {
     return (
         <div className="bg-white rounded-2xl p-6 border border-[#171d2b]/5 shadow-sm">
@@ -30,25 +22,6 @@ function StudyCalendarSkeleton() {
                 <div className="grid grid-cols-7 gap-2">
                     {Array.from({ length: 42 }).map((_, i) => (
                         <div key={i} className="h-8 bg-[#171d2b]/5 rounded" />
-                    ))}
-                </div>
-            </div>
-        </div>
-    );
-}
-
-function AllAchievementsSkeleton() {
-    return (
-        <div className="bg-white rounded-2xl p-6 border border-[#171d2b]/5 shadow-sm">
-            <div className="animate-pulse">
-                <div className="flex items-center justify-between mb-4">
-                    <div className="h-6 bg-[#171d2b]/10 rounded w-40" />
-                    <div className="h-5 bg-[#171d2b]/5 rounded w-16" />
-                </div>
-                <div className="h-2 bg-[#171d2b]/5 rounded w-full mb-6" />
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                    {Array.from({ length: 8 }).map((_, i) => (
-                        <div key={i} className="h-24 bg-[#171d2b]/5 rounded-xl" />
                     ))}
                 </div>
             </div>
@@ -97,7 +70,7 @@ export default function DashboardPage() {
                 <DashboardHeader greeting={greeting} />
             </Suspense>
 
-            <div className="grid grid-cols-1 lg:grid-cols-10 gap-6 mb-8">
+            <div className="grid grid-cols-1 lg:grid-cols-10 gap-6">
                 <div className="lg:col-span-2">
                     <Suspense fallback={<RecentActivitySkeleton />}>
                         <RecentActivity />
@@ -110,12 +83,6 @@ export default function DashboardPage() {
                     </Suspense>
                 </div>
             </div>
-
-            <section>
-                <Suspense fallback={<AllAchievementsSkeleton />}>
-                    <DynamicAllAchievements />
-                </Suspense>
-            </section>
         </div>
     );
 }

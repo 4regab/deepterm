@@ -332,7 +332,7 @@ export default function Home() {
               <ul className="flex flex-col gap-1.5 sm:gap-2">
                 <li><a href="https://ko-fi.com/deepterm" target="_blank" rel="noopener noreferrer" className="font-sans text-[12px] sm:text-[13px] text-[#171d2b]/60 hover:text-[#171d2b] transition-colors">Donate</a></li>
                 <li><a href="https://github.com/4regab/deepterm" target="_blank" rel="noopener noreferrer" className="font-sans text-[12px] sm:text-[13px] text-[#171d2b]/60 hover:text-[#171d2b] transition-colors">GitHub</a></li>
-                <li><a href="mailto:deepterm@gmail.com" className="font-sans text-[12px] sm:text-[13px] text-[#171d2b]/60 hover:text-[#171d2b] transition-colors">Email</a></li>
+                <li><a href="mailto:deeptermai@gmail.com" className="font-sans text-[12px] sm:text-[13px] text-[#171d2b]/60 hover:text-[#171d2b] transition-colors">Email</a></li>
               </ul>
             </div>
           </div>

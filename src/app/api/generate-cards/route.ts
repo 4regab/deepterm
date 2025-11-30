@@ -165,8 +165,11 @@ Example output format:
       remaining: rateLimit.remaining
     });
   } catch (error) {
-    console.error("Generate cards error:", error);
-    return NextResponse.json({ error: "Failed to generate cards" }, { status: 500 });
+    // Log full error server-side only
+    console.error("Generate cards error:", error instanceof Error ? error.message : String(error));
+    
+    // Return sanitized error to client - no internal details
+    return NextResponse.json({ error: "Failed to generate cards. Please try again." }, { status: 500 });
   }
 }
 

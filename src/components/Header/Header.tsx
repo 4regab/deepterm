@@ -56,9 +56,6 @@ function SessionAwareHeader({ user, isLoading }: { user: User | null; isLoading:
             {/* Desktop Navigation */}
             <nav className="hidden md:flex items-center gap-6">
                 <div className="flex items-center gap-4">
-                    <a href="#" className="font-sans text-[#171d2b] text-[18px] hover:opacity-70 transition-opacity">Blog</a>
-                    <span className="w-[1px] h-[16px] bg-[#171d2b] opacity-50" />
-
                     {/* Learn Dropdown */}
                     <div className="relative group">
                         <button className="font-sans text-[#171d2b] text-[18px] hover:opacity-70 transition-opacity flex items-center gap-1">
@@ -119,8 +116,6 @@ function SessionAwareHeader({ user, isLoading }: { user: User | null; isLoading:
             {isMenuOpen && (
                 <div className="absolute top-full left-0 right-0 bg-[#f0f0ea] border-t border-[#171d2b]/10 md:hidden shadow-lg">
                     <nav className="flex flex-col p-4 gap-2">
-                        <a href="#" className="font-sans text-[#171d2b] text-[18px] py-2 hover:opacity-70 transition-opacity">Blog</a>
-
                         {/* Mobile Learn Accordion */}
                         <div>
                             <button

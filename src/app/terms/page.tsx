@@ -100,8 +100,8 @@ export default function TermsPage() {
               <h2 className="font-serif text-[18px] sm:text-[20px] text-[#171d2b] mb-3">8. Contact</h2>
               <p>
                 For questions about these Terms, contact us at{" "}
-                <a href="mailto:deepterm@gmail.com" className="text-[#171d2b] underline hover:no-underline">
-                  deepterm@gmail.com
+                <a href="mailto:deeptermai@gmail.com" className="text-[#171d2b] underline hover:no-underline">
+                  deeptermai@gmail.com
                 </a>
               </p>
             </section>

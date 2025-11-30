@@ -88,8 +88,8 @@ export default function PrivacyPolicyPage() {
               <h2 className="font-serif text-[18px] sm:text-[20px] text-[#171d2b] mb-3">6. Contact Us</h2>
               <p>
                 If you have questions about this Privacy Policy, please contact us at{" "}
-                <a href="mailto:deepterm@gmail.com" className="text-[#171d2b] underline hover:no-underline">
-                  deepterm@gmail.com
+                <a href="mailto:deeptermai@gmail.com" className="text-[#171d2b] underline hover:no-underline">
+                  deeptermai@gmail.com
                 </a>
               </p>
             </section>

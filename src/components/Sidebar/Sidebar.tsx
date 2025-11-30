@@ -15,13 +15,15 @@ import {
     LogOut,
     Timer,
     Pin,
-    LifeBuoy
+    LifeBuoy,
+    Trophy
 } from "lucide-react";
 
 const NAV_ITEMS = [
     { label: "Home", href: "/dashboard", icon: Home },
     { label: "Materials", href: "/materials", icon: Library },
     { label: "Pomodoro", href: "/pomodoro", icon: Timer },
+    { label: "Achievements", href: "/achievements", icon: Trophy },
 ] as const;
 
 function getInitials(name: string | null): string {

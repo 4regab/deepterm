@@ -5,9 +5,7 @@ import { Confetti, EncouragementToast } from "@/components/EmotionalAssets";
 import { motion, AnimatePresence } from "framer-motion";
 import { usePomodoroStore } from "@/lib/stores";
 import type { TimerPhase } from "@/lib/schemas/pomodoro";
-import useSound from "use-sound";
 import {
-  NOTIFICATION_SOUND,
   BACKGROUND_SOUNDS,
   STORAGE_KEYS,
   DEFAULT_NOTIFICATION_VOLUME,
@@ -71,14 +69,7 @@ export default function PomodoroPage() {
     getStoredValue(STORAGE_KEYS.BACKGROUND_SOUND, DEFAULT_BACKGROUND_SOUND)
   );
 
-  // Track previous pendingPhasePrompt state for change detection
-  const [prevPendingPhasePrompt, setPrevPendingPhasePrompt] = useState(pendingPhasePrompt);
-  const [notificationPlayed, setNotificationPlayed] = useState(false);
 
-  // Notification sound with stop capability
-  const [playNotification, { stop: stopNotification }] = useSound(NOTIFICATION_SOUND, {
-    volume: notificationVolume,
-  });
 
   // Background sound refs for manual control (looping)
   const backgroundAudioRef = useRef<HTMLAudioElement | null>(null);
@@ -125,18 +116,7 @@ export default function PomodoroPage() {
     }
   }, [isRunning, backgroundVolume]);
 
-  // Handle notification when phase prompt changes - using state comparison pattern
-  if (pendingPhasePrompt !== prevPendingPhasePrompt) {
-    setPrevPendingPhasePrompt(pendingPhasePrompt);
-    if (pendingPhasePrompt && !notificationPlayed) {
-      setNotificationPlayed(true);
-      playNotification();
-    }
-    if (!pendingPhasePrompt) {
-      setNotificationPlayed(false);
-      stopNotification();
-    }
-  }
+
 
   // Handle background sound based on timer state
   const startBackgroundSound = useCallback(() => {

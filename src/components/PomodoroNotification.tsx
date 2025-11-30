@@ -1,14 +1,33 @@
 "use client";
 
+import { useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Timer, Play, X } from "lucide-react";
 import { usePomodoroStore } from "@/lib/stores";
 import type { TimerPhase } from "@/lib/schemas/pomodoro";
+import useSound from "use-sound";
+import {
+  NOTIFICATION_SOUND,
+  STORAGE_KEYS,
+  DEFAULT_NOTIFICATION_VOLUME,
+} from "@/lib/sounds";
 
 const PHASE_LABELS: Record<TimerPhase, string> = {
   work: "Focus Time",
   shortBreak: "Short Break",
   longBreak: "Long Break",
+};
+
+// Helper to safely access localStorage
+const getStoredValue = <T,>(key: string, defaultValue: T): T => {
+  if (typeof window === "undefined") return defaultValue;
+  const stored = localStorage.getItem(key);
+  if (stored === null) return defaultValue;
+  try {
+    return JSON.parse(stored) as T;
+  } catch {
+    return defaultValue;
+  }
 };
 
 export default function PomodoroNotification() {
@@ -19,6 +38,24 @@ export default function PomodoroNotification() {
     startNextPhase,
     dismissPhasePrompt,
   } = usePomodoroStore();
+
+  // Track previous state to detect changes
+  const prevPendingRef = useRef(false);
+  
+  // Get notification volume from localStorage
+  const [notificationVolume] = useState(() =>
+    getStoredValue(STORAGE_KEYS.NOTIFICATION_VOLUME, DEFAULT_NOTIFICATION_VOLUME)
+  );
+
+  const [playNotification] = useSound(NOTIFICATION_SOUND, {
+    volume: notificationVolume,
+  });
+
+  // Play sound when pendingPhasePrompt transitions from false to true
+  if (pendingPhasePrompt && !prevPendingRef.current) {
+    playNotification();
+  }
+  prevPendingRef.current = pendingPhasePrompt;
 
   if (!pendingPhasePrompt || !pendingNextPhase) return null;
 

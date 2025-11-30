@@ -227,26 +227,20 @@ COLOR OPTIONS: #E0F2FE, #DCFCE7, #FEF3C7, #FCE7F3, #E0E7FF, #F3E8FF`;
             remaining: rateLimit.remaining
         });
     } catch (error) {
+        // Log full error server-side only - never expose to client
         const errorMessage = error instanceof Error ? error.message : String(error);
-        const errorStack = error instanceof Error ? error.stack : undefined;
         console.error("Generate reviewer error:", errorMessage);
-        console.error("Error stack:", errorStack);
         
-        // Check for specific Gemini API errors
+        // Return sanitized errors - no internal details exposed
         if (errorMessage.includes("quota") || errorMessage.includes("rate")) {
             return NextResponse.json({ error: "API rate limit exceeded. Please try again later." }, { status: 429 });
-        }
-        if (errorMessage.includes("invalid") || errorMessage.includes("API key")) {
-            return NextResponse.json({ error: "API configuration error. Please contact support." }, { status: 500 });
         }
         if (errorMessage.includes("timeout") || errorMessage.includes("ETIMEDOUT")) {
             return NextResponse.json({ error: "Request timed out. Please try with a smaller file." }, { status: 504 });
         }
         
-        return NextResponse.json({ 
-            error: "Failed to generate reviewer content", 
-            details: errorMessage 
-        }, { status: 500 });
+        // Generic error - no details field
+        return NextResponse.json({ error: "Failed to generate reviewer content. Please try again." }, { status: 500 });
     }
 }
 
