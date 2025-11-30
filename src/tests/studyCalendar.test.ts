@@ -89,16 +89,19 @@ describe('StudyCalendar Component Logic', () => {
 
     it('should not mark any day as isToday for past months', () => {
       const today = new Date()
-      const pastMonth = today.getMonth() === 0 ? 11 : today.getMonth() - 1
-      const pastYear = today.getMonth() === 0 ? today.getFullYear() - 1 : today.getFullYear()
+      // Go back 2 months to avoid boundary issues where today appears as filler day
+      let pastMonth = today.getMonth() - 2
+      let pastYear = today.getFullYear()
+      if (pastMonth < 0) {
+        pastMonth += 12
+        pastYear -= 1
+      }
 
       const grid = generateMonthGrid(pastYear, pastMonth, [])
       const todayCell = grid.flat().find(day => day.isToday)
 
-      // Today should not be in a past month's grid (unless we're at month boundary)
-      if (pastMonth !== today.getMonth() || pastYear !== today.getFullYear()) {
-        expect(todayCell).toBeUndefined()
-      }
+      // Today should not appear in a month that's 2+ months in the past
+      expect(todayCell).toBeUndefined()
     })
   })
 

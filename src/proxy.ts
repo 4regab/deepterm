@@ -1,6 +1,12 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
+// Allowed origins for CORS (SECURITY FIX - CWE-942)
+const ALLOWED_ORIGINS = [
+  'https://deepterm.tech',
+  'https://www.deepterm.tech',
+]
+
 // Routes that require authentication
 const PROTECTED_ROUTES = [
   '/dashboard',
@@ -23,6 +29,7 @@ const AUTH_ROUTES = ['/auth']
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
+  const origin = request.headers.get('origin')
 
   // Create response to modify
   let response = NextResponse.next({
@@ -30,6 +37,19 @@ export async function proxy(request: NextRequest) {
       headers: request.headers,
     },
   })
+
+  // CORS: Only allow trusted origins (SECURITY FIX)
+  if (origin && ALLOWED_ORIGINS.includes(origin)) {
+    response.headers.set('Access-Control-Allow-Origin', origin)
+    response.headers.set('Access-Control-Allow-Credentials', 'true')
+    response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
+    response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+  }
+
+  // Handle preflight requests
+  if (request.method === 'OPTIONS') {
+    return response
+  }
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,

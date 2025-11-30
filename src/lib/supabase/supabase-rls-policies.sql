@@ -5,6 +5,11 @@
 -- WARNING: This will restrict ALL data access to authenticated users only
 -- Backup your data before running in production
 -- ============================================================
+-- SECURITY FIXES APPLIED:
+-- 1. material_shares - restricted anonymous access (CRITICAL)
+-- 2. unlimited_users - restricted anonymous access (HIGH)
+-- 3. Secure share access via RPC function (HIGH)
+-- ============================================================
 
 -- ============================================================
 -- STEP 1: ENABLE RLS ON ALL TABLES
@@ -24,6 +29,8 @@ ALTER TABLE materials ENABLE ROW LEVEL SECURITY;
 ALTER TABLE quizzes ENABLE ROW LEVEL SECURITY;
 ALTER TABLE quiz_questions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE quiz_attempts ENABLE ROW LEVEL SECURITY;
+ALTER TABLE material_shares ENABLE ROW LEVEL SECURITY;
+ALTER TABLE unlimited_users ENABLE ROW LEVEL SECURITY;
 
 -- ============================================================
 -- STEP 2: DROP EXISTING POLICIES (if any) TO AVOID CONFLICTS
@@ -109,6 +116,24 @@ DROP POLICY IF EXISTS "Users can delete own quiz_questions" ON quiz_questions;
 DROP POLICY IF EXISTS "Users can view own quiz_attempts" ON quiz_attempts;
 DROP POLICY IF EXISTS "Users can insert own quiz_attempts" ON quiz_attempts;
 DROP POLICY IF EXISTS "Users can update own quiz_attempts" ON quiz_attempts;
+
+-- material_shares (SECURITY FIX - CVE-EQUIVALENT: CWE-284)
+DROP POLICY IF EXISTS "material_shares_anon_select" ON material_shares;
+DROP POLICY IF EXISTS "material_shares_public_select" ON material_shares;
+DROP POLICY IF EXISTS "Users can view own material_shares" ON material_shares;
+DROP POLICY IF EXISTS "Users can insert own material_shares" ON material_shares;
+DROP POLICY IF EXISTS "Users can update own material_shares" ON material_shares;
+DROP POLICY IF EXISTS "Users can delete own material_shares" ON material_shares;
+
+-- unlimited_users (SECURITY FIX - CWE-200)
+DROP POLICY IF EXISTS "unlimited_users_public_select" ON unlimited_users;
+DROP POLICY IF EXISTS "unlimited_users_anon_select" ON unlimited_users;
+DROP POLICY IF EXISTS "Users can view own unlimited_users" ON unlimited_users;
+
+-- Drop existing insecure RPC functions if they exist
+DROP FUNCTION IF EXISTS get_shared_flashcards(text);
+DROP FUNCTION IF EXISTS get_shared_flashcard_set(text);
+DROP FUNCTION IF EXISTS validate_share_code(text);
 
 -- ============================================================
 -- STEP 3: CREATE RLS POLICIES FOR EACH TABLE
@@ -314,6 +339,110 @@ CREATE POLICY "Users can insert own quiz_attempts" ON quiz_attempts
 CREATE POLICY "Users can update own quiz_attempts" ON quiz_attempts
     FOR UPDATE USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
 
+-- ------------------------------------------------------------
+-- MATERIAL_SHARES (SECURITY FIX - CRITICAL)
+-- Only owners can manage their shares. No anonymous access.
+-- Share code validation happens via secure RPC function.
+-- ------------------------------------------------------------
+CREATE POLICY "Users can view own material_shares" ON material_shares
+    FOR SELECT USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert own material_shares" ON material_shares
+    FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update own material_shares" ON material_shares
+    FOR UPDATE USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can delete own material_shares" ON material_shares
+    FOR DELETE USING (auth.uid() = user_id);
+
+-- ------------------------------------------------------------
+-- UNLIMITED_USERS (SECURITY FIX - HIGH)
+-- Only users can check their own premium status.
+-- ------------------------------------------------------------
+CREATE POLICY "Users can view own unlimited_users" ON unlimited_users
+    FOR SELECT USING (auth.uid() = user_id);
+
+-- ============================================================
+-- STEP 4: SECURE RPC FUNCTIONS FOR SHARE ACCESS
+-- These functions use SECURITY DEFINER to bypass RLS
+-- and validate share codes securely.
+-- ============================================================
+
+-- Validate a share code and return share metadata (no sensitive data)
+CREATE OR REPLACE FUNCTION validate_share_code(p_share_code text)
+RETURNS TABLE (
+    material_type text,
+    material_id uuid,
+    is_valid boolean
+) AS $$
+BEGIN
+    RETURN QUERY
+    SELECT 
+        ms.material_type::text,
+        ms.material_id,
+        true as is_valid
+    FROM material_shares ms
+    WHERE ms.share_code = p_share_code 
+    AND ms.is_active = true;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Get shared flashcard set by share code (secure access)
+CREATE OR REPLACE FUNCTION get_shared_flashcard_set(p_share_code text)
+RETURNS TABLE (
+    id uuid,
+    title text,
+    description text,
+    created_at timestamptz,
+    card_count bigint
+) AS $$
+BEGIN
+    RETURN QUERY
+    SELECT 
+        fs.id,
+        fs.title,
+        fs.description,
+        fs.created_at,
+        (SELECT COUNT(*) FROM flashcards f WHERE f.set_id = fs.id) as card_count
+    FROM flashcard_sets fs
+    JOIN material_shares ms ON ms.material_id = fs.id
+    WHERE ms.share_code = p_share_code 
+    AND ms.is_active = true
+    AND ms.material_type = 'flashcard_set';
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Get shared flashcards by share code (secure access)
+-- Note: Does NOT expose user study progress (status, last_reviewed)
+CREATE OR REPLACE FUNCTION get_shared_flashcards(p_share_code text)
+RETURNS TABLE (
+    id uuid,
+    term text,
+    definition text,
+    set_id uuid
+) AS $$
+BEGIN
+    RETURN QUERY
+    SELECT 
+        f.id,
+        f.term,
+        f.definition,
+        f.set_id
+    FROM flashcards f
+    JOIN flashcard_sets fs ON f.set_id = fs.id
+    JOIN material_shares ms ON ms.material_id = fs.id
+    WHERE ms.share_code = p_share_code 
+    AND ms.is_active = true
+    AND ms.material_type = 'flashcard_set';
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Grant execute permissions to anonymous and authenticated users
+GRANT EXECUTE ON FUNCTION validate_share_code(text) TO anon, authenticated;
+GRANT EXECUTE ON FUNCTION get_shared_flashcard_set(text) TO anon, authenticated;
+GRANT EXECUTE ON FUNCTION get_shared_flashcards(text) TO anon, authenticated;
+
 -- ============================================================
 -- VERIFICATION QUERIES
 -- Run these after applying policies to verify RLS is enabled
@@ -334,3 +463,14 @@ AND tablename IN (
 SELECT tablename, policyname, permissive, roles, cmd, qual 
 FROM pg_policies 
 WHERE schemaname = 'public';
+
+-- Verify material_shares and unlimited_users have RLS enabled
+SELECT schemaname, tablename, rowsecurity 
+FROM pg_tables 
+WHERE schemaname = 'public' 
+AND tablename IN ('material_shares', 'unlimited_users');
+
+-- List RPC functions for share access
+SELECT proname, prosecdef 
+FROM pg_proc 
+WHERE proname IN ('validate_share_code', 'get_shared_flashcard_set', 'get_shared_flashcards');
