@@ -170,7 +170,7 @@ export default function SessionResultPage({
                         onClick={onTryAgain ? onTryAgain : onContinue}
                         className="bg-[#2D9F83] text-white px-6 py-3 rounded-full font-bold flex items-center gap-2 hover:bg-[#258a70] transition-colors"
                     >
-                        {onTryAgain ? "Try Again" : onExit ? "Next" : continueButtonText} {!onTryAgain && !onExit && continueButtonText === "Next" && <Pencil size={16} className="fill-current" />}
+                        {onTryAgain ? (<><span className="sm:hidden">Again</span><span className="hidden sm:inline">Try Again</span></>) : onExit ? "Next" : continueButtonText} {!onTryAgain && !onExit && continueButtonText === "Next" && <Pencil size={16} className="fill-current" />}
                     </button>
                 </div>
             </div>

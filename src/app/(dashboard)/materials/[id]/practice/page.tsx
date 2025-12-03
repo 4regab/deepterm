@@ -652,14 +652,24 @@ export default function PracticePage() {
                                         
                                         setStage("results");
                                     }}
-                                    className="px-6 sm:px-8 py-2 sm:py-3 rounded-full bg-[#2D9F83] text-white font-bold hover:bg-[#258a70] transition-colors text-sm sm:text-base"
+                                    disabled={questions.some(q => q.userAnswer === undefined)}
+                                    className={`px-6 sm:px-8 py-2 sm:py-3 rounded-full font-bold transition-colors text-sm sm:text-base ${
+                                        questions.some(q => q.userAnswer === undefined)
+                                            ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                                            : 'bg-[#2D9F83] text-white hover:bg-[#258a70]'
+                                    }`}
                                 >
                                     Finish Test
                                 </button>
                             ) : (
                                 <button
                                     onClick={() => setCurrentQuestionIndex(prev => Math.min(questions.length - 1, prev + 1))}
-                                    className="px-4 sm:px-6 py-2 sm:py-3 rounded-full bg-[#171d2b] text-white font-bold hover:bg-[#2a3347] transition-colors text-sm sm:text-base"
+                                    disabled={currentQuestion?.userAnswer === undefined}
+                                    className={`px-4 sm:px-6 py-2 sm:py-3 rounded-full font-bold transition-colors text-sm sm:text-base ${
+                                        currentQuestion?.userAnswer === undefined
+                                            ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                                            : 'bg-[#171d2b] text-white hover:bg-[#2a3347]'
+                                    }`}
                                 >
                                     Next
                                 </button>
