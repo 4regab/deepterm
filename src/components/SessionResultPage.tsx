@@ -2,7 +2,7 @@
 
 import React from "react";
 import { Pencil } from "lucide-react";
-import { HappyBirdMascot } from "./EmotionalAssets";
+import { HappyBirdMascot, SadBirdMascot } from "./EmotionalAssets";
 
 export type ItemStatus = 'new' | 'learning' | 'almost_done' | 'mastered' | 'incorrect';
 
@@ -100,12 +100,17 @@ export default function SessionResultPage({
             {/* Mascot & Title */}
             <div className="text-center mb-8">
                 <div className="w-32 h-32 mx-auto mb-4 relative">
-                    {/* Placeholder for the 'pushing rock' mascot - using HappyBird for now */}
                     <div className="absolute inset-0 flex items-center justify-center">
-                        <HappyBirdMascot />
+                        {Math.round((correctCount / totalCount) * 100) >= 50 ? (
+                            <HappyBirdMascot className="w-28 h-28" />
+                        ) : (
+                            <SadBirdMascot className="w-28 h-28" />
+                        )}
                     </div>
                 </div>
-                <h1 className="text-2xl font-bold text-[#171d2b]">{title}</h1>
+                <h1 className="text-2xl font-bold text-[#171d2b]">
+                    {Math.round((correctCount / totalCount) * 100) >= 50 ? title : "Don't give up, keep practicing!"}
+                </h1>
             </div>
 
             {/* Main Stats Card */}

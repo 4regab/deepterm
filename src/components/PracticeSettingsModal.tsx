@@ -11,6 +11,7 @@ export interface PracticeSettings {
     shuffleTerms: boolean;
     autoNextAfterAnswer: boolean;
     autoNextDuration: number;
+    answerFeedback: boolean;
 }
 
 interface Props {
@@ -131,6 +132,21 @@ export default function PracticeSettingsModal({ isOpen, onClose, onSave, totalCa
                                 <Toggle
                                     checked={settings.shuffleTerms}
                                     onChange={() => setSettings(prev => ({ ...prev, shuffleTerms: !prev.shuffleTerms }))}
+                                />
+                            </div>
+                            <div className="flex items-center justify-between">
+                                <span className="text-sm font-medium text-[#171d2b]/80 flex items-center gap-2">
+                                    Answer Feedback
+                                    <div className="relative group">
+                                        <HelpCircle size={14} className="text-gray-400 cursor-help" />
+                                        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-[#171d2b] text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none w-48 text-center z-50">
+                                            When off, answers won&apos;t be shown after each question - mimics real exam conditions. Results shown at the end.
+                                        </div>
+                                    </div>
+                                </span>
+                                <Toggle
+                                    checked={settings.answerFeedback}
+                                    onChange={() => setSettings(prev => ({ ...prev, answerFeedback: !prev.answerFeedback }))}
                                 />
                             </div>
                             <div className="flex items-center justify-between">

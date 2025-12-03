@@ -49,8 +49,9 @@ const DEFAULT_PRACTICE_SETTINGS: PracticeSettings = {
     cardCount: "max",
     enabledQuestionTypes: ["multipleChoice", "trueFalse", "fillBlank"],
     shuffleTerms: true,
-    autoNextAfterAnswer: true,
+    autoNextAfterAnswer: false,
     autoNextDuration: 2,
+    answerFeedback: false,
 };
 
 function generateQuestionsFromCards(cards: FlashcardData[], types: QuestionType[], cardCount: number): Question[] {
@@ -208,7 +209,6 @@ export default function PracticePage() {
             : answer.toLowerCase() === current.correctAnswer.toLowerCase();
         updated[currentQuestionIndex].isCorrect = isCorrect;
         setQuestions(updated);
-        setShowAnswer(true);
 
         // Update flashcard status in database
         const cardIndex = flashcardData.findIndex(c => c.id === current.id);
@@ -222,6 +222,15 @@ export default function PracticePage() {
             updatedCards[cardIndex] = { ...card, status: newStatus };
             setFlashcardData(updatedCards);
         }
+
+        // Exam mode (no feedback) - don't show answer, let user navigate manually
+        if (!settings.answerFeedback) {
+            // Don't auto-advance - user uses Previous/Next/Finish buttons
+            return;
+        }
+
+        // Feedback mode - show answer
+        setShowAnswer(true);
 
         if (isCorrect) {
             const newStreak = streak + 1;
@@ -274,50 +283,8 @@ export default function PracticePage() {
 
     const currentQuestion = questions[currentQuestionIndex];
 
-    // Keyboard shortcuts handler
-    useState(() => {
-        const handleKeyPress = (e: KeyboardEvent) => {
-            if (stage !== "take" || !currentQuestion || showAnswer) return;
-
-            // MCQ shortcuts (1-4 for A-D)
-            if (currentQuestion.type === "multipleChoice" && currentQuestion.options) {
-                const key = e.key;
-                if (['1', '2', '3', '4'].includes(key)) {
-                    const index = parseInt(key) - 1;
-                    if (index < currentQuestion.options.length) {
-                        e.preventDefault();
-                        handleAnswer(currentQuestion.options[index]);
-                    }
-                }
-            }
-
-            // True/False shortcuts (a/b or 1/2)
-            if (currentQuestion.type === "trueFalse") {
-                const key = e.key.toLowerCase();
-                if (key === 'a' || key === '1') {
-                    e.preventDefault();
-                    handleAnswer('true');
-                } else if (key === 'b' || key === '2') {
-                    e.preventDefault();
-                    handleAnswer('false');
-                }
-            }
-
-            // Fill blank - Enter to submit
-            if (currentQuestion.type === "fillBlank") {
-                if (e.key === 'Enter') {
-                    const input = (e.target as HTMLInputElement);
-                    if (input.value.trim()) {
-                        e.preventDefault();
-                        handleAnswer(input.value);
-                    }
-                }
-            }
-        };
-
-        window.addEventListener('keydown', handleKeyPress);
-        return () => window.removeEventListener('keydown', handleKeyPress);
-    });
+    // Keyboard shortcuts handler - disabled for now to avoid SSR issues
+    // TODO: Re-enable with proper useEffect if needed
 
     // Get XP stats from store
     const xpStats = useXPStore((state) => state.stats);
@@ -449,7 +416,27 @@ export default function PracticePage() {
                                     Options
                                 </button>
                             </div>
-                            <AnimatedProgress value={currentQuestionIndex + 1} total={questions.length} color="#171d2b" />
+                            {/* Progress bar - clickable in exam mode */}
+                            {!settings.answerFeedback ? (
+                                <div className="w-full flex gap-1.5">
+                                    {questions.map((q, i) => {
+                                        const isAnswered = q.userAnswer !== undefined;
+                                        const isCurrent = i === currentQuestionIndex;
+                                        return (
+                                            <button
+                                                key={i}
+                                                onClick={() => setCurrentQuestionIndex(i)}
+                                                className={`flex-1 h-2 rounded-full transition-all ${
+                                                    isAnswered || isCurrent ? 'bg-[#171d2b]' : 'bg-[#171d2b]/10'
+                                                } hover:opacity-80`}
+                                                title={`Question ${i + 1}${isAnswered ? ' (answered)' : ''}`}
+                                            />
+                                        );
+                                    })}
+                                </div>
+                            ) : (
+                                <AnimatedProgress value={currentQuestionIndex + 1} total={questions.length} color="#171d2b" />
+                            )}
 
                             {/* Question Card */}
                             <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-8 min-h-[200px] flex flex-col mb-6">
@@ -467,12 +454,13 @@ export default function PracticePage() {
                                         {currentQuestion.options.map((opt, i) => {
                                             const isSelected = currentQuestion.userAnswer === opt;
                                             const isCorrectAnswer = opt === currentQuestion.correctAnswer;
+                                            const showFeedbackColors = settings.answerFeedback && showAnswer;
 
                                             let borderClass = "border-gray-200";
                                             let bgClass = "bg-white";
                                             let textClass = "text-[#171d2b]";
 
-                                            if (showAnswer) {
+                                            if (showFeedbackColors) {
                                                 if (isCorrectAnswer) {
                                                     borderClass = "border-green-500";
                                                     bgClass = "bg-green-50";
@@ -491,10 +479,10 @@ export default function PracticePage() {
                                             }
 
                                             return (
-                                                <button key={i} onClick={() => !showAnswer && handleAnswer(opt)} disabled={showAnswer}
+                                                <button key={i} onClick={() => !showFeedbackColors && handleAnswer(opt)} disabled={showFeedbackColors}
                                                     className={`w-full p-4 rounded-xl border-2 text-left font-medium transition-all flex items-center gap-4 ${borderClass} ${bgClass} ${textClass} hover:shadow-md`}>
-                                                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${showAnswer && isCorrectAnswer ? "bg-green-200 text-green-700" :
-                                                        showAnswer && isSelected ? "bg-red-200 text-red-700" :
+                                                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${showFeedbackColors && isCorrectAnswer ? "bg-green-200 text-green-700" :
+                                                        showFeedbackColors && isSelected ? "bg-red-200 text-red-700" :
                                                             "bg-blue-100 text-blue-600"
                                                         }`}>
                                                         {String.fromCharCode(65 + i)}
@@ -513,8 +501,8 @@ export default function PracticePage() {
                                             <p className="text-lg font-semibold text-[#171d2b]">{currentQuestion.tfDisplayedTerm}</p>
                                         </div>
                                         
-                                        {/* Show correct term after answer if wrong */}
-                                        {showAnswer && !currentQuestion.tfIsCorrectPairing && (
+                                        {/* Show correct term after answer if wrong - only in feedback mode */}
+                                        {settings.answerFeedback && showAnswer && !currentQuestion.tfIsCorrectPairing && (
                                             <div className="bg-green-50 border border-green-200 rounded-xl p-4 mb-4">
                                                 <span className="text-xs text-green-600 block mb-1">Correct Term</span>
                                                 <p className="text-lg font-semibold text-green-700">
@@ -527,12 +515,13 @@ export default function PracticePage() {
                                             {["true", "false"].map((val, i) => {
                                                 const isSelected = currentQuestion.userAnswer === val;
                                                 const isCorrectAnswer = val === currentQuestion.correctAnswer;
+                                                const showFeedbackColors = settings.answerFeedback && showAnswer;
 
                                                 let borderClass = "border-gray-200";
                                                 let bgClass = "bg-white";
                                                 let textClass = "text-[#171d2b]";
 
-                                                if (showAnswer) {
+                                                if (showFeedbackColors) {
                                                     if (isCorrectAnswer) {
                                                         borderClass = "border-green-500";
                                                         bgClass = "bg-green-50";
@@ -551,10 +540,10 @@ export default function PracticePage() {
                                                 }
 
                                                 return (
-                                                    <button key={val} onClick={() => !showAnswer && handleAnswer(val)} disabled={showAnswer}
+                                                    <button key={val} onClick={() => !showFeedbackColors && handleAnswer(val)} disabled={showFeedbackColors}
                                                         className={`h-20 rounded-xl border-2 font-medium transition-all flex items-center justify-center gap-3 ${borderClass} ${bgClass} ${textClass} hover:shadow-md`}>
-                                                        <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${showAnswer && isCorrectAnswer ? "bg-green-200 text-green-700" :
-                                                            showAnswer && isSelected ? "bg-red-200 text-red-700" :
+                                                        <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${showFeedbackColors && isCorrectAnswer ? "bg-green-200 text-green-700" :
+                                                            showFeedbackColors && isSelected ? "bg-red-200 text-red-700" :
                                                                 i === 0 ? "bg-blue-100 text-blue-600" : "bg-orange-100 text-orange-600"
                                                             }`}>
                                                             {i + 1}
@@ -568,15 +557,38 @@ export default function PracticePage() {
                                 )}
                                 {currentQuestion.type === "fillBlank" && (
                                     <div>
-                                        <input type="text" placeholder="Type your answer..." disabled={showAnswer} onKeyDown={e => { if (e.key === "Enter" && !showAnswer) handleAnswer((e.target as HTMLInputElement).value); }}
-                                            className="w-full p-4 rounded-xl border-2 border-gray-200 focus:border-[#171d2b] focus:outline-none text-lg bg-white placeholder:text-gray-400" />
-                                        {!showAnswer && <p className="text-gray-400 text-xs mt-2 ml-1">Press Enter to submit</p>}
+                                        <input 
+                                            type="text" 
+                                            placeholder="Type your answer..." 
+                                            disabled={settings.answerFeedback && showAnswer} 
+                                            defaultValue={currentQuestion.userAnswer || ""}
+                                            key={`fillblank-${currentQuestionIndex}`}
+                                            onBlur={e => {
+                                                // Auto-save on blur in exam mode
+                                                if (!settings.answerFeedback && e.target.value.trim()) {
+                                                    handleAnswer(e.target.value);
+                                                }
+                                            }}
+                                            onKeyDown={e => { 
+                                                if (e.key === "Enter" && !(settings.answerFeedback && showAnswer)) {
+                                                    handleAnswer((e.target as HTMLInputElement).value); 
+                                                }
+                                            }}
+                                            className={`w-full p-4 rounded-xl border-2 focus:outline-none text-lg bg-white placeholder:text-gray-400 ${
+                                                currentQuestion.userAnswer 
+                                                    ? 'border-[#171d2b] bg-gray-50' 
+                                                    : 'border-gray-200 focus:border-[#171d2b]'
+                                            }`} 
+                                        />
+                                        {!(settings.answerFeedback && showAnswer) && !currentQuestion.userAnswer && (
+                                            <p className="text-gray-400 text-xs mt-2 ml-1">{settings.answerFeedback ? 'Press Enter to submit' : 'Type and navigate away or press Enter'}</p>
+                                        )}
                                     </div>
                                 )}
                             </div>
 
-                            {/* Feedback Message */}
-                            {showAnswer && (
+                            {/* Feedback Message - Only in feedback mode */}
+                            {settings.answerFeedback && showAnswer && (
                                 <div className="mb-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
                                     {currentQuestion.isCorrect ? (
                                         <h3 className="text-[#2D9F83] font-bold text-lg flex items-center gap-2">
@@ -599,9 +611,67 @@ export default function PracticePage() {
                 </AnimatePresence>
             </main>
 
-            {/* Bottom Bar with Bird Mascot */}
+            {/* Bottom Bar - Exam Mode Navigation */}
             <AnimatePresence>
-                {stage === "take" && showAnswer && (
+                {stage === "take" && !settings.answerFeedback && (
+                    <motion.div
+                        initial={{ y: 100 }}
+                        animate={{ y: 0 }}
+                        exit={{ y: 100 }}
+                        className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-3 sm:p-4 shadow-[0_-4px_20px_rgba(0,0,0,0.05)] z-40"
+                    >
+                        <div className="max-w-5xl mx-auto flex items-center justify-between gap-3">
+                            {currentQuestionIndex > 0 ? (
+                                <button
+                                    onClick={() => setCurrentQuestionIndex(prev => Math.max(0, prev - 1))}
+                                    className="px-4 sm:px-6 py-2 sm:py-3 rounded-full bg-gray-100 text-[#171d2b] font-bold hover:bg-gray-200 transition-colors text-sm sm:text-base"
+                                >
+                                    Previous
+                                </button>
+                            ) : (
+                                <div className="w-[88px] sm:w-[106px]" />
+                            )}
+                            <span className="text-sm text-[#171d2b]/60 font-medium">
+                                {questions.filter(q => q.userAnswer !== undefined).length} of {questions.length} answered
+                            </span>
+                            {currentQuestionIndex === questions.length - 1 ? (
+                                <button
+                                    onClick={() => {
+                                        const correct = questions.filter(q => q.isCorrect).length;
+                                        const xpEarned = correct * XP_REWARDS.FLASHCARD_CORRECT;
+                                        setFinalXpEarned(xpEarned);
+                                        
+                                        const persistResults = async () => {
+                                            if (xpEarned > 0) {
+                                                await addXP(xpEarned);
+                                                useXPStore.getState().fetchXPStats();
+                                            }
+                                            await recordStudyActivity({ quizzes: 1 });
+                                        };
+                                        persistResults();
+                                        
+                                        setStage("results");
+                                    }}
+                                    className="px-6 sm:px-8 py-2 sm:py-3 rounded-full bg-[#2D9F83] text-white font-bold hover:bg-[#258a70] transition-colors text-sm sm:text-base"
+                                >
+                                    Finish Test
+                                </button>
+                            ) : (
+                                <button
+                                    onClick={() => setCurrentQuestionIndex(prev => Math.min(questions.length - 1, prev + 1))}
+                                    className="px-4 sm:px-6 py-2 sm:py-3 rounded-full bg-[#171d2b] text-white font-bold hover:bg-[#2a3347] transition-colors text-sm sm:text-base"
+                                >
+                                    Next
+                                </button>
+                            )}
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            {/* Bottom Bar with Bird Mascot - Feedback Mode */}
+            <AnimatePresence>
+                {stage === "take" && settings.answerFeedback && showAnswer && (
                     <motion.div
                         initial={{ y: 100 }}
                         animate={{ y: 0 }}

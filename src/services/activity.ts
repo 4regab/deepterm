@@ -67,10 +67,21 @@ export async function addXP(amount: number): Promise<{ leveledUp: boolean; newLe
     const safeAmount = Math.max(XP_BOUNDS.MIN, Math.min(Math.floor(amount), XP_BOUNDS.MAX));
 
     const supabase = createClient();
+    
+    // Check if user is authenticated first
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+        console.warn("Cannot add XP: No authenticated user");
+        return { leveledUp: false };
+    }
+
     const { data, error } = await supabase.rpc("add_xp", { p_amount: safeAmount });
 
     if (error) {
-        console.error("Failed to add XP:", error);
+        // Only log actual errors, not empty objects
+        if (error.message || error.code) {
+            console.error("Failed to add XP:", error.message || error.code);
+        }
         return { leveledUp: false };
     }
 

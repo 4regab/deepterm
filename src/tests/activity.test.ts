@@ -131,9 +131,14 @@ describe('activity utilities', () => {
 
   // ==================== ADD XP (UPDATE) ====================
   describe('addXP', () => {
+    const mockAuthUser = { id: 'test-user-id', email: 'test@example.com' }
+
     it('should add XP and return leveledUp false', async () => {
       const { createClient } = await import('../config/supabase/client')
       vi.mocked(createClient).mockReturnValue({
+        auth: {
+          getUser: vi.fn().mockResolvedValue({ data: { user: mockAuthUser }, error: null }),
+        },
         rpc: vi.fn().mockResolvedValue({
           data: [{ leveled_up: false, new_level: 1 }],
           error: null,
@@ -148,6 +153,9 @@ describe('activity utilities', () => {
     it('should return leveledUp true when leveling up', async () => {
       const { createClient } = await import('../config/supabase/client')
       vi.mocked(createClient).mockReturnValue({
+        auth: {
+          getUser: vi.fn().mockResolvedValue({ data: { user: mockAuthUser }, error: null }),
+        },
         rpc: vi.fn().mockResolvedValue({
           data: [{ leveled_up: true, new_level: 2 }],
           error: null,
@@ -163,6 +171,9 @@ describe('activity utilities', () => {
     it('should return leveledUp false on error', async () => {
       const { createClient } = await import('../config/supabase/client')
       vi.mocked(createClient).mockReturnValue({
+        auth: {
+          getUser: vi.fn().mockResolvedValue({ data: { user: mockAuthUser }, error: null }),
+        },
         rpc: vi.fn().mockResolvedValue({ data: null, error: new Error('Failed') }),
         from: vi.fn(),
       } as never)
@@ -174,6 +185,9 @@ describe('activity utilities', () => {
     it('should return leveledUp false when no data', async () => {
       const { createClient } = await import('../config/supabase/client')
       vi.mocked(createClient).mockReturnValue({
+        auth: {
+          getUser: vi.fn().mockResolvedValue({ data: { user: mockAuthUser }, error: null }),
+        },
         rpc: vi.fn().mockResolvedValue({ data: [], error: null }),
         from: vi.fn(),
       } as never)
@@ -185,6 +199,9 @@ describe('activity utilities', () => {
     it('should handle zero XP', async () => {
       const { createClient } = await import('../config/supabase/client')
       vi.mocked(createClient).mockReturnValue({
+        auth: {
+          getUser: vi.fn().mockResolvedValue({ data: { user: mockAuthUser }, error: null }),
+        },
         rpc: vi.fn().mockResolvedValue({
           data: [{ leveled_up: false, new_level: 1 }],
           error: null,
@@ -199,6 +216,9 @@ describe('activity utilities', () => {
     it('should handle negative XP', async () => {
       const { createClient } = await import('../config/supabase/client')
       vi.mocked(createClient).mockReturnValue({
+        auth: {
+          getUser: vi.fn().mockResolvedValue({ data: { user: mockAuthUser }, error: null }),
+        },
         rpc: vi.fn().mockResolvedValue({
           data: [{ leveled_up: false, new_level: 1 }],
           error: null,
@@ -207,6 +227,20 @@ describe('activity utilities', () => {
       } as never)
 
       const result = await addXP(-50)
+      expect(result.leveledUp).toBe(false)
+    })
+
+    it('should return leveledUp false when no authenticated user', async () => {
+      const { createClient } = await import('../config/supabase/client')
+      vi.mocked(createClient).mockReturnValue({
+        auth: {
+          getUser: vi.fn().mockResolvedValue({ data: { user: null }, error: null }),
+        },
+        rpc: vi.fn(),
+        from: vi.fn(),
+      } as never)
+
+      const result = await addXP(50)
       expect(result.leveledUp).toBe(false)
     })
   })
