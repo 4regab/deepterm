@@ -4,6 +4,23 @@ All notable changes to DeepTerm will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.1.2] - 2025-12-08
+
+### Added
+
+- FAQ section on landing page with common questions
+- Step-by-step guide showing how to get started
+- Sticky header with glass effect on scroll
+- Resources dropdown menu (Help, Changelog, About)
+
+### Changed
+
+- Improved landing page layout and visual hierarchy
+- Enhanced feature showcase with realistic dashboard previews
+- Better mobile navigation experience
+
+---
+
 ## [0.1.1] - 2025-12-01
 
 ### Added

@@ -1,10 +1,12 @@
 "use client";
 
 import { useState, useCallback, useRef } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { imgLogo } from "@/config/assets";
 import { createClient } from "@/config/supabase/client";
 import { useUIStore } from "@/lib/stores";
+import { useScrolled } from "@/lib/hooks";
 import type { User } from "@supabase/supabase-js";
 
 const LEARN_ITEMS = [
@@ -14,40 +16,44 @@ const LEARN_ITEMS = [
     { label: "Reviewer", href: "/materials" },
 ] as const;
 
-function SessionAwareHeader({ user, isLoading }: { user: User | null; isLoading: boolean }) {
-    
-    const { 
-        sidebarMobileOpen: isMenuOpen, 
+const RESOURCES_ITEMS = [
+    { label: "Help Center", href: "/help" },
+    { label: "Changelog", href: "/changelog" },
+    { label: "About", href: "/help#about" },
+] as const;
+
+function SessionAwareHeader({ user, isLoading, className }: { user: User | null; isLoading: boolean; className?: string }) {
+    const isScrolled = useScrolled(20);
+    const [isResourcesOpen, setIsResourcesOpen] = useState(false);
+
+    const {
+        sidebarMobileOpen: isMenuOpen,
         profileMenuOpen: isLearnOpen,
         setSidebarMobileOpen: setIsMenuOpen,
-        setProfileMenuOpen: setIsLearnOpen 
+        setProfileMenuOpen: setIsLearnOpen
     } = useUIStore();
-
-    const handleLogin = async () => {
-        const supabase = createClient();
-        await supabase.auth.signInWithOAuth({
-            provider: 'google',
-            options: {
-                redirectTo: `${window.location.origin}/auth/callback`,
-                queryParams: {
-                    access_type: 'offline',
-                    prompt: 'consent',
-                },
-            },
-        });
-    };
 
     const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
     const toggleLearn = () => setIsLearnOpen(!isLearnOpen);
+    const toggleResources = () => setIsResourcesOpen(!isResourcesOpen);
+
+    const glassStyles = isScrolled ? {
+        backgroundColor: "rgba(240, 240, 234, 0.8)",
+        borderColor: "rgba(23, 29, 43, 0.05)",
+        backdropFilter: "blur(12px)",
+        boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
+    } : {};
 
     return (
-        <header className="relative z-50 flex items-center justify-between px-4 sm:px-8 py-4 sm:py-5">
+        <header
+            style={glassStyles}
+            className={`relative flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 transition-all duration-300 rounded-full mx-3 sm:mx-4 mt-3 border border-transparent bg-transparent ${className || ''}`}
+        >
             {/* Logo */}
-            <Link href="/" className="flex items-center gap-2 hover:opacity-70 transition-opacity">
+            <Link href="/" className="flex items-center hover:opacity-70 transition-opacity">
                 <div className="w-[40px] h-[40px] sm:w-[45px] sm:h-[45px] flex items-center justify-center">
                     <div className="rotate-[292deg]">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img alt="Deepterm Logo" className="w-[32px] h-[32px] sm:w-[38px] sm:h-[38px]" src={imgLogo} />
+                        <Image alt="Deepterm Logo" className="w-[32px] h-[32px] sm:w-[38px] sm:h-[38px]" src={imgLogo} width={38} height={38} />
                     </div>
                 </div>
                 <span className="font-sora text-[#171d2b] text-[20px] sm:text-[24px]">deepterm</span>
@@ -80,7 +86,29 @@ function SessionAwareHeader({ user, isLoading }: { user: User | null; isLoading:
                     </div>
 
                     <span className="w-[1px] h-[16px] bg-[#171d2b] opacity-50" />
-                    <Link href="/help" className="font-sans text-[#171d2b] text-[18px] hover:opacity-70 transition-opacity">Help</Link>
+                    
+                    {/* Resources Dropdown */}
+                    <div className="relative group">
+                        <button className="font-sans text-[#171d2b] text-[18px] hover:opacity-70 transition-opacity flex items-center gap-1">
+                            Resources
+                            <svg className="w-4 h-4 transition-transform group-hover:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                            </svg>
+                        </button>
+                        <div className="absolute top-full left-0 pt-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all">
+                            <div className="bg-[#f0f0ea] border border-[#171d2b]/10 rounded-lg shadow-lg py-2 min-w-[160px]">
+                                {RESOURCES_ITEMS.map((item) => (
+                                    <a
+                                        key={`${item.href}-${item.label}`}
+                                        href={item.href}
+                                        className="block px-4 py-2 font-sans text-[#171d2b] text-[16px] hover:bg-[#171d2b]/5 transition-colors"
+                                    >
+                                        {item.label}
+                                    </a>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
                 </div>
                 {isLoading ? (
                     <div className="bg-[#171d2b]/10 h-[42px] rounded-[100px] px-6 w-[100px] animate-pulse" />
@@ -92,12 +120,12 @@ function SessionAwareHeader({ user, isLoading }: { user: User | null; isLoading:
                         Dashboard
                     </Link>
                 ) : (
-                    <button
-                        onClick={handleLogin}
+                    <Link
+                        href="/login"
                         className="bg-[#171d2b] h-[42px] rounded-[100px] px-6 text-[#fefeff] font-sora text-[16px] hover:bg-[#2a3347] transition-colors flex items-center justify-center"
                     >
                         Log in
-                    </button>
+                    </Link>
                 )}
             </nav>
 
@@ -114,7 +142,7 @@ function SessionAwareHeader({ user, isLoading }: { user: User | null; isLoading:
 
             {/* Mobile Menu */}
             {isMenuOpen && (
-                <div className="absolute top-full left-0 right-0 bg-[#f0f0ea] border-t border-[#171d2b]/10 md:hidden shadow-lg">
+                <div className="absolute top-full left-0 right-0 bg-[#f0f0ea] border-t border-[#171d2b]/10 md:hidden shadow-lg rounded-b-2xl">
                     <nav className="flex flex-col p-4 gap-2">
                         {/* Mobile Learn Accordion */}
                         <div>
@@ -142,7 +170,32 @@ function SessionAwareHeader({ user, isLoading }: { user: User | null; isLoading:
                             )}
                         </div>
 
-                        <Link href="/help" className="font-sans text-[#171d2b] text-[18px] py-2 hover:opacity-70 transition-opacity">Help</Link>
+                        {/* Mobile Resources Accordion */}
+                        <div>
+                            <button
+                                onClick={toggleResources}
+                                className="w-full font-sans text-[#171d2b] text-[18px] py-2 hover:opacity-70 transition-opacity flex items-center justify-between"
+                            >
+                                Resources
+                                <svg className={`w-4 h-4 transition-transform ${isResourcesOpen ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                </svg>
+                            </button>
+                            {isResourcesOpen && (
+                                <div className="pl-4 flex flex-col gap-1">
+                                    {RESOURCES_ITEMS.map((item) => (
+                                        <a
+                                            key={`mobile-${item.href}-${item.label}`}
+                                            href={item.href}
+                                            className="font-sans text-[#171d2b] text-[16px] py-2 hover:opacity-70 transition-opacity"
+                                        >
+                                            {item.label}
+                                        </a>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+
                         <div className="mt-2">
                             {isLoading ? (
                                 <div className="bg-[#171d2b]/10 h-[42px] rounded-[100px] px-6 w-full animate-pulse" />
@@ -154,12 +207,12 @@ function SessionAwareHeader({ user, isLoading }: { user: User | null; isLoading:
                                     Dashboard
                                 </Link>
                             ) : (
-                                <button
-                                    onClick={handleLogin}
+                                <Link
+                                    href="/login"
                                     className="bg-[#171d2b] h-[42px] rounded-[100px] px-6 text-[#fefeff] font-sora text-[16px] hover:bg-[#2a3347] transition-colors flex items-center justify-center w-full"
                                 >
                                     Log in
-                                </button>
+                                </Link>
                             )}
                         </div>
                     </nav>
@@ -169,12 +222,12 @@ function SessionAwareHeader({ user, isLoading }: { user: User | null; isLoading:
     );
 }
 
-export default function Header() {
+export default function Header({ className }: { className?: string }) {
     const [user, setUser] = useState<User | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const hasCheckedRef = useRef(false);
     const isMountedRef = useRef(false);
-    
+
     const checkUser = useCallback(async () => {
         if (hasCheckedRef.current || !isMountedRef.current) return;
         hasCheckedRef.current = true;
@@ -190,18 +243,19 @@ export default function Header() {
             }
         }
     }, []);
-    
-    // Use ref callback to detect mount and trigger check
+
     const mountRef = useCallback((node: HTMLElement | null) => {
         if (node && !isMountedRef.current) {
             isMountedRef.current = true;
             checkUser();
         }
     }, [checkUser]);
-    
+
     return (
-        <div ref={mountRef}>
-            <SessionAwareHeader user={user} isLoading={isLoading} />
+        <div ref={mountRef} className="sticky top-0 z-50 w-full pt-2 sm:pt-3 lg:pt-4">
+            <div className="max-w-[1440px] mx-auto">
+                <SessionAwareHeader user={user} isLoading={isLoading} className={className} />
+            </div>
         </div>
     );
 }

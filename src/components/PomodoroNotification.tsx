@@ -77,6 +77,14 @@ export default function PomodoroNotification() {
     setShouldPlaySound(false);
   }
 
+  // Stop sound when prompt is dismissed (from any source - global or fullscreen component)
+  // This ensures sound stops even when dismissed from fullscreen mode
+  const prevPendingRef = useRef(pendingPhasePrompt);
+  if (prevPendingRef.current && !pendingPhasePrompt) {
+    stopNotification();
+  }
+  prevPendingRef.current = pendingPhasePrompt;
+
   // Handler to stop notification sound and dismiss prompt
   const handleDismiss = () => {
     stopNotification();

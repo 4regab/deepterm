@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import dynamic from "next/dynamic";
 import { useUIStore } from "@/lib/stores";
 import PomodoroNotification from "@/components/PomodoroNotification";
+import TaskReminderNotification from "@/components/TaskReminderNotification";
 
 // Dynamic import for Sidebar
 const Sidebar = dynamic(() => import("@/components/Sidebar"), {
@@ -37,6 +38,7 @@ export default function DashboardLayout({
     return (
         <div className="min-h-screen bg-[#f0f0ea]">
             <PomodoroNotification />
+            <TaskReminderNotification />
             {!isStudyMode && (
                 <Suspense fallback={<SidebarSkeleton />}>
                     <Sidebar />

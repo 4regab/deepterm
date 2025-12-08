@@ -18,6 +18,8 @@ interface PomodoroState {
   // Global notification state for when timer completes
   pendingPhasePrompt: boolean
   pendingNextPhase: TimerPhase | null
+  // Global task reminder notification state
+  pendingTaskReminder: { taskId: string; taskText: string } | null
 }
 
 interface PomodoroActions {
@@ -26,9 +28,13 @@ interface PomodoroActions {
   setIsRunning: (running: boolean) => void
   setPhase: (phase: TimerPhase) => void
   incrementSession: () => void
-  addTask: (text: string) => void
+  addTask: (text: string, reminderTime?: string | null) => void
   toggleTask: (id: string) => void
   removeTask: (id: string) => void
+  updateTaskReminder: (id: string, reminderTime: string | null) => void
+  markTaskNotified: (id: string) => void
+  setPendingTaskReminder: (reminder: { taskId: string; taskText: string } | null) => void
+  dismissTaskReminder: () => void
   setShowSettings: (show: boolean) => void
   setShowToast: (show: boolean) => void
   setToastMessage: (message: string) => void
@@ -69,6 +75,7 @@ export const usePomodoroStore = create<PomodoroStore>()((set, get) => ({
   showConfetti: false,
   pendingPhasePrompt: false,
   pendingNextPhase: null,
+  pendingTaskReminder: null,
 
   setSettings: (newSettings) => {
     set((state) => {
@@ -92,8 +99,17 @@ export const usePomodoroStore = create<PomodoroStore>()((set, get) => ({
 
   incrementSession: () => set((state) => ({ sessionCount: state.sessionCount + 1 })),
 
-  addTask: (text) => set((state) => ({
-    tasks: [...state.tasks, { id: crypto.randomUUID(), text, completed: false }]
+  addTask: (text, reminderTime?: string | null) => set((state) => ({
+    tasks: [...state.tasks, { 
+      id: crypto.randomUUID(), 
+      text, 
+      completed: false,
+      reminder: reminderTime ? {
+        enabled: true,
+        time: reminderTime,
+        notified: false,
+      } : undefined,
+    }]
   })),
 
   toggleTask: (id) => {
@@ -114,6 +130,31 @@ export const usePomodoroStore = create<PomodoroStore>()((set, get) => ({
   removeTask: (id) => set((state) => ({
     tasks: state.tasks.filter(task => task.id !== id)
   })),
+
+  updateTaskReminder: (id, reminderTime) => set((state) => ({
+    tasks: state.tasks.map(task =>
+      task.id === id
+        ? {
+            ...task,
+            reminder: reminderTime
+              ? { enabled: true, time: reminderTime, notified: false }
+              : undefined,
+          }
+        : task
+    )
+  })),
+
+  markTaskNotified: (id) => set((state) => ({
+    tasks: state.tasks.map(task =>
+      task.id === id && task.reminder
+        ? { ...task, reminder: { ...task.reminder, notified: true } }
+        : task
+    )
+  })),
+
+  setPendingTaskReminder: (reminder) => set({ pendingTaskReminder: reminder }),
+
+  dismissTaskReminder: () => set({ pendingTaskReminder: null }),
 
   setShowSettings: (show) => set({ showSettings: show }),
 

@@ -3,10 +3,19 @@ import { z } from 'zod'
 export const TimerPhaseSchema = z.enum(['work', 'shortBreak', 'longBreak'])
 export type TimerPhase = z.infer<typeof TimerPhaseSchema>
 
+export const TaskReminderSchema = z.object({
+  enabled: z.boolean(),
+  time: z.string().nullable(), // ISO datetime string for full date+time support
+  notified: z.boolean(),
+})
+
+export type TaskReminder = z.infer<typeof TaskReminderSchema>
+
 export const TaskSchema = z.object({
   id: z.string(),
   text: z.string().min(1, 'Task text is required'),
   completed: z.boolean(),
+  reminder: TaskReminderSchema.optional(),
 })
 
 export type Task = z.infer<typeof TaskSchema>
