@@ -19,7 +19,7 @@ const LEARN_ITEMS = [
 const RESOURCES_ITEMS = [
     { label: "Help Center", href: "/help" },
     { label: "Changelog", href: "/changelog" },
-    { label: "About", href: "/help#about" },
+    { label: "About", href: "/about" },
 ] as const;
 
 function SessionAwareHeader({ user, isLoading, className }: { user: User | null; isLoading: boolean; className?: string }) {

@@ -25,12 +25,13 @@ export default function Footer() {
             </p>
           </div>
 
-          {/* Company Links */}
+          {/* Resources Links */}
           <div>
-            <h4 className="font-sora text-[13px] sm:text-[14px] text-[#171d2b] mb-2 sm:mb-3">About Us</h4>
+            <h4 className="font-sora text-[13px] sm:text-[14px] text-[#171d2b] mb-2 sm:mb-3">Resources</h4>
             <ul className="flex flex-col gap-1.5 sm:gap-2">
               <li><Link href="/about" className="font-sans text-[12px] sm:text-[13px] text-[#171d2b]/60 hover:text-[#171d2b] transition-colors">About</Link></li>
               <li><Link href="/help" className="font-sans text-[12px] sm:text-[13px] text-[#171d2b]/60 hover:text-[#171d2b] transition-colors">Help Center</Link></li>
+              <li><Link href="/changelog" className="font-sans text-[12px] sm:text-[13px] text-[#171d2b]/60 hover:text-[#171d2b] transition-colors">Changelog</Link></li>
             </ul>
           </div>
 
