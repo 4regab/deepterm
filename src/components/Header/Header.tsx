@@ -9,6 +9,20 @@ import { useUIStore } from "@/lib/stores";
 import { useScrolled } from "@/lib/hooks";
 import type { User } from "@supabase/supabase-js";
 
+async function handleGoogleLogin() {
+    const supabase = createClient();
+    await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+            redirectTo: `${window.location.origin}/auth/callback`,
+            queryParams: {
+                access_type: "offline",
+                prompt: "consent",
+            },
+        },
+    });
+}
+
 const LEARN_ITEMS = [
     { label: "Pomodoro", href: "/pomodoro" },
     { label: "Practice Test", href: "/materials" },
@@ -120,12 +134,12 @@ function SessionAwareHeader({ user, isLoading, className }: { user: User | null;
                         Dashboard
                     </Link>
                 ) : (
-                    <Link
-                        href="/login"
+                    <button
+                        onClick={handleGoogleLogin}
                         className="bg-[#171d2b] h-[42px] rounded-[100px] px-6 text-[#fefeff] font-sora text-[16px] hover:bg-[#2a3347] transition-colors flex items-center justify-center"
                     >
                         Log in
-                    </Link>
+                    </button>
                 )}
             </nav>
 
@@ -207,12 +221,12 @@ function SessionAwareHeader({ user, isLoading, className }: { user: User | null;
                                     Dashboard
                                 </Link>
                             ) : (
-                                <Link
-                                    href="/login"
+                                <button
+                                    onClick={handleGoogleLogin}
                                     className="bg-[#171d2b] h-[42px] rounded-[100px] px-6 text-[#fefeff] font-sora text-[16px] hover:bg-[#2a3347] transition-colors flex items-center justify-center w-full"
                                 >
                                     Log in
-                                </Link>
+                                </button>
                             )}
                         </div>
                     </nav>

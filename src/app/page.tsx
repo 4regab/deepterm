@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import Image from "next/image";
-import { imgLogo } from "@/config/assets";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import FeaturesShowcase from "@/components/FeaturesShowcase";
@@ -10,6 +9,20 @@ import StepsSection from "@/components/StepsSection";
 import FAQSection from "@/components/FAQSection";
 import { createClient } from "@/config/supabase/client";
 import type { User } from "@supabase/supabase-js";
+
+async function handleGoogleLogin() {
+  const supabase = createClient();
+  await supabase.auth.signInWithOAuth({
+    provider: "google",
+    options: {
+      redirectTo: `${window.location.origin}/auth/callback`,
+      queryParams: {
+        access_type: "offline",
+        prompt: "consent",
+      },
+    },
+  });
+}
 
 const imgPlanet2 = "/assets/planet2.webp";
 const imgPlanet1 = "/assets/planet1.webp";
@@ -34,7 +47,7 @@ export default function Home() {
     checkUser();
   }, [checkUser]);
 
-  const ctaHref = user ? "/dashboard" : "/login";
+  const isLoggedIn = !!user;
   return (
     <div className="bg-[#f0f0ea] relative max-w-[1440px] min-h-screen mx-auto">
       <Header className="!mt-4 sm:!mt-5 lg:!mt-6" />
@@ -88,15 +101,27 @@ export default function Home() {
 
           {/* CTA Buttons */}
           <div className="flex flex-col items-center justify-center gap-3 sm:flex-row sm:gap-4 mb-6 sm:mb-6 w-full">
-            <a
-              href={ctaHref}
-              className="group relative h-[48px] sm:h-[56px] w-full sm:w-auto rounded-full px-6 sm:px-10 font-sora text-[14px] sm:text-[16px] font-medium transition-all duration-300 flex items-center justify-center gap-2 shadow-lg hover:shadow-xl hover:scale-[1.02] bg-[#171d2b] text-white hover:bg-[#2a3347]"
-            >
-              Start Learning Free
-              <svg className="w-4 h-4 transition-transform group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-              </svg>
-            </a>
+            {isLoggedIn ? (
+              <a
+                href="/dashboard"
+                className="group relative h-[48px] sm:h-[56px] w-full sm:w-auto rounded-full px-6 sm:px-10 font-sora text-[14px] sm:text-[16px] font-medium transition-all duration-300 flex items-center justify-center gap-2 shadow-lg hover:shadow-xl hover:scale-[1.02] bg-[#171d2b] text-white hover:bg-[#2a3347]"
+              >
+                Go to Dashboard
+                <svg className="w-4 h-4 transition-transform group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                </svg>
+              </a>
+            ) : (
+              <button
+                onClick={handleGoogleLogin}
+                className="group relative h-[48px] sm:h-[56px] w-full sm:w-auto rounded-full px-6 sm:px-10 font-sora text-[14px] sm:text-[16px] font-medium transition-all duration-300 flex items-center justify-center gap-2 shadow-lg hover:shadow-xl hover:scale-[1.02] bg-[#171d2b] text-white hover:bg-[#2a3347]"
+              >
+                Start Learning Free
+                <svg className="w-4 h-4 transition-transform group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                </svg>
+              </button>
+            )}
             <a
               href="https://github.com/4regab/deepterm"
               target="_blank"
@@ -157,12 +182,21 @@ export default function Home() {
           <p className="font-sans text-[13px] sm:text-[15px] lg:text-[16px] text-white/80 mb-5 sm:mb-6 lg:mb-8 max-w-[400px] mx-auto px-2">
             Start studying smarter, not harder.
           </p>
-          <a
-            href={ctaHref}
-            className="inline-block h-[44px] sm:h-[50px] lg:h-[54px] rounded-[100px] px-6 sm:px-8 lg:px-10 font-sora text-[14px] sm:text-[16px] lg:text-[18px] transition-colors shadow-lg leading-[44px] sm:leading-[50px] lg:leading-[54px] bg-white text-[#171d2b] hover:bg-[#f0f0ea]"
-          >
-            Start Learning Free
-          </a>
+          {isLoggedIn ? (
+            <a
+              href="/dashboard"
+              className="inline-block h-[44px] sm:h-[50px] lg:h-[54px] rounded-[100px] px-6 sm:px-8 lg:px-10 font-sora text-[14px] sm:text-[16px] lg:text-[18px] transition-colors shadow-lg leading-[44px] sm:leading-[50px] lg:leading-[54px] bg-white text-[#171d2b] hover:bg-[#f0f0ea]"
+            >
+              Go to Dashboard
+            </a>
+          ) : (
+            <button
+              onClick={handleGoogleLogin}
+              className="h-[44px] sm:h-[50px] lg:h-[54px] rounded-[100px] px-6 sm:px-8 lg:px-10 font-sora text-[14px] sm:text-[16px] lg:text-[18px] transition-colors shadow-lg bg-white text-[#171d2b] hover:bg-[#f0f0ea]"
+            >
+              Start Learning Free
+            </button>
+          )}
           <p className="font-sans text-[11px] sm:text-[12px] lg:text-[13px] text-white/60 mt-3 sm:mt-4 px-2">
             No credit card required - No installation - Start in 30 seconds
           </p>
