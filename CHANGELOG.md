@@ -4,6 +4,22 @@ All notable changes to DeepTerm will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.1.3] - 2025-12-10
+
+### Added
+
+- hCaptcha integration for bot protection on authentication
+- Graceful fallback when captcha fails to load
+- Error handling for captcha script loading issues
+
+### Security
+
+- Bot protection on Google OAuth sign-in flow
+- hCaptcha verification before authentication
+- Enhanced security against automated attacks
+
+---
+
 ## [0.1.2] - 2025-12-08
 
 ### Added

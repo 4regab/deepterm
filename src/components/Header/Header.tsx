@@ -3,6 +3,7 @@
 import { useState, useCallback, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import HCaptcha from "@hcaptcha/react-hcaptcha";
 import { imgLogo } from "@/config/assets";
 import { createClient } from "@/config/supabase/client";
 import { useUIStore } from "@/lib/stores";
@@ -39,6 +40,10 @@ const RESOURCES_ITEMS = [
 function SessionAwareHeader({ user, isLoading, className }: { user: User | null; isLoading: boolean; className?: string }) {
     const isScrolled = useScrolled(20);
     const [isResourcesOpen, setIsResourcesOpen] = useState(false);
+    const [showCaptcha, setShowCaptcha] = useState(false);
+    const [captchaError, setCaptchaError] = useState(false);
+    const captchaRef = useRef<HCaptcha>(null);
+    const sitekey = process.env.NEXT_PUBLIC_HCAPTCHA_SITEKEY;
 
     const {
         sidebarMobileOpen: isMenuOpen,
@@ -46,6 +51,35 @@ function SessionAwareHeader({ user, isLoading, className }: { user: User | null;
         setSidebarMobileOpen: setIsMenuOpen,
         setProfileMenuOpen: setIsLearnOpen
     } = useUIStore();
+
+    const handleLoginClick = () => {
+        if (sitekey) {
+            setShowCaptcha(true);
+            setCaptchaError(false);
+        } else {
+            handleGoogleLogin();
+        }
+    };
+
+    const handleCaptchaVerify = () => {
+        setShowCaptcha(false);
+        setCaptchaError(false);
+        handleGoogleLogin();
+    };
+
+    const handleCaptchaError = () => {
+        setCaptchaError(true);
+        setTimeout(() => {
+            setShowCaptcha(false);
+            handleGoogleLogin();
+        }, 1000);
+    };
+
+    const handleCaptchaClose = () => {
+        setShowCaptcha(false);
+        setCaptchaError(false);
+        captchaRef.current?.resetCaptcha();
+    };
 
     const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
     const toggleLearn = () => setIsLearnOpen(!isLearnOpen);
@@ -133,9 +167,27 @@ function SessionAwareHeader({ user, isLoading, className }: { user: User | null;
                     >
                         Dashboard
                     </Link>
+                ) : showCaptcha && sitekey ? (
+                    <div className="flex flex-col items-center gap-2">
+                        {captchaError ? (
+                            <p className="text-sm text-[#171d2b]/60">Loading captcha...</p>
+                        ) : (
+                            <HCaptcha
+                                ref={captchaRef}
+                                sitekey={sitekey}
+                                onVerify={handleCaptchaVerify}
+                                onExpire={handleCaptchaClose}
+                                onError={handleCaptchaError}
+                                theme="light"
+                            />
+                        )}
+                        <button onClick={handleCaptchaClose} className="text-[#171d2b]/60 text-xs hover:text-[#171d2b]">
+                            Cancel
+                        </button>
+                    </div>
                 ) : (
                     <button
-                        onClick={handleGoogleLogin}
+                        onClick={handleLoginClick}
                         className="bg-[#171d2b] h-[42px] rounded-[100px] px-6 text-[#fefeff] font-sora text-[16px] hover:bg-[#2a3347] transition-colors flex items-center justify-center"
                     >
                         Log in
@@ -220,9 +272,27 @@ function SessionAwareHeader({ user, isLoading, className }: { user: User | null;
                                 >
                                     Dashboard
                                 </Link>
+                            ) : showCaptcha && sitekey ? (
+                                <div className="flex flex-col items-center gap-2 w-full">
+                                    {captchaError ? (
+                                        <p className="text-sm text-[#171d2b]/60">Loading captcha...</p>
+                                    ) : (
+                                        <HCaptcha
+                                            ref={captchaRef}
+                                            sitekey={sitekey}
+                                            onVerify={handleCaptchaVerify}
+                                            onExpire={handleCaptchaClose}
+                                            onError={handleCaptchaError}
+                                            theme="light"
+                                        />
+                                    )}
+                                    <button onClick={handleCaptchaClose} className="text-[#171d2b]/60 text-xs hover:text-[#171d2b]">
+                                        Cancel
+                                    </button>
+                                </div>
                             ) : (
                                 <button
-                                    onClick={handleGoogleLogin}
+                                    onClick={handleLoginClick}
                                     className="bg-[#171d2b] h-[42px] rounded-[100px] px-6 text-[#fefeff] font-sora text-[16px] hover:bg-[#2a3347] transition-colors flex items-center justify-center w-full"
                                 >
                                     Log in

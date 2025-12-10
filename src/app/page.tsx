@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
+import HCaptcha from "@hcaptcha/react-hcaptcha";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import FeaturesShowcase from "@/components/FeaturesShowcase";
@@ -29,23 +30,58 @@ const imgPlanet1 = "/assets/planet1.webp";
 
 export default function Home() {
   const [user, setUser] = useState<User | null>(null);
+  const [showCaptcha, setShowCaptcha] = useState(false);
+  const [captchaError, setCaptchaError] = useState(false);
+  const captchaRef = useRef<HCaptcha>(null);
   const hasCheckedRef = useRef(false);
-
-  const checkUser = useCallback(async () => {
-    if (hasCheckedRef.current) return;
-    hasCheckedRef.current = true;
-    try {
-      const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
-      setUser(user);
-    } catch {
-      // Ignore errors
-    }
-  }, []);
+  const sitekey = process.env.NEXT_PUBLIC_HCAPTCHA_SITEKEY;
 
   useEffect(() => {
+    if (hasCheckedRef.current) return;
+    hasCheckedRef.current = true;
+    
+    const checkUser = async () => {
+      try {
+        const supabase = createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+        setUser(user);
+      } catch {
+        // Ignore errors
+      }
+    };
+    
     checkUser();
-  }, [checkUser]);
+  }, []);
+
+  const handleLoginClick = () => {
+    if (sitekey) {
+      setShowCaptcha(true);
+      setCaptchaError(false);
+    } else {
+      handleGoogleLogin();
+    }
+  };
+
+  const handleCaptchaVerify = () => {
+    setShowCaptcha(false);
+    setCaptchaError(false);
+    handleGoogleLogin();
+  };
+
+  const handleCaptchaError = () => {
+    setCaptchaError(true);
+    // Fallback to direct login if captcha fails
+    setTimeout(() => {
+      setShowCaptcha(false);
+      handleGoogleLogin();
+    }, 1000);
+  };
+
+  const handleCaptchaClose = () => {
+    setShowCaptcha(false);
+    setCaptchaError(false);
+    captchaRef.current?.resetCaptcha();
+  };
 
   const isLoggedIn = !!user;
   return (
@@ -111,9 +147,27 @@ export default function Home() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
                 </svg>
               </a>
+            ) : showCaptcha && sitekey ? (
+              <div className="flex flex-col items-center gap-3">
+                {captchaError ? (
+                  <p className="text-sm text-[#171d2b]/60">Loading captcha...</p>
+                ) : (
+                  <HCaptcha
+                    ref={captchaRef}
+                    sitekey={sitekey}
+                    onVerify={handleCaptchaVerify}
+                    onExpire={handleCaptchaClose}
+                    onError={handleCaptchaError}
+                    theme="light"
+                  />
+                )}
+                <button onClick={handleCaptchaClose} className="text-[#171d2b]/60 text-sm hover:text-[#171d2b]">
+                  Cancel
+                </button>
+              </div>
             ) : (
               <button
-                onClick={handleGoogleLogin}
+                onClick={handleLoginClick}
                 className="group relative h-[48px] sm:h-[56px] w-full sm:w-auto rounded-full px-6 sm:px-10 font-sora text-[14px] sm:text-[16px] font-medium transition-all duration-300 flex items-center justify-center gap-2 shadow-lg hover:shadow-xl hover:scale-[1.02] bg-[#171d2b] text-white hover:bg-[#2a3347]"
               >
                 Start Learning Free
@@ -189,9 +243,27 @@ export default function Home() {
             >
               Go to Dashboard
             </a>
+          ) : showCaptcha && sitekey ? (
+            <div className="flex flex-col items-center gap-3">
+              {captchaError ? (
+                <p className="text-sm text-white/60">Loading captcha...</p>
+              ) : (
+                <HCaptcha
+                  ref={captchaRef}
+                  sitekey={sitekey}
+                  onVerify={handleCaptchaVerify}
+                  onExpire={handleCaptchaClose}
+                  onError={handleCaptchaError}
+                  theme="light"
+                />
+              )}
+              <button onClick={handleCaptchaClose} className="text-white/60 text-sm hover:text-white">
+                Cancel
+              </button>
+            </div>
           ) : (
             <button
-              onClick={handleGoogleLogin}
+              onClick={handleLoginClick}
               className="h-[44px] sm:h-[50px] lg:h-[54px] rounded-[100px] px-6 sm:px-8 lg:px-10 font-sora text-[14px] sm:text-[16px] lg:text-[18px] transition-colors shadow-lg bg-white text-[#171d2b] hover:bg-[#f0f0ea]"
             >
               Start Learning Free

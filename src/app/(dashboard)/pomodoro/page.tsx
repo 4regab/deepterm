@@ -187,10 +187,13 @@ export default function PomodoroPage() {
 
   // Load background image from localStorage after hydration
   useEffect(() => {
-    const storedBg = localStorage.getItem(POMODORO_BG_KEY);
-    if (storedBg) {
-      setCustomBgImage(storedBg);
-    }
+    const loadStoredBg = () => {
+      const storedBg = localStorage.getItem(POMODORO_BG_KEY);
+      if (storedBg) {
+        setCustomBgImage(storedBg);
+      }
+    };
+    loadStoredBg();
   }, []);
 
   // Handle background image upload with compression

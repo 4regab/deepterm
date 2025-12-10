@@ -23,10 +23,44 @@ export default function ChangelogPage() {
         </div>
 
         <div className="space-y-5">
-          {/* Version 0.1.2 */}
+          {/* Version 0.1.3 */}
           <div className="bg-white rounded-xl border border-[#171d2b]/10 p-5 shadow-sm">
             <div className="flex items-center gap-3 mb-4">
               <span className="px-2.5 py-0.5 bg-[#171d2b] text-white text-xs font-medium rounded-full">
+                v0.1.3
+              </span>
+              <span className="text-[#171d2b]/60 text-xs font-sans">December 10, 2025</span>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <h3 className="font-sans font-semibold text-[#171d2b] text-sm mb-2 flex items-center gap-2">
+                  <span className="text-[#171d2b]">+</span> Added
+                </h3>
+                <ul className="space-y-1 ml-5">
+                  <li className="font-sans text-[#171d2b]/80 text-sm">hCaptcha integration for bot protection</li>
+                  <li className="font-sans text-[#171d2b]/80 text-sm">Graceful fallback when captcha fails</li>
+                  <li className="font-sans text-[#171d2b]/80 text-sm">Error handling for captcha loading</li>
+                </ul>
+              </div>
+
+              <div>
+                <h3 className="font-sans font-semibold text-[#171d2b] text-sm mb-2 flex items-center gap-2">
+                  <span className="text-[#c4875a]">!</span> Security
+                </h3>
+                <ul className="space-y-1 ml-5">
+                  <li className="font-sans text-[#171d2b]/80 text-sm">Bot protection on OAuth sign-in</li>
+                  <li className="font-sans text-[#171d2b]/80 text-sm">hCaptcha verification before auth</li>
+                  <li className="font-sans text-[#171d2b]/80 text-sm">Protection against automated attacks</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          {/* Version 0.1.2 */}
+          <div className="bg-white rounded-xl border border-[#171d2b]/10 p-5 shadow-sm">
+            <div className="flex items-center gap-3 mb-4">
+              <span className="px-2.5 py-0.5 bg-[#171d2b]/10 text-[#171d2b] text-xs font-medium rounded-full">
                 v0.1.2
               </span>
               <span className="text-[#171d2b]/60 text-xs font-sans">December 8, 2025</span>
