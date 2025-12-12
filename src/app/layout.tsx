@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Space_Grotesk, Sora } from "next/font/google";
+import Script from "next/script";
 import "@/styles/globals.css";
 
 const spaceGrotesk = Space_Grotesk({
@@ -40,6 +41,19 @@ export default function RootLayout({
         <link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,200..900;1,8..60,200..900&display=swap" rel="stylesheet" />
       </head>
       <body>
+        {/* Google Analytics */}
+        <Script
+          src="https://www.googletagmanager.com/gtag/js?id=G-W6BMP2LP3T"
+          strategy="afterInteractive"
+        />
+        <Script id="google-analytics" strategy="afterInteractive">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'G-W6BMP2LP3T');
+          `}
+        </Script>
         {children}
       </body>
     </html>
