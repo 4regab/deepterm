@@ -19,10 +19,12 @@ import {
     ChevronDown,
     ChevronUp,
     Copy,
-    RefreshCw
+    RefreshCw,
+    ShieldCheck
 } from "lucide-react";
 import { Confetti } from "@/components/EmotionalAssets";
 import { createClient } from "@/config/supabase/client";
+import CaptchaModal from "@/components/CaptchaModal";
 
 type CreateType = "material" | "reviewer";
 type InputMode = "manual" | "bulk" | "ai";
@@ -98,7 +100,7 @@ function parseTextToCards(text: string): Card[] {
 export default function CreatePage() {
     const router = useRouter();
     const fileInputRef = useRef<HTMLInputElement>(null);
-
+    const sitekey = process.env.NEXT_PUBLIC_HCAPTCHA_SITEKEY;
 
     const [createType, setCreateType] = useState<CreateType>("material");
     const [title, setTitle] = useState("");
@@ -106,6 +108,10 @@ export default function CreatePage() {
     const [isSaving, setIsSaving] = useState(false);
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
     const [isGenerating, setIsGenerating] = useState(false);
+
+    // Captcha state for AI generation
+    const [showCaptchaModal, setShowCaptchaModal] = useState(false);
+    const [captchaVerified, setCaptchaVerified] = useState(false);
 
     const [inputMode, setInputMode] = useState<InputMode>("manual");
     const [cards, setCards] = useState<Card[]>([{ id: "1", term: "", definition: "" }]);
@@ -118,6 +124,20 @@ export default function CreatePage() {
     const [reviewerResults, setReviewerResults] = useState<Category[]>([]);
     const [expandedCategories, setExpandedCategories] = useState<string[]>([]);
     const [filterText, setFilterText] = useState("");
+
+    // Captcha handlers
+    const handleCaptchaVerify = useCallback(() => {
+        setCaptchaVerified(true);
+    }, []);
+
+    const handleCaptchaError = useCallback(() => {
+        setCaptchaVerified(false);
+        setError("Captcha verification failed. Please try again.");
+    }, []);
+
+    const resetCaptcha = useCallback(() => {
+        setCaptchaVerified(false);
+    }, []);
 
     const handleFileSelect = useCallback((file: File) => {
         setError(null);
@@ -745,11 +765,31 @@ export default function CreatePage() {
                                 </div>
                             )}
 
+                            {/* Captcha verification button - shows when file selected but not verified */}
+                            {selectedFile && sitekey && !captchaVerified && (
+                                <button
+                                    onClick={() => setShowCaptchaModal(true)}
+                                    className="mt-4 w-full py-3 px-4 rounded-xl bg-[#f8f9fa] border border-[#171d2b]/10 hover:border-[#171d2b]/30 transition-colors flex items-center justify-center gap-2"
+                                >
+                                    <ShieldCheck size={18} className="text-[#171d2b]/60" />
+                                    <span className="text-sm font-medium text-[#171d2b]">Complete Captcha to Continue</span>
+                                </button>
+                            )}
+
+                            {/* Captcha verified badge */}
+                            {selectedFile && captchaVerified && (
+                                <div className="mt-4 p-3 rounded-xl bg-green-50 border border-green-200 flex items-center gap-2">
+                                    <Check size={16} className="text-green-600" />
+                                    <p className="text-sm text-green-700 font-medium">Captcha verified</p>
+                                </div>
+                            )}
+
                             <div className="flex flex-col sm:flex-row gap-3 mt-4">
                                 <button
                                     onClick={() => {
                                         setSelectedFile(null);
                                         setInputMode("manual");
+                                        resetCaptcha();
                                     }}
                                     className="flex-1 py-3 rounded-xl border border-[#171d2b]/10 text-[#171d2b]/60 hover:bg-[#171d2b]/5 transition-colors text-sm font-medium"
                                 >
@@ -757,7 +797,7 @@ export default function CreatePage() {
                                 </button>
                                 <button
                                     onClick={createType === "reviewer" ? handleGenerateReviewer : handleGenerateCards}
-                                    disabled={!selectedFile || isGenerating}
+                                    disabled={!selectedFile || isGenerating || (!!sitekey && !captchaVerified)}
                                     className="flex-1 py-3 rounded-xl bg-[#171d2b] text-white hover:bg-[#171d2b]/90 transition-colors text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                                 >
                                     {isGenerating ? (
@@ -978,6 +1018,14 @@ export default function CreatePage() {
                         </motion.div>
                     )}
                 </AnimatePresence>
+
+                {/* Captcha Modal for AI Generation */}
+                <CaptchaModal
+                    isOpen={showCaptchaModal}
+                    onClose={() => setShowCaptchaModal(false)}
+                    onVerify={handleCaptchaVerify}
+                    onError={handleCaptchaError}
+                />
             </div>
         </div>
     );

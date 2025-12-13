@@ -43,11 +43,12 @@ const securityHeaders = [
       "default-src 'self'",
       // Note: unsafe-inline/unsafe-eval required by Next.js React Compiler, framer-motion, gsap, three.js
       // TODO: Implement nonce-based CSP when these dependencies support it
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
-      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-      "img-src 'self' data: blob: https://lh3.googleusercontent.com https://*.googleusercontent.com",
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://hcaptcha.com https://*.hcaptcha.com https://www.googletagmanager.com https://www.google-analytics.com",
+      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://hcaptcha.com https://*.hcaptcha.com",
+      "img-src 'self' data: blob: https://lh3.googleusercontent.com https://*.googleusercontent.com https://hcaptcha.com https://*.hcaptcha.com https://www.googletagmanager.com https://www.google-analytics.com",
       "font-src 'self' data: https://fonts.gstatic.com",
-      "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://generativelanguage.googleapis.com",
+      "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://generativelanguage.googleapis.com https://hcaptcha.com https://*.hcaptcha.com https://www.googletagmanager.com https://www.google-analytics.com https://region1.google-analytics.com",
+      "frame-src 'self' https://hcaptcha.com https://*.hcaptcha.com",
       "frame-ancestors 'self'",
       "base-uri 'self'",
       "form-action 'self'"

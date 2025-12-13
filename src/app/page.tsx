@@ -2,12 +2,12 @@
 
 import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
-import HCaptcha from "@hcaptcha/react-hcaptcha";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import FeaturesShowcase from "@/components/FeaturesShowcase";
 import StepsSection from "@/components/StepsSection";
 import FAQSection from "@/components/FAQSection";
+import CaptchaModal from "@/components/CaptchaModal";
 import { createClient } from "@/config/supabase/client";
 import type { User } from "@supabase/supabase-js";
 
@@ -31,15 +31,13 @@ const imgPlanet1 = "/assets/planet1.webp";
 export default function Home() {
   const [user, setUser] = useState<User | null>(null);
   const [showCaptcha, setShowCaptcha] = useState(false);
-  const [captchaError, setCaptchaError] = useState(false);
-  const captchaRef = useRef<HCaptcha>(null);
   const hasCheckedRef = useRef(false);
   const sitekey = process.env.NEXT_PUBLIC_HCAPTCHA_SITEKEY;
 
   useEffect(() => {
     if (hasCheckedRef.current) return;
     hasCheckedRef.current = true;
-    
+
     const checkUser = async () => {
       try {
         const supabase = createClient();
@@ -49,14 +47,13 @@ export default function Home() {
         // Ignore errors
       }
     };
-    
+
     checkUser();
   }, []);
 
   const handleLoginClick = () => {
     if (sitekey) {
       setShowCaptcha(true);
-      setCaptchaError(false);
     } else {
       handleGoogleLogin();
     }
@@ -64,30 +61,14 @@ export default function Home() {
 
   const handleCaptchaVerify = () => {
     setShowCaptcha(false);
-    setCaptchaError(false);
     handleGoogleLogin();
-  };
-
-  const handleCaptchaError = () => {
-    setCaptchaError(true);
-    // Fallback to direct login if captcha fails
-    setTimeout(() => {
-      setShowCaptcha(false);
-      handleGoogleLogin();
-    }, 1000);
-  };
-
-  const handleCaptchaClose = () => {
-    setShowCaptcha(false);
-    setCaptchaError(false);
-    captchaRef.current?.resetCaptcha();
   };
 
   const isLoggedIn = !!user;
   return (
     <div className="bg-[#f0f0ea] relative max-w-[1440px] min-h-screen mx-auto">
       <Header className="!mt-4 sm:!mt-5 lg:!mt-6" />
-      
+
       {/* Hero Section */}
       <section className="relative z-10 mx-auto pt-4 sm:pt-8 lg:pt-10 pb-8 sm:pb-12 lg:pb-16 px-4 sm:px-6 lg:px-8 flex flex-col items-center justify-center overflow-visible min-h-[75vh] sm:min-h-[70vh] lg:min-h-[80vh]">
         {/* Planet positioned top-left */}
@@ -147,24 +128,6 @@ export default function Home() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
                 </svg>
               </a>
-            ) : showCaptcha && sitekey ? (
-              <div className="flex flex-col items-center gap-3">
-                {captchaError ? (
-                  <p className="text-sm text-[#171d2b]/60">Loading captcha...</p>
-                ) : (
-                  <HCaptcha
-                    ref={captchaRef}
-                    sitekey={sitekey}
-                    onVerify={handleCaptchaVerify}
-                    onExpire={handleCaptchaClose}
-                    onError={handleCaptchaError}
-                    theme="light"
-                  />
-                )}
-                <button onClick={handleCaptchaClose} className="text-[#171d2b]/60 text-sm hover:text-[#171d2b]">
-                  Cancel
-                </button>
-              </div>
             ) : (
               <button
                 onClick={handleLoginClick}
@@ -243,24 +206,6 @@ export default function Home() {
             >
               Go to Dashboard
             </a>
-          ) : showCaptcha && sitekey ? (
-            <div className="flex flex-col items-center gap-3">
-              {captchaError ? (
-                <p className="text-sm text-white/60">Loading captcha...</p>
-              ) : (
-                <HCaptcha
-                  ref={captchaRef}
-                  sitekey={sitekey}
-                  onVerify={handleCaptchaVerify}
-                  onExpire={handleCaptchaClose}
-                  onError={handleCaptchaError}
-                  theme="light"
-                />
-              )}
-              <button onClick={handleCaptchaClose} className="text-white/60 text-sm hover:text-white">
-                Cancel
-              </button>
-            </div>
           ) : (
             <button
               onClick={handleLoginClick}
@@ -277,6 +222,13 @@ export default function Home() {
 
       {/* Footer */}
       <Footer />
+
+      {/* Captcha Modal */}
+      <CaptchaModal
+        isOpen={showCaptcha}
+        onClose={() => setShowCaptcha(false)}
+        onVerify={handleCaptchaVerify}
+      />
     </div>
   );
 }
