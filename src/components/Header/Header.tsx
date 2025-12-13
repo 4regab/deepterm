@@ -116,7 +116,7 @@ function SessionAwareHeader({ user, isLoading, className }: { user: User | null;
                     </div>
 
                     <span className="w-[1px] h-[16px] bg-[#171d2b] opacity-50" />
-                    
+
                     {/* Resources Dropdown */}
                     <div className="relative group">
                         <button className="font-sans text-[#171d2b] text-[18px] hover:opacity-70 transition-opacity flex items-center gap-1">
