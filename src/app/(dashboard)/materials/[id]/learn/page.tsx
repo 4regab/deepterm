@@ -13,7 +13,7 @@ import StudySettingsModal from "@/components/StudySettingsModal";
 import { getStudySettings, getQuestionTypeForStage, StudySettings, QuestionType } from "@/utils/studySettings";
 import { createClient } from "@/config/supabase/client";
 import { useXPStore } from "@/lib/stores";
-import { addXP, recordStudyActivity, updateFlashcardStatus, XP_REWARDS } from "@/services/activity";
+import { addXP, recordStudyActivity, batchUpdateFlashcardStatuses, XP_REWARDS, type FlashcardStatusUpdate } from "@/services/activity";
 
 type LearnStage = 'new' | 'learning' | 'almost_done' | 'mastered';
 
@@ -118,6 +118,7 @@ export default function LearnPage() {
     const [showToast, setShowToast] = useState(false);
     const [toastMessage] = useState("");
     const [sessionComplete, setSessionComplete] = useState(false);
+    const [pendingUpdates, setPendingUpdates] = useState<FlashcardStatusUpdate[]>([]); // Track status changes for batch update
 
     // New state for feedback flow
     const [answerState, setAnswerState] = useState<'idle' | 'correct' | 'incorrect'>('idle');
@@ -181,6 +182,7 @@ export default function LearnPage() {
         setAnswerState('idle');
         setSelectedOptionIndex(null);
         setPendingResult(null);
+        setPendingUpdates([]); // Reset pending updates for new session
     };
 
     // 1. Submit Answer (UI Feedback)
@@ -218,9 +220,10 @@ export default function LearnPage() {
             if (currentCard.stage === 'almost_done') nextStage = 'learning';
         }
 
-        // Persist card status to database
+        // Track status update locally (no network request yet - batched at session end)
         const dbStatus = nextStage === 'almost_done' ? 'review' : nextStage;
-        await updateFlashcardStatus(currentCard.id, dbStatus as 'new' | 'learning' | 'review' | 'mastered');
+        const newPendingUpdate: FlashcardStatusUpdate = { id: currentCard.id, status: dbStatus as 'new' | 'learning' | 'review' | 'mastered' };
+        setPendingUpdates(prev => [...prev, newPendingUpdate]);
 
         const isMasteredCard = currentCard.stage === 'mastered';
         setCards(prev => prev.map(c => c.id === currentCard.id
@@ -246,7 +249,12 @@ export default function LearnPage() {
             setSelectedOptionIndex(null);
             setPendingResult(null);
         } else {
-            // Session complete - persist XP and activity
+            // Session complete - batch update all flashcard statuses and persist XP/activity
+            const allUpdates = [...pendingUpdates, newPendingUpdate];
+            if (allUpdates.length > 0) {
+                await batchUpdateFlashcardStatuses(allUpdates);
+            }
+
             const totalXpGained = sessionStats.xpGained + xp;
             if (totalXpGained > 0) {
                 await addXP(totalXpGained);
@@ -256,7 +264,7 @@ export default function LearnPage() {
             await recordStudyActivity({ flashcards: sessionQueue.length, minutes: minutesStudied });
             setSessionComplete(true);
         }
-    }, [currentIndex, pendingResult, sessionQueue, sessionStats.xpGained, sessionStats.startTime]);
+    }, [currentIndex, pendingResult, sessionQueue, sessionStats.xpGained, sessionStats.startTime, pendingUpdates]);
 
     // Auto-next effect - triggers handleNext after configured duration
     useSyncExternalStore(

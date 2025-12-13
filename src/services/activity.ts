@@ -67,7 +67,7 @@ export async function addXP(amount: number): Promise<{ leveledUp: boolean; newLe
     const safeAmount = Math.max(XP_BOUNDS.MIN, Math.min(Math.floor(amount), XP_BOUNDS.MAX));
 
     const supabase = createClient();
-    
+
     // Check if user is authenticated first
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
@@ -188,6 +188,10 @@ export async function logFlashcardReview(count: number, minutes?: number) {
     return recordStudyActivity({ flashcards: count, minutes });
 }
 
+/**
+ * Update a single flashcard status - use batchUpdateFlashcardStatuses for bulk updates
+ * @deprecated Prefer batchUpdateFlashcardStatuses for session-based updates to reduce network requests
+ */
 export async function updateFlashcardStatus(cardId: string, status: "new" | "learning" | "review" | "mastered") {
     const supabase = createClient();
     const { error } = await supabase
@@ -199,4 +203,59 @@ export async function updateFlashcardStatus(cardId: string, status: "new" | "lea
         await incrementStat("flashcards_mastered");
     }
     return { error };
+}
+
+export interface FlashcardStatusUpdate {
+    id: string;
+    status: "new" | "learning" | "review" | "mastered";
+}
+
+/**
+ * Batch update multiple flashcard statuses in a single request
+ * This is more efficient than calling updateFlashcardStatus for each card
+ * @param updates Array of card IDs and their new statuses
+ * @returns Object with error if any, and count of mastered cards
+ */
+export async function batchUpdateFlashcardStatuses(updates: FlashcardStatusUpdate[]) {
+    if (!updates || updates.length === 0) {
+        return { error: null, masteredCount: 0 };
+    }
+
+    const supabase = createClient();
+    const now = new Date().toISOString();
+
+    // Group updates by status for efficient batch operations
+    const statusGroups: Record<string, string[]> = {};
+    let masteredCount = 0;
+
+    for (const update of updates) {
+        if (!statusGroups[update.status]) {
+            statusGroups[update.status] = [];
+        }
+        statusGroups[update.status].push(update.id);
+        if (update.status === "mastered") {
+            masteredCount++;
+        }
+    }
+
+    // Execute batch updates for each status group
+    const updatePromises = Object.entries(statusGroups).map(([status, ids]) =>
+        supabase
+            .from("flashcards")
+            .update({ status, last_reviewed: now })
+            .in("id", ids)
+    );
+
+    const results = await Promise.all(updatePromises);
+    const errors = results.filter(r => r.error).map(r => r.error);
+
+    // Batch increment mastered stat if any cards were mastered
+    if (masteredCount > 0 && errors.length === 0) {
+        await incrementStat("flashcards_mastered", masteredCount);
+    }
+
+    return {
+        error: errors.length > 0 ? errors[0] : null,
+        masteredCount
+    };
 }

@@ -10,7 +10,7 @@ import ExitPopup from "@/components/ExitPopup";
 import StudySettingsModal from "@/components/StudySettingsModal";
 import { getStudySettings, StudySettings } from "@/utils/studySettings";
 import { createClient } from "@/config/supabase/client";
-import { logFlashcardReview, updateFlashcardStatus, addXP, XP_REWARDS } from "@/services/activity";
+import { logFlashcardReview, batchUpdateFlashcardStatuses, addXP, XP_REWARDS, type FlashcardStatusUpdate } from "@/services/activity";
 import { useXPStore } from "@/lib/stores";
 
 interface Flashcard {
@@ -28,7 +28,8 @@ function createInitialSession(cards: Flashcard[], settings: StudySettings) {
         isFlipped: false,
         stats: { correct: 0, incorrect: 0, xp: 0, startTime: Date.now() },
         isComplete: false,
-        streak: 0
+        streak: 0,
+        pendingUpdates: [] as FlashcardStatusUpdate[] // Track status changes for batch update
     };
 }
 
@@ -47,7 +48,7 @@ export default function FlashcardsPage() {
     const fetchCards = useCallback(async () => {
         // Fetch XP stats for display
         useXPStore.getState().fetchXPStats();
-        
+
         const supabase = createClient();
         const { data } = await supabase
             .from("flashcards")
@@ -136,17 +137,18 @@ export default function FlashcardsPage() {
 
     const handleRate = async (correct: boolean) => {
         if (!studySession) return;
-        
+
         const currentCard = studySession.cards[studySession.currentIndex];
         const isLast = studySession.currentIndex === studySession.cards.length - 1;
         const newStreak = correct ? studySession.streak + 1 : 0;
 
-        // Update card status in database
-        const newStatus = correct 
+        // Calculate new status locally (no network request yet)
+        const newStatus = correct
             ? (currentCard.status === 'new' ? 'learning' : currentCard.status === 'learning' ? 'review' : 'mastered')
             : 'learning';
-        
-        await updateFlashcardStatus(currentCard.id, newStatus as 'new' | 'learning' | 'review' | 'mastered');
+
+        // Track the status change for batch update at session end
+        const pendingUpdate: FlashcardStatusUpdate = { id: currentCard.id, status: newStatus as 'new' | 'learning' | 'review' | 'mastered' };
 
         // Update local card status
         const updatedCards = [...studySession.cards];
@@ -160,12 +162,19 @@ export default function FlashcardsPage() {
 
         const xpGained = correct ? XP_REWARDS.FLASHCARD_CORRECT : 0;
 
+        // Accumulate pending updates
+        const newPendingUpdates = [...studySession.pendingUpdates, pendingUpdate];
+
         if (isLast) {
             const finalXp = studySession.stats.xp + xpGained;
-            
-            // Persist XP at moment of completion (not during render)
+
+            // Persist all results at session completion (batch update)
             const persistResults = async () => {
                 const minutesStudied = Math.max(1, Math.round((Date.now() - studySession.stats.startTime) / 60000));
+
+                // Batch update all flashcard statuses in one request
+                await batchUpdateFlashcardStatuses(newPendingUpdates);
+
                 await logFlashcardReview(studySession.cards.length, minutesStudied);
                 if (finalXp > 0) {
                     await addXP(finalXp);
@@ -173,7 +182,7 @@ export default function FlashcardsPage() {
                 }
             };
             persistResults();
-            
+
             setStudySession({
                 ...studySession,
                 cards: updatedCards,
@@ -184,7 +193,8 @@ export default function FlashcardsPage() {
                     xp: finalXp
                 },
                 isComplete: true,
-                streak: newStreak
+                streak: newStreak,
+                pendingUpdates: newPendingUpdates
             });
         } else {
             setStudySession({
@@ -198,7 +208,8 @@ export default function FlashcardsPage() {
                     incorrect: studySession.stats.incorrect + (correct ? 0 : 1),
                     xp: studySession.stats.xp + xpGained
                 },
-                streak: newStreak
+                streak: newStreak,
+                pendingUpdates: newPendingUpdates
             });
         }
     };

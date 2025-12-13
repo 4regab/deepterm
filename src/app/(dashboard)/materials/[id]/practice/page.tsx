@@ -10,7 +10,7 @@ import ExitPopup from "@/components/ExitPopup";
 import PracticeSettingsModal, { PracticeSettings } from "@/components/PracticeSettingsModal";
 import { createClient } from "@/config/supabase/client";
 import { useXPStore } from "@/lib/stores";
-import { addXP, recordStudyActivity, updateFlashcardStatus, XP_REWARDS } from "@/services/activity";
+import { addXP, recordStudyActivity, batchUpdateFlashcardStatuses, XP_REWARDS, type FlashcardStatusUpdate } from "@/services/activity";
 
 type QuestionType = "multipleChoice" | "trueFalse" | "fillBlank";
 
@@ -61,21 +61,21 @@ function generateQuestionsFromCards(cards: FlashcardData[], types: QuestionType[
 
     selectedCards.forEach((card, idx) => {
         const type = types[idx % types.length];
-        
+
         if (type === 'trueFalse') {
             // True/False: Show definition, display a term, ask if it's correct
             const isCorrectPairing = Math.random() > 0.5;
             let displayedTerm: string;
-            
+
             if (isCorrectPairing) {
                 displayedTerm = card.term;
             } else {
                 const others = cards.filter(c => c.id !== card.id);
-                displayedTerm = others.length > 0 
-                    ? others[Math.floor(Math.random() * others.length)].term 
+                displayedTerm = others.length > 0
+                    ? others[Math.floor(Math.random() * others.length)].term
                     : card.term;
             }
-            
+
             questions.push({
                 id: card.id,
                 type,
@@ -116,11 +116,12 @@ export default function PracticePage() {
     const [questions, setQuestions] = useState<Question[]>([]);
     const [settings, setSettings] = useState<PracticeSettings>(DEFAULT_PRACTICE_SETTINGS);
     const [showSettings, setShowSettings] = useState(false);
+    const [pendingUpdates, setPendingUpdates] = useState<FlashcardStatusUpdate[]>([]); // Track status changes for batch update
 
     const fetchCards = useCallback(async () => {
         // Fetch XP stats for display
         useXPStore.getState().fetchXPStats();
-        
+
         const supabase = createClient();
         const { data } = await supabase
             .from("flashcards")
@@ -182,12 +183,17 @@ export default function PracticePage() {
         if (currentQuestionIndex < questions.length - 1) {
             setCurrentQuestionIndex(prev => prev + 1);
         } else {
-            // Persist XP at moment of completion (not during render)
+            // Persist all results at session completion (batch update)
             const correct = questions.filter(q => q.isCorrect).length;
             const xpEarned = correct * XP_REWARDS.FLASHCARD_CORRECT;
             setFinalXpEarned(xpEarned);
-            
+
             const persistResults = async () => {
+                // Batch update all flashcard statuses in one request
+                if (pendingUpdates.length > 0) {
+                    await batchUpdateFlashcardStatuses(pendingUpdates);
+                }
+
                 if (xpEarned > 0) {
                     await addXP(xpEarned);
                     useXPStore.getState().fetchXPStats();
@@ -195,10 +201,10 @@ export default function PracticePage() {
                 await recordStudyActivity({ quizzes: 1 });
             };
             persistResults();
-            
+
             setStage("results");
         }
-    }, [currentQuestionIndex, questions]);
+    }, [currentQuestionIndex, questions, pendingUpdates]);
 
     const handleAnswer = async (answer: string) => {
         const updated = [...questions];
@@ -210,14 +216,18 @@ export default function PracticePage() {
         updated[currentQuestionIndex].isCorrect = isCorrect;
         setQuestions(updated);
 
-        // Update flashcard status in database
+        // Track flashcard status update locally (no network request yet)
         const cardIndex = flashcardData.findIndex(c => c.id === current.id);
         if (cardIndex !== -1) {
             const card = flashcardData[cardIndex];
             const newStatus: CardStatus = isCorrect
                 ? (card.status === 'new' ? 'learning' : card.status === 'learning' ? 'review' : 'mastered')
                 : 'learning';
-            await updateFlashcardStatus(card.id, newStatus);
+
+            // Track for batch update at session end
+            setPendingUpdates(prev => [...prev, { id: card.id, status: newStatus }]);
+
+            // Update local state only
             const updatedCards = [...flashcardData];
             updatedCards[cardIndex] = { ...card, status: newStatus };
             setFlashcardData(updatedCards);
@@ -262,6 +272,7 @@ export default function PracticePage() {
     const startOver = () => {
         // Regenerate with current settings
         setStage("generating");
+        setPendingUpdates([]); // Reset pending updates for new session
         setTimeout(() => {
             const count = settings.cardCount === "max" ? flashcardData.length : settings.cardCount;
             const generated = generateQuestionsFromCards(flashcardData, settings.enabledQuestionTypes as QuestionType[], count);
@@ -367,10 +378,10 @@ export default function PracticePage() {
                                 <div className="w-32 h-6 bg-gray-200 rounded-lg animate-pulse" />
                                 <div className="w-20 h-10 bg-gray-200 rounded-full animate-pulse" />
                             </div>
-                            
+
                             {/* Progress bar skeleton */}
                             <div className="w-full h-2 bg-gray-200 rounded-full animate-pulse" />
-                            
+
                             {/* Question card skeleton */}
                             <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-8 min-h-[200px]">
                                 <div className="flex items-center justify-between mb-6">
@@ -382,7 +393,7 @@ export default function PracticePage() {
                                     <div className="w-3/4 h-5 bg-gray-200 rounded animate-pulse" />
                                 </div>
                             </div>
-                            
+
                             {/* Answer options skeleton */}
                             <div className="grid gap-3">
                                 {[1, 2, 3, 4].map((i) => (
@@ -426,9 +437,8 @@ export default function PracticePage() {
                                             <button
                                                 key={i}
                                                 onClick={() => setCurrentQuestionIndex(i)}
-                                                className={`flex-1 h-2 rounded-full transition-all ${
-                                                    isAnswered || isCurrent ? 'bg-[#171d2b]' : 'bg-[#171d2b]/10'
-                                                } hover:opacity-80`}
+                                                className={`flex-1 h-2 rounded-full transition-all ${isAnswered || isCurrent ? 'bg-[#171d2b]' : 'bg-[#171d2b]/10'
+                                                    } hover:opacity-80`}
                                                 title={`Question ${i + 1}${isAnswered ? ' (answered)' : ''}`}
                                             />
                                         );
@@ -500,7 +510,7 @@ export default function PracticePage() {
                                             <span className="text-xs text-gray-500 block mb-1">Is this the correct term?</span>
                                             <p className="text-lg font-semibold text-[#171d2b]">{currentQuestion.tfDisplayedTerm}</p>
                                         </div>
-                                        
+
                                         {/* Show correct term after answer if wrong - only in feedback mode */}
                                         {settings.answerFeedback && showAnswer && !currentQuestion.tfIsCorrectPairing && (
                                             <div className="bg-green-50 border border-green-200 rounded-xl p-4 mb-4">
@@ -510,7 +520,7 @@ export default function PracticePage() {
                                                 </p>
                                             </div>
                                         )}
-                                        
+
                                         <div className="grid grid-cols-2 gap-4">
                                             {["true", "false"].map((val, i) => {
                                                 const isSelected = currentQuestion.userAnswer === val;
@@ -557,10 +567,10 @@ export default function PracticePage() {
                                 )}
                                 {currentQuestion.type === "fillBlank" && (
                                     <div>
-                                        <input 
-                                            type="text" 
-                                            placeholder="Type your answer..." 
-                                            disabled={settings.answerFeedback && showAnswer} 
+                                        <input
+                                            type="text"
+                                            placeholder="Type your answer..."
+                                            disabled={settings.answerFeedback && showAnswer}
                                             defaultValue={currentQuestion.userAnswer || ""}
                                             key={`fillblank-${currentQuestionIndex}`}
                                             onBlur={e => {
@@ -569,16 +579,15 @@ export default function PracticePage() {
                                                     handleAnswer(e.target.value);
                                                 }
                                             }}
-                                            onKeyDown={e => { 
+                                            onKeyDown={e => {
                                                 if (e.key === "Enter" && !(settings.answerFeedback && showAnswer)) {
-                                                    handleAnswer((e.target as HTMLInputElement).value); 
+                                                    handleAnswer((e.target as HTMLInputElement).value);
                                                 }
                                             }}
-                                            className={`w-full p-4 rounded-xl border-2 focus:outline-none text-lg bg-white placeholder:text-gray-400 ${
-                                                currentQuestion.userAnswer 
-                                                    ? 'border-[#171d2b] bg-gray-50' 
+                                            className={`w-full p-4 rounded-xl border-2 focus:outline-none text-lg bg-white placeholder:text-gray-400 ${currentQuestion.userAnswer
+                                                    ? 'border-[#171d2b] bg-gray-50'
                                                     : 'border-gray-200 focus:border-[#171d2b]'
-                                            }`} 
+                                                }`}
                                         />
                                         {!(settings.answerFeedback && showAnswer) && !currentQuestion.userAnswer && (
                                             <p className="text-gray-400 text-xs mt-2 ml-1">{settings.answerFeedback ? 'Press Enter to submit' : 'Type and navigate away or press Enter'}</p>
@@ -640,8 +649,13 @@ export default function PracticePage() {
                                         const correct = questions.filter(q => q.isCorrect).length;
                                         const xpEarned = correct * XP_REWARDS.FLASHCARD_CORRECT;
                                         setFinalXpEarned(xpEarned);
-                                        
+
                                         const persistResults = async () => {
+                                            // Batch update all flashcard statuses in one request
+                                            if (pendingUpdates.length > 0) {
+                                                await batchUpdateFlashcardStatuses(pendingUpdates);
+                                            }
+
                                             if (xpEarned > 0) {
                                                 await addXP(xpEarned);
                                                 useXPStore.getState().fetchXPStats();
@@ -649,15 +663,14 @@ export default function PracticePage() {
                                             await recordStudyActivity({ quizzes: 1 });
                                         };
                                         persistResults();
-                                        
+
                                         setStage("results");
                                     }}
                                     disabled={questions.some(q => q.userAnswer === undefined)}
-                                    className={`px-6 sm:px-8 py-2 sm:py-3 rounded-full font-bold transition-colors text-sm sm:text-base ${
-                                        questions.some(q => q.userAnswer === undefined)
+                                    className={`px-6 sm:px-8 py-2 sm:py-3 rounded-full font-bold transition-colors text-sm sm:text-base ${questions.some(q => q.userAnswer === undefined)
                                             ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
                                             : 'bg-[#2D9F83] text-white hover:bg-[#258a70]'
-                                    }`}
+                                        }`}
                                 >
                                     Finish Test
                                 </button>
@@ -665,11 +678,10 @@ export default function PracticePage() {
                                 <button
                                     onClick={() => setCurrentQuestionIndex(prev => Math.min(questions.length - 1, prev + 1))}
                                     disabled={currentQuestion?.userAnswer === undefined}
-                                    className={`px-4 sm:px-6 py-2 sm:py-3 rounded-full font-bold transition-colors text-sm sm:text-base ${
-                                        currentQuestion?.userAnswer === undefined
+                                    className={`px-4 sm:px-6 py-2 sm:py-3 rounded-full font-bold transition-colors text-sm sm:text-base ${currentQuestion?.userAnswer === undefined
                                             ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
                                             : 'bg-[#171d2b] text-white hover:bg-[#2a3347]'
-                                    }`}
+                                        }`}
                                 >
                                     Next
                                 </button>

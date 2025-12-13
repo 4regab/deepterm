@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest'
-import { recordStudyActivity, addXP, incrementStat, logPomodoroSession, logQuizAttempt, logFlashcardReview, updateFlashcardStatus, XP_REWARDS } from '../services/activity'
+import { recordStudyActivity, addXP, incrementStat, logPomodoroSession, logQuizAttempt, logFlashcardReview, updateFlashcardStatus, batchUpdateFlashcardStatuses, XP_REWARDS } from '../services/activity'
 
 vi.mock('../config/supabase/client', () => ({
   createClient: vi.fn(() => ({
@@ -547,6 +547,59 @@ describe('activity utilities', () => {
 
       const result = await updateFlashcardStatus('card-1', 'mastered')
       expect(result.error).toBe(mockError)
+    })
+  })
+
+  // ==================== BATCH UPDATE FLASHCARD STATUSES ====================
+  describe('batchUpdateFlashcardStatuses', () => {
+    it('should return early for empty updates array', async () => {
+      const result = await batchUpdateFlashcardStatuses([])
+      expect(result.error).toBeNull()
+      expect(result.masteredCount).toBe(0)
+    })
+
+    it('should batch update multiple flashcard statuses', async () => {
+      const { createClient } = await import('../config/supabase/client')
+      vi.mocked(createClient).mockReturnValue({
+        rpc: vi.fn().mockResolvedValue({ error: null }),
+        from: vi.fn().mockReturnValue({
+          update: vi.fn().mockReturnValue({
+            in: vi.fn().mockResolvedValue({ error: null }),
+          }),
+        }),
+      } as never)
+
+      const updates = [
+        { id: 'card-1', status: 'learning' as const },
+        { id: 'card-2', status: 'review' as const },
+        { id: 'card-3', status: 'mastered' as const },
+      ]
+
+      const result = await batchUpdateFlashcardStatuses(updates)
+      expect(result.error).toBeNull()
+      expect(result.masteredCount).toBe(1)
+    })
+
+    it('should count multiple mastered cards correctly', async () => {
+      const { createClient } = await import('../config/supabase/client')
+      vi.mocked(createClient).mockReturnValue({
+        rpc: vi.fn().mockResolvedValue({ error: null }),
+        from: vi.fn().mockReturnValue({
+          update: vi.fn().mockReturnValue({
+            in: vi.fn().mockResolvedValue({ error: null }),
+          }),
+        }),
+      } as never)
+
+      const updates = [
+        { id: 'card-1', status: 'mastered' as const },
+        { id: 'card-2', status: 'mastered' as const },
+        { id: 'card-3', status: 'learning' as const },
+      ]
+
+      const result = await batchUpdateFlashcardStatuses(updates)
+      expect(result.error).toBeNull()
+      expect(result.masteredCount).toBe(2)
     })
   })
 })
