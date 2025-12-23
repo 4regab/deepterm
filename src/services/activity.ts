@@ -29,6 +29,14 @@ const VALID_STAT_NAMES = [
 
 type ValidStatName = typeof VALID_STAT_NAMES[number];
 
+/**
+ * Get local date string in YYYY-MM-DD format for activity tracking
+ */
+function getLocalDateString(): string {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+}
+
 export async function recordStudyActivity(options: {
     minutes?: number;
     flashcards?: number;
@@ -43,9 +51,7 @@ export async function recordStudyActivity(options: {
     const safeQuizzes = Math.max(0, Math.min(options.quizzes || 0, 100));
     const safePomodoros = Math.max(0, Math.min(options.pomodoros || 0, 100));
 
-    // Get user's local date (not UTC)
-    const now = new Date();
-    const localDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    const localDate = getLocalDateString();
 
     const { error } = await supabase.rpc("record_study_activity", {
         p_minutes: safeMinutes,
@@ -120,48 +126,59 @@ export async function incrementStat(statName: string, amount: number = 1) {
     return { error };
 }
 
+/**
+ * OPTIMIZED: Log a completed pomodoro session using batched RPC.
+ * Reduces 3-4 network calls to a single atomic operation.
+ */
 export async function logPomodoroSession(phase: "work" | "shortBreak" | "longBreak", durationMinutes: number, startedAt: Date) {
     const supabase = createClient();
+    const localDate = getLocalDateString();
 
-    // Get current user
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-        console.error("Cannot log Pomodoro session: No authenticated user");
-        return { error: new Error("No authenticated user") };
-    }
-
-    const { error } = await supabase.from("pomodoro_sessions").insert({
-        user_id: user.id,
-        phase,
-        duration_minutes: durationMinutes,
-        started_at: startedAt.toISOString(),
-        completed: true
+    // Use batched RPC for efficiency - single call handles:
+    // 1. Pomodoro session insert
+    // 2. Study activity recording  
+    // 3. XP award
+    // 4. Achievement check
+    const { data, error } = await supabase.rpc("log_completed_activity", {
+        p_activity_type: "pomodoro",
+        p_data: {
+            phase,
+            duration_minutes: durationMinutes,
+            started_at: startedAt.toISOString(),
+            local_date: localDate
+        }
     });
 
     if (error) {
-        console.error("Failed to insert pomodoro_session:", error);
+        console.error("Failed to log pomodoro session:", error);
+        return { error };
     }
 
-    if (!error && phase === "work") {
-        await recordStudyActivity({ minutes: durationMinutes, pomodoros: 1 });
-        // Award XP for completing work session
-        await addXP(XP_REWARDS.POMODORO_WORK);
-    }
-    return { error };
+    return {
+        error: null,
+        xpAwarded: data?.xp_awarded,
+        leveledUp: data?.leveled_up,
+        newLevel: data?.new_level
+    };
 }
 
+/**
+ * OPTIMIZED: Log a quiz attempt using batched RPC.
+ */
 export async function logQuizAttempt(quizId: string, score: number, totalQuestions: number, answers: Record<string, string>) {
     const supabase = createClient();
     const percentage = Math.round((score / totalQuestions) * 100);
+    const localDate = getLocalDateString();
 
-    // Get current user
+    // Get current user for inserting quiz attempt
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
         console.error("Cannot log quiz attempt: No authenticated user");
         return { error: new Error("No authenticated user") };
     }
 
-    const { error } = await supabase.from("quiz_attempts").insert({
+    // Insert the quiz attempt (still need this for detailed records)
+    const { error: insertError } = await supabase.from("quiz_attempts").insert({
         user_id: user.id,
         quiz_id: quizId,
         score,
@@ -170,17 +187,29 @@ export async function logQuizAttempt(quizId: string, score: number, totalQuestio
         answers
     });
 
-    if (error) {
-        console.error("Failed to insert quiz_attempt:", error);
+    if (insertError) {
+        console.error("Failed to insert quiz_attempt:", insertError);
+        return { error: insertError };
     }
 
-    if (!error) {
-        await recordStudyActivity({ quizzes: 1 });
-        if (percentage === 100) {
-            await incrementStat("perfect_quizzes");
+    // Use batched RPC for activity tracking + XP
+    const { data, error } = await supabase.rpc("log_completed_activity", {
+        p_activity_type: "quiz",
+        p_data: {
+            percentage,
+            local_date: localDate
         }
+    });
+
+    if (error) {
+        console.error("Failed to log quiz activity:", error);
     }
-    return { error };
+
+    return {
+        error: null,
+        xpAwarded: data?.xp_awarded,
+        leveledUp: data?.leveled_up
+    };
 }
 
 
@@ -211,8 +240,8 @@ export interface FlashcardStatusUpdate {
 }
 
 /**
- * Batch update multiple flashcard statuses in a single request
- * This is more efficient than calling updateFlashcardStatus for each card
+ * OPTIMIZED: Batch update multiple flashcard statuses in a single request.
+ * This is more efficient than calling updateFlashcardStatus for each card.
  * @param updates Array of card IDs and their new statuses
  * @returns Object with error if any, and count of mastered cards
  */
@@ -247,11 +276,19 @@ export async function batchUpdateFlashcardStatuses(updates: FlashcardStatusUpdat
     );
 
     const results = await Promise.all(updatePromises);
-    const errors = results.filter(r => r.error).map(r => r.error);
+    type UpdateResult = Awaited<typeof updatePromises[number]>;
+    const errors = results.filter((r: UpdateResult) => r.error).map((r: UpdateResult) => r.error);
 
-    // Batch increment mastered stat if any cards were mastered
+    // Use batched RPC for mastered stat + XP if any cards were mastered
     if (masteredCount > 0 && errors.length === 0) {
-        await incrementStat("flashcards_mastered", masteredCount);
+        const localDate = getLocalDateString();
+        await supabase.rpc("log_completed_activity", {
+            p_activity_type: "flashcard_mastered",
+            p_data: {
+                count: masteredCount,
+                local_date: localDate
+            }
+        });
     }
 
     return {

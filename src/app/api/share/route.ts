@@ -13,7 +13,7 @@ const CreateShareSchema = z.object({
 export async function GET(request: NextRequest) {
   const supabase = await createServerSupabaseClient()
   const { data: { user } } = await supabase.auth.getUser()
-  
+
   if (!user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
@@ -26,9 +26,10 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Missing parameters' }, { status: 400 })
   }
 
+  // Optimized: only select needed columns
   const { data: share } = await supabase
     .from('material_shares')
-    .select('*')
+    .select('id, share_code, is_active, created_at')
     .eq('material_type', materialType)
     .eq('material_id', materialId)
     .eq('user_id', user.id)
@@ -41,14 +42,14 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   const supabase = await createServerSupabaseClient()
   const { data: { user } } = await supabase.auth.getUser()
-  
+
   if (!user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
   const body = await request.json()
   const parsed = CreateShareSchema.safeParse(body)
-  
+
   if (!parsed.success) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 })
   }
@@ -69,9 +70,10 @@ export async function POST(request: NextRequest) {
   }
 
   // Check if share already exists
+  // Optimized: only select needed columns
   const { data: existing } = await supabase
     .from('material_shares')
-    .select('*')
+    .select('id, share_code, is_active, created_at')
     .eq('material_type', materialType)
     .eq('material_id', materialId)
     .single()
@@ -92,7 +94,7 @@ export async function POST(request: NextRequest) {
 
   // Generate or validate share code
   let shareCode = customCode
-  
+
   if (shareCode) {
     // Check uniqueness
     const { data: codeExists } = await supabase
@@ -100,7 +102,7 @@ export async function POST(request: NextRequest) {
       .select('id')
       .eq('share_code', shareCode)
       .single()
-    
+
     if (codeExists) {
       return NextResponse.json({ error: 'Share code already taken' }, { status: 409 })
     }
@@ -133,7 +135,7 @@ export async function POST(request: NextRequest) {
 export async function PATCH(request: NextRequest) {
   const supabase = await createServerSupabaseClient()
   const { data: { user } } = await supabase.auth.getUser()
-  
+
   if (!user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
@@ -146,17 +148,17 @@ export async function PATCH(request: NextRequest) {
   }
 
   const updates: Record<string, unknown> = { updated_at: new Date().toISOString() }
-  
+
   if (typeof isActive === 'boolean') {
     updates.is_active = isActive
   }
-  
+
   if (newCode) {
     const codeValidation = ShareCodeSchema.safeParse(newCode)
     if (!codeValidation.success) {
       return NextResponse.json({ error: codeValidation.error.flatten() }, { status: 400 })
     }
-    
+
     // Check uniqueness
     const { data: codeExists } = await supabase
       .from('material_shares')
@@ -164,11 +166,11 @@ export async function PATCH(request: NextRequest) {
       .eq('share_code', newCode)
       .neq('id', shareId)
       .single()
-    
+
     if (codeExists) {
       return NextResponse.json({ error: 'Share code already taken' }, { status: 409 })
     }
-    
+
     updates.share_code = newCode
   }
 
@@ -191,7 +193,7 @@ export async function PATCH(request: NextRequest) {
 export async function DELETE(request: NextRequest) {
   const supabase = await createServerSupabaseClient()
   const { data: { user } } = await supabase.auth.getUser()
-  
+
   if (!user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }

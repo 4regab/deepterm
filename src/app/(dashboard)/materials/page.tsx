@@ -1,4 +1,4 @@
-import { Suspense } from "react";
+import { Suspense, cache } from "react";
 import { createServerSupabaseClient } from "@/config/supabase/server";
 import MaterialsClient from "./MaterialsClient";
 import type { MaterialItem } from "@/lib/schemas/materials";
@@ -27,16 +27,21 @@ interface ReviewerCategory {
     reviewer_terms?: { count: number }[];
 }
 
-async function getMaterials(): Promise<MaterialItem[]> {
+// Cached server-side data fetch for materials
+// React's cache() deduplicates calls within the same request lifecycle
+const getMaterials = cache(async (): Promise<MaterialItem[]> => {
     const supabase = await createServerSupabaseClient();
-    
+
+    // Parallel fetch - efficient server-side data loading
     const [flashcardSetsResult, reviewersResult] = await Promise.all([
         supabase
             .from("flashcard_sets")
+            // Optimized: only select needed columns + counts
             .select(`id, title, created_at, updated_at, flashcards(count)`)
             .order("updated_at", { ascending: false }),
         supabase
             .from("reviewers")
+            // Optimized: only select needed columns + nested counts
             .select(`id, title, created_at, updated_at, reviewer_categories(reviewer_terms(count))`)
             .order("updated_at", { ascending: false })
     ]);
@@ -45,10 +50,10 @@ async function getMaterials(): Promise<MaterialItem[]> {
 
     // Add flashcard sets
     if (flashcardSetsResult.data) {
-        flashcardSetsResult.data.forEach((set: { 
-            id: string; 
-            title: string; 
-            created_at: string; 
+        flashcardSetsResult.data.forEach((set: {
+            id: string;
+            title: string;
+            created_at: string;
             updated_at: string | null;
             flashcards?: FlashcardCount[];
         }) => {
@@ -93,7 +98,7 @@ async function getMaterials(): Promise<MaterialItem[]> {
     materials.sort((a, b) => new Date(b.sortDate || 0).getTime() - new Date(a.sortDate || 0).getTime());
 
     return materials;
-}
+});
 
 function LoadingFallback() {
     return (

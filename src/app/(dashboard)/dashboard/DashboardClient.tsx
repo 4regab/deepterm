@@ -2,24 +2,65 @@
 
 import { motion } from "framer-motion";
 import { Clock, Flame, Trophy } from "lucide-react";
-import { useProfileStore, useXPStore, useActivityStore } from "@/lib/stores";
 import { getRankTitle, calculateProgressPercent } from "@/utils/xp";
+import dynamic from "next/dynamic";
+
+// Dynamic import for study calendar (client-side only)
+const DynamicStudyCalendar = dynamic(
+    () => import("@/components/Dashboard/StudyCalendar").then(mod => ({ default: mod.StudyCalendar })),
+    {
+        loading: () => <StudyCalendarSkeleton />,
+        ssr: false
+    }
+);
+
+function StudyCalendarSkeleton() {
+    return (
+        <div className="bg-white rounded-2xl p-6 border border-[#171d2b]/5 shadow-sm">
+            <div className="animate-pulse">
+                <div className="h-6 bg-[#171d2b]/10 rounded w-32 mb-4" />
+                <div className="grid grid-cols-7 gap-2">
+                    {Array.from({ length: 42 }).map((_, i) => (
+                        <div key={i} className="h-8 bg-[#171d2b]/5 rounded" />
+                    ))}
+                </div>
+            </div>
+        </div>
+    );
+}
+
+// Wrapper component for dynamic calendar (must be in client component)
+export function StudyCalendarWrapper() {
+    return <DynamicStudyCalendar />;
+}
+
+// Type for server-side dashboard data
+interface DashboardData {
+    profile: {
+        full_name: string | null;
+        email: string | null;
+        avatar_url: string | null;
+    };
+    xp: {
+        total_xp: number;
+        current_level: number;
+        xp_in_level: number;
+        xp_for_next: number;
+    };
+    stats: {
+        total_study_minutes: number;
+        current_streak: number;
+        longest_streak: number;
+        pomodoro_sessions: number;
+        flashcards_mastered: number;
+        quizzes_completed: number;
+        last_study_date: string | null;
+    };
+}
 
 interface DashboardHeaderProps {
     greeting: string;
-}
-
-// Module-level flag for one-time fetch
-let dashboardFetchTriggered = false;
-function triggerDashboardFetch() {
-    if (!dashboardFetchTriggered) {
-        dashboardFetchTriggered = true;
-        queueMicrotask(() => {
-            useProfileStore.getState().fetchProfile();
-            useXPStore.getState().fetchXPStats();
-            useActivityStore.getState().fetchActivity();
-        });
-    }
+    initialData?: DashboardData | null;
 }
 
 // Skeleton component for loading states
@@ -54,29 +95,25 @@ function HeaderSkeleton() {
     );
 }
 
-export function DashboardHeader({ greeting }: DashboardHeaderProps) {
-    const { profile, loading: profileLoading } = useProfileStore();
-    const { stats: xpStats, loading: xpLoading } = useXPStore();
-    const { stats: activityStats, loading: activityLoading } = useActivityStore();
+export function DashboardHeader({ greeting, initialData }: DashboardHeaderProps) {
+    // Use server-provided data - no client-side fetching needed!
+    // Data was already fetched on the server and passed as props
 
-    // Trigger fetch once (deferred to avoid render-time issues)
-    triggerDashboardFetch();
-
-    // Show skeleton during initial load
-    if (profileLoading || xpLoading) {
+    // Show skeleton if no initial data (shouldn't happen with proper server fetch)
+    if (!initialData) {
         return <HeaderSkeleton />;
     }
 
-    const firstName = profile?.full_name?.split(' ')[0] || "there";
-    const level = xpStats?.currentLevel || 1;
-    const xpInLevel = xpStats?.xpInLevel || 0;
-    const xpForNext = xpStats?.xpForNext || 100;
+    const firstName = initialData.profile?.full_name?.split(' ')[0] || "there";
+    const level = initialData.xp?.current_level || 1;
+    const xpInLevel = initialData.xp?.xp_in_level || 0;
+    const xpForNext = initialData.xp?.xp_for_next || 100;
     const rankTitle = getRankTitle(level);
     const progressPercent = calculateProgressPercent(xpInLevel, xpForNext);
 
-    const todayMinutes = activityStats?.total_study_minutes ?? 0;
-    const currentStreak = activityStats?.current_streak ?? 0;
-    const bestStreak = activityStats?.longest_streak ?? 0;
+    const todayMinutes = initialData.stats?.total_study_minutes ?? 0;
+    const currentStreak = initialData.stats?.current_streak ?? 0;
+    const bestStreak = initialData.stats?.longest_streak ?? 0;
 
     return (
         <motion.header
@@ -94,7 +131,7 @@ export function DashboardHeader({ greeting }: DashboardHeaderProps) {
                     Ready to continue your learning journey?
                 </p>
             </div>
-            
+
             {/* Level Progress Bar Component with Stats */}
             <div className="bg-white rounded-xl p-4 border border-[#171d2b]/5 shadow-sm">
                 <div className="flex items-center justify-between mb-3">
@@ -107,13 +144,13 @@ export function DashboardHeader({ greeting }: DashboardHeaderProps) {
                             {rankTitle}
                         </span>
                     </div>
-                    
+
                     {/* Right: Progress text */}
                     <span className="font-sans text-sm text-[#171d2b]/60">
                         {xpInLevel}/{xpForNext} XP
                     </span>
                 </div>
-                
+
                 {/* Progress bar */}
                 <div className="h-3 bg-[#171d2b]/5 rounded-full overflow-hidden mb-4">
                     <motion.div
@@ -133,7 +170,7 @@ export function DashboardHeader({ greeting }: DashboardHeaderProps) {
                         <div>
                             <p className="font-sans text-[11px] text-[#171d2b]/60">Today&apos;s Study</p>
                             <p className="font-sans font-semibold text-[16px] text-[#171d2b]">
-                                {activityLoading ? "..." : `${todayMinutes} min`}
+                                {todayMinutes} min
                             </p>
                         </div>
                     </div>
@@ -144,7 +181,7 @@ export function DashboardHeader({ greeting }: DashboardHeaderProps) {
                         <div>
                             <p className="font-sans text-[11px] text-[#171d2b]/60">Current Streak</p>
                             <p className="font-sans font-semibold text-[16px] text-[#171d2b]">
-                                {activityLoading ? "..." : `${currentStreak} days`}
+                                {currentStreak} days
                             </p>
                         </div>
                     </div>
@@ -155,7 +192,7 @@ export function DashboardHeader({ greeting }: DashboardHeaderProps) {
                         <div>
                             <p className="font-sans text-[11px] text-[#171d2b]/60">Best Streak</p>
                             <p className="font-sans font-semibold text-[16px] text-[#171d2b]">
-                                {activityLoading ? "..." : `${bestStreak} days`}
+                                {bestStreak} days
                             </p>
                         </div>
                     </div>

@@ -1,18 +1,50 @@
-"use client";
-
-import { Suspense } from "react";
-import dynamic from "next/dynamic";
+import { Suspense, cache } from "react";
 import { RecentActivity } from "@/components/Dashboard";
-import { DashboardHeader } from "./DashboardClient";
+import { DashboardHeader, StudyCalendarWrapper } from "./DashboardClient";
+import { getAuthenticatedClient } from "@/lib/auth/session";
 
-// Dynamic imports for heavy components with loading fallbacks
-const DynamicStudyCalendar = dynamic(
-    () => import("@/components/Dashboard/StudyCalendar").then(mod => ({ default: mod.StudyCalendar })),
-    {
-        loading: () => <StudyCalendarSkeleton />,
-        ssr: false
+// Cached dashboard data fetch - uses React.cache for request deduplication
+// This replaces 3 separate client-side fetches with 1 server-side RPC call
+const getDashboardData = cache(async () => {
+    const { supabase, isAuthenticated } = await getAuthenticatedClient();
+
+    if (!isAuthenticated) {
+        return null;
     }
-);
+
+    const { data, error } = await supabase.rpc('get_dashboard_data');
+
+    if (error) {
+        console.error('[Dashboard] Failed to fetch data:', error);
+        return null;
+    }
+
+    return data as DashboardData | null;
+});
+
+// Type for dashboard data from RPC
+interface DashboardData {
+    profile: {
+        full_name: string | null;
+        email: string | null;
+        avatar_url: string | null;
+    };
+    xp: {
+        total_xp: number;
+        current_level: number;
+        xp_in_level: number;
+        xp_for_next: number;
+    };
+    stats: {
+        total_study_minutes: number;
+        current_streak: number;
+        longest_streak: number;
+        pomodoro_sessions: number;
+        flashcards_mastered: number;
+        quizzes_completed: number;
+        last_study_date: string | null;
+    };
+}
 
 function StudyCalendarSkeleton() {
     return (
@@ -61,13 +93,20 @@ function getGreeting(): string {
     return "Good night";
 }
 
-export default function DashboardPage() {
+export default async function DashboardPage() {
     const greeting = getGreeting();
+
+    // Server-side data fetch using cached RPC
+    // This single call replaces 3 separate client-side fetches
+    const dashboardData = await getDashboardData();
 
     return (
         <div>
             <Suspense fallback={<HeaderSkeleton />}>
-                <DashboardHeader greeting={greeting} />
+                <DashboardHeader
+                    greeting={greeting}
+                    initialData={dashboardData}
+                />
             </Suspense>
 
             <div className="grid grid-cols-1 lg:grid-cols-10 gap-6">
@@ -79,7 +118,7 @@ export default function DashboardPage() {
 
                 <div className="lg:col-span-8">
                     <Suspense fallback={<StudyCalendarSkeleton />}>
-                        <DynamicStudyCalendar />
+                        <StudyCalendarWrapper />
                     </Suspense>
                 </div>
             </div>

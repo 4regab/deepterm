@@ -334,11 +334,12 @@ describe('activity utilities', () => {
     it('should return error on insert failure', async () => {
       const { createClient } = await import('../config/supabase/client')
       const mockError = new Error('Insert failed')
+      // Now uses batched RPC - mock the rpc call to return an error
       vi.mocked(createClient).mockReturnValue({
         auth: { getUser: vi.fn().mockResolvedValue({ data: { user: { id: 'user-1' } } }) },
-        rpc: vi.fn().mockResolvedValue({ error: null }),
+        rpc: vi.fn().mockResolvedValue({ data: null, error: mockError }),
         from: vi.fn().mockReturnValue({
-          insert: vi.fn().mockResolvedValue({ error: mockError }),
+          insert: vi.fn().mockResolvedValue({ error: null }),
         }),
       } as never)
 
