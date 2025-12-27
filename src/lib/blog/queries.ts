@@ -79,7 +79,9 @@ export async function getPostBySlug(
   if (!data) return null
 
   // Transform to match BlogPostWithCategory
-  const category = data.blog_categories as { name: string; slug: string } | null
+  // blog_categories can be an array or single object depending on the join
+  const categoryData = data.blog_categories as { name: string; slug: string }[] | { name: string; slug: string } | null
+  const category = Array.isArray(categoryData) ? categoryData[0] : categoryData
   
   return {
     id: data.id,
