@@ -7,47 +7,131 @@ interface ArticleContentProps {
   content: string
 }
 
-// Extract actual markdown content from malformed JSON
+// Extract actual markdown content from JSON or malformed JSON
 function extractContent(raw: string): string {
   let text = raw.trim()
   
-  // Remove code block markers
+  // Remove code block markers if present
   if (text.startsWith('```')) {
     text = text.replace(/^```json?\s*\n?/, '').replace(/\n?```\s*$/, '')
   }
   
-  // Try JSON.parse first
-  if (text.startsWith('{')) {
+  // Check if this looks like JSON (starts with { and has "content" field)
+  if (text.startsWith('{') && text.includes('"content"')) {
+    // Try JSON.parse first
     try {
       const parsed = JSON.parse(text)
       if (parsed.content) {
         return parsed.content
       }
     } catch {
-      // JSON is malformed, extract content field using regex
-      const contentMatch = text.match(/"content"\s*:\s*"/)
-      if (contentMatch && contentMatch.index !== undefined) {
-        const valueStart = contentMatch.index + contentMatch[0].length
-        
-        let endIndex = text.length - 1
-        for (let i = text.length - 1; i > valueStart; i--) {
-          if (text[i] === '"' && text[i - 1] !== '\\') {
-            endIndex = i
-            break
+      // JSON is malformed - use regex to extract content field
+    }
+    
+    // Regex extraction for malformed JSON
+    // Match "content": " then capture everything until we find the closing pattern
+    const contentMatch = text.match(/"content"\s*:\s*"/)
+    if (contentMatch && contentMatch.index !== undefined) {
+      const valueStart = contentMatch.index + contentMatch[0].length
+      
+      // Strategy: Find the end by looking for patterns that indicate end of content field
+      // Look for: ", "keywords" or ", "key" or "} at end or just the last " before }
+      
+      // First, try to find ", " followed by another JSON key (like "keywords")
+      // This pattern: unescaped quote followed by comma and another key
+      const endPatterns = [
+        /(?<!\\)",\s*"keywords"/,  // ", "keywords"
+        /(?<!\\)",\s*"\w+"\s*:/,   // ", "anyKey":
+        /(?<!\\)"\s*\}\s*$/,       // "} at end of string
+      ]
+      
+      let endIndex = -1
+      for (const pattern of endPatterns) {
+        const match = text.substring(valueStart).match(pattern)
+        if (match && match.index !== undefined) {
+          const potentialEnd = valueStart + match.index
+          if (endIndex === -1 || potentialEnd > endIndex) {
+            // Verify this is actually an unescaped quote
+            let backslashCount = 0
+            for (let j = potentialEnd - 1; j >= valueStart && text[j] === '\\'; j--) {
+              backslashCount++
+            }
+            if (backslashCount % 2 === 0) {
+              // Even number of backslashes means the quote is NOT escaped
+              endIndex = potentialEnd
+              break
+            }
           }
         }
-        
+      }
+      
+      // Fallback: scan from the end looking for the last valid quote
+      if (endIndex === -1) {
+        // Find the last } in the text
+        const lastBrace = text.lastIndexOf('}')
+        if (lastBrace > valueStart) {
+          // Work backwards from the brace to find the closing quote
+          for (let i = lastBrace - 1; i > valueStart; i--) {
+            if (text[i] === '"') {
+              // Check if this quote is escaped
+              let backslashCount = 0
+              for (let j = i - 1; j >= valueStart && text[j] === '\\'; j--) {
+                backslashCount++
+              }
+              if (backslashCount % 2 === 0) {
+                endIndex = i
+                break
+              }
+            }
+          }
+        }
+      }
+      
+      if (endIndex > valueStart) {
         const rawValue = text.substring(valueStart, endIndex)
+        
+        // Unescape the JSON string
         const result = rawValue
           .replace(/\\n/g, '\n')
           .replace(/\\t/g, '\t')
+          .replace(/\\r/g, '\r')
           .replace(/\\"/g, '"')
           .replace(/\\\\/g, '\\')
         
-        if (result.length > 100) {
+        if (result.length > 50) {
           return result
         }
       }
+    }
+  }
+  
+  // Check for ```json block after content (strip trailing JSON)
+  const codeBlockIndex = text.indexOf('```json')
+  if (codeBlockIndex > 100) {
+    return text.substring(0, codeBlockIndex).trim()
+  }
+  
+  // Also check for ``` followed by json on next line
+  const codeBlockAltIndex = text.indexOf('```\njson')
+  if (codeBlockAltIndex > 100) {
+    return text.substring(0, codeBlockAltIndex).trim()
+  }
+  
+  // Check if markdown content is followed by raw JSON (content then JSON appended)
+  const jsonPattern = /\n\s*\{\s*"title"/
+  const jsonMatch = text.match(jsonPattern)
+  if (jsonMatch && jsonMatch.index !== undefined && jsonMatch.index > 100) {
+    return text.substring(0, jsonMatch.index).trim()
+  }
+  
+  // Strip trailing " } that might be left from JSON wrapper
+  const trailingJsonPattern = /"\s*\}\s*$/
+  if (trailingJsonPattern.test(text)) {
+    // Check if this looks like end of JSON object after content
+    const match = text.match(/"\s*\}\s*$/)
+    if (match && match.index && match.index > 100) {
+      // Only strip if there's actual content before it
+      return text.substring(0, match.index).trim()
     }
   }
   
