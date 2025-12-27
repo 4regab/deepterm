@@ -10,4 +10,4 @@ Disallow: /materials/
 Disallow: /account/
 
 # Sitemap
-# Sitemap: https://deepterm.app/sitemap.xml
+Sitemap: https://deepterm.tech/sitemap.xml

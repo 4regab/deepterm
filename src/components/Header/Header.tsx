@@ -32,6 +32,7 @@ const LEARN_ITEMS = [
 ] as const;
 
 const RESOURCES_ITEMS = [
+    { label: "Blog", href: "/blog" },
     { label: "Help Center", href: "/help" },
     { label: "Changelog", href: "/changelog" },
     { label: "About", href: "/about" },

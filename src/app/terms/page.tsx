@@ -1,7 +1,14 @@
-"use client";
-
+import { Metadata } from "next";
 import Link from "next/link";
+import { createMetadata } from "@/lib/seo";
 import { imgLogo } from "@/config/assets";
+
+export const metadata: Metadata = createMetadata({
+  title: "Terms of Service",
+  description:
+    "Read DeepTerm's Terms of Service. Learn about acceptable use, intellectual property, and your rights when using our free AI study tools.",
+  path: "/terms",
+});
 
 export default function TermsPage() {
   return (

@@ -1,7 +1,14 @@
-"use client";
-
+import { Metadata } from "next";
 import Link from "next/link";
+import { createMetadata } from "@/lib/seo";
 import { imgLogo } from "@/config/assets";
+
+export const metadata: Metadata = createMetadata({
+  title: "Privacy Policy",
+  description:
+    "Read DeepTerm's Privacy Policy. Learn how we collect, use, and protect your data when using our free AI study tools.",
+  path: "/privacy-policy",
+});
 
 export default function PrivacyPolicyPage() {
   return (

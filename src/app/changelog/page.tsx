@@ -1,10 +1,13 @@
 import { Metadata } from "next";
 import Header from "@/components/Header";
+import { createMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = {
-  title: "Changelog - DeepTerm",
-  description: "Latest updates and improvements to DeepTerm",
-};
+export const metadata: Metadata = createMetadata({
+  title: "Changelog",
+  description:
+    "See what's new in DeepTerm. Latest updates, features, bug fixes, and improvements to our free AI study tools.",
+  path: "/changelog",
+});
 
 export default function ChangelogPage() {
   return (
@@ -23,10 +26,48 @@ export default function ChangelogPage() {
         </div>
 
         <div className="space-y-5">
-          {/* Version 0.1.3 */}
+          {/* Version 0.2.0 */}
           <div className="bg-white rounded-xl border border-[#171d2b]/10 p-5 shadow-sm">
             <div className="flex items-center gap-3 mb-4">
               <span className="px-2.5 py-0.5 bg-[#171d2b] text-white text-xs font-medium rounded-full">
+                v0.2.0
+              </span>
+              <span className="text-[#171d2b]/60 text-xs font-sans">December 27, 2025</span>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <h3 className="font-sans font-semibold text-[#171d2b] text-sm mb-2 flex items-center gap-2">
+                  <span className="text-[#171d2b]">+</span> Added
+                </h3>
+                <ul className="space-y-1 ml-5">
+                  <li className="font-sans text-[#171d2b]/80 text-sm">Blog with study tips and guides</li>
+                  <li className="font-sans text-[#171d2b]/80 text-sm">SEO-optimized article pages</li>
+                  <li className="font-sans text-[#171d2b]/80 text-sm">Blog categories and filtering</li>
+                  <li className="font-sans text-[#171d2b]/80 text-sm">Previous/Next article navigation</li>
+                  <li className="font-sans text-[#171d2b]/80 text-sm">Related articles section</li>
+                  <li className="font-sans text-[#171d2b]/80 text-sm">Dynamic OG images for sharing</li>
+                  <li className="font-sans text-[#171d2b]/80 text-sm">Blog link in header and footer</li>
+                  <li className="font-sans text-[#171d2b]/80 text-sm">Sitemap with all blog posts</li>
+                </ul>
+              </div>
+
+              <div>
+                <h3 className="font-sans font-semibold text-[#171d2b] text-sm mb-2 flex items-center gap-2">
+                  <span className="text-[#171d2b]/60">~</span> Changed
+                </h3>
+                <ul className="space-y-1 ml-5">
+                  <li className="font-sans text-[#171d2b]/80 text-sm">Updated Resources navigation menu</li>
+                  <li className="font-sans text-[#171d2b]/80 text-sm">Improved footer links</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          {/* Version 0.1.3 */}
+          <div className="bg-white rounded-xl border border-[#171d2b]/10 p-5 shadow-sm">
+            <div className="flex items-center gap-3 mb-4">
+              <span className="px-2.5 py-0.5 bg-[#171d2b]/10 text-[#171d2b] text-xs font-medium rounded-full">
                 v0.1.3
               </span>
               <span className="text-[#171d2b]/60 text-xs font-sans">December 10, 2025</span>
