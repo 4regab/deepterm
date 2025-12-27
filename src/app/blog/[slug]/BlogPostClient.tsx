@@ -17,26 +17,14 @@ export default function BlogPostClient({
   readTimeMinutes, 
   views 
 }: BlogPostClientProps) {
-  const [highlightedIndex, setHighlightedIndex] = useState(-1)
-  
   const plainText = extractPlainText(content)
   
-  const handleSentenceChange = useCallback((index: number) => {
-    setHighlightedIndex(index)
-    
-    // Scroll highlighted sentence into view
-    if (index >= 0) {
-      setTimeout(() => {
-        const highlight = document.querySelector('.tts-highlight')
-        if (highlight) {
-          highlight.scrollIntoView({ behavior: 'smooth', block: 'center' })
-        }
-      }, 100)
-    }
+  const handleSentenceChange = useCallback(() => {
+    // No-op - highlighting removed
   }, [])
   
   const handleStop = useCallback(() => {
-    setHighlightedIndex(-1)
+    // No-op - highlighting removed
   }, [])
 
   return (
@@ -68,11 +56,8 @@ export default function BlogPostClient({
         />
       </div>
       
-      {/* Article Content with highlighting */}
-      <ArticleContent 
-        content={content} 
-        highlightedSentenceIndex={highlightedIndex}
-      />
+      {/* Article Content - no highlighting */}
+      <ArticleContent content={content} />
     </>
   )
 }
