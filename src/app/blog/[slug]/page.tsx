@@ -7,7 +7,7 @@ import Footer from '@/components/Footer'
 import { getPostBySlug, getRelatedPosts, getAdjacentPosts } from '@/lib/blog'
 import { siteConfig, generateArticleJsonLd, generateBreadcrumbJsonLd } from '@/lib/seo'
 import BlogPostCard from '../components/BlogPostCard'
-import ArticleContent from './ArticleContent'
+import BlogPostClient from './BlogPostClient'
 
 interface PageProps {
   params: Promise<{ slug: string }>
@@ -125,26 +125,10 @@ export default async function BlogPostPage({ params }: PageProps) {
           </nav>
 
           {/* Article Header */}
-          <header className="mb-8 sm:mb-10">
+          <header className="mb-4">
             <h1 className="font-serif text-[28px] sm:text-[36px] lg:text-[42px] text-[#171d2b] leading-tight mb-4">
               {post.title}
             </h1>
-
-            <div className="flex flex-wrap items-center gap-3 sm:gap-4 text-[#171d2b]/50 font-sans text-[13px] sm:text-[14px]">
-              {formattedDate && <span>{formattedDate}</span>}
-              {post.read_time_minutes && (
-                <>
-                  <span className="w-1 h-1 rounded-full bg-[#171d2b]/30" />
-                  <span>{post.read_time_minutes} min read</span>
-                </>
-              )}
-              {post.views > 0 && (
-                <>
-                  <span className="w-1 h-1 rounded-full bg-[#171d2b]/30" />
-                  <span>{post.views.toLocaleString()} views</span>
-                </>
-              )}
-            </div>
           </header>
 
           {/* Hero Image */}
@@ -160,8 +144,13 @@ export default async function BlogPostPage({ params }: PageProps) {
             </div>
           )}
 
-          {/* Article Content */}
-          <ArticleContent content={post.content} />
+          {/* Article Metadata + Content (Client Component for TTS) */}
+          <BlogPostClient 
+            content={post.content}
+            formattedDate={formattedDate}
+            readTimeMinutes={post.read_time_minutes}
+            views={post.views}
+          />
 
           {/* Previous/Next Navigation */}
           {(adjacentPosts.prev || adjacentPosts.next) && (
