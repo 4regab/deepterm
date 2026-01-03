@@ -1,10 +1,9 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { describe, it, expect, beforeEach } from 'bun:test'
 import { useActivityStore } from '../lib/stores/activityStore'
 import type { UserStats } from '../lib/schemas/activity'
 
 describe('StatsBar Component Logic', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     useActivityStore.setState({
       activity: [],
       stats: null,

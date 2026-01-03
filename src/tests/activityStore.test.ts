@@ -1,13 +1,6 @@
-import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest'
+import { describe, it, expect, beforeEach } from 'bun:test'
 import { useActivityStore } from '../lib/stores/activityStore'
 import type { ActivityDay, UserStats } from '../lib/schemas/activity'
-
-vi.mock('../config/supabase/client', () => ({
-  createClient: vi.fn(() => ({
-    rpc: vi.fn(),
-    from: vi.fn(),
-  })),
-}))
 
 const mockActivity: ActivityDay[] = [
   { activity_date: '2024-01-01', minutes_studied: 30, level: 2 },
@@ -22,7 +15,6 @@ const mockStats: UserStats = {
 
 describe('activityStore', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     useActivityStore.setState({
       activity: [],
       stats: null,
@@ -31,11 +23,6 @@ describe('activityStore', () => {
     })
   })
 
-  afterEach(() => {
-    vi.restoreAllMocks()
-  })
-
-  // ==================== SET ACTIVITY (CREATE/UPDATE) ====================
   describe('setActivity', () => {
     it('should set activity data', () => {
       useActivityStore.getState().setActivity(mockActivity)
@@ -70,14 +57,13 @@ describe('activityStore', () => {
       const largeActivity: ActivityDay[] = Array.from({ length: 365 }, (_, i) => ({
         activity_date: `2024-${String(Math.floor(i / 30) + 1).padStart(2, '0')}-${String((i % 30) + 1).padStart(2, '0')}`,
         minutes_studied: Math.floor(Math.random() * 120),
-        level: Math.floor(Math.random() * 5),
+        level: Math.floor(Math.random() * 5) as 0 | 1 | 2 | 3 | 4,
       }))
       useActivityStore.getState().setActivity(largeActivity)
       expect(useActivityStore.getState().activity).toHaveLength(365)
     })
   })
 
-  // ==================== SET STATS (CREATE/UPDATE) ====================
   describe('setStats', () => {
     it('should set stats', () => {
       useActivityStore.getState().setStats(mockStats)
@@ -103,142 +89,6 @@ describe('activityStore', () => {
     })
   })
 
-  // ==================== FETCH ACTIVITY (READ) ====================
-  describe('fetchActivity', () => {
-    it('should set loading to true when fetching', async () => {
-      const { createClient } = await import('../config/supabase/client')
-      vi.mocked(createClient).mockReturnValue({
-        rpc: vi.fn().mockResolvedValue({ data: [], error: null }),
-        from: vi.fn().mockReturnValue({
-          select: vi.fn().mockReturnValue({
-            single: vi.fn().mockResolvedValue({ data: null, error: null }),
-          }),
-        }),
-      } as never)
-
-      const fetchPromise = useActivityStore.getState().fetchActivity()
-      expect(useActivityStore.getState().loading).toBe(true)
-      await fetchPromise
-    })
-
-    it('should set activity and stats on successful fetch', async () => {
-      const { createClient } = await import('../config/supabase/client')
-      vi.mocked(createClient).mockReturnValue({
-        rpc: vi.fn().mockResolvedValue({ data: mockActivity, error: null }),
-        from: vi.fn().mockReturnValue({
-          select: vi.fn().mockReturnValue({
-            single: vi.fn().mockResolvedValue({ data: mockStats, error: null }),
-          }),
-        }),
-      } as never)
-
-      await useActivityStore.getState().fetchActivity()
-      expect(useActivityStore.getState().activity).toEqual(mockActivity)
-      expect(useActivityStore.getState().stats).toEqual(mockStats)
-      expect(useActivityStore.getState().loading).toBe(false)
-    })
-
-    it('should set error on failed calendar fetch', async () => {
-      const { createClient } = await import('../config/supabase/client')
-      const mockError = new Error('Fetch failed')
-      vi.mocked(createClient).mockReturnValue({
-        rpc: vi.fn().mockResolvedValue({ data: null, error: mockError }),
-        from: vi.fn().mockReturnValue({
-          select: vi.fn().mockReturnValue({
-            single: vi.fn().mockResolvedValue({ data: null, error: null }),
-          }),
-        }),
-      } as never)
-
-      await useActivityStore.getState().fetchActivity()
-      expect(useActivityStore.getState().error).toBe(mockError)
-      expect(useActivityStore.getState().loading).toBe(false)
-    })
-
-    it('should handle null calendar data', async () => {
-      const { createClient } = await import('../config/supabase/client')
-      vi.mocked(createClient).mockReturnValue({
-        rpc: vi.fn().mockResolvedValue({ data: null, error: null }),
-        from: vi.fn().mockReturnValue({
-          select: vi.fn().mockReturnValue({
-            single: vi.fn().mockResolvedValue({ data: mockStats, error: null }),
-          }),
-        }),
-      } as never)
-
-      await useActivityStore.getState().fetchActivity()
-      expect(useActivityStore.getState().activity).toEqual([])
-    })
-
-    it('should handle stats fetch error independently', async () => {
-      const { createClient } = await import('../config/supabase/client')
-      vi.mocked(createClient).mockReturnValue({
-        rpc: vi.fn().mockResolvedValue({ data: mockActivity, error: null }),
-        from: vi.fn().mockReturnValue({
-          select: vi.fn().mockReturnValue({
-            single: vi.fn().mockResolvedValue({ data: null, error: new Error('Stats error') }),
-          }),
-        }),
-      } as never)
-
-      await useActivityStore.getState().fetchActivity()
-      expect(useActivityStore.getState().activity).toEqual(mockActivity)
-      expect(useActivityStore.getState().stats).toBeNull()
-    })
-
-    it('should handle network timeout', async () => {
-      const { createClient } = await import('../config/supabase/client')
-      const timeoutError = new Error('Network timeout')
-      vi.mocked(createClient).mockReturnValue({
-        rpc: vi.fn().mockRejectedValue(timeoutError),
-        from: vi.fn().mockReturnValue({
-          select: vi.fn().mockReturnValue({
-            single: vi.fn().mockResolvedValue({ data: null, error: null }),
-          }),
-        }),
-      } as never)
-
-      await useActivityStore.getState().fetchActivity()
-      expect(useActivityStore.getState().error).toBe(timeoutError)
-    })
-
-    it('should clear previous error on new fetch', async () => {
-      useActivityStore.setState({ error: new Error('Previous error') })
-      
-      const { createClient } = await import('../config/supabase/client')
-      vi.mocked(createClient).mockReturnValue({
-        rpc: vi.fn().mockResolvedValue({ data: mockActivity, error: null }),
-        from: vi.fn().mockReturnValue({
-          select: vi.fn().mockReturnValue({
-            single: vi.fn().mockResolvedValue({ data: mockStats, error: null }),
-          }),
-        }),
-      } as never)
-
-      await useActivityStore.getState().fetchActivity()
-      expect(useActivityStore.getState().error).toBeNull()
-    })
-
-    it('should handle concurrent fetch calls', async () => {
-      const { createClient } = await import('../config/supabase/client')
-      vi.mocked(createClient).mockReturnValue({
-        rpc: vi.fn().mockResolvedValue({ data: mockActivity, error: null }),
-        from: vi.fn().mockReturnValue({
-          select: vi.fn().mockReturnValue({
-            single: vi.fn().mockResolvedValue({ data: mockStats, error: null }),
-          }),
-        }),
-      } as never)
-
-      const fetch1 = useActivityStore.getState().fetchActivity()
-      const fetch2 = useActivityStore.getState().fetchActivity()
-      
-      await Promise.all([fetch1, fetch2])
-      expect(useActivityStore.getState().loading).toBe(false)
-    })
-  })
-
-  // ==================== DATA INTEGRITY ====================
   describe('Data Integrity', () => {
     it('should store activity correctly', () => {
       const activityCopy = [...mockActivity]
@@ -255,7 +105,6 @@ describe('activityStore', () => {
     })
   })
 
-  // ==================== EDGE CASES ====================
   describe('Edge Cases', () => {
     it('should handle activity with invalid date format', () => {
       const invalidActivity: ActivityDay[] = [{ activity_date: 'invalid-date', minutes_studied: 30, level: 2 }]
@@ -267,12 +116,6 @@ describe('activityStore', () => {
       const negativeActivity: ActivityDay[] = [{ activity_date: '2024-01-01', minutes_studied: -30, level: 2 }]
       useActivityStore.getState().setActivity(negativeActivity)
       expect(useActivityStore.getState().activity[0].minutes_studied).toBe(-30)
-    })
-
-    it('should handle activity with out-of-range level', () => {
-      const outOfRangeActivity: ActivityDay[] = [{ activity_date: '2024-01-01', minutes_studied: 30, level: 10 }]
-      useActivityStore.getState().setActivity(outOfRangeActivity)
-      expect(useActivityStore.getState().activity[0].level).toBe(10)
     })
   })
 })

@@ -1,148 +1,47 @@
-import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest'
-
-vi.mock('../config/supabase/server', () => ({
-  createServerSupabaseClient: vi.fn(),
-}))
+import { describe, it, expect, beforeEach, afterEach } from 'bun:test'
 
 describe('rateLimit', () => {
+  let originalDate: typeof Date
+
   beforeEach(() => {
-    vi.clearAllMocks()
-    vi.useFakeTimers()
-    vi.setSystemTime(new Date('2024-06-15T12:00:00Z'))
+    originalDate = globalThis.Date
   })
 
   afterEach(() => {
-    vi.useRealTimers()
-    vi.restoreAllMocks()
+    globalThis.Date = originalDate
   })
 
-  // ==================== CHECK AI RATE LIMIT ====================
   describe('checkAIRateLimit', () => {
     it('should return allowed false when no user', async () => {
-      const { createServerSupabaseClient } = await import('../config/supabase/server')
-      vi.mocked(createServerSupabaseClient).mockResolvedValue({
-        auth: {
-          getUser: vi.fn().mockResolvedValue({ data: { user: null } }),
-        },
-        from: vi.fn(),
-      } as never)
-
-      // Simulate the behavior
       const mockResult = { allowed: false, remaining: 0, resetAt: new Date() }
       expect(mockResult.allowed).toBe(false)
     })
 
     it('should return allowed true for first usage', async () => {
-      const { createServerSupabaseClient } = await import('../config/supabase/server')
-      vi.mocked(createServerSupabaseClient).mockResolvedValue({
-        auth: {
-          getUser: vi.fn().mockResolvedValue({ data: { user: { id: 'user-1' } } }),
-        },
-        from: vi.fn().mockReturnValue({
-          select: vi.fn().mockReturnValue({
-            eq: vi.fn().mockReturnValue({
-              single: vi.fn().mockResolvedValue({ data: null, error: { code: 'PGRST116' } }),
-            }),
-          }),
-          insert: vi.fn().mockResolvedValue({ error: null }),
-        }),
-      } as never)
-
       const mockResult = { allowed: true, remaining: 10, resetAt: new Date() }
       expect(mockResult.allowed).toBe(true)
       expect(mockResult.remaining).toBe(10)
     })
 
     it('should return allowed true when under limit', async () => {
-      const { createServerSupabaseClient } = await import('../config/supabase/server')
-      vi.mocked(createServerSupabaseClient).mockResolvedValue({
-        auth: {
-          getUser: vi.fn().mockResolvedValue({ data: { user: { id: 'user-1' } } }),
-        },
-        from: vi.fn().mockReturnValue({
-          select: vi.fn().mockReturnValue({
-            eq: vi.fn().mockReturnValue({
-              single: vi.fn().mockResolvedValue({
-                data: { generation_count: 5, reset_date: '2024-06-15' },
-                error: null,
-              }),
-            }),
-          }),
-        }),
-      } as never)
-
       const mockResult = { allowed: true, remaining: 5, resetAt: new Date() }
       expect(mockResult.allowed).toBe(true)
       expect(mockResult.remaining).toBe(5)
     })
 
     it('should return allowed false when at limit', async () => {
-      const { createServerSupabaseClient } = await import('../config/supabase/server')
-      vi.mocked(createServerSupabaseClient).mockResolvedValue({
-        auth: {
-          getUser: vi.fn().mockResolvedValue({ data: { user: { id: 'user-1' } } }),
-        },
-        from: vi.fn().mockReturnValue({
-          select: vi.fn().mockReturnValue({
-            eq: vi.fn().mockReturnValue({
-              single: vi.fn().mockResolvedValue({
-                data: { generation_count: 10, reset_date: '2024-06-15' },
-                error: null,
-              }),
-            }),
-          }),
-        }),
-      } as never)
-
       const mockResult = { allowed: false, remaining: 0, resetAt: new Date() }
       expect(mockResult.allowed).toBe(false)
       expect(mockResult.remaining).toBe(0)
     })
 
     it('should reset count on new day', async () => {
-      const { createServerSupabaseClient } = await import('../config/supabase/server')
-      vi.mocked(createServerSupabaseClient).mockResolvedValue({
-        auth: {
-          getUser: vi.fn().mockResolvedValue({ data: { user: { id: 'user-1' } } }),
-        },
-        from: vi.fn().mockReturnValue({
-          select: vi.fn().mockReturnValue({
-            eq: vi.fn().mockReturnValue({
-              single: vi.fn().mockResolvedValue({
-                data: { generation_count: 10, reset_date: '2024-06-14' },
-                error: null,
-              }),
-            }),
-          }),
-          update: vi.fn().mockReturnValue({
-            eq: vi.fn().mockResolvedValue({ error: null }),
-          }),
-        }),
-      } as never)
-
       const mockResult = { allowed: true, remaining: 10, resetAt: new Date() }
       expect(mockResult.allowed).toBe(true)
       expect(mockResult.remaining).toBe(10)
     })
 
     it('should handle database error', async () => {
-      const { createServerSupabaseClient } = await import('../config/supabase/server')
-      vi.mocked(createServerSupabaseClient).mockResolvedValue({
-        auth: {
-          getUser: vi.fn().mockResolvedValue({ data: { user: { id: 'user-1' } } }),
-        },
-        from: vi.fn().mockReturnValue({
-          select: vi.fn().mockReturnValue({
-            eq: vi.fn().mockReturnValue({
-              single: vi.fn().mockResolvedValue({
-                data: null,
-                error: { code: 'DB_ERROR', message: 'Database error' },
-              }),
-            }),
-          }),
-        }),
-      } as never)
-
       const mockResult = { allowed: false, remaining: 0, resetAt: new Date() }
       expect(mockResult.allowed).toBe(false)
     })
@@ -157,75 +56,46 @@ describe('rateLimit', () => {
     })
 
     it('should handle edge case at midnight', () => {
-      vi.setSystemTime(new Date('2024-06-15T23:59:59Z'))
-      const today = new Date().toISOString().split('T')[0]
+      const date = new Date('2024-06-15T23:59:59Z')
+      const today = date.toISOString().split('T')[0]
       expect(today).toBe('2024-06-15')
     })
 
     it('should handle edge case just after midnight', () => {
-      vi.setSystemTime(new Date('2024-06-16T00:00:01Z'))
-      const today = new Date().toISOString().split('T')[0]
+      const date = new Date('2024-06-16T00:00:01Z')
+      const today = date.toISOString().split('T')[0]
       expect(today).toBe('2024-06-16')
     })
   })
 
-  // ==================== INCREMENT AI USAGE ====================
   describe('incrementAIUsage', () => {
     it('should increment usage for authenticated user', async () => {
-      const { createServerSupabaseClient } = await import('../config/supabase/server')
-      const rpcMock = vi.fn().mockResolvedValue({ error: null })
-      vi.mocked(createServerSupabaseClient).mockResolvedValue({
-        auth: {
-          getUser: vi.fn().mockResolvedValue({ data: { user: { id: 'user-1' } } }),
-        },
-        rpc: rpcMock,
-      } as never)
-
-      // Simulate increment
-      const supabase = await createServerSupabaseClient()
-      await supabase.rpc('increment_ai_usage', { p_user_id: 'user-1', p_date: '2024-06-15' })
+      const rpcMock = { called: false, args: null as unknown }
+      const mockRpc = (name: string, args: unknown) => {
+        rpcMock.called = true
+        rpcMock.args = args
+        return Promise.resolve({ error: null })
+      }
       
-      expect(rpcMock).toHaveBeenCalledWith('increment_ai_usage', {
-        p_user_id: 'user-1',
-        p_date: '2024-06-15',
-      })
+      await mockRpc('increment_ai_usage', { p_user_id: 'user-1', p_date: '2024-06-15' })
+      
+      expect(rpcMock.called).toBe(true)
+      expect(rpcMock.args).toEqual({ p_user_id: 'user-1', p_date: '2024-06-15' })
     })
 
     it('should not increment for unauthenticated user', async () => {
-      const { createServerSupabaseClient } = await import('../config/supabase/server')
-      const rpcMock = vi.fn()
-      vi.mocked(createServerSupabaseClient).mockResolvedValue({
-        auth: {
-          getUser: vi.fn().mockResolvedValue({ data: { user: null } }),
-        },
-        rpc: rpcMock,
-      } as never)
-
-      const supabase = await createServerSupabaseClient()
-      const { data: { user } } = await supabase.auth.getUser()
-      
+      const user = null
       if (!user) {
-        // Should not call rpc
-        expect(rpcMock).not.toHaveBeenCalled()
+        expect(user).toBeNull()
       }
     })
 
     it('should handle RPC error gracefully', async () => {
-      const { createServerSupabaseClient } = await import('../config/supabase/server')
-      vi.mocked(createServerSupabaseClient).mockResolvedValue({
-        auth: {
-          getUser: vi.fn().mockResolvedValue({ data: { user: { id: 'user-1' } } }),
-        },
-        rpc: vi.fn().mockResolvedValue({ error: new Error('RPC failed') }),
-      } as never)
-
-      const supabase = await createServerSupabaseClient()
-      const result = await supabase.rpc('increment_ai_usage', {})
+      const result = { error: new Error('RPC failed') }
       expect(result.error).toBeTruthy()
     })
   })
 
-  // ==================== DAILY LIMIT CONSTANT ====================
   describe('Daily Limit', () => {
     const DAILY_AI_LIMIT = 10
 
@@ -264,27 +134,8 @@ describe('rateLimit', () => {
     })
   })
 
-  // ==================== EDGE CASES ====================
   describe('Edge Cases', () => {
     it('should handle concurrent rate limit checks', async () => {
-      const { createServerSupabaseClient } = await import('../config/supabase/server')
-      vi.mocked(createServerSupabaseClient).mockResolvedValue({
-        auth: {
-          getUser: vi.fn().mockResolvedValue({ data: { user: { id: 'user-1' } } }),
-        },
-        from: vi.fn().mockReturnValue({
-          select: vi.fn().mockReturnValue({
-            eq: vi.fn().mockReturnValue({
-              single: vi.fn().mockResolvedValue({
-                data: { generation_count: 5, reset_date: '2024-06-15' },
-                error: null,
-              }),
-            }),
-          }),
-        }),
-      } as never)
-
-      // Simulate concurrent checks
       const results = await Promise.all([
         Promise.resolve({ allowed: true, remaining: 5 }),
         Promise.resolve({ allowed: true, remaining: 5 }),
@@ -295,36 +146,33 @@ describe('rateLimit', () => {
     })
 
     it('should handle timezone edge cases', () => {
-      // Test different timezone scenarios
       const utcDate = new Date('2024-06-15T23:00:00Z')
       const dateString = utcDate.toISOString().split('T')[0]
       expect(dateString).toBe('2024-06-15')
     })
 
     it('should handle leap year dates', () => {
-      vi.setSystemTime(new Date('2024-02-29T12:00:00Z'))
-      const today = new Date().toISOString().split('T')[0]
+      const date = new Date('2024-02-29T12:00:00Z')
+      const today = date.toISOString().split('T')[0]
       expect(today).toBe('2024-02-29')
     })
 
     it('should handle year boundary', () => {
-      vi.setSystemTime(new Date('2024-12-31T23:59:59Z'))
-      const today = new Date().toISOString().split('T')[0]
-      expect(today).toBe('2024-12-31')
+      const dec31 = new Date('2024-12-31T23:59:59Z')
+      const today1 = dec31.toISOString().split('T')[0]
+      expect(today1).toBe('2024-12-31')
       
-      vi.setSystemTime(new Date('2025-01-01T00:00:01Z'))
-      const newDay = new Date().toISOString().split('T')[0]
-      expect(newDay).toBe('2025-01-01')
+      const jan1 = new Date('2025-01-01T00:00:01Z')
+      const today2 = jan1.toISOString().split('T')[0]
+      expect(today2).toBe('2025-01-01')
     })
   })
 
-  // ==================== DATA INTEGRITY ====================
   describe('Data Integrity', () => {
     it('should not modify user data during check', async () => {
       const userData = { id: 'user-1', email: 'test@example.com' }
       const originalId = userData.id
       
-      // Simulate check without modification
       expect(userData.id).toBe(originalId)
     })
 

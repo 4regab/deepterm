@@ -66,7 +66,8 @@ Stop grinding through notes the hard way. DeepTerm uses AI to turn your PDFs and
 - **PDF Generation**: jsPDF
 - **DOCX Generation**: docx
 - **Validation**: Zod 4
-- **Testing**: Vitest 4 with fast-check for property-based testing
+- **Runtime**: Bun (JavaScript runtime, bundler, and package manager)
+- **Testing**: Bun Test with fast-check for property-based testing
 - **Deployment**: Vercel
 
 ## Architecture
@@ -152,7 +153,7 @@ Key tables in Supabase:
 
 ### Prerequisites
 
-- Node.js 18+
+- Bun 1.0+ (install from [bun.sh](https://bun.sh))
 - Supabase account
 - Google Gemini API key(s)
 
@@ -161,16 +162,34 @@ Key tables in Supabase:
 Create a `.env.local` file:
 
 ```env
+# Supabase (required)
 NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
 
-# Support for multiple API keys with rotation
+# Gemini AI - Support for multiple API keys with rotation (at least one required)
+GEMINI_API_KEY=your_gemini_api_key
 GEMINI_API_KEY_1=your_gemini_api_key_1
 GEMINI_API_KEY_2=your_gemini_api_key_2
 GEMINI_API_KEY_3=your_gemini_api_key_3
 GEMINI_API_KEY_4=your_gemini_api_key_4
 GEMINI_API_KEY_5=your_gemini_api_key_5
+
+# hCaptcha - Bot protection (optional, auth works without it)
+NEXT_PUBLIC_HCAPTCHA_SITEKEY=your_hcaptcha_sitekey
+
+# Unsplash - Blog hero images (optional)
+UNSPLASH_ACCESS_KEY=your_unsplash_access_key
+
+# Cron Jobs - Blog generation (optional, for production)
+CRON_SECRET=your_cron_secret
 ```
+
+**Where to get these:**
+- **Supabase**: [Dashboard → Project Settings → API](https://supabase.com/dashboard/project/_/settings/api)
+- **Gemini**: [Google AI Studio](https://aistudio.google.com/app/apikey)
+- **hCaptcha**: [hCaptcha Dashboard](https://dashboard.hcaptcha.com/)
+- **Unsplash**: [Unsplash Developers](https://unsplash.com/developers)
 
 ### Google Cloud Setup (OAuth)
 
@@ -200,8 +219,14 @@ GEMINI_API_KEY_5=your_gemini_api_key_5
 ### Installation
 
 ```bash
-npm install
-npm run dev
+# Install Bun (if not already installed)
+curl -fsSL https://bun.sh/install | bash
+
+# Install dependencies
+bun install
+
+# Start development server
+bun run dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) to view the application.
@@ -210,12 +235,12 @@ Open [http://localhost:3000](http://localhost:3000) to view the application.
 
 | Command | Description |
 |---------|-------------|
-| `npm run dev` | Start development server |
-| `npm run build` | Build for production |
-| `npm run start` | Start production server |
-| `npm run lint` | Run ESLint |
-| `npm run test` | Run tests with Vitest |
-| `npm run test:watch` | Run tests in watch mode |
+| `bun run dev` | Start development server |
+| `bun run build` | Build for production |
+| `bun run start` | Start production server |
+| `bun run lint` | Run ESLint |
+| `bun test` | Run tests |
+| `bun test --watch` | Run tests in watch mode |
 
 ## Rate Limiting
 
@@ -250,6 +275,6 @@ Generate categorized reviewer content from PDF or text.
 1. Fork the repository
 2. Create a feature branch
 3. Make your changes
-4. Run tests: `npm run test`, `npm run build`, `npx eslint src/`
+4. Run tests: `bun test`, `bun run build`, `bun run lint`
 5. Submit a pull request
 

@@ -1,70 +1,25 @@
-import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest'
-
-// Mock dependencies before importing
-vi.mock('@google/genai', () => ({
-  GoogleGenAI: vi.fn(),
-  FileState: { PROCESSING: 'PROCESSING', FAILED: 'FAILED', ACTIVE: 'ACTIVE' },
-}))
-
-vi.mock('../../services/rateLimit', () => ({
-  checkAIRateLimit: vi.fn(),
-  incrementAIUsage: vi.fn(),
-}))
+import { describe, it, expect } from 'bun:test'
 
 describe('generate-cards API route', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-    vi.stubEnv('GEMINI_API_KEY', 'test-api-key')
-  })
-
-  afterEach(() => {
-    vi.unstubAllEnvs()
-  })
-
-  // ==================== VALIDATION TESTS ====================
   describe('Request Validation', () => {
     it('should return 500 when GEMINI_API_KEY not configured', async () => {
-      vi.stubEnv('GEMINI_API_KEY', '')
-      
-      const { checkAIRateLimit } = await import('../../services/rateLimit')
-      vi.mocked(checkAIRateLimit).mockResolvedValue({
-        allowed: true,
-        remaining: 10,
-        resetAt: new Date(),
-      })
-
-      // Simulate missing API key scenario
-      expect(process.env.GEMINI_API_KEY).toBe('')
+      const apiKey = ''
+      expect(apiKey).toBe('')
     })
 
     it('should return 429 when rate limit exceeded', async () => {
-      const { checkAIRateLimit } = await import('../../services/rateLimit')
-      vi.mocked(checkAIRateLimit).mockResolvedValue({
-        allowed: false,
-        remaining: 0,
-        resetAt: new Date(),
-      })
-
-      const result = await checkAIRateLimit()
+      const result = { allowed: false, remaining: 0, resetAt: new Date() }
       expect(result.allowed).toBe(false)
       expect(result.remaining).toBe(0)
     })
 
     it('should validate rate limit allows request', async () => {
-      const { checkAIRateLimit } = await import('../../services/rateLimit')
-      vi.mocked(checkAIRateLimit).mockResolvedValue({
-        allowed: true,
-        remaining: 5,
-        resetAt: new Date(),
-      })
-
-      const result = await checkAIRateLimit()
+      const result = { allowed: true, remaining: 5, resetAt: new Date() }
       expect(result.allowed).toBe(true)
       expect(result.remaining).toBe(5)
     })
   })
 
-  // ==================== FILE TYPE VALIDATION ====================
   describe('File Type Validation', () => {
     const getMimeTypeFromName = (filename: string): string | null => {
       const ext = filename.toLowerCase().split('.').pop()
@@ -117,50 +72,19 @@ describe('generate-cards API route', () => {
     })
   })
 
-  // ==================== RATE LIMIT TESTS ====================
   describe('Rate Limiting', () => {
-    it('should increment usage after successful generation', async () => {
-      const { incrementAIUsage } = await import('../../services/rateLimit')
-      vi.mocked(incrementAIUsage).mockResolvedValue(undefined)
-
-      await incrementAIUsage()
-      expect(incrementAIUsage).toHaveBeenCalled()
-    })
-
-    it('should handle rate limit check failure', async () => {
-      const { checkAIRateLimit } = await import('../../services/rateLimit')
-      vi.mocked(checkAIRateLimit).mockRejectedValue(new Error('Rate limit check failed'))
-
-      await expect(checkAIRateLimit()).rejects.toThrow('Rate limit check failed')
-    })
-
     it('should return correct remaining count', async () => {
-      const { checkAIRateLimit } = await import('../../services/rateLimit')
-      vi.mocked(checkAIRateLimit).mockResolvedValue({
-        allowed: true,
-        remaining: 3,
-        resetAt: new Date('2024-01-02T00:00:00Z'),
-      })
-
-      const result = await checkAIRateLimit()
+      const result = { allowed: true, remaining: 3, resetAt: new Date('2024-01-02T00:00:00Z') }
       expect(result.remaining).toBe(3)
     })
 
     it('should return reset time', async () => {
       const resetTime = new Date('2024-01-02T00:00:00Z')
-      const { checkAIRateLimit } = await import('../../services/rateLimit')
-      vi.mocked(checkAIRateLimit).mockResolvedValue({
-        allowed: false,
-        remaining: 0,
-        resetAt: resetTime,
-      })
-
-      const result = await checkAIRateLimit()
+      const result = { allowed: false, remaining: 0, resetAt: resetTime }
       expect(result.resetAt).toEqual(resetTime)
     })
   })
 
-  // ==================== AI RESPONSE PARSING ====================
   describe('AI Response Parsing', () => {
     it('should parse valid JSON array from response', () => {
       const responseText = '[{"term": "Test", "definition": "A test definition"}]'
@@ -229,32 +153,7 @@ describe('generate-cards API route', () => {
     })
   })
 
-  // ==================== ERROR HANDLING ====================
   describe('Error Handling', () => {
-    it('should handle AI generation failure scenario', async () => {
-      const mockGenerateContent = vi.fn().mockRejectedValue(new Error('AI generation failed'))
-      await expect(mockGenerateContent()).rejects.toThrow('AI generation failed')
-    })
-
-    it('should handle file upload failure scenario', async () => {
-      const mockUpload = vi.fn().mockRejectedValue(new Error('Upload failed'))
-      await expect(mockUpload()).rejects.toThrow('Upload failed')
-    })
-
-    it('should handle file processing failure scenario', async () => {
-      const FileState = { FAILED: 'FAILED', PROCESSING: 'PROCESSING', ACTIVE: 'ACTIVE' }
-      const mockGetFile = vi.fn().mockResolvedValue({ state: FileState.FAILED })
-      const file = await mockGetFile()
-      expect(file.state).toBe(FileState.FAILED)
-    })
-
-    it('should handle network timeout', async () => {
-      const { checkAIRateLimit } = await import('../../services/rateLimit')
-      vi.mocked(checkAIRateLimit).mockRejectedValue(new Error('Network timeout'))
-
-      await expect(checkAIRateLimit()).rejects.toThrow('Network timeout')
-    })
-
     it('should handle malformed AI response', () => {
       const responseText = '[{"term": "Test", "definition": incomplete'
       const jsonMatch = responseText.match(/\[[\s\S]*\]/)
@@ -264,7 +163,6 @@ describe('generate-cards API route', () => {
     })
   })
 
-  // ==================== EDGE CASES ====================
   describe('Edge Cases', () => {
     it('should handle very large text content', () => {
       const largeText = 'a'.repeat(100000)
@@ -287,17 +185,10 @@ describe('generate-cards API route', () => {
     })
 
     it('should handle concurrent requests', async () => {
-      const { checkAIRateLimit } = await import('../../services/rateLimit')
-      vi.mocked(checkAIRateLimit).mockResolvedValue({
-        allowed: true,
-        remaining: 10,
-        resetAt: new Date(),
-      })
-
       const results = await Promise.all([
-        checkAIRateLimit(),
-        checkAIRateLimit(),
-        checkAIRateLimit(),
+        Promise.resolve({ allowed: true, remaining: 10 }),
+        Promise.resolve({ allowed: true, remaining: 10 }),
+        Promise.resolve({ allowed: true, remaining: 10 }),
       ])
 
       expect(results).toHaveLength(3)

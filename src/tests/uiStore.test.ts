@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest'
+import { describe, it, expect, beforeEach } from 'bun:test'
 import { useUIStore } from '../lib/stores/uiStore'
 
 describe('uiStore', () => {
@@ -10,11 +10,6 @@ describe('uiStore', () => {
     })
   })
 
-  afterEach(() => {
-    vi.restoreAllMocks()
-  })
-
-  // ==================== SIDEBAR PINNED (UPDATE) ====================
   describe('setSidebarPinned', () => {
     it('should set sidebar pinned to true', () => {
       useUIStore.getState().setSidebarPinned(true)
@@ -35,8 +30,6 @@ describe('uiStore', () => {
     })
   })
 
-
-  // ==================== TOGGLE SIDEBAR PINNED (UPDATE) ====================
   describe('toggleSidebarPinned', () => {
     it('should toggle from false to true', () => {
       useUIStore.getState().toggleSidebarPinned()
@@ -65,7 +58,6 @@ describe('uiStore', () => {
     })
   })
 
-  // ==================== SIDEBAR MOBILE OPEN (UPDATE) ====================
   describe('setSidebarMobileOpen', () => {
     it('should set mobile sidebar open to true', () => {
       useUIStore.getState().setSidebarMobileOpen(true)
@@ -93,7 +85,6 @@ describe('uiStore', () => {
     })
   })
 
-  // ==================== PROFILE MENU OPEN (UPDATE) ====================
   describe('setProfileMenuOpen', () => {
     it('should set profile menu open to true', () => {
       useUIStore.getState().setProfileMenuOpen(true)
@@ -123,7 +114,6 @@ describe('uiStore', () => {
     })
   })
 
-  // ==================== DATA INTEGRITY ====================
   describe('Data Integrity', () => {
     it('should maintain state isolation between UI elements', () => {
       useUIStore.setState({ sidebarPinned: true, sidebarMobileOpen: false, profileMenuOpen: true })
@@ -151,7 +141,6 @@ describe('uiStore', () => {
     })
   })
 
-  // ==================== EDGE CASES ====================
   describe('Edge Cases', () => {
     it('should handle setting same value multiple times via setState', () => {
       useUIStore.setState({ ...useUIStore.getState(), sidebarPinned: true })

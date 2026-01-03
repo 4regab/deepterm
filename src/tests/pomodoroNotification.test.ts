@@ -1,16 +1,6 @@
-import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, mock } from 'bun:test'
 import fc from 'fast-check'
 import { usePomodoroStore } from '../lib/stores/pomodoroStore'
-
-/**
- * Property-based tests for PomodoroNotification sound behavior
- * 
- * Core property being tested:
- * When user interacts with the notification (dismiss or start next phase),
- * the notification sound MUST be stopped before any state transition occurs.
- * 
- * This prevents audio overlap between notification sound and background sounds.
- */
 
 describe('PomodoroNotification - Sound Stop Property Tests', () => {
   const initialState = {
@@ -30,14 +20,8 @@ describe('PomodoroNotification - Sound Stop Property Tests', () => {
 
   beforeEach(() => {
     usePomodoroStore.setState(initialState)
-    vi.restoreAllMocks()
   })
 
-  afterEach(() => {
-    vi.unstubAllGlobals()
-  })
-
-  // ==================== PROPERTY: Sound Stop on Dismiss ====================
   describe('Property: stopNotification called before dismissPhasePrompt', () => {
     it('should always call stop before dismiss for any pending phase', () => {
       const phases = ['work', 'shortBreak', 'longBreak'] as const
@@ -47,7 +31,6 @@ describe('PomodoroNotification - Sound Stop Property Tests', () => {
           fc.constantFrom(...phases),
           fc.constantFrom(...phases),
           (currentPhase, pendingPhase) => {
-            // Setup: notification is showing
             usePomodoroStore.setState({
               ...initialState,
               phase: currentPhase,
@@ -55,33 +38,27 @@ describe('PomodoroNotification - Sound Stop Property Tests', () => {
               pendingNextPhase: pendingPhase,
             })
 
-            // Track call order
             const callOrder: string[] = []
-            const mockStopNotification = vi.fn(() => callOrder.push('stop'))
+            const mockStopNotification = mock(() => callOrder.push('stop'))
             const originalDismiss = usePomodoroStore.getState().dismissPhasePrompt
             
-            // Wrap dismissPhasePrompt to track call order
             const wrappedDismiss = () => {
               callOrder.push('dismiss')
               originalDismiss()
             }
 
-            // Simulate handleDismiss behavior (as implemented in component)
             const handleDismiss = () => {
               mockStopNotification()
               wrappedDismiss()
             }
 
-            // Execute
             handleDismiss()
 
-            // Property: stop MUST be called before dismiss
             expect(callOrder[0]).toBe('stop')
             expect(callOrder[1]).toBe('dismiss')
             expect(mockStopNotification).toHaveBeenCalledTimes(1)
-            
-            // State should be updated
             expect(usePomodoroStore.getState().pendingPhasePrompt).toBe(false)
+            return true
           }
         ),
         { numRuns: 50 }
@@ -89,7 +66,6 @@ describe('PomodoroNotification - Sound Stop Property Tests', () => {
     })
   })
 
-  // ==================== PROPERTY: Sound Stop on Start Next Phase ====================
   describe('Property: stopNotification called before startNextPhase', () => {
     it('should always call stop before starting next phase for any phase transition', () => {
       const phases = ['work', 'shortBreak', 'longBreak'] as const
@@ -99,7 +75,6 @@ describe('PomodoroNotification - Sound Stop Property Tests', () => {
           fc.constantFrom(...phases),
           fc.constantFrom(...phases),
           (currentPhase, pendingPhase) => {
-            // Setup: notification is showing
             usePomodoroStore.setState({
               ...initialState,
               phase: currentPhase,
@@ -107,34 +82,28 @@ describe('PomodoroNotification - Sound Stop Property Tests', () => {
               pendingNextPhase: pendingPhase,
             })
 
-            // Track call order
             const callOrder: string[] = []
-            const mockStopNotification = vi.fn(() => callOrder.push('stop'))
+            const mockStopNotification = mock(() => callOrder.push('stop'))
             const originalStartNext = usePomodoroStore.getState().startNextPhase
             
-            // Wrap startNextPhase to track call order
             const wrappedStartNext = () => {
               callOrder.push('startNext')
               originalStartNext()
             }
 
-            // Simulate handleStartNextPhase behavior (as implemented in component)
             const handleStartNextPhase = () => {
               mockStopNotification()
               wrappedStartNext()
             }
 
-            // Execute
             handleStartNextPhase()
 
-            // Property: stop MUST be called before startNextPhase
             expect(callOrder[0]).toBe('stop')
             expect(callOrder[1]).toBe('startNext')
             expect(mockStopNotification).toHaveBeenCalledTimes(1)
-            
-            // State should be updated
             expect(usePomodoroStore.getState().pendingPhasePrompt).toBe(false)
             expect(usePomodoroStore.getState().phase).toBe(pendingPhase)
+            return true
           }
         ),
         { numRuns: 50 }
@@ -142,15 +111,13 @@ describe('PomodoroNotification - Sound Stop Property Tests', () => {
     })
   })
 
-  // ==================== PROPERTY: No Sound Overlap ====================
   describe('Property: No audio overlap possible', () => {
-    it('should guarantee sound is stopped before any phase transition that could start background audio', () => {
+    it('should guarantee sound is stopped before any phase transition', () => {
       fc.assert(
         fc.property(
-          fc.boolean(), // true = dismiss, false = start next
+          fc.boolean(),
           fc.constantFrom('work', 'shortBreak', 'longBreak'),
           (isDismiss, pendingPhase) => {
-            // Setup
             usePomodoroStore.setState({
               ...initialState,
               pendingPhasePrompt: true,
@@ -160,7 +127,7 @@ describe('PomodoroNotification - Sound Stop Property Tests', () => {
             let soundStopped = false
             let stateChangedWhileSoundPlaying = false
             
-            const mockStopNotification = vi.fn(() => {
+            const mockStopNotification = mock(() => {
               soundStopped = true
             })
 
@@ -170,7 +137,6 @@ describe('PomodoroNotification - Sound Stop Property Tests', () => {
               }
             }
 
-            // Simulate the handler behavior
             if (isDismiss) {
               mockStopNotification()
               checkStateChange()
@@ -181,9 +147,9 @@ describe('PomodoroNotification - Sound Stop Property Tests', () => {
               usePomodoroStore.getState().startNextPhase()
             }
 
-            // Property: state should never change while sound is still playing
             expect(stateChangedWhileSoundPlaying).toBe(false)
             expect(soundStopped).toBe(true)
+            return true
           }
         ),
         { numRuns: 100 }
@@ -191,7 +157,6 @@ describe('PomodoroNotification - Sound Stop Property Tests', () => {
     })
   })
 
-  // ==================== PROPERTY: Idempotent Stop ====================
   describe('Property: Multiple stop calls are safe', () => {
     it('should handle multiple rapid button clicks without error', () => {
       fc.assert(
@@ -204,21 +169,18 @@ describe('PomodoroNotification - Sound Stop Property Tests', () => {
               pendingNextPhase: 'shortBreak',
             })
 
-            const mockStopNotification = vi.fn()
+            const mockStopNotification = mock(() => {})
             
-            // Simulate rapid clicks
             for (let i = 0; i < clickCount; i++) {
               mockStopNotification()
-              // Only first dismiss should have effect (subsequent calls are no-ops)
               if (usePomodoroStore.getState().pendingNextPhase) {
                 usePomodoroStore.getState().dismissPhasePrompt()
               }
             }
 
-            // Property: stop should be called for each click
             expect(mockStopNotification).toHaveBeenCalledTimes(clickCount)
-            // State should be stable after all clicks
             expect(usePomodoroStore.getState().pendingPhasePrompt).toBe(false)
+            return true
           }
         ),
         { numRuns: 20 }
@@ -226,7 +188,6 @@ describe('PomodoroNotification - Sound Stop Property Tests', () => {
     })
   })
 
-  // ==================== UNIT TESTS: Store Actions ====================
   describe('Store Actions - dismissPhasePrompt', () => {
     it('should clear pending prompt state', () => {
       usePomodoroStore.setState({
@@ -262,7 +223,6 @@ describe('PomodoroNotification - Sound Stop Property Tests', () => {
         pendingNextPhase: null,
       })
 
-      // Should not throw
       expect(() => usePomodoroStore.getState().dismissPhasePrompt()).not.toThrow()
     })
   })
@@ -310,7 +270,6 @@ describe('PomodoroNotification - Sound Stop Property Tests', () => {
         pendingNextPhase: null,
       })
 
-      // Should not throw
       expect(() => usePomodoroStore.getState().startNextPhase()).not.toThrow()
     })
   })

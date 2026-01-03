@@ -1,12 +1,10 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { describe, it, expect, beforeEach } from 'bun:test'
 import { useXPStore } from '../lib/stores/xpStore'
 import { useProfileStore } from '../lib/stores/profileStore'
 import { getRankTitle, calculateProgressPercent } from '../utils/xp'
 
 describe('DashboardHeader Component Logic', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
-    // Reset stores to initial state
     useXPStore.setState({
       stats: null,
       loading: false,
@@ -66,84 +64,56 @@ describe('DashboardHeader Component Logic', () => {
 
   describe('Rank Title Display', () => {
     it('should display Novice for level 1', () => {
-      const level = 1
-      const rankTitle = getRankTitle(level)
-      expect(rankTitle).toBe('Novice')
+      expect(getRankTitle(1)).toBe('Novice')
     })
 
     it('should display Apprentice for level 5', () => {
-      const level = 5
-      const rankTitle = getRankTitle(level)
-      expect(rankTitle).toBe('Apprentice')
+      expect(getRankTitle(5)).toBe('Apprentice')
     })
 
     it('should display Scholar for level 10', () => {
-      const level = 10
-      const rankTitle = getRankTitle(level)
-      expect(rankTitle).toBe('Scholar')
+      expect(getRankTitle(10)).toBe('Scholar')
     })
 
     it('should display Expert for level 20', () => {
-      const level = 20
-      const rankTitle = getRankTitle(level)
-      expect(rankTitle).toBe('Expert')
+      expect(getRankTitle(20)).toBe('Expert')
     })
 
     it('should display Master for level 35', () => {
-      const level = 35
-      const rankTitle = getRankTitle(level)
-      expect(rankTitle).toBe('Master')
+      expect(getRankTitle(35)).toBe('Master')
     })
 
     it('should display Grandmaster for level 50+', () => {
-      const level = 50
-      const rankTitle = getRankTitle(level)
-      expect(rankTitle).toBe('Grandmaster')
+      expect(getRankTitle(50)).toBe('Grandmaster')
     })
   })
 
   describe('XP Progress Bar Calculation', () => {
     it('should calculate 0% progress when xpInLevel is 0', () => {
-      const xpInLevel = 0
-      const xpForNext = 100
-      const progress = calculateProgressPercent(xpInLevel, xpForNext)
-      expect(progress).toBe(0)
+      expect(calculateProgressPercent(0, 100)).toBe(0)
     })
 
     it('should calculate 50% progress correctly', () => {
-      const xpInLevel = 50
-      const xpForNext = 100
-      const progress = calculateProgressPercent(xpInLevel, xpForNext)
-      expect(progress).toBe(50)
+      expect(calculateProgressPercent(50, 100)).toBe(50)
     })
 
     it('should calculate 100% progress when xpInLevel equals xpForNext', () => {
-      const xpInLevel = 100
-      const xpForNext = 100
-      const progress = calculateProgressPercent(xpInLevel, xpForNext)
-      expect(progress).toBe(100)
+      expect(calculateProgressPercent(100, 100)).toBe(100)
     })
 
     it('should cap progress at 100% when xpInLevel exceeds xpForNext', () => {
-      const xpInLevel = 150
-      const xpForNext = 100
-      const progress = calculateProgressPercent(xpInLevel, xpForNext)
-      expect(progress).toBe(100)
+      expect(calculateProgressPercent(150, 100)).toBe(100)
     })
 
     it('should return 0 when xpForNext is 0', () => {
-      const xpInLevel = 50
-      const xpForNext = 0
-      const progress = calculateProgressPercent(xpInLevel, xpForNext)
-      expect(progress).toBe(0)
+      expect(calculateProgressPercent(50, 0)).toBe(0)
     })
 
     it('should handle default values when stats is null', () => {
       const { stats } = useXPStore.getState()
       const xpInLevel = stats?.xpInLevel || 0
       const xpForNext = stats?.xpForNext || 100
-      const progress = calculateProgressPercent(xpInLevel, xpForNext)
-      expect(progress).toBe(0)
+      expect(calculateProgressPercent(xpInLevel, xpForNext)).toBe(0)
     })
   })
 
@@ -160,12 +130,7 @@ describe('DashboardHeader Component Logic', () => {
 
     it('should not be loading when both stores have data', () => {
       useXPStore.setState({
-        stats: {
-          totalXp: 100,
-          currentLevel: 2,
-          xpInLevel: 0,
-          xpForNext: 100,
-        },
+        stats: { totalXp: 100, currentLevel: 2, xpInLevel: 0, xpForNext: 100 },
         loading: false,
         error: null,
         lastLevelUp: false,

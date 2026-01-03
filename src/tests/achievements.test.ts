@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'bun:test';
 import * as fc from 'fast-check';
 import { calculateOverallProgress, getUnlockedCount, getMostRecentUnlocked } from '@/utils/achievements';
 import type { Achievement } from '@/lib/schemas/achievements';
@@ -19,13 +19,6 @@ const achievementArb = fc.record({
 const achievementsArrayArb = fc.array(achievementArb, { minLength: 0, maxLength: 20 });
 
 describe('Achievement Utility Functions', () => {
-  /**
-   * **Feature: dashboard-redesign, Property 4: Achievement statistics are accurate**
-   * *For any* list of achievements, the unlocked count should equal the number of 
-   * achievements where unlocked=true, and the overall progress percentage should 
-   * equal (sum of all progress / sum of all requirement_values) * 100.
-   * **Validates: Requirements 4.5, 4.6**
-   */
   it('Property 4: Achievement statistics are accurate - unlocked count matches filter', () => {
     fc.assert(
       fc.property(achievementsArrayArb, (achievements) => {
@@ -64,7 +57,6 @@ describe('Achievement Utility Functions', () => {
     );
   });
 
-  // Unit tests for edge cases
   describe('calculateOverallProgress edge cases', () => {
     it('returns 0 for empty array', () => {
       expect(calculateOverallProgress([])).toBe(0);
@@ -82,7 +74,6 @@ describe('Achievement Utility Functions', () => {
         requirement_value: 100,
         unlocked: false,
       };
-      // 0 unlocked out of 1 = 0%
       expect(calculateOverallProgress([achievement])).toBe(0);
     });
   });
@@ -123,8 +114,6 @@ describe('Achievement Utility Functions', () => {
   });
 });
 
-
-// Unit tests for achievement components logic
 describe('Achievement Components Logic', () => {
   describe('RecentActivity with achievements', () => {
     it('should include unlocked achievements in activity list', () => {
@@ -155,7 +144,6 @@ describe('Achievement Components Logic', () => {
         { id: '2', title: 'B', description: '', icon: 'Star', color: '', bg: '', progress: 100, requirement_value: 100, unlocked: true },
       ];
       
-      // 1 unlocked out of 2 = 50%
       const progress = calculateOverallProgress(achievements);
       expect(progress).toBe(50);
     });

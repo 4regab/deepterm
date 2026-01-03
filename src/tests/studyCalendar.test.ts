@@ -1,11 +1,10 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { describe, it, expect, beforeEach } from 'bun:test'
 import { useActivityStore } from '../lib/stores/activityStore'
 import { generateMonthGrid } from '../utils/calendar'
 import type { ActivityDay } from '../lib/schemas/activity'
 
 describe('StudyCalendar Component Logic', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     useActivityStore.setState({
       activity: [],
       stats: null,
@@ -16,30 +15,27 @@ describe('StudyCalendar Component Logic', () => {
 
   describe('Calendar renders correct month', () => {
     it('should generate grid for current month with correct structure', () => {
-      const grid = generateMonthGrid(2024, 0, []) // January 2024
+      const grid = generateMonthGrid(2024, 0, [])
 
-      expect(grid).toHaveLength(6) // 6 weeks
+      expect(grid).toHaveLength(6)
       grid.forEach(week => {
-        expect(week).toHaveLength(7) // 7 days per week
+        expect(week).toHaveLength(7)
       })
     })
 
     it('should mark days in target month as isCurrentMonth', () => {
-      const grid = generateMonthGrid(2024, 0, []) // January 2024
+      const grid = generateMonthGrid(2024, 0, [])
 
-      // Find all days that are in January
       const januaryDays = grid.flat().filter(day => day.isCurrentMonth)
-      expect(januaryDays.length).toBe(31) // January has 31 days
+      expect(januaryDays.length).toBe(31)
     })
 
     it('should include days from adjacent months to fill grid', () => {
-      const grid = generateMonthGrid(2024, 0, []) // January 2024
+      const grid = generateMonthGrid(2024, 0, [])
 
-      // Total cells = 6 weeks * 7 days = 42
       const allDays = grid.flat()
       expect(allDays).toHaveLength(42)
 
-      // Some days should be from previous/next month
       const nonCurrentMonthDays = allDays.filter(day => !day.isCurrentMonth)
       expect(nonCurrentMonthDays.length).toBeGreaterThan(0)
     })
@@ -50,11 +46,9 @@ describe('StudyCalendar Component Logic', () => {
       const januaryGrid = generateMonthGrid(2024, 0, [])
       const februaryGrid = generateMonthGrid(2024, 1, [])
 
-      // February 2024 has 29 days (leap year)
       const febDays = februaryGrid.flat().filter(day => day.isCurrentMonth)
       expect(febDays.length).toBe(29)
 
-      // January has 31 days
       const janDays = januaryGrid.flat().filter(day => day.isCurrentMonth)
       expect(janDays.length).toBe(31)
     })
@@ -63,13 +57,11 @@ describe('StudyCalendar Component Logic', () => {
       const dec2023Grid = generateMonthGrid(2023, 11, [])
       const jan2024Grid = generateMonthGrid(2024, 0, [])
 
-      // December 2023 days should be in December
       const decDays = dec2023Grid.flat().filter(day =>
         day.isCurrentMonth && day.date.getFullYear() === 2023
       )
       expect(decDays.length).toBe(31)
 
-      // January 2024 days should be in January
       const janDays = jan2024Grid.flat().filter(day =>
         day.isCurrentMonth && day.date.getFullYear() === 2024
       )
@@ -89,7 +81,6 @@ describe('StudyCalendar Component Logic', () => {
 
     it('should not mark any day as isToday for past months', () => {
       const today = new Date()
-      // Go back 2 months to avoid boundary issues where today appears as filler day
       let pastMonth = today.getMonth() - 2
       let pastYear = today.getFullYear()
       if (pastMonth < 0) {
@@ -100,7 +91,6 @@ describe('StudyCalendar Component Logic', () => {
       const grid = generateMonthGrid(pastYear, pastMonth, [])
       const todayCell = grid.flat().find(day => day.isToday)
 
-      // Today should not appear in a month that's 2+ months in the past
       expect(todayCell).toBeUndefined()
     })
   })

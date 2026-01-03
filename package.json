@@ -3,12 +3,12 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
+    "dev": "bun --bun next dev",
+    "build": "bun --bun next build",
+    "start": "bun --bun next start",
     "lint": "eslint",
-    "test": "vitest run",
-    "test:watch": "vitest"
+    "test": "bun test",
+    "test:watch": "bun test --watch"
   },
   "dependencies": {
     "@google/genai": "^1.30.0",
@@ -39,8 +39,8 @@
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
     "@tailwindcss/typography": "^0.5.19",
+    "@types/bun": "latest",
     "@types/file-saver": "^2.0.7",
-    "@types/node": "^24",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "babel-plugin-react-compiler": "1.0.0",
@@ -49,7 +49,6 @@
     "eslint-config-next": "16.0.4",
     "fast-check": "^4.3.0",
     "tailwindcss": "^4",
-    "typescript": "^5",
-    "vitest": "^4.0.14"
+    "typescript": "^5"
   }
 }

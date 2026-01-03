@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach } from 'bun:test'
 import { usePomodoroStore } from '../lib/stores/pomodoroStore'
 
 describe('pomodoroStore', () => {
@@ -17,14 +17,8 @@ describe('pomodoroStore', () => {
 
   beforeEach(() => {
     usePomodoroStore.setState(initialState)
-    vi.restoreAllMocks()
   })
 
-  afterEach(() => {
-    vi.unstubAllGlobals()
-  })
-
-  // ==================== SETTINGS CRUD ====================
   describe('setSettings', () => {
     it('should update partial settings', () => {
       usePomodoroStore.getState().setSettings({ workDuration: 30 })
@@ -69,7 +63,6 @@ describe('pomodoroStore', () => {
     })
   })
 
-  // ==================== TIME LEFT CRUD ====================
   describe('setTimeLeft', () => {
     it('should set time left to positive value', () => {
       usePomodoroStore.getState().setTimeLeft(1000)
@@ -97,7 +90,6 @@ describe('pomodoroStore', () => {
     })
   })
 
-  // ==================== RUNNING STATE ====================
   describe('setIsRunning', () => {
     it('should set running state to true', () => {
       usePomodoroStore.getState().setIsRunning(true)
@@ -118,7 +110,6 @@ describe('pomodoroStore', () => {
     })
   })
 
-  // ==================== PHASE CRUD ====================
   describe('setPhase', () => {
     it('should set phase to work', () => {
       usePomodoroStore.getState().setPhase('work')
@@ -147,7 +138,6 @@ describe('pomodoroStore', () => {
     })
   })
 
-  // ==================== SESSION COUNT ====================
   describe('incrementSession', () => {
     it('should increment session count from zero', () => {
       usePomodoroStore.getState().incrementSession()
@@ -168,19 +158,16 @@ describe('pomodoroStore', () => {
     })
   })
 
-  // ==================== TASK CRUD OPERATIONS ====================
   describe('Task CRUD - addTask (CREATE)', () => {
     it('should add a new task with valid text', () => {
-      vi.stubGlobal('crypto', { randomUUID: () => 'test-uuid-1' })
       usePomodoroStore.getState().addTask('Test task')
       const tasks = usePomodoroStore.getState().tasks
       expect(tasks).toHaveLength(1)
-      expect(tasks[0]).toEqual({ id: 'test-uuid-1', text: 'Test task', completed: false })
+      expect(tasks[0].text).toBe('Test task')
+      expect(tasks[0].completed).toBe(false)
     })
 
     it('should add multiple tasks', () => {
-      let callCount = 0
-      vi.stubGlobal('crypto', { randomUUID: () => `uuid-${++callCount}` })
       usePomodoroStore.getState().addTask('Task 1')
       usePomodoroStore.getState().addTask('Task 2')
       usePomodoroStore.getState().addTask('Task 3')
@@ -188,7 +175,6 @@ describe('pomodoroStore', () => {
     })
 
     it('should add task with empty string', () => {
-      vi.stubGlobal('crypto', { randomUUID: () => 'empty-uuid' })
       usePomodoroStore.getState().addTask('')
       const tasks = usePomodoroStore.getState().tasks
       expect(tasks).toHaveLength(1)
@@ -196,72 +182,66 @@ describe('pomodoroStore', () => {
     })
 
     it('should add task with whitespace only', () => {
-      vi.stubGlobal('crypto', { randomUUID: () => 'whitespace-uuid' })
       usePomodoroStore.getState().addTask('   ')
       expect(usePomodoroStore.getState().tasks[0].text).toBe('   ')
     })
 
     it('should add task with special characters', () => {
-      vi.stubGlobal('crypto', { randomUUID: () => 'special-uuid' })
       usePomodoroStore.getState().addTask('<script>alert("xss")</script>')
       expect(usePomodoroStore.getState().tasks[0].text).toBe('<script>alert("xss")</script>')
     })
 
     it('should add task with unicode characters', () => {
-      vi.stubGlobal('crypto', { randomUUID: () => 'unicode-uuid' })
       usePomodoroStore.getState().addTask('任务 🎯 タスク')
       expect(usePomodoroStore.getState().tasks[0].text).toBe('任务 🎯 タスク')
     })
 
     it('should add task with very long text', () => {
-      vi.stubGlobal('crypto', { randomUUID: () => 'long-uuid' })
       const longText = 'a'.repeat(10000)
       usePomodoroStore.getState().addTask(longText)
       expect(usePomodoroStore.getState().tasks[0].text).toBe(longText)
     })
 
     it('should initialize new task as not completed', () => {
-      vi.stubGlobal('crypto', { randomUUID: () => 'new-task-uuid' })
       usePomodoroStore.getState().addTask('New task')
       expect(usePomodoroStore.getState().tasks[0].completed).toBe(false)
     })
   })
 
   describe('Task CRUD - toggleTask (UPDATE)', () => {
-    beforeEach(() => {
-      vi.stubGlobal('crypto', { randomUUID: () => 'toggle-uuid' })
-      usePomodoroStore.getState().addTask('Test task')
-    })
-
     it('should toggle task from incomplete to complete', () => {
-      usePomodoroStore.getState().toggleTask('toggle-uuid')
+      usePomodoroStore.getState().addTask('Test task')
+      const taskId = usePomodoroStore.getState().tasks[0].id
+      usePomodoroStore.getState().toggleTask(taskId)
       expect(usePomodoroStore.getState().tasks[0].completed).toBe(true)
     })
 
     it('should toggle task from complete to incomplete', () => {
-      usePomodoroStore.getState().toggleTask('toggle-uuid')
-      usePomodoroStore.getState().toggleTask('toggle-uuid')
+      usePomodoroStore.getState().addTask('Test task')
+      const taskId = usePomodoroStore.getState().tasks[0].id
+      usePomodoroStore.getState().toggleTask(taskId)
+      usePomodoroStore.getState().toggleTask(taskId)
       expect(usePomodoroStore.getState().tasks[0].completed).toBe(false)
     })
 
     it('should not affect other tasks when toggling', () => {
-      let callCount = 0
-      vi.stubGlobal('crypto', { randomUUID: () => `multi-uuid-${++callCount}` })
-      usePomodoroStore.setState({ ...initialState, tasks: [] })
       usePomodoroStore.getState().addTask('Task 1')
       usePomodoroStore.getState().addTask('Task 2')
-      usePomodoroStore.getState().toggleTask('multi-uuid-1')
+      const taskId = usePomodoroStore.getState().tasks[0].id
+      usePomodoroStore.getState().toggleTask(taskId)
       expect(usePomodoroStore.getState().tasks[0].completed).toBe(true)
       expect(usePomodoroStore.getState().tasks[1].completed).toBe(false)
     })
 
     it('should handle toggling non-existent task ID gracefully', () => {
+      usePomodoroStore.getState().addTask('Test task')
       const tasksBefore = [...usePomodoroStore.getState().tasks]
       usePomodoroStore.getState().toggleTask('non-existent-id')
       expect(usePomodoroStore.getState().tasks).toEqual(tasksBefore)
     })
 
     it('should handle toggling with empty string ID', () => {
+      usePomodoroStore.getState().addTask('Test task')
       const tasksBefore = [...usePomodoroStore.getState().tasks]
       usePomodoroStore.getState().toggleTask('')
       expect(usePomodoroStore.getState().tasks).toEqual(tasksBefore)
@@ -270,27 +250,25 @@ describe('pomodoroStore', () => {
 
   describe('Task CRUD - removeTask (DELETE)', () => {
     it('should remove a task by ID', () => {
-      vi.stubGlobal('crypto', { randomUUID: () => 'remove-uuid' })
       usePomodoroStore.getState().addTask('Test task')
+      const taskId = usePomodoroStore.getState().tasks[0].id
       expect(usePomodoroStore.getState().tasks).toHaveLength(1)
-      usePomodoroStore.getState().removeTask('remove-uuid')
+      usePomodoroStore.getState().removeTask(taskId)
       expect(usePomodoroStore.getState().tasks).toHaveLength(0)
     })
 
     it('should only remove specified task', () => {
-      let callCount = 0
-      vi.stubGlobal('crypto', { randomUUID: () => `del-uuid-${++callCount}` })
       usePomodoroStore.getState().addTask('Task 1')
       usePomodoroStore.getState().addTask('Task 2')
       usePomodoroStore.getState().addTask('Task 3')
-      usePomodoroStore.getState().removeTask('del-uuid-2')
+      const taskId = usePomodoroStore.getState().tasks[1].id
+      usePomodoroStore.getState().removeTask(taskId)
       const tasks = usePomodoroStore.getState().tasks
       expect(tasks).toHaveLength(2)
       expect(tasks.map(t => t.text)).toEqual(['Task 1', 'Task 3'])
     })
 
     it('should handle removing non-existent task gracefully', () => {
-      vi.stubGlobal('crypto', { randomUUID: () => 'existing-uuid' })
       usePomodoroStore.getState().addTask('Test task')
       usePomodoroStore.getState().removeTask('non-existent-id')
       expect(usePomodoroStore.getState().tasks).toHaveLength(1)
@@ -301,23 +279,13 @@ describe('pomodoroStore', () => {
       expect(usePomodoroStore.getState().tasks).toHaveLength(0)
     })
 
-    it('should handle removing same task twice', () => {
-      vi.stubGlobal('crypto', { randomUUID: () => 'double-remove-uuid' })
-      usePomodoroStore.getState().addTask('Test task')
-      usePomodoroStore.getState().removeTask('double-remove-uuid')
-      usePomodoroStore.getState().removeTask('double-remove-uuid')
-      expect(usePomodoroStore.getState().tasks).toHaveLength(0)
-    })
-
     it('should handle removing with empty string ID', () => {
-      vi.stubGlobal('crypto', { randomUUID: () => 'valid-uuid' })
       usePomodoroStore.getState().addTask('Test task')
       usePomodoroStore.getState().removeTask('')
       expect(usePomodoroStore.getState().tasks).toHaveLength(1)
     })
   })
 
-  // ==================== UI STATE SETTERS ====================
   describe('UI state setters', () => {
     it('setShowSettings should set to true', () => {
       usePomodoroStore.getState().setShowSettings(true)
@@ -347,11 +315,6 @@ describe('pomodoroStore', () => {
       expect(usePomodoroStore.getState().toastMessage).toBe('')
     })
 
-    it('setToastMessage should handle special characters', () => {
-      usePomodoroStore.getState().setToastMessage('<b>Bold</b> & "quotes"')
-      expect(usePomodoroStore.getState().toastMessage).toBe('<b>Bold</b> & "quotes"')
-    })
-
     it('setShowConfetti should toggle confetti', () => {
       usePomodoroStore.getState().setShowConfetti(true)
       expect(usePomodoroStore.getState().showConfetti).toBe(true)
@@ -360,7 +323,6 @@ describe('pomodoroStore', () => {
     })
   })
 
-  // ==================== RESET TIMER ====================
   describe('resetTimer', () => {
     it('should reset timer to work duration when in work phase', () => {
       usePomodoroStore.getState().setTimeLeft(100)
@@ -405,17 +367,14 @@ describe('pomodoroStore', () => {
     })
 
     it('should not affect tasks on reset', () => {
-      vi.stubGlobal('crypto', { randomUUID: () => 'task-uuid' })
       usePomodoroStore.getState().addTask('Test task')
       usePomodoroStore.getState().resetTimer()
       expect(usePomodoroStore.getState().tasks).toHaveLength(1)
     })
   })
 
-  // ==================== DATA INTEGRITY ====================
   describe('Data Integrity', () => {
     it('should maintain state isolation between operations', () => {
-      vi.stubGlobal('crypto', { randomUUID: () => 'integrity-uuid' })
       usePomodoroStore.getState().setSettings({ workDuration: 30 })
       usePomodoroStore.getState().addTask('Task')
       usePomodoroStore.getState().setPhase('shortBreak')

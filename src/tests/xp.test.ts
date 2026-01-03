@@ -1,14 +1,8 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'bun:test';
 import * as fc from 'fast-check';
 import { getRankTitle, getRankIndex, calculateProgressPercent } from '@/utils/xp';
 
 describe('XP Utility Functions', () => {
-  /**
-   * **Feature: dashboard-redesign, Property 1: Rank title mapping is monotonic**
-   * *For any* two levels L1 and L2 where L1 < L2, the rank title for L1 should be 
-   * less than or equal to the rank title for L2 in the progression order.
-   * **Validates: Requirements 1.2**
-   */
   it('Property 1: Rank title mapping is monotonic', () => {
     fc.assert(
       fc.property(
@@ -19,7 +13,6 @@ describe('XP Utility Functions', () => {
           const lowerRankIndex = getRankIndex(lower);
           const higherRankIndex = getRankIndex(higher);
           
-          // Monotonicity: lower level should have rank index <= higher level's rank index
           return lowerRankIndex <= higherRankIndex;
         }
       ),
@@ -27,17 +20,11 @@ describe('XP Utility Functions', () => {
     );
   });
 
-  /**
-   * **Feature: dashboard-redesign, Property 2: XP progress percentage is bounded**
-   * *For any* valid XP stats (xpInLevel >= 0, xpForNext > 0), the calculated 
-   * progress percentage should be between 0 and 100 inclusive.
-   * **Validates: Requirements 1.4**
-   */
   it('Property 2: XP progress percentage is bounded', () => {
     fc.assert(
       fc.property(
-        fc.integer({ min: 0, max: 10000 }),  // xpInLevel
-        fc.integer({ min: 1, max: 10000 }),  // xpForNext (must be > 0)
+        fc.integer({ min: 0, max: 10000 }),
+        fc.integer({ min: 1, max: 10000 }),
         (xpInLevel, xpForNext) => {
           const percent = calculateProgressPercent(xpInLevel, xpForNext);
           return percent >= 0 && percent <= 100;
@@ -47,7 +34,6 @@ describe('XP Utility Functions', () => {
     );
   });
 
-  // Unit tests for edge cases
   describe('getRankTitle edge cases', () => {
     it('returns Novice for level 1', () => {
       expect(getRankTitle(1)).toBe('Novice');

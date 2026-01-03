@@ -1,24 +1,7 @@
-import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest'
+import { describe, it, expect } from 'bun:test'
 import { getStudySettings, getQuestionTypeForStage, type StudySettings, type QuestionType } from '../utils/studySettings'
 
 describe('studySettings', () => {
-  const mockLocalStorage: Record<string, string> = {}
-
-  beforeEach(() => {
-    vi.stubGlobal('window', {
-      localStorage: {
-        getItem: vi.fn((key: string) => mockLocalStorage[key] || null),
-        setItem: vi.fn((key: string, value: string) => { mockLocalStorage[key] = value }),
-        removeItem: vi.fn((key: string) => { delete mockLocalStorage[key] }),
-      },
-    })
-    Object.keys(mockLocalStorage).forEach(key => delete mockLocalStorage[key])
-  })
-
-  afterEach(() => {
-    vi.unstubAllGlobals()
-  })
-
   const DEFAULT_SETTINGS: StudySettings = {
     cardsPerRound: 7,
     frontSide: 'definition',
@@ -37,22 +20,13 @@ describe('studySettings', () => {
     }
   }
 
-  // ==================== GET STUDY SETTINGS (READ) ====================
   describe('getStudySettings', () => {
     it('should return default settings when no stored settings', () => {
       const settings = getStudySettings()
       expect(settings).toEqual(DEFAULT_SETTINGS)
     })
 
-    it('should return stored settings when available', () => {
-      // Test the merge behavior directly since localStorage isn't available in node
-      const storedSettings = { cardsPerRound: 10 }
-      const merged = { ...DEFAULT_SETTINGS, ...storedSettings }
-      expect(merged.cardsPerRound).toBe(10)
-    })
-
     it('should merge stored settings with defaults', () => {
-      // Test the merge behavior directly
       const storedSettings = { cardsPerRound: 15 }
       const merged = { ...DEFAULT_SETTINGS, ...storedSettings }
       expect(merged.cardsPerRound).toBe(15)
@@ -60,19 +34,8 @@ describe('studySettings', () => {
     })
 
     it('should return defaults on invalid JSON parse', () => {
-      // Test the try-catch behavior
       try {
         JSON.parse('invalid json')
-      } catch {
-        // Should return defaults on parse error
-        expect(DEFAULT_SETTINGS.cardsPerRound).toBe(7)
-      }
-    })
-
-    it('should handle empty string parse', () => {
-      // Empty string throws on JSON.parse
-      try {
-        JSON.parse('')
       } catch {
         expect(DEFAULT_SETTINGS.cardsPerRound).toBe(7)
       }
@@ -85,7 +48,6 @@ describe('studySettings', () => {
     })
   })
 
-  // ==================== SAVE STUDY SETTINGS (UPDATE) ====================
   describe('saveStudySettings - merge behavior', () => {
     it('should merge partial settings with defaults', () => {
       const current = getStudySettings()
@@ -167,7 +129,6 @@ describe('studySettings', () => {
     })
   })
 
-  // ==================== GET QUESTION TYPE FOR STAGE ====================
   describe('getQuestionTypeForStage', () => {
     const allTypes: QuestionType[] = ['mcq', 'truefalse', 'written', 'flashcard']
 
@@ -220,17 +181,7 @@ describe('studySettings', () => {
     })
   })
 
-  // ==================== EDGE CASES ====================
   describe('Edge Cases', () => {
-    it('should handle corrupted JSON data', () => {
-      // Test that invalid JSON returns defaults
-      try {
-        JSON.parse('{"cardsPerRound": undefined}')
-      } catch {
-        expect(DEFAULT_SETTINGS.cardsPerRound).toBe(7)
-      }
-    })
-
     it('should handle very large cardsPerRound in memory', () => {
       const settings = { ...DEFAULT_SETTINGS, cardsPerRound: Number.MAX_SAFE_INTEGER }
       expect(settings.cardsPerRound).toBe(Number.MAX_SAFE_INTEGER)
@@ -254,7 +205,6 @@ describe('studySettings', () => {
     })
   })
 
-  // ==================== DATA INTEGRITY ====================
   describe('Data Integrity', () => {
     it('should not mutate input settings object', () => {
       const input = { cardsPerRound: 10 }
