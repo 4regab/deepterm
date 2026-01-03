@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Space_Grotesk, Sora } from "next/font/google";
+import { Space_Grotesk, Sora, Source_Serif_4 } from "next/font/google";
 import Script from "next/script";
 import "@/styles/globals.css";
 import {
@@ -19,6 +19,13 @@ const sora = Sora({
   subsets: ["latin"],
   variable: "--font-sora",
   display: "swap",
+});
+
+const sourceSerif4 = Source_Serif_4({
+  subsets: ["latin"],
+  variable: "--font-source-serif",
+  display: "swap",
+  style: ["normal", "italic"],
 });
 
 export const metadata: Metadata = defaultMetadata;

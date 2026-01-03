@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useCallback } from 'react'
 import ArticleReader from './ArticleReader'
 import ArticleContent, { extractPlainText } from './ArticleContent'
 

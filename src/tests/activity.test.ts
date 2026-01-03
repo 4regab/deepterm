@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'bun:test'
+import { describe, it, expect } from 'bun:test'
 import { XP_REWARDS } from '../services/activity'
 
 describe('activity utilities', () => {

@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach, mock } from 'bun:test'
+import { describe, it, expect, beforeEach, mock } from 'bun:test'
 import fc from 'fast-check'
 import { usePomodoroStore } from '../lib/stores/pomodoroStore'
 

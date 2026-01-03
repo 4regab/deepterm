@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach, mock, spyOn } from 'bun:test'
+import { describe, it, expect, beforeEach } from 'bun:test'
 import { useAchievementsStore } from '../lib/stores/achievementsStore'
 import type { Achievement } from '../lib/schemas/achievements'
 
