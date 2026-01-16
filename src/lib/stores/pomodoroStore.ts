@@ -61,6 +61,10 @@ const DEFAULT_SETTINGS: PomodoroSettings = {
 // Module-level variables for persistence
 let timerInterval: NodeJS.Timeout | null = null;
 let sessionStartTime: Date | null = null;
+let targetEndTime: number | null = null; // Absolute timestamp when timer should end
+let pausedTimeLeft: number | null = null; // Time left when paused (for resume)
+let visibilityHandler: (() => void) | null = null; // Store visibility handler for cleanup
+let isCompletingPhase = false; // Guard against duplicate handlePhaseComplete calls
 
 export const usePomodoroStore = create<PomodoroStore>()((set, get) => ({
   settings: DEFAULT_SETTINGS,
@@ -169,7 +173,14 @@ export const usePomodoroStore = create<PomodoroStore>()((set, get) => ({
       clearInterval(timerInterval);
       timerInterval = null;
     }
+    // Clean up visibility listener
+    if (visibilityHandler && typeof document !== 'undefined') {
+      document.removeEventListener('visibilitychange', visibilityHandler);
+      visibilityHandler = null;
+    }
     sessionStartTime = null;
+    targetEndTime = null;
+    pausedTimeLeft = null;
     const { settings, phase } = get()
     const duration = phase === 'work'
       ? settings.workDuration
@@ -190,15 +201,48 @@ export const usePomodoroStore = create<PomodoroStore>()((set, get) => ({
 
     if (timerInterval) clearInterval(timerInterval);
 
-    timerInterval = setInterval(() => {
-      const { timeLeft } = get();
+    // Calculate target end time based on current timeLeft
+    const currentTimeLeft = pausedTimeLeft !== null ? pausedTimeLeft : get().timeLeft;
+    targetEndTime = Date.now() + (currentTimeLeft * 1000);
+    pausedTimeLeft = null;
 
-      if (timeLeft <= 0) {
+    // Update timeLeft immediately
+    set({ timeLeft: currentTimeLeft });
+
+    // Helper to check remaining time and trigger completion if needed
+    const checkAndUpdateTime = () => {
+      if (targetEndTime === null || isCompletingPhase) return;
+
+      const now = Date.now();
+      const remaining = Math.max(0, Math.ceil((targetEndTime - now) / 1000));
+
+      if (remaining <= 0) {
+        set({ timeLeft: 0 });
         get().handlePhaseComplete();
       } else {
-        set({ timeLeft: timeLeft - 1 });
+        set({ timeLeft: remaining });
       }
-    }, 1000);
+    };
+
+    // Use interval to update display, but calculate from absolute time
+    timerInterval = setInterval(checkAndUpdateTime, 1000); // Update once per second; visibility handler handles immediate sync
+
+    // Only set up visibility listener in browser environment
+    if (typeof document !== 'undefined') {
+      // Clean up any existing visibility listener
+      if (visibilityHandler) {
+        document.removeEventListener('visibilitychange', visibilityHandler);
+      }
+
+      // Handle visibility change to sync timer when tab becomes active
+      visibilityHandler = () => {
+        if (document.visibilityState === 'visible') {
+          checkAndUpdateTime();
+        }
+      };
+
+      document.addEventListener('visibilitychange', visibilityHandler);
+    }
   },
 
   pauseTimer: () => {
@@ -206,6 +250,17 @@ export const usePomodoroStore = create<PomodoroStore>()((set, get) => ({
       clearInterval(timerInterval);
       timerInterval = null;
     }
+    // Clean up visibility listener when paused
+    if (visibilityHandler && typeof document !== 'undefined') {
+      document.removeEventListener('visibilitychange', visibilityHandler);
+      visibilityHandler = null;
+    }
+    // Store the current time left for resume
+    if (targetEndTime !== null) {
+      pausedTimeLeft = Math.max(0, Math.ceil((targetEndTime - Date.now()) / 1000));
+      set({ timeLeft: pausedTimeLeft });
+    }
+    targetEndTime = null;
     set({ isRunning: false });
   },
 
@@ -223,7 +278,14 @@ export const usePomodoroStore = create<PomodoroStore>()((set, get) => ({
       clearInterval(timerInterval);
       timerInterval = null;
     }
+    // Clean up visibility listener
+    if (visibilityHandler && typeof document !== 'undefined') {
+      document.removeEventListener('visibilitychange', visibilityHandler);
+      visibilityHandler = null;
+    }
     sessionStartTime = null;
+    targetEndTime = null;
+    pausedTimeLeft = null;
 
     const duration = newPhase === 'work' ? settings.workDuration
       : newPhase === 'shortBreak' ? settings.shortBreakDuration
@@ -237,6 +299,10 @@ export const usePomodoroStore = create<PomodoroStore>()((set, get) => ({
   },
 
   handlePhaseComplete: async () => {
+    // Guard against duplicate calls
+    if (isCompletingPhase) return;
+    isCompletingPhase = true;
+
     const { phase, settings, sessionCount } = get();
 
     // Stop timer
@@ -244,6 +310,13 @@ export const usePomodoroStore = create<PomodoroStore>()((set, get) => ({
       clearInterval(timerInterval);
       timerInterval = null;
     }
+    // Clean up visibility listener
+    if (visibilityHandler && typeof document !== 'undefined') {
+      document.removeEventListener('visibilitychange', visibilityHandler);
+      visibilityHandler = null;
+    }
+    targetEndTime = null;
+    pausedTimeLeft = null;
     set({ isRunning: false });
 
     // Log session
@@ -295,6 +368,9 @@ export const usePomodoroStore = create<PomodoroStore>()((set, get) => ({
     });
 
     setTimeout(() => set({ showToast: false }), 4000);
+    
+    // Reset guard flag after completion
+    isCompletingPhase = false;
   },
 
   startNextPhase: () => {
