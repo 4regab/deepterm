@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { Clock, Trophy, Zap, BrainCircuit, Star, Flame, Timer, BookOpen, FileText, Upload } from "lucide-react";
 import { createClient } from "@/config/supabase/client";
-import { useState, useCallback, useSyncExternalStore } from "react";
+import { useState, useCallback, useSyncExternalStore, useEffect } from "react";
 import { useAchievementsStore } from "@/lib/stores";
 import type { Achievement, AchievementIcon } from "@/lib/schemas/achievements";
 
@@ -94,24 +94,16 @@ function AchievementRow({ item }: { item: RecentActivityItem }) {
     );
 }
 
-// Module-level flag for one-time fetch
-let achievementsFetchTriggered = false;
-function triggerAchievementsFetch() {
-    if (!achievementsFetchTriggered) {
-        achievementsFetchTriggered = true;
-        queueMicrotask(() => {
-            useAchievementsStore.getState().fetchAchievements();
-        });
-    }
-}
-
 export default function RecentActivity() {
     const [recentItems, setRecentItems] = useState<RecentActivityItem[]>([]);
     const [loading, setLoading] = useState(true);
-    const { achievements } = useAchievementsStore();
+    const achievements = useAchievementsStore((state) => state.achievements);
+    const fetchAchievements = useAchievementsStore((state) => state.fetchAchievements);
 
-    // Trigger achievements fetch
-    triggerAchievementsFetch();
+    // Use useEffect for data fetching instead of render-time side effects (fixes anti-pattern)
+    useEffect(() => {
+        fetchAchievements();
+    }, [fetchAchievements]);
 
     // Fetch recent files once on mount
     useSyncExternalStore(

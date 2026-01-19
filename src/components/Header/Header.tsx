@@ -38,18 +38,27 @@ const RESOURCES_ITEMS = [
     { label: "About", href: "/about" },
 ] as const;
 
+// Module-level style constants to avoid object recreation on every render (Rule 6.3)
+const GLASS_STYLES_SCROLLED = {
+    backgroundColor: "rgba(240, 240, 234, 0.8)",
+    borderColor: "rgba(23, 29, 43, 0.05)",
+    backdropFilter: "blur(12px)",
+    boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
+} as const;
+
+const GLASS_STYLES_DEFAULT = {} as const;
+
 function SessionAwareHeader({ user, isLoading, className }: { user: User | null; isLoading: boolean; className?: string }) {
     const isScrolled = useScrolled(20);
     const [isResourcesOpen, setIsResourcesOpen] = useState(false);
     const [showCaptcha, setShowCaptcha] = useState(false);
     const sitekey = process.env.NEXT_PUBLIC_HCAPTCHA_SITEKEY;
 
-    const {
-        sidebarMobileOpen: isMenuOpen,
-        profileMenuOpen: isLearnOpen,
-        setSidebarMobileOpen: setIsMenuOpen,
-        setProfileMenuOpen: setIsLearnOpen
-    } = useUIStore();
+    // Use selector pattern to subscribe only to needed values - prevents re-renders on unrelated store changes (Rule 5.4)
+    const isMenuOpen = useUIStore((state) => state.sidebarMobileOpen);
+    const isLearnOpen = useUIStore((state) => state.profileMenuOpen);
+    const setIsMenuOpen = useUIStore((state) => state.setSidebarMobileOpen);
+    const setIsLearnOpen = useUIStore((state) => state.setProfileMenuOpen);
 
     const handleLoginClick = () => {
         if (sitekey) {
@@ -68,12 +77,8 @@ function SessionAwareHeader({ user, isLoading, className }: { user: User | null;
     const toggleLearn = () => setIsLearnOpen(!isLearnOpen);
     const toggleResources = () => setIsResourcesOpen(!isResourcesOpen);
 
-    const glassStyles = isScrolled ? {
-        backgroundColor: "rgba(240, 240, 234, 0.8)",
-        borderColor: "rgba(23, 29, 43, 0.05)",
-        backdropFilter: "blur(12px)",
-        boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
-    } : {};
+    // Use hoisted style constants instead of recreating objects (Rule 6.3)
+    const glassStyles = isScrolled ? GLASS_STYLES_SCROLLED : GLASS_STYLES_DEFAULT;
 
     return (
         <header

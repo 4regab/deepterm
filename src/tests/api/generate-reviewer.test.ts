@@ -18,7 +18,8 @@ describe('generate-reviewer API route', () => {
     })
 
     it('should default to full mode when not specified', () => {
-      const mode = undefined || 'full'
+      const rawMode: string | undefined = undefined
+      const mode = rawMode || 'full'
       expect(mode).toBe('full')
     })
   })

@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef } from "react";
+import { useRef, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { imgLogo } from "@/config/assets";
@@ -31,36 +31,25 @@ function getInitials(name: string | null): string {
     return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
 }
 
-// Profile fetch trigger - runs once on client hydration
-let profileFetchTriggered = false;
-function triggerProfileFetch() {
-    if (!profileFetchTriggered) {
-        profileFetchTriggered = true;
-        // Schedule fetch after render completes
-        queueMicrotask(() => {
-            useProfileStore.getState().fetchProfile();
-        });
-    }
-}
-
 export default function Sidebar() {
     const pathname = usePathname();
     const profileMenuRef = useRef<HTMLDivElement>(null);
 
-    // Zustand stores
-    const {
-        sidebarPinned,
-        sidebarMobileOpen,
-        profileMenuOpen,
-        toggleSidebarPinned,
-        setSidebarMobileOpen,
-        setProfileMenuOpen
-    } = useUIStore();
+    // Use selector pattern to subscribe only to needed values - prevents re-renders on unrelated store changes (Rule 5.4)
+    const sidebarPinned = useUIStore((state) => state.sidebarPinned);
+    const sidebarMobileOpen = useUIStore((state) => state.sidebarMobileOpen);
+    const profileMenuOpen = useUIStore((state) => state.profileMenuOpen);
+    const toggleSidebarPinned = useUIStore((state) => state.toggleSidebarPinned);
+    const setSidebarMobileOpen = useUIStore((state) => state.setSidebarMobileOpen);
+    const setProfileMenuOpen = useUIStore((state) => state.setProfileMenuOpen);
 
-    const { profile } = useProfileStore();
+    const profile = useProfileStore((state) => state.profile);
+    const fetchProfile = useProfileStore((state) => state.fetchProfile);
 
-    // Trigger profile fetch once (deferred to avoid render-time setState)
-    triggerProfileFetch();
+    // Use useEffect for data fetching instead of render-time side effects (fixes anti-pattern)
+    useEffect(() => {
+        fetchProfile();
+    }, [fetchProfile]);
 
 
 

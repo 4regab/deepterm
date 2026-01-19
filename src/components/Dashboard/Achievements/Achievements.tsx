@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useMemo } from "react";
 import { Trophy, Zap, BrainCircuit, Star, Flame, Timer, Clock, BookOpen, FileText, Upload } from "lucide-react";
 import { useAchievementsStore } from "@/lib/stores";
 import type { Achievement, AchievementIcon } from "@/lib/schemas/achievements";
@@ -41,27 +42,22 @@ function EmptyAchievements() {
     );
 }
 
-// Module-level flag for one-time fetch
-let achievementsFetchTriggered = false;
-function triggerAchievementsFetch() {
-    if (!achievementsFetchTriggered) {
-        achievementsFetchTriggered = true;
-        queueMicrotask(() => {
-            useAchievementsStore.getState().fetchAchievements();
-        });
-    }
-}
-
 export default function Achievements() {
-    const { achievements, loading } = useAchievementsStore();
+    const { achievements, loading, fetchAchievements } = useAchievementsStore();
 
-    // Trigger fetch once (deferred to avoid render-time issues)
-    triggerAchievementsFetch();
+    // Use useEffect for data fetching instead of render-time side effects (fixes anti-pattern)
+    useEffect(() => {
+        fetchAchievements();
+    }, [fetchAchievements]);
+
+    // Memoize computed values to avoid O(n) computation on every render (Rule 5.2)
+    const unlockedCount = useMemo(
+        () => achievements.filter((a: { unlocked: boolean }) => a.unlocked).length,
+        [achievements]
+    );
 
     if (loading) return <AchievementsSkeleton />;
     if (achievements.length === 0) return <EmptyAchievements />;
-
-    const unlockedCount = achievements.filter((a: { unlocked: boolean }) => a.unlocked).length;
 
     return (
         <div>
