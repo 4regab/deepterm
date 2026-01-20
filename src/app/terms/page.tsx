@@ -38,7 +38,7 @@ export default function TermsPage() {
             Terms of Service
           </h1>
           <p className="font-sans text-[13px] sm:text-[14px] text-[#171d2b]/50 mb-8">
-            Last updated: November 2025
+            Last updated: January 2026
           </p>
 
           <div className="space-y-8 font-sans text-[14px] sm:text-[15px] text-[#171d2b]/80 leading-[1.7]">
@@ -96,7 +96,27 @@ export default function TermsPage() {
             </section>
 
             <section>
-              <h2 className="font-serif text-[18px] sm:text-[20px] text-[#171d2b] mb-3">7. Changes to Terms</h2>
+              <h2 className="font-serif text-[18px] sm:text-[20px] text-[#171d2b] mb-3">7. Analytics and Tracking</h2>
+              <p className="mb-3">
+                We use PostHog for product analytics to improve our service. This includes:
+              </p>
+              <ul className="list-disc pl-5 space-y-1">
+                <li>Page views and navigation patterns</li>
+                <li>Clicks on buttons, links, and interactive elements</li>
+                <li>Feature usage and session duration</li>
+                <li>Device and browser information</li>
+              </ul>
+              <p className="mt-3">
+                This data helps us understand how users interact with DeepTerm so we can improve the experience. 
+                We do not sell this data to third parties. For more details, see our{" "}
+                <Link href="/privacy-policy" className="text-[#171d2b] underline hover:no-underline">
+                  Privacy Policy
+                </Link>.
+              </p>
+            </section>
+
+            <section>
+              <h2 className="font-serif text-[18px] sm:text-[20px] text-[#171d2b] mb-3">8. Changes to Terms</h2>
               <p>
                 We may update these terms from time to time. Continued use of the service after 
                 changes constitutes acceptance of the new terms.
@@ -104,7 +124,7 @@ export default function TermsPage() {
             </section>
 
             <section>
-              <h2 className="font-serif text-[18px] sm:text-[20px] text-[#171d2b] mb-3">8. Contact</h2>
+              <h2 className="font-serif text-[18px] sm:text-[20px] text-[#171d2b] mb-3">9. Contact</h2>
               <p>
                 For questions about these Terms, contact us at{" "}
                 <a href="mailto:deeptermai@gmail.com" className="text-[#171d2b] underline hover:no-underline">
