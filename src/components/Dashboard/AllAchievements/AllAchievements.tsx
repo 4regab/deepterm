@@ -71,7 +71,6 @@ const BG_MAP: Record<string, string> = {
 export default function AllAchievements() {
     const achievements = useAchievementsStore((state) => state.achievements);
     const loading = useAchievementsStore((state) => state.loading);
-    const fetchAchievements = useAchievementsStore((state) => state.fetchAchievements);
 
     // Use useEffect for one-time data fetching on mount
     useEffect(() => {

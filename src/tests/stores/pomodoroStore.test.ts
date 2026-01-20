@@ -9,7 +9,7 @@
  * - Timely: Tests written to verify store contract
  */
 
-import { describe, it, expect, beforeEach, afterEach } from 'bun:test'
+import { describe, it, expect, beforeEach } from 'bun:test'
 import { usePomodoroStore } from '../../lib/stores/pomodoroStore'
 import type { TimerPhase } from '../../lib/schemas/pomodoro'
 

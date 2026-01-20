@@ -18,7 +18,7 @@ export const mockSupabaseClient = {
     getUser: mock(() => Promise.resolve({ data: { user: { id: 'test-user-id' } }, error: null })),
     signOut: mock(() => Promise.resolve({ error: null })),
   },
-  from: mock((table: string) => ({
+  from: mock(() => ({
     select: mock(() => ({
       eq: mock(() => ({
         single: mock(() => Promise.resolve({ data: null, error: null })),
