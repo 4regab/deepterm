@@ -386,6 +386,27 @@ export default function PomodoroPage() {
       ? settings.shortBreakDuration
       : settings.longBreakDuration;
 
+  // Update browser tab title with timer when running
+  useEffect(() => {
+    const defaultTitle = "Pomodoro Timer | DeepTerm";
+    
+    if (isRunning) {
+      const phaseLabel = PHASE_LABELS[phase];
+      document.title = `${formatTime(timeLeft)} - ${phaseLabel} | DeepTerm`;
+    } else if (timeLeft < currentDuration * 60) {
+      // Paused state - show paused indicator
+      const phaseLabel = PHASE_LABELS[phase];
+      document.title = `⏸ ${formatTime(timeLeft)} - ${phaseLabel} | DeepTerm`;
+    } else {
+      document.title = defaultTitle;
+    }
+
+    // Cleanup: restore default title when leaving the page
+    return () => {
+      document.title = defaultTitle;
+    };
+  }, [timeLeft, isRunning, phase, currentDuration]);
+
   const progress = ((currentDuration * 60 - timeLeft) / (currentDuration * 60)) * 100;
 
 

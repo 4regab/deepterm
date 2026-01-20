@@ -8,6 +8,7 @@ import {
   generateOrganizationJsonLd,
   generateSoftwareAppJsonLd,
 } from "@/lib/seo";
+import { PostHogProvider } from "@/components/PostHogProvider";
 
 const spaceGrotesk = Space_Grotesk({
   subsets: ["latin"],
@@ -60,21 +61,23 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{ __html: JSON.stringify(softwareAppJsonLd) }}
         />
       </head>
-      <body>
-        {/* Google Analytics */}
-        <Script
-          src="https://www.googletagmanager.com/gtag/js?id=G-W6BMP2LP3T"
-          strategy="afterInteractive"
-        />
-        <Script id="google-analytics" strategy="afterInteractive">
-          {`
-            window.dataLayer = window.dataLayer || [];
-            function gtag(){dataLayer.push(arguments);}
-            gtag('js', new Date());
-            gtag('config', 'G-W6BMP2LP3T');
-          `}
-        </Script>
-        {children}
+      <body suppressHydrationWarning>
+        <PostHogProvider>
+          {/* Google Analytics */}
+          <Script
+            src="https://www.googletagmanager.com/gtag/js?id=G-W6BMP2LP3T"
+            strategy="afterInteractive"
+          />
+          <Script id="google-analytics" strategy="afterInteractive">
+            {`
+              window.dataLayer = window.dataLayer || [];
+              function gtag(){dataLayer.push(arguments);}
+              gtag('js', new Date());
+              gtag('config', 'G-W6BMP2LP3T');
+            `}
+          </Script>
+          {children}
+        </PostHogProvider>
       </body>
     </html>
   );

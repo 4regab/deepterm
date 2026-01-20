@@ -136,7 +136,7 @@ describe('DashboardHeader Component Logic', () => {
         lastLevelUp: false,
       })
       useProfileStore.setState({
-        profile: { full_name: 'Test User' },
+        profile: { full_name: 'Test User', email: null, avatar_url: null },
         loading: false,
         error: null,
       })

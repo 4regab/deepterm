@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useMemo } from "react";
 import { Trophy, Zap, BrainCircuit, Star, Flame, Timer, Clock, BookOpen, FileText, Upload } from "lucide-react";
 import { useAchievementsStore } from "@/lib/stores";
 import { calculateOverallProgress, getUnlockedCount } from "@/utils/achievements";
@@ -46,17 +47,6 @@ function EmptyAchievements() {
     );
 }
 
-// Module-level flag for one-time fetch
-let achievementsFetchTriggered = false;
-function triggerAchievementsFetch() {
-    if (!achievementsFetchTriggered) {
-        achievementsFetchTriggered = true;
-        queueMicrotask(() => {
-            useAchievementsStore.getState().fetchAchievements();
-        });
-    }
-}
-
 // Map vibrant colors to muted brand-consistent colors
 const COLOR_MAP: Record<string, { bg: string; color: string }> = {
     'text-blue-600': { bg: 'bg-[#e8e4d8]', color: 'text-[#171d2b]/70' },
@@ -79,16 +69,20 @@ const BG_MAP: Record<string, string> = {
 };
 
 export default function AllAchievements() {
-    const { achievements, loading } = useAchievementsStore();
+    const achievements = useAchievementsStore((state) => state.achievements);
+    const loading = useAchievementsStore((state) => state.loading);
 
-    // Trigger fetch once (deferred to avoid render-time issues)
-    triggerAchievementsFetch();
+    // Use useEffect for one-time data fetching on mount
+    useEffect(() => {
+        useAchievementsStore.getState().fetchAchievements();
+    }, []);
+
+    // Memoize computed values to avoid O(n) computation on every render (Rule 5.2)
+    const unlockedCount = useMemo(() => getUnlockedCount(achievements), [achievements]);
+    const overallProgress = useMemo(() => calculateOverallProgress(achievements), [achievements]);
 
     if (loading) return <AllAchievementsSkeleton />;
     if (achievements.length === 0) return <EmptyAchievements />;
-
-    const unlockedCount = getUnlockedCount(achievements);
-    const overallProgress = calculateOverallProgress(achievements);
 
     return (
         <div>

@@ -117,18 +117,25 @@ export const usePomodoroStore = create<PomodoroStore>()((set, get) => ({
   })),
 
   toggleTask: (id) => {
-    set((state) => {
-      const task = state.tasks.find(t => t.id === id);
-      if (task && !task.completed) {
-        set({ toastMessage: "Task completed! Nice work!", showToast: true });
-        setTimeout(() => set({ showToast: false }), 3000);
-      }
-      return {
-        tasks: state.tasks.map(task =>
-          task.id === id ? { ...task, completed: !task.completed } : task
-        )
-      };
-    })
+    const state = get();
+    const task = state.tasks.find(t => t.id === id);
+    const isCompleting = task && !task.completed;
+    
+    // Update state first (pure)
+    set({
+      tasks: state.tasks.map(t =>
+        t.id === id ? { ...t, completed: !t.completed } : t
+      ),
+      ...(isCompleting ? {
+        toastMessage: "Task completed! Nice work!",
+        showToast: true
+      } : {})
+    });
+    
+    // Side effect after state update
+    if (isCompleting) {
+      setTimeout(() => set({ showToast: false }), 3000);
+    }
   },
 
   removeTask: (id) => set((state) => ({
