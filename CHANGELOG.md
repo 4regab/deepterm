@@ -4,6 +4,36 @@ All notable changes to DeepTerm will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.2.1] - 2026-01-20
+
+### Added
+
+- Browser tab title now shows Pomodoro timer countdown when running (e.g., "24:55 - Focus Time | DeepTerm")
+- Paused timer indicator in tab title with ⏸ symbol
+- Tab title automatically restores when navigating away from Pomodoro page
+
+---
+
+## [0.2.0] - 2025-12-27
+
+### Added
+
+- Blog with study tips and guides
+- SEO-optimized article pages
+- Blog categories and filtering
+- Previous/Next article navigation
+- Related articles section
+- Dynamic OG images for sharing
+- Blog link in header and footer
+- Sitemap with all blog posts
+
+### Changed
+
+- Updated Resources navigation menu
+- Improved footer links
+
+---
+
 ## [0.1.3] - 2025-12-10
 
 ### Added

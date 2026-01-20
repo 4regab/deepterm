@@ -26,10 +26,31 @@ export default function ChangelogPage() {
         </div>
 
         <div className="space-y-5">
-          {/* Version 0.2.0 */}
+          {/* Version 0.2.1 */}
           <div className="bg-white rounded-xl border border-[#171d2b]/10 p-5 shadow-sm">
             <div className="flex items-center gap-3 mb-4">
               <span className="px-2.5 py-0.5 bg-[#171d2b] text-white text-xs font-medium rounded-full">
+                v0.2.1
+              </span>
+              <span className="text-[#171d2b]/60 text-xs font-sans">January 20, 2026</span>
+            </div>
+
+            <div>
+              <h3 className="font-sans font-semibold text-[#171d2b] text-sm mb-2 flex items-center gap-2">
+                <span className="text-[#171d2b]">+</span> Added
+              </h3>
+              <ul className="space-y-1 ml-5">
+                <li className="font-sans text-[#171d2b]/80 text-sm">Browser tab shows timer countdown when Pomodoro is running</li>
+                <li className="font-sans text-[#171d2b]/80 text-sm">Paused timer indicator (⏸) in tab title</li>
+                <li className="font-sans text-[#171d2b]/80 text-sm">Tab title shows current phase (Focus Time, Short Break, Long Break)</li>
+              </ul>
+            </div>
+          </div>
+
+          {/* Version 0.2.0 */}
+          <div className="bg-white rounded-xl border border-[#171d2b]/10 p-5 shadow-sm">
+            <div className="flex items-center gap-3 mb-4">
+              <span className="px-2.5 py-0.5 bg-[#171d2b]/10 text-[#171d2b] text-xs font-medium rounded-full">
                 v0.2.0
               </span>
               <span className="text-[#171d2b]/60 text-xs font-sans">December 27, 2025</span>

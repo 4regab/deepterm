@@ -113,7 +113,7 @@ export default function HomeClient() {
           </h1>
 
           <p className="font-sans text-[14px] sm:text-[17px] lg:text-[18px] leading-[1.6] max-w-[320px] sm:max-w-[520px] mx-auto mb-6 sm:mb-6 text-[#171d2b]/70">
-            Your alternative to Quizlet and Gizmo. Transform any study material into cards, reviewers, and exams instantly.
+            Your Open Source alternative to Quizlet and Gizmo. Transform any study material into cards, reviewers, and exams instantly.
           </p>
 
           {/* CTA Buttons */}
