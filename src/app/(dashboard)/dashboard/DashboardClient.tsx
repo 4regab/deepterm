@@ -59,8 +59,16 @@ interface DashboardData {
 }
 
 interface DashboardHeaderProps {
-    greeting: string;
     initialData?: DashboardData | null;
+}
+
+function getGreeting(): string {
+    const hour = new Date().getHours();
+    if (hour < 5) return "Hello";
+    if (hour < 12) return "Good morning";
+    if (hour < 17) return "Good afternoon";
+    if (hour < 21) return "Good evening";
+    return "Good night";
 }
 
 // Skeleton component for loading states
@@ -95,7 +103,10 @@ function HeaderSkeleton() {
     );
 }
 
-export function DashboardHeader({ greeting, initialData }: DashboardHeaderProps) {
+export function DashboardHeader({ initialData }: DashboardHeaderProps) {
+    // Compute greeting on client side using user's local time
+    const greeting = getGreeting();
+    
     // Use server-provided data - no client-side fetching needed!
     // Data was already fetched on the server and passed as props
 
