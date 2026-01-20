@@ -44,12 +44,11 @@ export default function Sidebar() {
     const setProfileMenuOpen = useUIStore((state) => state.setProfileMenuOpen);
 
     const profile = useProfileStore((state) => state.profile);
-    const fetchProfile = useProfileStore((state) => state.fetchProfile);
 
-    // Use useEffect for data fetching instead of render-time side effects (fixes anti-pattern)
+    // Use useEffect for one-time data fetching on mount
     useEffect(() => {
-        fetchProfile();
-    }, [fetchProfile]);
+        useProfileStore.getState().fetchProfile();
+    }, []);
 
 
 

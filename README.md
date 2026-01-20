@@ -33,6 +33,7 @@ Stop grinding through notes the hard way. DeepTerm uses AI to turn your PDFs and
 - **DOCX Export** - Export to Microsoft Word format with proper formatting
 - **Share Links** - Generate shareable links with custom codes for materials
 - **Copy to Library** - Allow others to copy shared materials to their account
+- **Screenshot Export** - Capture and export content as images using html2canvas
 
 ### Productivity Features
 
@@ -41,34 +42,72 @@ Stop grinding through notes the hard way. DeepTerm uses AI to turn your PDFs and
   - Session tracking and streak counting
   - Task list integration
   - Global notification system for phase transitions
-
+  - Sound effects for timer events
 
 - **Achievement System** - Gamified progress with unlockable achievements
 - **XP & Leveling** - Experience points system with level progression and rank titles (Novice to Grandmaster)
 
+### Blog System
+
+- **AI-Generated Articles** - Automated blog content generation using Google Gemini
+- **Category Organization** - Articles organized by categories (study-tips, productivity, learning-science, etc.)
+- **Auto-Publishing** - Scheduled article generation via cron jobs (2x daily at 8 AM & 8 PM UTC)
+- **Dynamic OG Images** - Auto-generated Open Graph images for social sharing
+
+### Interactive Experience
+
+- **Smooth Scrolling** - Buttery smooth scroll experience with Lenis
+- **Sound Effects** - Audio feedback for interactions using use-sound
+- **Fluid Animations** - Rich animations with Framer Motion and GSAP
+
 ### Account & Settings
 
 - **Google OAuth** - Sign in with Google account
+- **hCaptcha Protection** - Bot protection on authentication (optional)
 - **Daily Rate Limits** - 10 AI generations per day per user (with unlimited user whitelist support)
 - **Help Center** - In-app documentation and support
 - **Account Deletion** - Self-service account deletion
 
 ## Tech Stack
 
-- **Framework**: Next.js 16 (App Router) with React 19
-- **Language**: TypeScript 5
-- **Styling**: Tailwind CSS 4
-- **Database**: Supabase (PostgreSQL) with Row Level Security
-- **Authentication**: Supabase Auth (Google OAuth)
-- **AI**: Google Gemini 2.5 Flash-Lite (with multi-key rotation)
-- **State Management**: Zustand 5
-- **Animations**: Framer Motion, GSAP
-- **PDF Generation**: jsPDF
-- **DOCX Generation**: docx
-- **Validation**: Zod 4
-- **Runtime**: Bun (JavaScript runtime, bundler, and package manager)
-- **Testing**: Bun Test with fast-check for property-based testing
-- **Deployment**: Vercel
+### Core Framework
+- **Next.js 16.0.10** - App Router with React Server Components
+- **React 19.2.0** - Latest React with concurrent features
+- **React Compiler** - Automatic memoization via babel-plugin-react-compiler
+- **TypeScript 5** - Type-safe development
+- **Bun** - Fast JavaScript runtime, bundler, and package manager
+
+### Styling & Animation
+- **Tailwind CSS 4** - Utility-first CSS framework
+- **Framer Motion 12** - Production-ready motion library
+- **GSAP 3.13** - Professional-grade animations
+- **Lenis 1.3** - Smooth scroll library
+
+### Backend & Database
+- **Supabase** - PostgreSQL database with Row Level Security
+- **Supabase Auth** - Authentication (Google OAuth)
+- **Google Gemini 2.5 Flash-Lite** - AI with multi-key rotation
+
+### State & Validation
+- **Zustand 5.0** - Lightweight state management
+- **Zod 4.1** - TypeScript-first schema validation
+
+### Document Generation
+- **jsPDF 4.0** - PDF generation
+- **docx 9.5** - Word document generation
+- **html2canvas 1.4** - Screenshot capture
+- **marked 17.0** - Markdown parsing
+
+### Analytics & Security
+- **PostHog** - Product analytics (with proxy for ad-blocker bypass)
+- **hCaptcha** - Bot protection (optional)
+
+### Testing
+- **Bun Test** - Fast test runner
+- **fast-check 4.3** - Property-based testing
+
+### Deployment
+- **Vercel** - Edge deployment with cron jobs
 
 ## Architecture
 
@@ -83,24 +122,36 @@ src/
 │   │   ├── dashboard/      # Main dashboard
 │   │   ├── materials/      # Materials management
 │   │   ├── pomodoro/       # Pomodoro timer
-│   │   ├── practice/       # Practice mode
-│   │   └── reviewer/       # Reviewer view
+│   │   └── practice/       # Practice mode
+│   ├── about/              # About page
+│   ├── blog/               # Blog system
+│   │   ├── category/[cat]/ # Category pages
+│   │   ├── [slug]/         # Individual articles
+│   │   └── components/     # Blog-specific components
+│   ├── changelog/          # Changelog page
+│   ├── privacy-policy/     # Privacy policy
+│   ├── terms/              # Terms of service
 │   ├── api/                # API routes
-│   │   ├── generate-cards/ # Flashcard generation endpoint
-│   │   ├── generate-reviewer/ # Reviewer generation endpoint
-│   │   ├── materials/      # Materials CRUD
+│   │   ├── blog/generate/  # Article generation
+│   │   ├── cron/           # Scheduled jobs
+│   │   ├── generate-cards/ # Flashcard generation
+│   │   ├── generate-reviewer/ # Reviewer generation
+│   │   ├── og/             # Open Graph images
 │   │   └── share/          # Sharing endpoints
-│   ├── auth/               # Auth callback
+│   ├── auth/callback/      # Auth callback
 │   ├── help/               # Help center
-│   ├── share/              # Public share pages
-│   └── ...                 # Static pages
+│   └── share/[code]/       # Public share pages
 ├── components/             # React components
 │   ├── Dashboard/          # Dashboard widgets
+│   ├── HCaptcha/           # Captcha components
 │   ├── Header/             # Header component
 │   └── Sidebar/            # Navigation sidebar
 ├── config/                 # Configuration
 │   └── supabase/           # Supabase client setup
 ├── lib/                    # Core libraries
+│   ├── auth/               # Auth utilities
+│   ├── blog/               # Blog service layer
+│   ├── hooks/              # Custom React hooks
 │   ├── schemas/            # Zod validation schemas
 │   ├── stores/             # Zustand state stores
 │   └── supabase/           # Database schema
@@ -109,7 +160,7 @@ src/
 │   ├── geminiClient.ts     # AI client with key rotation
 │   └── rateLimit.ts        # Rate limiting
 ├── styles/                 # Global styles
-├── tests/                  # Test files
+├── tests/                  # Test files (see Testing section)
 └── utils/                  # Utility functions
 ```
 
@@ -138,16 +189,58 @@ Key tables in Supabase:
 - `achievement_definitions` / `user_achievements` - Achievements
 - `material_shares` - Sharing system
 - `ai_usage` / `unlimited_users` - Rate limiting
+- `blog_articles` / `blog_categories` - Blog system
 
 ### Security Features
 
-- Row Level Security (RLS) on all tables
-- Atomic rate limiting with database functions
-- Input validation with Zod schemas
-- XP bounds checking (1-100 per operation)
-- Secure share access via RPC functions
-- Content Security Policy headers
-- HTTPS enforcement with HSTS
+- **Row Level Security (RLS)** on all database tables
+- **Atomic rate limiting** with database functions
+- **Input validation** with Zod schemas
+- **XP bounds checking** (1-100 per operation)
+- **Secure share access** via RPC functions
+- **hCaptcha bot protection** on authentication
+
+#### Security Headers
+
+The application enforces comprehensive security headers:
+
+- **Content-Security-Policy** - Restricts resource loading sources (with documented exceptions for Next.js compatibility)
+- **Strict-Transport-Security** - Enforces HTTPS with 2-year max-age, includeSubDomains, and preload
+- **X-Frame-Options: DENY** - Prevents clickjacking
+- **X-Content-Type-Options: nosniff** - Prevents MIME sniffing
+- **X-DNS-Prefetch-Control: on** - Enables DNS prefetching for performance
+- **Referrer-Policy: strict-origin-when-cross-origin** - Controls referrer information
+- **Permissions-Policy** - Restricts browser features (camera, microphone, geolocation)
+- **Cross-Origin-Opener-Policy: same-origin** - Isolates browsing context
+- **Cross-Origin-Resource-Policy: same-origin** - Prevents cross-origin resource loading
+
+Note: X-XSS-Protection is intentionally omitted as it's deprecated and can introduce vulnerabilities in older browsers.
+
+## Performance Optimizations
+
+### React Compiler
+
+The application uses the React Compiler (`babel-plugin-react-compiler`) for automatic memoization, eliminating the need for manual `useMemo`, `useCallback`, and `React.memo` in most cases.
+
+### Barrel File Optimization
+
+Next.js `optimizePackageImports` is configured for:
+- `lucide-react` - Icon library (1,500+ icons)
+- `framer-motion` - Animation library
+
+This transforms barrel imports into direct imports at build time, reducing bundle size and improving cold start times.
+
+### PostHog Proxy
+
+Analytics requests are proxied through Next.js rewrites to avoid ad-blocker interference:
+- `/ingest/static/*` → PostHog static assets
+- `/ingest/*` → PostHog API
+
+### Image Optimization
+
+- Next.js Image component with automatic optimization
+- Remote patterns configured for Google user content (profile images)
+- Lazy loading for below-fold images
 
 ## Getting Started
 
@@ -181,6 +274,10 @@ NEXT_PUBLIC_HCAPTCHA_SITEKEY=your_hcaptcha_sitekey
 # Unsplash - Blog hero images (optional)
 UNSPLASH_ACCESS_KEY=your_unsplash_access_key
 
+# PostHog - Analytics (optional)
+NEXT_PUBLIC_POSTHOG_KEY=your_posthog_key
+NEXT_PUBLIC_POSTHOG_HOST=https://us.i.posthog.com
+
 # Cron Jobs - Blog generation (optional, for production)
 CRON_SECRET=your_cron_secret
 ```
@@ -188,8 +285,9 @@ CRON_SECRET=your_cron_secret
 **Where to get these:**
 - **Supabase**: [Dashboard → Project Settings → API](https://supabase.com/dashboard/project/_/settings/api)
 - **Gemini**: [Google AI Studio](https://aistudio.google.com/app/apikey)
-- **hCaptcha**: [hCaptcha Dashboard](https://dashboard.hcaptcha.com/)
-- **Unsplash**: [Unsplash Developers](https://unsplash.com/developers)
+- **hCaptcha**: [hCaptcha Dashboard](https://dashboard.hcaptcha.com/) (optional)
+- **Unsplash**: [Unsplash Developers](https://unsplash.com/developers) (optional)
+- **PostHog**: [PostHog Dashboard](https://posthog.com/) (optional)
 
 ### Google Cloud Setup (OAuth)
 
@@ -242,6 +340,50 @@ Open [http://localhost:3000](http://localhost:3000) to view the application.
 | `bun test` | Run tests |
 | `bun test --watch` | Run tests in watch mode |
 
+## Testing
+
+The test suite follows **TDD principles** and **FIRST guidelines** (Fast, Independent, Repeatable, Self-validating, Timely).
+
+### Test Structure
+
+```
+src/tests/
+├── setup.ts                    # Common mocks and test utilities
+├── api/                        # API route tests
+│   ├── generate-cards.test.ts
+│   ├── generate-cards.integration.test.ts
+│   └── generate-reviewer.test.ts
+├── stores/                     # Zustand store tests
+│   └── pomodoroStore.test.ts
+├── utils/                      # Utility function tests
+│   ├── achievements.test.ts
+│   └── xp.test.ts
+└── *.test.ts                   # Additional store and component tests
+```
+
+### Running Tests
+
+```bash
+# Run all tests
+bun test
+
+# Run specific test file
+bun test src/tests/stores/pomodoroStore.test.ts
+
+# Run tests in watch mode
+bun test --watch
+```
+
+### Test Utilities
+
+The `setup.ts` file provides:
+- **Mock Supabase client** - Mocked database operations
+- **Mock Gemini client** - Mocked AI responses
+- **Mock localStorage** - Browser storage simulation
+- **Test data factories** - `createTestUser()`, `createTestFlashcardSet()`, `createTestAchievement()`
+- **Request helpers** - `createMockRequest()` for API testing
+- **Timeout helper** - `withTimeout()` for async tests
+
 ## Rate Limiting
 
 AI generation is rate-limited to 10 requests per user per day to manage API costs. The limit resets at midnight UTC. Users in the `unlimited_users` table bypass this limit.
@@ -250,25 +392,50 @@ The system uses atomic check-and-increment operations to prevent race conditions
 
 ## API Endpoints
 
-### POST /api/generate-cards
+### AI Generation
+
+#### POST /api/generate-cards
 Generate flashcards from PDF or text content.
 
 - **Input**: FormData with `file` (PDF) or `textContent` (string)
 - **Output**: `{ cards: [{term, definition}], remaining: number }`
 - **Rate Limited**: Yes (10/day)
 
-### POST /api/generate-reviewer
+#### POST /api/generate-reviewer
 Generate categorized reviewer content from PDF or text.
 
 - **Input**: FormData with `file`, `textContent`, and `extractionMode` (full/sentence/keywords)
 - **Output**: `{ title, extractionMode, categories: [{name, color, terms}], remaining }`
 - **Rate Limited**: Yes (10/day)
 
-### Share API (/api/share)
-- **GET**: Get share info for a material
-- **POST**: Create or update share link
-- **PATCH**: Toggle active status or change code
-- **DELETE**: Remove share
+## Deployment
+
+### Vercel Deployment
+
+The application is optimized for Vercel deployment:
+
+1. Connect your GitHub repository to Vercel
+2. Configure environment variables in Vercel dashboard
+3. Deploy
+
+### Cron Jobs
+
+Blog auto-generation is configured via `vercel.json`:
+
+```json
+{
+  "crons": [
+    {
+      "path": "/api/cron/generate-article",
+      "schedule": "0 8,20 * * *"
+    }
+  ]
+}
+```
+
+This runs the blog generation endpoint twice daily at 8 AM and 8 PM UTC.
+
+**Note**: Cron jobs require a Vercel Pro plan or higher.
 
 ## Contributing
 
@@ -277,4 +444,3 @@ Generate categorized reviewer content from PDF or text.
 3. Make your changes
 4. Run tests: `bun test`, `bun run build`, `bun run lint`
 5. Submit a pull request
-

@@ -69,12 +69,14 @@ const BG_MAP: Record<string, string> = {
 };
 
 export default function AllAchievements() {
-    const { achievements, loading, fetchAchievements } = useAchievementsStore();
+    const achievements = useAchievementsStore((state) => state.achievements);
+    const loading = useAchievementsStore((state) => state.loading);
+    const fetchAchievements = useAchievementsStore((state) => state.fetchAchievements);
 
-    // Use useEffect for data fetching instead of render-time side effects (fixes anti-pattern)
+    // Use useEffect for one-time data fetching on mount
     useEffect(() => {
-        fetchAchievements();
-    }, [fetchAchievements]);
+        useAchievementsStore.getState().fetchAchievements();
+    }, []);
 
     // Memoize computed values to avoid O(n) computation on every render (Rule 5.2)
     const unlockedCount = useMemo(() => getUnlockedCount(achievements), [achievements]);

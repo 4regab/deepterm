@@ -43,12 +43,13 @@ function EmptyAchievements() {
 }
 
 export default function Achievements() {
-    const { achievements, loading, fetchAchievements } = useAchievementsStore();
+    const achievements = useAchievementsStore((state) => state.achievements);
+    const loading = useAchievementsStore((state) => state.loading);
 
-    // Use useEffect for data fetching instead of render-time side effects (fixes anti-pattern)
+    // Use useEffect for one-time data fetching on mount
     useEffect(() => {
-        fetchAchievements();
-    }, [fetchAchievements]);
+        useAchievementsStore.getState().fetchAchievements();
+    }, []);
 
     // Memoize computed values to avoid O(n) computation on every render (Rule 5.2)
     const unlockedCount = useMemo(

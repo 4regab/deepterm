@@ -98,12 +98,11 @@ export default function RecentActivity() {
     const [recentItems, setRecentItems] = useState<RecentActivityItem[]>([]);
     const [loading, setLoading] = useState(true);
     const achievements = useAchievementsStore((state) => state.achievements);
-    const fetchAchievements = useAchievementsStore((state) => state.fetchAchievements);
 
-    // Use useEffect for data fetching instead of render-time side effects (fixes anti-pattern)
+    // Use useEffect for one-time data fetching on mount
     useEffect(() => {
-        fetchAchievements();
-    }, [fetchAchievements]);
+        useAchievementsStore.getState().fetchAchievements();
+    }, []);
 
     // Fetch recent files once on mount
     useSyncExternalStore(

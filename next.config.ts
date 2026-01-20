@@ -17,10 +17,8 @@ const securityHeaders = [
     key: 'X-Content-Type-Options',
     value: 'nosniff'
   },
-  {
-    key: 'X-XSS-Protection',
-    value: '1; mode=block'
-  },
+  // Note: X-XSS-Protection header removed - it's deprecated and can introduce
+  // security vulnerabilities in older browsers. Modern browsers ignore it.
   {
     key: 'Referrer-Policy',
     value: 'strict-origin-when-cross-origin'
@@ -39,13 +37,16 @@ const securityHeaders = [
   },
   {
     key: 'Content-Security-Policy',
+    // Note: 'unsafe-inline' and 'unsafe-eval' are required for Next.js compatibility.
+    // Next.js uses inline scripts for hydration and may use eval in development mode.
+    // These cannot be removed without breaking the application.
     value: [
       "default-src 'self'",
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://hcaptcha.com https://*.hcaptcha.com https://www.googletagmanager.com https://www.google-analytics.com",
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://hcaptcha.com https://*.hcaptcha.com https://www.googletagmanager.com https://www.google-analytics.com https://us-assets.i.posthog.com https://*.posthog.com",
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://hcaptcha.com https://*.hcaptcha.com",
       "img-src 'self' data: blob: https://lh3.googleusercontent.com https://*.googleusercontent.com https://hcaptcha.com https://*.hcaptcha.com https://www.googletagmanager.com https://www.google-analytics.com",
       "font-src 'self' data: https://fonts.gstatic.com",
-      "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://generativelanguage.googleapis.com https://hcaptcha.com https://*.hcaptcha.com https://www.googletagmanager.com https://www.google-analytics.com https://region1.google-analytics.com",
+      "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://generativelanguage.googleapis.com https://hcaptcha.com https://*.hcaptcha.com https://www.googletagmanager.com https://www.google-analytics.com https://region1.google-analytics.com https://us.i.posthog.com https://*.posthog.com",
       "frame-src 'self' https://hcaptcha.com https://*.hcaptcha.com",
       "frame-ancestors 'self'",
       "base-uri 'self'",
@@ -65,13 +66,27 @@ const nextConfig: NextConfig = {
     remotePatterns: [
       {
         protocol: 'https',
-        hostname: 'lh3.googleusercontent.com',
-      },
-      {
-        protocol: 'https',
         hostname: '*.googleusercontent.com',
       },
     ],
+  },
+  async rewrites() {
+    return [
+      // Proxy PostHog requests to avoid ad blockers
+      // Note: Specific routes must come BEFORE wildcard routes to match correctly
+      {
+        source: '/ingest/static/:path*',
+        destination: 'https://us-assets.i.posthog.com/static/:path*',
+      },
+      {
+        source: '/ingest/decide',
+        destination: 'https://us.i.posthog.com/decide',
+      },
+      {
+        source: '/ingest/:path*',
+        destination: 'https://us.i.posthog.com/:path*',
+      },
+    ]
   },
   async headers() {
     return [
