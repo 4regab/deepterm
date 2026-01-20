@@ -3,6 +3,9 @@ import { RecentActivity } from "@/components/Dashboard";
 import { DashboardHeader, StudyCalendarWrapper } from "./DashboardClient";
 import { getAuthenticatedClient } from "@/lib/auth/session";
 
+// Force dynamic rendering - this page uses cookies for auth
+export const dynamic = 'force-dynamic'
+
 // Cached dashboard data fetch - uses React.cache for request deduplication
 // This replaces 3 separate client-side fetches with 1 server-side RPC call
 const getDashboardData = cache(async () => {
@@ -84,18 +87,7 @@ function RecentActivitySkeleton() {
     );
 }
 
-function getGreeting(): string {
-    const hour = new Date().getHours();
-    if (hour < 5) return "Hello";
-    if (hour < 12) return "Good morning";
-    if (hour < 17) return "Good afternoon";
-    if (hour < 21) return "Good evening";
-    return "Good night";
-}
-
 export default async function DashboardPage() {
-    const greeting = getGreeting();
-
     // Server-side data fetch using cached RPC
     // This single call replaces 3 separate client-side fetches
     const dashboardData = await getDashboardData();
@@ -104,7 +96,6 @@ export default async function DashboardPage() {
         <div>
             <Suspense fallback={<HeaderSkeleton />}>
                 <DashboardHeader
-                    greeting={greeting}
                     initialData={dashboardData}
                 />
             </Suspense>
