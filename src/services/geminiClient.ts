@@ -1,4 +1,9 @@
-import { GoogleGenAI } from "@google/genai";
+import { GoogleGenAI, Type } from "@google/genai";
+import type { Schema } from "@google/genai";
+
+// Re-export Type for use in API routes
+export { Type };
+export type { Schema };
 
 // Load API keys from numbered environment variables
 function loadApiKeys(): string[] {
@@ -46,6 +51,7 @@ export interface GeminiRequestOptions {
     temperature?: number;
     maxOutputTokens?: number;
     responseMimeType?: string;
+    responseSchema?: Schema;
   };
 }
 

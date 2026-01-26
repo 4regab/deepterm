@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { FileState } from "@google/genai";
 import { checkAndIncrementAIUsage } from "@/services/rateLimit";
-import { generateContentWithRotation, uploadFileWithRotation, getApiKeyCount } from "@/services/geminiClient";
+import { generateContentWithRotation, uploadFileWithRotation, getApiKeyCount, Type } from "@/services/geminiClient";
 
 // File size limits (in bytes)
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB - reduced for faster processing
@@ -9,6 +9,69 @@ const MAX_TEXT_LENGTH = 100000; // 100k characters
 
 // Valid extraction modes
 const VALID_EXTRACTION_MODES = ['full', 'sentence', 'keywords'] as const;
+
+// Structured output schema for reviewer - enforces non-empty terms and definitions
+const reviewerResponseSchema = {
+    type: Type.OBJECT,
+    properties: {
+        title: {
+            type: Type.STRING,
+            description: "The title of the document or study material",
+        },
+        extractionMode: {
+            type: Type.STRING,
+            description: "The extraction mode used: full, sentence, or keywords",
+        },
+        categories: {
+            type: Type.ARRAY,
+            items: {
+                type: Type.OBJECT,
+                properties: {
+                    name: {
+                        type: Type.STRING,
+                        description: "The category name grouping related terms",
+                    },
+                    color: {
+                        type: Type.STRING,
+                        description: "Hex color code for the category (e.g., #E0F2FE)",
+                    },
+                    terms: {
+                        type: Type.ARRAY,
+                        items: {
+                            type: Type.OBJECT,
+                            properties: {
+                                term: {
+                                    type: Type.STRING,
+                                    description: "The key term or concept exactly as it appears in the source.",
+                                },
+                                definition: {
+                                    type: Type.STRING,
+                                    description: "The EXACT VERBATIM definition as it appears in the source document. Must be copied exactly - do not paraphrase. Must be non-empty.",
+                                },
+                                examples: {
+                                    type: Type.ARRAY,
+                                    items: { type: Type.STRING },
+                                    description: "Optional examples from the source document",
+                                },
+                                keywords: {
+                                    type: Type.ARRAY,
+                                    items: { type: Type.STRING },
+                                    description: "Optional keywords from the source document",
+                                },
+                            },
+                            required: ["term", "definition"],
+                            propertyOrdering: ["term", "definition", "examples", "keywords"],
+                        },
+                    },
+                },
+                required: ["name", "color", "terms"],
+                propertyOrdering: ["name", "color", "terms"],
+            },
+        },
+    },
+    required: ["title", "extractionMode", "categories"],
+    propertyOrdering: ["title", "extractionMode", "categories"],
+};
 
 export async function POST(request: NextRequest) {
     if (getApiKeyCount() === 0) {
@@ -90,51 +153,52 @@ export async function POST(request: NextRequest) {
         let extractionGuidance = "";
         switch (extractionMode) {
             case "sentence":
-                extractionGuidance = "For each term, provide ONLY ONE SENTENCE as the definition or explanation. Keep it brief and concise.";
+                extractionGuidance = "For each term, extract the FIRST SENTENCE of its definition exactly as it appears in the source.";
                 break;
             case "keywords":
-                extractionGuidance = "For each term, extract ONLY the IMPORTANT KEY WORDS related to it. Start with a dash (-) and then list the keywords separated by commas. Do not include full sentences. Format example: '- keyword1, keyword2, keyword3'. IMPORTANT: EVERY term MUST have at least 3-5 keywords.";
+                extractionGuidance = "For each term, extract the KEY WORDS from its definition. Format: '- keyword1, keyword2, keyword3'. EVERY term MUST have at least 3-5 keywords.";
                 break;
             case "full":
             default:
-                extractionGuidance = `For each term, provide the EXACT definition or explanation as it appears in the original text. Include examples if found.
-
-CRITICAL RULE FOR LISTS AND BULLET POINTS:
-When you encounter a section header followed by a list of items (like "Advantages", "Disadvantages", "Types of X", "Characteristics of X", "Operations", etc.):
-- The section header becomes the TERM (e.g., "Advantages of Linked List", "Types of Stack Operations")
-- ALL the bullet points/list items under it become the DEFINITION as a combined text
-- DO NOT create separate terms for each list item
-- Format the definition by joining all items with proper punctuation
-
-STANDALONE CONCEPTS:
-Concepts with their own full definitions (like "Singly Linked List", "Stack", "Array", "Queue") should remain as separate individual terms with their complete definitions.`;
+                extractionGuidance = `For each term, extract the COMPLETE definition VERBATIM from the source.
+For bullet point lists: combine ALL bullets into the definition with proper punctuation.
+For numbered lists: include ALL items in the definition.
+Include ALL details, examples, steps, and explanations from the source.`;
                 break;
         }
 
-        const systemPrompt = `You are an expert study material extractor. Extract EVERY term and definition from the document, then organize them into categories.
+        const systemPrompt = `You are an expert study material extractor. Your job is to extract EVERY SINGLE term and definition from the document - be EXHAUSTIVE.
 
 ${extractionGuidance}
 
-EXTRACTION RULES:
-1. Extract EVERY term that has a definition
-2. Extract ALL technical vocabulary, concepts, names, formulas
-3. Group into logical categories
-4. Terms and definitions should be VERBATIM from source
+CRITICAL: EXTRACT EVERYTHING - DO NOT BE SELECTIVE
+1. Process the ENTIRE document from START to END
+2. Extract EVERY term that has ANY explanation, definition, or description
+3. Extract ALL headers, subheaders, concepts, algorithms, data structures, processes
+4. For bullet point lists under a header, the header is the TERM and ALL bullets combined are the DEFINITION
+5. Short definitions are OK - extract them anyway
+6. DO NOT skip content because it seems "minor" - extract EVERYTHING
 
-OUTPUT FORMAT - Valid JSON:
-{
-  "title": "Document title",
-  "extractionMode": "${extractionMode}",
-  "categories": [
-    {
-      "name": "Category Name",
-      "color": "#E0F2FE",
-      "terms": [{"term": "Term", "definition": "Definition", "examples": [], "keywords": []}]
-    }
-  ]
-}
+WHAT TO EXTRACT:
+- Main concepts with their definitions
+- Headers followed by explanatory text
+- Headers followed by bullet points (combine bullets into definition)
+- Algorithms and their descriptions
+- Data structures and their descriptions
+- Processes and their steps
+- Types/categories and their explanations
+- Advantages/disadvantages lists
+- Applications and examples
+- Case studies and their solutions
+- ANY term that has text explaining what it is
 
-COLOR OPTIONS: #E0F2FE, #DCFCE7, #FEF3C7, #FCE7F3, #E0E7FF, #F3E8FF`;
+MANDATORY:
+- Extract AT LEAST 100+ terms from a long document
+- Every section header with content below it = 1 card minimum
+- Group into logical categories by topic
+- Do NOT summarize or skip - be EXHAUSTIVE
+
+COLOR OPTIONS for categories: #E0F2FE, #DCFCE7, #FEF3C7, #FCE7F3, #E0E7FF, #F3E8FF`;
 
         const contents: Array<{ role: string; parts: Array<{ text?: string; fileData?: { fileUri: string; mimeType: string } }> }> = [];
 
@@ -143,13 +207,13 @@ COLOR OPTIONS: #E0F2FE, #DCFCE7, #FEF3C7, #FCE7F3, #E0E7FF, #F3E8FF`;
                 role: "user",
                 parts: [
                     { fileData: { fileUri, mimeType } },
-                    { text: "Extract and categorize ALL key terms and definitions from this ENTIRE document, paying special attention to the END sections. Return ONLY a JSON object." },
+                    { text: "Extract EVERY SINGLE term and definition from this document. Be EXHAUSTIVE - I want ALL content extracted. Include ALL headers, ALL bullet lists, ALL algorithms, ALL examples, ALL case studies. Do not skip anything. Organize into categories." },
                 ],
             });
         } else if (textContent) {
             contents.push({
                 role: "user",
-                parts: [{ text: `Extract and categorize ALL key terms and definitions from this ENTIRE text, paying special attention to the END sections:\n\n${textContent}\n\nReturn ONLY a JSON object.` }],
+                parts: [{ text: `Extract EVERY SINGLE term and definition from this text. Be EXHAUSTIVE - extract ALL content and organize into categories:\n\n${textContent}` }],
             });
         }
 
@@ -161,6 +225,7 @@ COLOR OPTIONS: #E0F2FE, #DCFCE7, #FEF3C7, #FCE7F3, #E0E7FF, #F3E8FF`;
                 temperature: 0.5,
                 maxOutputTokens: 65536,
                 responseMimeType: "application/json",
+                responseSchema: reviewerResponseSchema,
             },
         });
 
@@ -170,50 +235,65 @@ COLOR OPTIONS: #E0F2FE, #DCFCE7, #FEF3C7, #FCE7F3, #E0E7FF, #F3E8FF`;
             return NextResponse.json({ error: "AI returned empty response. Please try again." }, { status: 500 });
         }
 
-        // Parse JSON from response with error recovery
+        // Parse the structured JSON response (guaranteed to be valid JSON matching schema)
         let result;
         try {
             result = JSON.parse(responseText);
         } catch (parseError) {
-            console.error("Initial JSON parse failed:", parseError);
-            console.error("Raw response length:", responseText.length);
-            console.error("Raw response (first 1000 chars):", responseText.substring(0, 1000));
-            
-            // Try to extract JSON object
-            const jsonMatch = responseText.match(/\{[\s\S]*\}/);
-            if (!jsonMatch) {
-                console.error("No JSON object found in response");
-                return NextResponse.json({ 
-                    error: "AI response was not in expected format. Please try again.",
-                }, { status: 500 });
-            }
-            
-            // Attempt to fix common JSON issues
-            let fixedJson = jsonMatch[0]
-                .replace(/,\s*}/g, '}')  // Remove trailing commas before }
-                .replace(/,\s*]/g, ']'); // Remove trailing commas before ]
-            
-            try {
-                result = JSON.parse(fixedJson);
-            } catch {
-                // Try more aggressive fixing - handle unescaped characters in string values
-                try {
-                    // Remove control characters except valid JSON whitespace
-                    fixedJson = fixedJson.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '');
-                    result = JSON.parse(fixedJson);
-                } catch (finalError) {
-                    console.error("All JSON parse attempts failed:", finalError);
-                    console.error("Attempted to parse:", fixedJson.substring(0, 500));
-                    return NextResponse.json({ 
-                        error: "Failed to parse AI response. Please try again with different content.",
-                    }, { status: 500 });
-                }
-            }
+            console.error("[GenerateReviewer] Failed to parse structured response:", parseError);
+            console.error("Raw response (first 500 chars):", responseText.substring(0, 500));
+            return NextResponse.json({ error: "Failed to parse AI response. Please try again." }, { status: 500 });
         }
 
         // Ensure categories array exists
         if (!result.categories) {
             result.categories = [];
+        }
+
+        // Validate and filter out terms with empty/missing definitions
+        let totalFiltered = 0;
+        result.categories = result.categories.map((category: { 
+            name: string; 
+            color: string; 
+            terms: Array<{ term?: string; definition?: string; examples?: string[]; keywords?: string[] }> 
+        }) => {
+            const originalCount = category.terms?.length || 0;
+            
+            const filteredTerms = (category.terms || []).filter((item) => {
+                const term = item.term?.trim();
+                const definition = item.definition?.trim();
+                
+                // Must have both non-empty term and definition
+                if (!term || !definition) {
+                    console.warn(`[GenerateReviewer] Filtered out term with empty term or definition in category "${category.name}": term="${term}"`);
+                    return false;
+                }
+                
+                // Definition should have some content (at least 3 characters)
+                if (definition.length < 3) {
+                    console.warn(`[GenerateReviewer] Filtered out term with too short definition in category "${category.name}": term="${term}"`);
+                    return false;
+                }
+                
+                return true;
+            }).map((item) => ({
+                term: item.term!.trim(),
+                definition: item.definition!.trim(),
+                examples: item.examples || [],
+                keywords: item.keywords || [],
+            }));
+            
+            totalFiltered += originalCount - filteredTerms.length;
+            
+            return {
+                ...category,
+                terms: filteredTerms,
+            };
+        }).filter((category: { terms: unknown[] }) => category.terms.length > 0); // Remove empty categories
+
+        // Log if we filtered out any terms
+        if (totalFiltered > 0) {
+            console.log(`[GenerateReviewer] Filtered ${totalFiltered} terms with empty/invalid definitions`);
         }
 
         // Usage already incremented atomically in checkAndIncrementAIUsage

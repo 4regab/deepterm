@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { FileState } from "@google/genai";
 import { checkAndIncrementAIUsage } from "@/services/rateLimit";
-import { generateContentWithRotation, uploadFileWithRotation, getApiKeyCount } from "@/services/geminiClient";
+import { generateContentWithRotation, uploadFileWithRotation, getApiKeyCount, Type } from "@/services/geminiClient";
 import { z } from "zod";
 
 // File size limits (in bytes)
@@ -15,6 +15,26 @@ const GenerateCardsInputSchema = z.object({
 
 // Allowed MIME types whitelist
 const ALLOWED_MIME_TYPES = ["application/pdf"] as const;
+
+// Structured output schema for flashcards - enforces non-empty term and definition
+const flashcardResponseSchema = {
+  type: Type.ARRAY,
+  items: {
+    type: Type.OBJECT,
+    properties: {
+      term: {
+        type: Type.STRING,
+        description: "The key term, concept, or vocabulary word exactly as it appears in the source.",
+      },
+      definition: {
+        type: Type.STRING,
+        description: "The EXACT VERBATIM definition as it appears in the source document. Must be copied exactly - do not paraphrase or rewrite. Must be non-empty.",
+      },
+    },
+    required: ["term", "definition"],
+    propertyOrdering: ["term", "definition"],
+  },
+};
 
 export async function POST(request: NextRequest) {
   if (getApiKeyCount() === 0) {
@@ -101,23 +121,40 @@ export async function POST(request: NextRequest) {
     }
 
     // Build prompt for card generation
-    const systemPrompt = `You are an expert study material creator. Extract ALL key terms and their definitions from the provided content.
+    const systemPrompt = `You are an expert study material extractor. Your job is to extract EVERY SINGLE term and definition from the document - be EXHAUSTIVE.
 
-CRITICAL INSTRUCTION: You MUST process the ENTIRE text from beginning to END without skipping ANY content.
-Output ONLY a valid JSON array of objects with "term" and "definition" fields.
-1. ONLY Extract EVERY key term with DEFINITION that appears in the text (including  subterms, technical terms, examples with meaning, important concepts, and defined phrases)
-2. Do NOT limit yourself to a small number - capture ALL educational terms and definition content
-3. Terms and definition should be VERBATIM from document/study material
-4. Do NOT include any other content in the JSON array.
-5. MANDATORY: Ensure that all sections until the end are ALWAYS extracted completely
-6. MANDATORY:The output format should be a valid JSON array of objects with "term" and "definition" fields.
-7. Term and Definition must be always verbatim.
+CRITICAL: EXTRACT EVERYTHING - DO NOT BE SELECTIVE
+1. Process the ENTIRE document from START to END
+2. Extract EVERY term that has ANY explanation, definition, or description
+3. Extract ALL headers, subheaders, concepts, algorithms, data structures, processes, etc.
+4. For bullet point lists under a header, the header is the TERM and ALL bullets combined are the DEFINITION
+5. For numbered lists, same rule - header is TERM, all items are DEFINITION
+6. Short definitions are OK - extract them anyway
+7. DO NOT skip content because it seems "minor" - extract EVERYTHING
 
-Example output format:
-[
-  {"term": "Photosynthesis", "definition": "The process by which plants convert sunlight into energy"},
-  {"term": "Chlorophyll", "definition": "Green pigment in plants that absorbs light for photosynthesis. Example:  "}
-]`;
+WHAT TO EXTRACT:
+- Main concepts with their definitions
+- Headers followed by explanatory text
+- Headers followed by bullet points (combine bullets into definition)
+- Algorithms and their descriptions
+- Data structures and their descriptions  
+- Processes and their steps
+- Types/categories and their explanations
+- Advantages/disadvantages lists
+- Applications and examples
+- Case studies and their solutions
+- ANY term that has text explaining what it is
+
+DEFINITION FORMAT:
+- Copy the definition VERBATIM from the source
+- For bullet lists: combine all bullets with proper punctuation
+- Include ALL details, examples, and explanations from the source
+- Short definitions are acceptable - do not skip them
+
+MANDATORY:
+- Extract AT LEAST 100+ terms from a long document
+- Every section header with content below it = 1 card minimum
+- Do NOT summarize or skip - be EXHAUSTIVE`;
 
     const contents: Array<{ role: string; parts: Array<{ text?: string; fileData?: { fileUri: string; mimeType: string } }> }> = [];
 
@@ -126,13 +163,13 @@ Example output format:
         role: "user",
         parts: [
           { fileData: { fileUri, mimeType } },
-          { text: "Extract key terms and definitions from this document. Return ONLY a JSON array." },
+          { text: "Extract EVERY SINGLE term and definition from this document. Be EXHAUSTIVE - I want ALL content extracted, not just the main concepts. Include ALL headers with their explanations, ALL bullet point lists, ALL algorithms, ALL examples. Do not skip anything." },
         ],
       });
     } else if (textContent) {
       contents.push({
         role: "user",
-        parts: [{ text: `Extract key terms and definitions from this text:\n\n${textContent}\n\nReturn ONLY a JSON array.` }],
+        parts: [{ text: `Extract EVERY SINGLE term and definition from this text. Be EXHAUSTIVE - extract ALL content:\n\n${textContent}` }],
       });
     }
 
@@ -141,18 +178,49 @@ Example output format:
       contents,
       config: {
         systemInstruction: systemPrompt,
-        temperature: 0.3,
-        maxOutputTokens: 50000,
+        temperature: 0.2,
+        maxOutputTokens: 65536,
+        responseMimeType: "application/json",
+        responseSchema: flashcardResponseSchema,
       },
     });
 
-    // Parse JSON from response
-    const jsonMatch = responseText.match(/\[[\s\S]*\]/);
-    if (!jsonMatch) {
+    // Parse the structured JSON response (guaranteed to be valid JSON matching schema)
+    let rawCards;
+    try {
+      rawCards = JSON.parse(responseText);
+    } catch {
+      console.error("[GenerateCards] Failed to parse structured response:", responseText.substring(0, 500));
       return NextResponse.json({ error: "Failed to parse AI response" }, { status: 500 });
     }
 
-    const cards = JSON.parse(jsonMatch[0]);
+    // Validate and filter out cards with empty/missing definitions
+    const cards = rawCards.filter((card: { term?: string; definition?: string }) => {
+      const term = card.term?.trim();
+      const definition = card.definition?.trim();
+      
+      // Must have both non-empty term and definition
+      if (!term || !definition) {
+        console.warn(`[GenerateCards] Filtered out card with empty term or definition: term="${term}"`);
+        return false;
+      }
+      
+      // Definition should have some content (at least 3 characters)
+      if (definition.length < 3) {
+        console.warn(`[GenerateCards] Filtered out card with too short definition: term="${term}", def="${definition}"`);
+        return false;
+      }
+      
+      return true;
+    }).map((card: { term: string; definition: string }) => ({
+      term: card.term.trim(),
+      definition: card.definition.trim(),
+    }));
+
+    // Log if we filtered out any cards
+    if (rawCards.length !== cards.length) {
+      console.log(`[GenerateCards] Filtered ${rawCards.length - cards.length} cards with empty definitions. Remaining: ${cards.length}`);
+    }
 
     // Usage already incremented atomically in checkAndIncrementAIUsage
 
