@@ -247,7 +247,9 @@ describe('POST /api/generate-cards', () => {
       expect(body.cards).toEqual([{ term: 'Mitosis', definition: 'Cell division process' }])
     })
 
-    it('should handle AI response with extra text around JSON', async () => {
+    it('should return 500 when AI response has extra text around JSON (structured output guarantees pure JSON)', async () => {
+      // Note: With responseMimeType: "application/json" and responseSchema, Gemini returns pure JSON.
+      // This test verifies the route correctly rejects malformed responses that shouldn't occur in production.
       mockGenerateContentWithRotation.mockResolvedValueOnce({
         text: 'Here are the flashcards: [{"term": "A", "definition": "B"}] Hope this helps!'
       })
@@ -255,9 +257,11 @@ describe('POST /api/generate-cards', () => {
       const request = createFormDataRequest({ textContent: 'Test content' })
       const response = await POST(request)
       
-      expect(response.status).toBe(200)
+      // Route uses JSON.parse directly since structured output guarantees valid JSON
+      // Extra text around JSON will fail parsing as expected
+      expect(response.status).toBe(500)
       const body = await response.json()
-      expect(body.cards).toEqual([{ term: 'A', definition: 'B' }])
+      expect(body.error).toBe('Failed to parse AI response')
     })
 
     it('should return 500 when AI response has no valid JSON', async () => {

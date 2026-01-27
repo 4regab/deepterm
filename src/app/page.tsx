@@ -1,4 +1,5 @@
 import { Metadata } from "next";
+import Script from "next/script";
 import HomeClient from "./HomeClient";
 import { generateFAQJsonLd, siteConfig } from "@/lib/seo";
 
@@ -98,12 +99,13 @@ export default function Home() {
 
   return (
     <>
-      <head>
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
-        />
-      </head>
+      {/* JSON-LD structured data for FAQ - using Next.js Script to avoid hydration issues */}
+      <Script
+        id="faq-jsonld"
+        type="application/ld+json"
+        strategy="beforeInteractive"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd).replace(/</g, '\\u003c') }}
+      />
       <HomeClient />
     </>
   );

@@ -49,6 +49,7 @@ interface DashboardData {
     };
     stats: {
         total_study_minutes: number;
+        today_study_minutes: number;
         current_streak: number;
         longest_streak: number;
         pomodoro_sessions: number;
@@ -122,7 +123,7 @@ export function DashboardHeader({ initialData }: DashboardHeaderProps) {
     const rankTitle = getRankTitle(level);
     const progressPercent = calculateProgressPercent(xpInLevel, xpForNext);
 
-    const todayMinutes = initialData.stats?.total_study_minutes ?? 0;
+    const todayMinutes = initialData.stats?.today_study_minutes ?? 0;
     const currentStreak = initialData.stats?.current_streak ?? 0;
     const bestStreak = initialData.stats?.longest_streak ?? 0;
 

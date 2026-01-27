@@ -47,9 +47,16 @@ function StatCard({ label, value, icon, bgColor, iconColor, loading }: StatCardP
 }
 
 export default function StatsBar() {
-    const { stats, loading } = useActivityStore();
+    const { stats, activity, loading } = useActivityStore();
 
-    const todayMinutes = stats?.total_study_minutes ?? 0;
+    // Get today's date in YYYY-MM-DD format (local timezone)
+    const today = new Date();
+    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+    
+    // Find today's activity from the activity array (daily data)
+    const todayActivity = activity.find(a => a.activity_date === todayStr);
+    const todayMinutes = todayActivity?.minutes_studied ?? 0;
+    
     const currentStreak = stats?.current_streak ?? 0;
     const bestStreak = stats?.longest_streak ?? 0;
 

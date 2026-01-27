@@ -40,6 +40,7 @@ interface DashboardData {
     };
     stats: {
         total_study_minutes: number;
+        today_study_minutes: number;
         current_streak: number;
         longest_streak: number;
         pomodoro_sessions: number;

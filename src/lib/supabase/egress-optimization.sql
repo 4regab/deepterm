@@ -22,6 +22,8 @@ DECLARE
   v_xp record;
   v_stats record;
   v_user record;
+  v_today_minutes integer := 0;
+  v_real_streak integer := 0;
 BEGIN
   -- Fail fast if no authenticated user
   IF v_user_id IS NULL THEN
@@ -61,6 +63,25 @@ BEGIN
   SELECT raw_user_meta_data INTO v_user
   FROM auth.users WHERE id = v_user_id;
 
+  -- Get TODAY's study minutes - use subquery to properly handle no rows
+  -- When no row exists for today, the subquery returns NULL, then COALESCE converts to 0
+  SELECT COALESCE(
+    (SELECT sa.minutes_studied 
+     FROM public.study_activity sa
+     WHERE sa.user_id = v_user_id AND sa.activity_date = current_date),
+    0
+  ) INTO v_today_minutes;
+
+  -- Calculate REAL current streak at read time
+  -- Streak is 0 if user hasn't studied today or yesterday (streak broken)
+  IF v_stats.last_study_date IS NULL THEN
+    v_real_streak := 0;
+  ELSIF v_stats.last_study_date >= current_date - interval '1 day' THEN
+    v_real_streak := COALESCE(v_stats.current_streak, 0);
+  ELSE
+    v_real_streak := 0;
+  END IF;
+
   -- Build combined result
   SELECT json_build_object(
     'profile', json_build_object(
@@ -76,7 +97,8 @@ BEGIN
     ),
     'stats', json_build_object(
       'total_study_minutes', COALESCE(v_stats.total_study_minutes, 0),
-      'current_streak', COALESCE(v_stats.current_streak, 0),
+      'today_study_minutes', v_today_minutes,
+      'current_streak', v_real_streak,
       'longest_streak', COALESCE(v_stats.longest_streak, 0),
       'pomodoro_sessions', COALESCE(v_stats.pomodoro_sessions, 0),
       'flashcards_mastered', COALESCE(v_stats.flashcards_mastered, 0),
@@ -90,6 +112,7 @@ END;
 $$;
 
 GRANT EXECUTE ON FUNCTION public.get_dashboard_data() TO authenticated;
+
 
 -- ============================================
 -- 2. BATCHED ACTIVITY LOGGING
