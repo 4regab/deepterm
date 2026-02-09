@@ -104,9 +104,9 @@ export const usePomodoroStore = create<PomodoroStore>()((set, get) => ({
   incrementSession: () => set((state) => ({ sessionCount: state.sessionCount + 1 })),
 
   addTask: (text, reminderTime?: string | null) => set((state) => ({
-    tasks: [...state.tasks, { 
-      id: crypto.randomUUID(), 
-      text, 
+    tasks: [...state.tasks, {
+      id: crypto.randomUUID(),
+      text,
       completed: false,
       reminder: reminderTime ? {
         enabled: true,
@@ -120,7 +120,7 @@ export const usePomodoroStore = create<PomodoroStore>()((set, get) => ({
     const state = get();
     const task = state.tasks.find(t => t.id === id);
     const isCompleting = task && !task.completed;
-    
+
     // Update state first (pure)
     set({
       tasks: state.tasks.map(t =>
@@ -131,7 +131,7 @@ export const usePomodoroStore = create<PomodoroStore>()((set, get) => ({
         showToast: true
       } : {})
     });
-    
+
     // Side effect after state update
     if (isCompleting) {
       setTimeout(() => set({ showToast: false }), 3000);
@@ -146,11 +146,11 @@ export const usePomodoroStore = create<PomodoroStore>()((set, get) => ({
     tasks: state.tasks.map(task =>
       task.id === id
         ? {
-            ...task,
-            reminder: reminderTime
-              ? { enabled: true, time: reminderTime, notified: false }
-              : undefined,
-          }
+          ...task,
+          reminder: reminderTime
+            ? { enabled: true, time: reminderTime, notified: false }
+            : undefined,
+        }
         : task
     )
   })),
@@ -336,8 +336,10 @@ export const usePomodoroStore = create<PomodoroStore>()((set, get) => ({
         await logPomodoroSession(phase, duration, sessionStartTime);
 
         // Refresh stats after any session (work sessions update study time)
+        // Use force=true to bypass the 5-minute cache TTL so fresh data
+        // is immediately available when navigating to the dashboard
         useXPStore.getState().fetchXPStats();
-        useActivityStore.getState().fetchActivity();
+        useActivityStore.getState().fetchActivity(true);
       } catch (error) {
         console.error('Failed to log session:', error);
       }
@@ -375,7 +377,7 @@ export const usePomodoroStore = create<PomodoroStore>()((set, get) => ({
     });
 
     setTimeout(() => set({ showToast: false }), 4000);
-    
+
     // Reset guard flag after completion
     isCompletingPhase = false;
   },

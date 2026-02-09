@@ -1,8 +1,10 @@
 "use client";
 
+import { useEffect } from "react";
 import { motion } from "framer-motion";
 import { Clock, Flame, Trophy } from "lucide-react";
 import { getRankTitle, calculateProgressPercent } from "@/utils/xp";
+import { useActivityStore } from "@/lib/stores";
 import dynamic from "next/dynamic";
 
 // Dynamic import for study calendar (client-side only)
@@ -107,9 +109,24 @@ function HeaderSkeleton() {
 export function DashboardHeader({ initialData }: DashboardHeaderProps) {
     // Compute greeting on client side using user's local time
     const greeting = getGreeting();
-    
-    // Use server-provided data - no client-side fetching needed!
-    // Data was already fetched on the server and passed as props
+
+    // Subscribe to the client-side activity store for live updates
+    // This fixes timezone mismatch: server uses UTC current_date, but activity
+    // is recorded with the client's local date. The client store matches correctly.
+    const { activity, fetchActivity } = useActivityStore();
+
+    // Fetch fresh activity data on mount to ensure the store is populated
+    // with the latest data (e.g., after completing a Pomodoro session)
+    useEffect(() => {
+        fetchActivity(true);
+    }, [fetchActivity]);
+
+    // Compute today's minutes from client-side activity store (timezone-correct)
+    const today = new Date();
+    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+    const todayActivity = activity.find(a => a.activity_date === todayStr);
+    // Prefer client-side store data (timezone-correct) over server data
+    const clientTodayMinutes = todayActivity?.minutes_studied;
 
     // Show skeleton if no initial data (shouldn't happen with proper server fetch)
     if (!initialData) {
@@ -123,7 +140,8 @@ export function DashboardHeader({ initialData }: DashboardHeaderProps) {
     const rankTitle = getRankTitle(level);
     const progressPercent = calculateProgressPercent(xpInLevel, xpForNext);
 
-    const todayMinutes = initialData.stats?.today_study_minutes ?? 0;
+    // Use client-side data when available (fixes timezone issue), fall back to server data
+    const todayMinutes = clientTodayMinutes ?? initialData.stats?.today_study_minutes ?? 0;
     const currentStreak = initialData.stats?.current_streak ?? 0;
     const bestStreak = initialData.stats?.longest_streak ?? 0;
 
