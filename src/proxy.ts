@@ -5,6 +5,7 @@ import { NextResponse, type NextRequest } from 'next/server'
 const ALLOWED_ORIGINS = [
   'https://deepterm.tech',
   'https://www.deepterm.tech',
+  'https://deepterm.vercel.app',
 ]
 
 // Routes that require authentication
@@ -80,7 +81,7 @@ export async function proxy(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
 
   // Check if route is public (no auth needed)
-  const isPublicRoute = PUBLIC_ROUTES.some(route => 
+  const isPublicRoute = PUBLIC_ROUTES.some(route =>
     pathname.startsWith(route)
   )
 
@@ -90,12 +91,12 @@ export async function proxy(request: NextRequest) {
   }
 
   // Check if route is protected
-  const isProtectedRoute = PROTECTED_ROUTES.some(route => 
+  const isProtectedRoute = PROTECTED_ROUTES.some(route =>
     pathname.startsWith(route)
   )
 
   // Check if route is auth route
-  const isAuthRoute = AUTH_ROUTES.some(route => 
+  const isAuthRoute = AUTH_ROUTES.some(route =>
     pathname.startsWith(route)
   )
 

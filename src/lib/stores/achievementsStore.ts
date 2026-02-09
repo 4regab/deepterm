@@ -22,13 +22,21 @@ export const useAchievementsStore = create<AchievementsStore>()((set) => ({
 
   fetchAchievements: async () => {
     set({ loading: true, error: null })
-    
+
     try {
       const supabase = createClient()
+
+      // Auth guard: skip fetch for unauthenticated users (SECURITY FIX)
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) {
+        set({ achievements: [], loading: false })
+        return
+      }
+
       const { data, error } = await supabase.rpc('get_user_achievements')
-      
+
       if (error) throw error
-      
+
       set({ achievements: data || [], loading: false })
     } catch (error) {
       set({ error: error as Error, loading: false })

@@ -7,15 +7,34 @@ interface ArticleContentProps {
   content: string
 }
 
+/**
+ * Sanitize HTML output to prevent XSS attacks (defense-in-depth).
+ * Strips dangerous elements and attributes that could execute JavaScript.
+ * Primary protection is RLS policies on blog_posts table; this is a secondary layer.
+ */
+function sanitizeHtml(html: string): string {
+  // Remove <script> tags and their contents
+  let sanitized = html.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+  // Remove <iframe>, <object>, <embed>, <form>, <base> tags
+  sanitized = sanitized.replace(/<\s*\/?\s*(iframe|object|embed|form|base|meta|link)\b[^>]*>/gi, '')
+  // Remove event handler attributes (onclick, onerror, onload, etc.)
+  sanitized = sanitized.replace(/\s+on\w+\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+)/gi, '')
+  // Remove javascript: protocol in href/src/action attributes
+  sanitized = sanitized.replace(/(href|src|action)\s*=\s*(?:"javascript:[^"]*"|'javascript:[^']*')/gi, '$1=""')
+  // Remove data: protocol in src attributes (can execute scripts in some contexts)
+  sanitized = sanitized.replace(/src\s*=\s*(?:"data:[^"]*"|'data:[^']*')/gi, 'src=""')
+  return sanitized
+}
+
 // Extract actual markdown content from JSON or malformed JSON
 function extractContent(raw: string): string {
   let text = raw.trim()
-  
+
   // Remove code block markers if present
   if (text.startsWith('```')) {
     text = text.replace(/^```json?\s*\n?/, '').replace(/\n?```\s*$/, '')
   }
-  
+
   // Check if this looks like JSON (starts with { and has "content" field)
   if (text.startsWith('{') && text.includes('"content"')) {
     // Try JSON.parse first
@@ -27,16 +46,16 @@ function extractContent(raw: string): string {
     } catch {
       // JSON is malformed - use regex to extract content field
     }
-    
+
     // Regex extraction for malformed JSON
     // Match "content": " then capture everything until we find the closing pattern
     const contentMatch = text.match(/"content"\s*:\s*"/)
     if (contentMatch && contentMatch.index !== undefined) {
       const valueStart = contentMatch.index + contentMatch[0].length
-      
+
       // Strategy: Find the end by looking for patterns that indicate end of content field
       // Look for: ", "keywords" or ", "key" or "} at end or just the last " before }
-      
+
       // First, try to find ", " followed by another JSON key (like "keywords")
       // This pattern: unescaped quote followed by comma and another key
       const endPatterns = [
@@ -44,7 +63,7 @@ function extractContent(raw: string): string {
         /(?<!\\)",\s*"\w+"\s*:/,   // ", "anyKey":
         /(?<!\\)"\s*\}\s*$/,       // "} at end of string
       ]
-      
+
       let endIndex = -1
       for (const pattern of endPatterns) {
         const match = text.substring(valueStart).match(pattern)
@@ -64,7 +83,7 @@ function extractContent(raw: string): string {
           }
         }
       }
-      
+
       // Fallback: scan from the end looking for the last valid quote
       if (endIndex === -1) {
         // Find the last } in the text
@@ -86,10 +105,10 @@ function extractContent(raw: string): string {
           }
         }
       }
-      
+
       if (endIndex > valueStart) {
         const rawValue = text.substring(valueStart, endIndex)
-        
+
         // Unescape the JSON string
         const result = rawValue
           .replace(/\\n/g, '\n')
@@ -97,33 +116,33 @@ function extractContent(raw: string): string {
           .replace(/\\r/g, '\r')
           .replace(/\\"/g, '"')
           .replace(/\\\\/g, '\\')
-        
+
         if (result.length > 50) {
           return result
         }
       }
     }
   }
-  
+
   // Check for ```json block after content (strip trailing JSON)
   const codeBlockIndex = text.indexOf('```json')
   if (codeBlockIndex > 100) {
     return text.substring(0, codeBlockIndex).trim()
   }
-  
+
   // Also check for ``` followed by json on next line
   const codeBlockAltIndex = text.indexOf('```\njson')
   if (codeBlockAltIndex > 100) {
     return text.substring(0, codeBlockAltIndex).trim()
   }
-  
+
   // Check if markdown content is followed by raw JSON (content then JSON appended)
   const jsonPattern = /\n\s*\{\s*"title"/
   const jsonMatch = text.match(jsonPattern)
   if (jsonMatch && jsonMatch.index !== undefined && jsonMatch.index > 100) {
     return text.substring(0, jsonMatch.index).trim()
   }
-  
+
   // Strip trailing " } that might be left from JSON wrapper
   const trailingJsonPattern = /"\s*\}\s*$/
   if (trailingJsonPattern.test(text)) {
@@ -134,21 +153,21 @@ function extractContent(raw: string): string {
       return text.substring(0, match.index).trim()
     }
   }
-  
+
   return text
 }
 
 // Extract plain text from markdown for TTS
 export function extractPlainText(content: string): string {
   const markdown = extractContent(content)
-  
+
   // Convert to HTML first, then strip tags
   let html = marked.parse(markdown, { async: false }) as string
-  
+
   // Remove citation brackets
   html = html.replace(/\s*\[\d+(?:,\s*\d+)*\]/g, '')
   html = html.replace(/\s*\[[\d,\s]+\]/g, '')
-  
+
   // Strip HTML tags and decode entities
   const text = html
     .replace(/<[^>]+>/g, ' ')
@@ -160,7 +179,7 @@ export function extractPlainText(content: string): string {
     .replace(/&#39;/g, "'")
     .replace(/\s+/g, ' ')
     .trim()
-  
+
   return text
 }
 
@@ -168,16 +187,19 @@ export default function ArticleContent({ content }: ArticleContentProps) {
   const htmlContent = useMemo(() => {
     const markdown = extractContent(content)
     let html = marked.parse(markdown, { async: false }) as string
-    
+
     // Remove citation brackets
     html = html.replace(/\s*\[\d+(?:,\s*\d+)*\]/g, '')
     html = html.replace(/\s*\[[\d,\s]+\]/g, '')
-    
+
+    // Sanitize HTML to prevent stored XSS (defense-in-depth)
+    html = sanitizeHtml(html)
+
     return html
   }, [content])
 
   return (
-    <article 
+    <article
       className="prose prose-lg max-w-none prose-headings:font-serif prose-headings:text-[#171d2b] prose-h2:text-[26px] prose-h2:mt-10 prose-h2:mb-4 prose-h3:text-[22px] prose-h3:mt-8 prose-h3:mb-3 prose-p:text-[#171d2b]/80 prose-p:leading-relaxed prose-a:text-[#171d2b] prose-a:underline prose-strong:text-[#171d2b] prose-ul:my-4 prose-li:text-[#171d2b]/80 prose-blockquote:border-l-[#171d2b]/20 prose-blockquote:text-[#171d2b]/70 prose-code:bg-[#171d2b]/5 prose-code:px-1 prose-code:rounded prose-pre:bg-[#171d2b] prose-pre:text-white"
       dangerouslySetInnerHTML={{ __html: htmlContent }}
     />

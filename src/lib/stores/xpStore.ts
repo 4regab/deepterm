@@ -62,6 +62,14 @@ export const useXPStore = create<XPStore>()((set, get) => ({
 
     try {
       const supabase = createClient()
+
+      // Auth guard: skip fetch for unauthenticated users (SECURITY FIX)
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) {
+        set({ stats: DEFAULT_STATS, loading: false, lastFetched: Date.now() })
+        return
+      }
+
       const { data, error } = await supabase.rpc('get_user_xp_stats')
 
       if (error) throw error
@@ -96,6 +104,14 @@ export const useXPStore = create<XPStore>()((set, get) => ({
 
     try {
       const supabase = createClient()
+
+      // Auth guard: require authenticated user (SECURITY FIX)
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) {
+        console.warn('Cannot add XP: No authenticated user')
+        return { leveledUp: false }
+      }
+
       const { data, error } = await supabase.rpc('add_xp', { p_amount: safeAmount })
 
       if (error) throw error

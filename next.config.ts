@@ -1,5 +1,8 @@
 import type { NextConfig } from "next";
 
+// Only allow 'unsafe-eval' in development (needed for Next.js HMR/React DevTools)
+const isDev = process.env.NODE_ENV === 'development';
+
 const securityHeaders = [
   {
     key: 'X-DNS-Prefetch-Control',
@@ -37,12 +40,11 @@ const securityHeaders = [
   },
   {
     key: 'Content-Security-Policy',
-    // Note: 'unsafe-inline' and 'unsafe-eval' are required for Next.js compatibility.
-    // Next.js uses inline scripts for hydration and may use eval in development mode.
-    // These cannot be removed without breaking the application.
+    // Note: 'unsafe-inline' is required for Next.js hydration inline scripts.
+    // 'unsafe-eval' is only enabled in development mode for HMR/React DevTools.
     value: [
       "default-src 'self'",
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://hcaptcha.com https://*.hcaptcha.com https://www.googletagmanager.com https://www.google-analytics.com https://us-assets.i.posthog.com https://*.posthog.com",
+      `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ''} https://hcaptcha.com https://*.hcaptcha.com https://www.googletagmanager.com https://www.google-analytics.com https://us-assets.i.posthog.com https://*.posthog.com`,
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://hcaptcha.com https://*.hcaptcha.com",
       "img-src 'self' data: blob: https://lh3.googleusercontent.com https://*.googleusercontent.com https://hcaptcha.com https://*.hcaptcha.com https://www.googletagmanager.com https://www.google-analytics.com",
       "font-src 'self' data: https://fonts.gstatic.com",

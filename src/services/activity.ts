@@ -45,6 +45,13 @@ export async function recordStudyActivity(options: {
 }) {
     const supabase = createClient();
 
+    // Auth guard: require authenticated user (SECURITY FIX)
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+        console.warn('Cannot record study activity: No authenticated user');
+        return { error: new Error('No authenticated user') };
+    }
+
     // Validate and clamp input values
     const safeMinutes = Math.max(0, Math.min(options.minutes || 0, 1440)); // Max 24 hours
     const safeFlashcards = Math.max(0, Math.min(options.flashcards || 0, 1000));
@@ -119,6 +126,14 @@ export async function incrementStat(statName: string, amount: number = 1) {
     const safeAmount = Math.max(1, Math.min(Math.floor(amount), 100));
 
     const supabase = createClient();
+
+    // Auth guard: require authenticated user (SECURITY FIX)
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+        console.warn('Cannot increment stat: No authenticated user');
+        return { error: new Error('No authenticated user') };
+    }
+
     const { error } = await supabase.rpc("increment_stat", {
         p_stat_name: statName,
         p_amount: safeAmount
@@ -132,6 +147,14 @@ export async function incrementStat(statName: string, amount: number = 1) {
  */
 export async function logPomodoroSession(phase: "work" | "shortBreak" | "longBreak", durationMinutes: number, startedAt: Date) {
     const supabase = createClient();
+
+    // Auth guard: require authenticated user (SECURITY FIX)
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+        console.warn('Cannot log pomodoro session: No authenticated user');
+        return { error: new Error('No authenticated user') };
+    }
+
     const localDate = getLocalDateString();
 
     // Use batched RPC for efficiency - single call handles:

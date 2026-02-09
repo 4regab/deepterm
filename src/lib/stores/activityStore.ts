@@ -50,6 +50,13 @@ export const useActivityStore = create<ActivityStore>()((set, get) => ({
     try {
       const supabase = createClient()
 
+      // Auth guard: skip fetch for unauthenticated users (SECURITY FIX)
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) {
+        set({ activity: [], stats: null, loading: false, lastFetched: Date.now() })
+        return
+      }
+
       // Parallel fetch for calendar and stats (still more efficient than sequential)
       const [calendarResult, statsResult] = await Promise.all([
         supabase.rpc('get_study_calendar'),
