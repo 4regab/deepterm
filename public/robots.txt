@@ -1,13 +1,282 @@
 # https://www.robotstxt.org/robotstxt.html
+
+# ============================================
+# Default: Allow all standard crawlers
+# ============================================
 User-agent: *
 Allow: /
+Disallow: /api/
+Disallow: /auth/
+Disallow: /dashboard/
+Disallow: /materials/
+Disallow: /account/
+Disallow: /achievements/
+Disallow: /practice/
+Disallow: /pomodoro/
+Disallow: /share/
 
-# Disallow sensitive paths
+# ============================================
+# OpenAI Crawlers
+# ============================================
+
+# GPTBot - Training data collection
+User-agent: GPTBot
+Allow: /blog/
+Allow: /llms.txt
+Allow: /about
+Allow: /help
+Allow: /changelog
+Disallow: /api/
+Disallow: /auth/
+Disallow: /dashboard/
+Disallow: /materials/
+Disallow: /account/
+Disallow: /achievements/
+Disallow: /practice/
+Disallow: /pomodoro/
+Disallow: /share/
+
+# ChatGPT-User - Real-time user-initiated browsing
+User-agent: ChatGPT-User
+Allow: /blog/
+Allow: /llms.txt
+Allow: /about
+Allow: /help
+Allow: /changelog
 Disallow: /api/
 Disallow: /auth/
 Disallow: /dashboard/
 Disallow: /materials/
 Disallow: /account/
 
-# Sitemap
+# OAI-SearchBot - ChatGPT search indexing
+User-agent: OAI-SearchBot
+Allow: /blog/
+Allow: /llms.txt
+Allow: /about
+Allow: /help
+Allow: /changelog
+Disallow: /api/
+Disallow: /auth/
+Disallow: /dashboard/
+
+# ============================================
+# Anthropic (Claude) Crawlers
+# ============================================
+
+# ClaudeBot - Training data
+User-agent: ClaudeBot
+Allow: /blog/
+Allow: /llms.txt
+Allow: /about
+Allow: /help
+Allow: /changelog
+Disallow: /api/
+Disallow: /auth/
+Disallow: /dashboard/
+
+# Claude-User - Real-time user queries
+User-agent: Claude-User
+Allow: /blog/
+Allow: /llms.txt
+Allow: /about
+Allow: /help
+Allow: /changelog
+Disallow: /api/
+Disallow: /auth/
+Disallow: /dashboard/
+
+# Claude-SearchBot - Search indexing
+User-agent: Claude-SearchBot
+Allow: /blog/
+Allow: /llms.txt
+Allow: /about
+Allow: /help
+Allow: /changelog
+Disallow: /api/
+Disallow: /auth/
+Disallow: /dashboard/
+
+# Claude-Web - Web crawling
+User-agent: Claude-Web
+Allow: /blog/
+Allow: /llms.txt
+Allow: /about
+Allow: /help
+Allow: /changelog
+Disallow: /api/
+Disallow: /auth/
+Disallow: /dashboard/
+
+# ============================================
+# Google (Gemini) Crawlers
+# ============================================
+
+# Google-Extended - Gemini/Vertex AI training
+User-agent: Google-Extended
+Allow: /blog/
+Allow: /llms.txt
+Allow: /about
+Allow: /help
+Allow: /changelog
+Disallow: /api/
+Disallow: /auth/
+Disallow: /dashboard/
+
+# Gemini-Deep-Research - Gemini deep research feature
+User-agent: Gemini-Deep-Research
+Allow: /blog/
+Allow: /llms.txt
+Allow: /about
+Allow: /help
+Allow: /changelog
+Disallow: /api/
+Disallow: /auth/
+Disallow: /dashboard/
+
+# ============================================
+# Perplexity Crawlers
+# ============================================
+
+# PerplexityBot - Main crawler
+User-agent: PerplexityBot
+Allow: /blog/
+Allow: /llms.txt
+Allow: /about
+Allow: /help
+Allow: /changelog
+Disallow: /api/
+Disallow: /auth/
+Disallow: /dashboard/
+
+# Perplexity-User - User-initiated queries
+User-agent: Perplexity-User
+Allow: /blog/
+Allow: /llms.txt
+Allow: /about
+Allow: /help
+Allow: /changelog
+Disallow: /api/
+Disallow: /auth/
+Disallow: /dashboard/
+
+# ============================================
+# Meta Crawlers
+# ============================================
+
+# meta-externalagent - Meta AI training
+User-agent: meta-externalagent
+Allow: /blog/
+Allow: /llms.txt
+Allow: /about
+Allow: /help
+Disallow: /api/
+Disallow: /auth/
+Disallow: /dashboard/
+
+# meta-webindexer - Meta AI search indexing
+User-agent: meta-webindexer
+Allow: /blog/
+Allow: /llms.txt
+Allow: /about
+Allow: /help
+Disallow: /api/
+Disallow: /auth/
+Disallow: /dashboard/
+
+# MetaAIBot
+User-agent: MetaAIBot
+Allow: /blog/
+Allow: /llms.txt
+Allow: /about
+Allow: /help
+Disallow: /api/
+Disallow: /auth/
+Disallow: /dashboard/
+
+# FacebookBot - Link previews / Meta AI
+User-agent: facebookexternalhit
+Allow: /blog/
+Allow: /about
+Disallow: /api/
+Disallow: /auth/
+Disallow: /dashboard/
+
+# ============================================
+# ByteDance Crawlers
+# ============================================
+
+# Bytespider - ByteDance/Doubao training
+User-agent: Bytespider
+Allow: /blog/
+Allow: /llms.txt
+Disallow: /api/
+Disallow: /auth/
+Disallow: /dashboard/
+
+# Doubaobot
+User-agent: Doubaobot
+Allow: /blog/
+Allow: /llms.txt
+Disallow: /api/
+Disallow: /auth/
+Disallow: /dashboard/
+
+# TikTokSpider
+User-agent: TikTokSpider
+Allow: /blog/
+Allow: /llms.txt
+Disallow: /api/
+Disallow: /auth/
+Disallow: /dashboard/
+
+# ByteDance-AI
+User-agent: ByteDance-AI
+Allow: /blog/
+Allow: /llms.txt
+Disallow: /api/
+Disallow: /auth/
+Disallow: /dashboard/
+
+# ============================================
+# Other AI / ML Crawlers
+# ============================================
+
+# Amazon - Alexa and AI services
+User-agent: Amazonbot
+Allow: /blog/
+Allow: /llms.txt
+Allow: /about
+Disallow: /api/
+Disallow: /auth/
+Disallow: /dashboard/
+
+# Apple - Apple Intelligence
+User-agent: Applebot-Extended
+Allow: /blog/
+Allow: /llms.txt
+Allow: /about
+Disallow: /api/
+Disallow: /auth/
+Disallow: /dashboard/
+
+# Cohere AI
+User-agent: cohere-ai
+Allow: /blog/
+Allow: /llms.txt
+Disallow: /api/
+Disallow: /auth/
+Disallow: /dashboard/
+
+# Common Crawl - Used by many AI companies
+User-agent: CCBot
+Allow: /blog/
+Allow: /llms.txt
+Disallow: /api/
+Disallow: /auth/
+Disallow: /dashboard/
+
+# ============================================
+# Sitemap & LLM Discovery
+# ============================================
 Sitemap: https://deepterm.tech/sitemap.xml
