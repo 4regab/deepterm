@@ -30,6 +30,7 @@ export async function GET() {
         '',
         '## Blog Categories',
         '',
+        '- [Blog Archive](' + baseUrl + '/blog/archive): Complete listing of all articles',
         ...categoryLines,
         '',
         '## Blog Posts',

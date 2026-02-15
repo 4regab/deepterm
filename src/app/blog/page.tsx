@@ -45,9 +45,9 @@ export default async function BlogPage({ searchParams }: PageProps) {
 
         {/* Category Filter */}
         <Suspense fallback={<div className="h-10" />}>
-          <CategoryFilter 
-            categories={categories} 
-            activeCategory={categorySlug} 
+          <CategoryFilter
+            categories={categories}
+            activeCategory={categorySlug}
           />
         </Suspense>
 
@@ -57,10 +57,10 @@ export default async function BlogPage({ searchParams }: PageProps) {
             {posts.map((post) => {
               const formattedDate = post.published_at
                 ? new Date(post.published_at).toLocaleDateString('en-US', {
-                    month: 'short',
-                    day: 'numeric',
-                    year: 'numeric',
-                  })
+                  month: 'short',
+                  day: 'numeric',
+                  year: 'numeric',
+                })
                 : null
 
               return (
@@ -95,7 +95,7 @@ export default async function BlogPage({ searchParams }: PageProps) {
               No articles yet
             </h3>
             <p className="font-sans text-[14px] text-[#171d2b]/60 mb-6">
-              {categorySlug 
+              {categorySlug
                 ? 'No articles in this category yet. Check back soon!'
                 : 'Articles are coming soon. Check back later!'}
             </p>
@@ -112,7 +112,7 @@ export default async function BlogPage({ searchParams }: PageProps) {
 
         {/* See More */}
         {posts.length === POSTS_PER_PAGE && (
-          <div className="mt-8 pt-6 border-t border-[#171d2b]/10">
+          <div className="mt-8 pt-6 border-t border-[#171d2b]/10 flex items-center justify-between">
             <Link
               href={`/blog?${categorySlug ? `category=${categorySlug}&` : ''}page=${page + 1}`}
               className="inline-flex items-center gap-2 font-sans text-[14px] sm:text-[15px] text-[#171d2b] hover:text-[#171d2b]/70 transition-colors"
@@ -121,6 +121,12 @@ export default async function BlogPage({ searchParams }: PageProps) {
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
               </svg>
+            </Link>
+            <Link
+              href="/blog/archive"
+              className="font-sans text-[13px] text-[#171d2b]/50 hover:text-[#171d2b]/70 transition-colors"
+            >
+              View all articles →
             </Link>
           </div>
         )}

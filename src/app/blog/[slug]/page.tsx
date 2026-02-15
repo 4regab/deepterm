@@ -58,16 +58,16 @@ export default async function BlogPostPage({ params }: PageProps) {
   }
 
   const relatedPosts = await getRelatedPosts(slug, post.category_slug, 3)
-  const adjacentPosts = post.published_at 
-    ? await getAdjacentPosts(post.published_at) 
+  const adjacentPosts = post.published_at
+    ? await getAdjacentPosts(post.published_at)
     : { prev: null, next: null }
 
   const formattedDate = post.published_at
     ? new Date(post.published_at).toLocaleDateString('en-US', {
-        month: 'long',
-        day: 'numeric',
-        year: 'numeric',
-      })
+      month: 'long',
+      day: 'numeric',
+      year: 'numeric',
+    })
     : null
 
   // JSON-LD structured data
@@ -93,11 +93,11 @@ export default async function BlogPostPage({ params }: PageProps) {
     <>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(articleJsonLd) }}
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(articleJsonLd).replace(/</g, '\\u003c') }}
       />
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd).replace(/</g, '\\u003c') }}
       />
 
       <div className="bg-[#f0f0ea] min-h-screen">
@@ -145,7 +145,7 @@ export default async function BlogPostPage({ params }: PageProps) {
           )}
 
           {/* Article Metadata + Content (Client Component for TTS) */}
-          <BlogPostClient 
+          <BlogPostClient
             content={post.content}
             formattedDate={formattedDate}
             readTimeMinutes={post.read_time_minutes}

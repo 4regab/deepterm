@@ -212,7 +212,7 @@ export function generateArticleJsonLd({
 }) {
   return {
     '@context': 'https://schema.org',
-    '@type': 'Article',
+    '@type': 'BlogPosting',
     headline: title,
     description,
     url,
@@ -236,6 +236,8 @@ export function generateArticleJsonLd({
       '@type': 'WebPage',
       '@id': url,
     },
+    isAccessibleForFree: true,
+    inLanguage: 'en-US',
   }
 }
 
