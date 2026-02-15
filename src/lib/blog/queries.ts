@@ -1,9 +1,9 @@
 import { createClient } from '@supabase/supabase-js'
-import type { 
-  BlogPostListItem, 
-  BlogPostWithCategory, 
+import type {
+  BlogPostListItem,
+  BlogPostWithCategory,
   CategoryWithCount,
-  BlogCategory 
+  BlogCategory
 } from './types'
 
 // Create a public client for blog reads (no auth needed)
@@ -20,7 +20,7 @@ export async function getPublishedPosts(
   categorySlug?: string
 ): Promise<BlogPostListItem[]> {
   const supabase = getPublicClient()
-  
+
   const { data, error } = await supabase.rpc('get_published_posts', {
     p_limit: limit,
     p_offset: offset,
@@ -39,7 +39,7 @@ export async function getPostBySlug(
   slug: string
 ): Promise<BlogPostWithCategory | null> {
   const supabase = getPublicClient()
-  
+
   // Try RPC first, fallback to direct query
   const { data: rpcData, error: rpcError } = await supabase.rpc('get_post_by_slug', {
     p_slug: slug,
@@ -82,7 +82,7 @@ export async function getPostBySlug(
   // blog_categories can be an array or single object depending on the join
   const categoryData = data.blog_categories as { name: string; slug: string }[] | { name: string; slug: string } | null
   const category = Array.isArray(categoryData) ? categoryData[0] : categoryData
-  
+
   return {
     id: data.id,
     slug: data.slug,
@@ -108,7 +108,7 @@ export async function getPostBySlug(
 
 export async function getCategories(): Promise<BlogCategory[]> {
   const supabase = getPublicClient()
-  
+
   const { data, error } = await supabase
     .from('blog_categories')
     .select('*')
@@ -124,7 +124,7 @@ export async function getCategories(): Promise<BlogCategory[]> {
 
 export async function getCategoriesWithCounts(): Promise<CategoryWithCount[]> {
   const supabase = getPublicClient()
-  
+
   const { data, error } = await supabase.rpc('get_category_post_counts')
 
   if (error) {
@@ -139,7 +139,7 @@ export async function getCategoryBySlug(
   slug: string
 ): Promise<BlogCategory | null> {
   const supabase = getPublicClient()
-  
+
   const { data, error } = await supabase
     .from('blog_categories')
     .select('*')
@@ -160,7 +160,7 @@ export async function getRelatedPosts(
   limit = 3
 ): Promise<BlogPostListItem[]> {
   const supabase = getPublicClient()
-  
+
   let query = supabase
     .from('blog_posts')
     .select(`
@@ -211,7 +211,7 @@ export async function getRelatedPosts(
 
 export async function getTotalPostCount(categorySlug?: string): Promise<number> {
   const supabase = getPublicClient()
-  
+
   let query = supabase
     .from('blog_posts')
     .select('id', { count: 'exact', head: true })
@@ -237,7 +237,7 @@ export async function getTotalPostCount(categorySlug?: string): Promise<number> 
 // For sitemap generation
 export async function getAllPublishedSlugs(): Promise<{ slug: string; updated_at: string }[]> {
   const supabase = getPublicClient()
-  
+
   const { data, error } = await supabase
     .from('blog_posts')
     .select('slug, updated_at')
@@ -258,7 +258,7 @@ export async function getAdjacentPosts(
   currentPublishedAt: string
 ): Promise<{ prev: { slug: string; title: string } | null; next: { slug: string; title: string } | null }> {
   const supabase = getPublicClient()
-  
+
   // Get previous post (older)
   const { data: prevData } = await supabase
     .from('blog_posts')

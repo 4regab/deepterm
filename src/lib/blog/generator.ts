@@ -5,14 +5,14 @@ import { getServiceClient, generateSlug, calculateReadTime, fetchUnsplashImage }
 // Get all available Gemini API keys
 function getGeminiApiKeys(): string[] {
   const keys: string[] = []
-  
+
   if (process.env.GEMINI_API_KEY) keys.push(process.env.GEMINI_API_KEY)
   if (process.env.GEMINI_API_KEY_1) keys.push(process.env.GEMINI_API_KEY_1)
   if (process.env.GEMINI_API_KEY_2) keys.push(process.env.GEMINI_API_KEY_2)
   if (process.env.GEMINI_API_KEY_3) keys.push(process.env.GEMINI_API_KEY_3)
   if (process.env.GEMINI_API_KEY_4) keys.push(process.env.GEMINI_API_KEY_4)
   if (process.env.GEMINI_API_KEY_5) keys.push(process.env.GEMINI_API_KEY_5)
-  
+
   // Filter out placeholder values
   return keys.filter(k => k && !k.includes('your_'))
 }
@@ -20,11 +20,11 @@ function getGeminiApiKeys(): string[] {
 // Lazy initialization of Gemini client with key rotation
 function getGeminiClient(keyIndex = 0) {
   const keys = getGeminiApiKeys()
-  
+
   if (keys.length === 0) {
     throw new Error('No GEMINI_API_KEY found in environment variables')
   }
-  
+
   const apiKey = keys[keyIndex % keys.length]
   return new GoogleGenAI({ apiKey })
 }
@@ -55,12 +55,12 @@ async function generateArticleContent(
 ): Promise<GeneratedArticle> {
   const keys = getGeminiApiKeys()
   let lastError: Error | null = null
-  
+
   // Try each key
   for (let i = 0; i < keys.length; i++) {
     try {
       const genAI = getGeminiClient(i)
-      
+
       const response = await genAI.models.generateContent({
         model: 'gemini-2.5-flash',
         contents: BLOG_ARTICLE_USER_PROMPT(topic, keywords, targetAudience, categoryName),
@@ -89,22 +89,53 @@ async function generateArticleContent(
 
       // Parse JSON response
       const text = response.text
-      
-      // Extract JSON from response (handle markdown code blocks)
-      let jsonStr = text
-      const jsonMatch = text.match(/```(?:json)?\s*([\s\S]*?)```/)
-      if (jsonMatch) {
-        jsonStr = jsonMatch[1].trim()
+
+      // Robust JSON extraction - handles code blocks, grounding annotations, and mixed text
+      let parsed: GeneratedArticle | null = null
+
+      // Strategy 1: Extract from markdown code blocks
+      const codeBlockMatch = text.match(/```(?:json)?\s*([\s\S]*?)```/)
+      if (codeBlockMatch) {
+        try {
+          parsed = JSON.parse(codeBlockMatch[1].trim()) as GeneratedArticle
+        } catch { /* try next strategy */ }
       }
 
-      try {
-        const parsed = JSON.parse(jsonStr) as GeneratedArticle
-        return parsed
-      } catch {
-        // If JSON parsing fails, use the raw content
-        console.error('Failed to parse JSON, using raw content')
-        
-        return {
+      // Strategy 2: Find the outermost JSON object by matching braces
+      if (!parsed) {
+        const firstBrace = text.indexOf('{')
+        const lastBrace = text.lastIndexOf('}')
+        if (firstBrace !== -1 && lastBrace > firstBrace) {
+          try {
+            parsed = JSON.parse(text.substring(firstBrace, lastBrace + 1)) as GeneratedArticle
+          } catch { /* try next strategy */ }
+        }
+      }
+
+      // Strategy 3: Extract fields individually using regex
+      if (!parsed) {
+        const extractField = (field: string): string | null => {
+          const regex = new RegExp(`"${field}"\\s*:\\s*"((?:[^"\\\\]|\\\\.)*)"`, 's')
+          const match = text.match(regex)
+          return match ? match[1].replace(/\\n/g, '\n').replace(/\\"/g, '"') : null
+        }
+        const extractedContent = extractField('content')
+
+        if (extractedContent) {
+          parsed = {
+            title: extractField('title') || topic,
+            metaDescription: extractField('metaDescription') || `Learn about ${topic} with research-backed insights and practical tips.`,
+            excerpt: extractField('excerpt') || `Discover everything you need to know about ${topic}.`,
+            content: extractedContent,
+            keywords: keywords,
+          }
+        }
+      }
+
+      // Final fallback: use entire response as content
+      if (!parsed) {
+        console.error('All JSON parsing strategies failed, using raw content')
+        parsed = {
           title: topic,
           metaDescription: `Learn about ${topic} with research-backed insights and practical tips.`,
           excerpt: `Discover everything you need to know about ${topic}.`,
@@ -112,20 +143,22 @@ async function generateArticleContent(
           keywords: keywords,
         }
       }
+
+      return parsed
     } catch (error) {
       lastError = error as Error
       console.error(`Gemini key ${i + 1} failed:`, error)
-      
+
       // If rate limited, try next key
       if (error instanceof Error && error.message.includes('429')) {
         continue
       }
-      
+
       // For other errors, throw immediately
       throw error
     }
   }
-  
+
   throw lastError || new Error('All Gemini API keys exhausted')
 }
 
@@ -159,7 +192,7 @@ export async function generateAndPublishArticle(): Promise<{
         .select('name')
         .eq('id', topic.category_id)
         .single()
-      
+
       if (catData) {
         categoryName = catData.name
       }

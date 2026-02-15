@@ -70,20 +70,29 @@ export const BLOG_ARTICLE_USER_PROMPT = (
 **Category:** ${categoryName}
 
 Please generate:
-1. A compelling, SEO-optimized title (if different from the topic)
-2. A meta description (max 155 characters) for SEO
-3. An excerpt (2-3 sentences) for the blog listing
-4. The full article content in Markdown format
-5. 5-7 relevant tags/keywords for the article
+
+1. **Meta description (CRITICAL for CTR):** Exactly 145-155 characters. Must include:
+   - A specific benefit or statistic in the first 70 characters
+   - A call-to-action or curiosity hook at the end
+   - The primary keyword naturally
+   - Example: "Students using spaced repetition retain 200% more. Learn the exact intervals and free tools to implement it today."
+
+2. **Excerpt:** 2-3 punchy sentences for the blog listing card. Lead with the reader's problem, then promise the solution.
+
+3. **Full article content** in Markdown format
+
+4. **5-7 relevant tags/keywords** for the article
+
+Use the topic as the title exactly as provided—do not change or rephrase it.
 
 Format your response as JSON:
 {
-  "title": "...",
+  "title": "<use the topic exactly as provided>",
   "metaDescription": "...",
   "excerpt": "...",
   "content": "...",
   "keywords": ["...", "..."]
 }`
 
-export const UNSPLASH_SEARCH_PROMPT = (topic: string) => 
+export const UNSPLASH_SEARCH_PROMPT = (topic: string) =>
   `Based on this blog topic: "${topic}", suggest 2-3 search terms for finding a relevant hero image on Unsplash. Focus on abstract, professional images related to studying, education, or productivity. Return as comma-separated terms.`

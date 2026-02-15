@@ -27,6 +27,13 @@ export function PostHogProvider({ children }: { children: React.ReactNode }) {
   const [isInitialized, setIsInitialized] = useState(false)
 
   useEffect(() => {
+    let isMounted = true
+    const markInitialized = () => {
+      if (isMounted) {
+        setIsInitialized(true)
+      }
+    }
+
     // Initialize PostHog only on the client side, inside useEffect
     if (typeof window !== 'undefined' && process.env.NEXT_PUBLIC_POSTHOG_KEY && !posthog.__loaded) {
       posthog.init(process.env.NEXT_PUBLIC_POSTHOG_KEY, {
@@ -47,12 +54,20 @@ export function PostHogProvider({ children }: { children: React.ReactNode }) {
         bootstrap: {
           distinctID: undefined,
         },
+        loaded: () => {
+          markInitialized()
+        },
         // Debugging (disable in production)
         debug: process.env.NODE_ENV === 'development',
       })
-      setIsInitialized(true)
     } else if (posthog.__loaded) {
-      setIsInitialized(true)
+      queueMicrotask(() => {
+        markInitialized()
+      })
+    }
+
+    return () => {
+      isMounted = false
     }
   }, [])
 
