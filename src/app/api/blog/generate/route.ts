@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { generateAndPublishArticle } from '@/lib/blog/generator'
+import { generateAndPublishArticle, regenerateArticleBySlug } from '@/lib/blog/generator'
 
 // Manual trigger for article generation (for testing)
 export const runtime = 'nodejs'
@@ -21,11 +21,31 @@ export async function POST(request: NextRequest) {
   }
 
   try {
+    // Check if this is a regeneration request
+    const body = await request.json().catch(() => ({}))
+    const slugs: string[] | undefined = body.slugs || (body.slug ? [body.slug] : undefined)
+
+    if (slugs && slugs.length > 0) {
+      // Regenerate specific posts by slug
+      const results = []
+      for (const slug of slugs) {
+        const result = await regenerateArticleBySlug(slug)
+        results.push({ slug, ...result })
+      }
+
+      const allSuccess = results.every(r => r.success)
+      return NextResponse.json({
+        success: allSuccess,
+        results,
+      }, { status: allSuccess ? 200 : 207 })
+    }
+
+    // Default: generate new article from queue
     const result = await generateAndPublishArticle()
 
     return NextResponse.json({
       success: result.success,
-      message: result.postId 
+      message: result.postId
         ? `Article published: ${result.postId}`
         : result.error || 'No pending topics',
       postId: result.postId,
