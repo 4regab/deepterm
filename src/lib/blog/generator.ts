@@ -2,6 +2,16 @@ import { GoogleGenAI } from '@google/genai'
 import { BLOG_ARTICLE_SYSTEM_PROMPT, BLOG_ARTICLE_USER_PROMPT } from './prompts'
 import { getServiceClient, generateSlug, calculateReadTime, fetchUnsplashImage } from './service'
 
+const MIN_CONTENT_WORDS = 900
+const GENERATION_ATTEMPTS_PER_KEY = 2
+
+export class RetryableGenerationError extends Error {
+  constructor(message: string) {
+    super(message)
+    this.name = 'RetryableGenerationError'
+  }
+}
+
 // Get all available Gemini API keys
 function getGeminiApiKeys(): string[] {
   const keys: string[] = []
@@ -46,6 +56,170 @@ interface TopicFromQueue {
   category_slug: string | null
 }
 
+function countWords(text: string): number {
+  return text
+    .split(/\s+/)
+    .map((word) => word.trim())
+    .filter(Boolean)
+    .length
+}
+
+function cleanKeywords(keywords: string[]): string[] {
+  return keywords
+    .map((keyword) => keyword.trim())
+    .filter(Boolean)
+    .slice(0, 7)
+}
+
+function extractCompleteJsonObjects(text: string): string[] {
+  const objects: string[] = []
+  let start = -1
+  let depth = 0
+  let inString = false
+  let escaped = false
+
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i]
+
+    if (inString) {
+      if (escaped) {
+        escaped = false
+      } else if (ch === '\\') {
+        escaped = true
+      } else if (ch === '"') {
+        inString = false
+      }
+      continue
+    }
+
+    if (ch === '"') {
+      inString = true
+      continue
+    }
+
+    if (ch === '{') {
+      if (depth === 0) {
+        start = i
+      }
+      depth++
+      continue
+    }
+
+    if (ch === '}' && depth > 0) {
+      depth--
+      if (depth === 0 && start >= 0) {
+        objects.push(text.slice(start, i + 1))
+        start = -1
+      }
+    }
+  }
+
+  return objects
+}
+
+function isRetryableModelError(error: Error): boolean {
+  const message = error.message.toLowerCase()
+  return (
+    message.includes('429') ||
+    message.includes('rate limit') ||
+    message.includes('timeout') ||
+    message.includes('timed out') ||
+    message.includes('503') ||
+    message.includes('500')
+  )
+}
+
+function getTextField(payload: Record<string, unknown>, field: string): string | null {
+  const value = payload[field]
+  if (typeof value !== 'string') return null
+  const trimmed = value.trim()
+  return trimmed.length > 0 ? trimmed : null
+}
+
+export function parseGeneratedArticleResponse(
+  responseText: string,
+  topic: string,
+  fallbackKeywords: string[]
+): GeneratedArticle {
+  const normalized = responseText.trim()
+
+  // Prefer fenced JSON blocks first, then fall back to the entire response body.
+  const candidateBodies: string[] = []
+  const fencedBlocks = normalized.matchAll(/```(?:json)?\s*([\s\S]*?)\s*```/gi)
+  for (const block of fencedBlocks) {
+    if (block[1]?.trim()) {
+      candidateBodies.push(block[1].trim())
+    }
+  }
+  candidateBodies.push(normalized)
+
+  let sawJsonObject = false
+  let sawArticleLikePayload = false
+  let maxShortWordCount = 0
+
+  for (const body of candidateBodies) {
+    const jsonObjects = extractCompleteJsonObjects(body)
+    if (jsonObjects.length === 0) {
+      continue
+    }
+
+    for (const rawJson of jsonObjects) {
+      let parsedPayload: unknown
+      try {
+        parsedPayload = JSON.parse(rawJson)
+      } catch {
+        continue
+      }
+
+      sawJsonObject = true
+      if (!parsedPayload || typeof parsedPayload !== 'object' || Array.isArray(parsedPayload)) {
+        continue
+      }
+
+      const payload = parsedPayload as Record<string, unknown>
+      const content = getTextField(payload, 'content')
+      if (!content) {
+        continue
+      }
+
+      sawArticleLikePayload = true
+      const wordCount = countWords(content)
+      if (wordCount < MIN_CONTENT_WORDS) {
+        maxShortWordCount = Math.max(maxShortWordCount, wordCount)
+        continue
+      }
+
+      const normalizedKeywords = Array.isArray(payload.keywords)
+        ? cleanKeywords(payload.keywords.filter((keyword): keyword is string => typeof keyword === 'string'))
+        : []
+
+      const cleanedFallbackKeywords = cleanKeywords(fallbackKeywords)
+
+      return {
+        title: getTextField(payload, 'title') || topic,
+        metaDescription:
+          getTextField(payload, 'metaDescription') ||
+          `Learn about ${topic} with research-backed insights and practical tips.`,
+        excerpt: getTextField(payload, 'excerpt') || `Discover everything you need to know about ${topic}.`,
+        content,
+        keywords: normalizedKeywords.length > 0 ? normalizedKeywords : cleanedFallbackKeywords,
+      }
+    }
+  }
+
+  if (sawArticleLikePayload) {
+    throw new RetryableGenerationError(
+      `Generated content was too short (max ${maxShortWordCount} words, expected at least ${MIN_CONTENT_WORDS})`
+    )
+  }
+
+  if (sawJsonObject) {
+    throw new RetryableGenerationError('Gemini returned JSON but missing required article fields')
+  }
+
+  throw new RetryableGenerationError('Gemini returned malformed JSON')
+}
+
 // Generate article content using Gemini with Google Search grounding
 async function generateArticleContent(
   topic: string,
@@ -56,10 +230,13 @@ async function generateArticleContent(
   const keys = getGeminiApiKeys()
   let lastError: Error | null = null
 
-  // Try each key
-  for (let i = 0; i < keys.length; i++) {
+  const maxAttempts = Math.max(keys.length * GENERATION_ATTEMPTS_PER_KEY, 3)
+
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    const keyIndex = attempt % keys.length
+
     try {
-      const genAI = getGeminiClient(i)
+      const genAI = getGeminiClient(keyIndex)
 
       const response = await genAI.models.generateContent({
         model: 'gemini-2.5-flash',
@@ -74,13 +251,15 @@ async function generateArticleContent(
       })
 
       if (!response.text) {
-        throw new Error('No response from Gemini')
+        throw new RetryableGenerationError('No response text from Gemini')
       }
 
-      // Check if the response was truncated due to token limit
       const finishReason = response.candidates?.[0]?.finishReason
       if (finishReason === 'MAX_TOKENS') {
-        console.warn(`Response truncated for topic "${topic}" - finish reason: MAX_TOKENS`)
+        throw new RetryableGenerationError(`Gemini output was truncated for topic "${topic}"`)
+      }
+      if (finishReason && finishReason !== 'STOP' && finishReason !== 'FINISH_REASON_UNSPECIFIED') {
+        throw new RetryableGenerationError(`Gemini finished unexpectedly with reason: ${finishReason}`)
       }
 
       // Log grounding metadata for debugging
@@ -93,124 +272,22 @@ async function generateArticleContent(
         }
       }
 
-      // Parse JSON response
-      const text = response.text
-
-      // Robust JSON extraction - handles code blocks, grounding annotations, and mixed text
-      let parsed: GeneratedArticle | null = null
-      let parseStrategy = 'none'
-
-      // Strategy 1: Extract from markdown code blocks (use GREEDY match to get the full block)
-      const codeBlockMatch = text.match(/```(?:json)?\s*([\s\S]*)```/)
-      if (codeBlockMatch) {
-        try {
-          parsed = JSON.parse(codeBlockMatch[1].trim()) as GeneratedArticle
-          parseStrategy = 'code-block'
-        } catch { /* try next strategy */ }
-      }
-
-      // Strategy 2: Find the outermost JSON object by balanced brace matching
-      if (!parsed) {
-        const firstBrace = text.indexOf('{')
-        if (firstBrace !== -1) {
-          let depth = 0
-          let inString = false
-          let escape = false
-          let lastBrace = -1
-
-          for (let j = firstBrace; j < text.length; j++) {
-            const ch = text[j]
-            if (escape) { escape = false; continue }
-            if (ch === '\\' && inString) { escape = true; continue }
-            if (ch === '"' && !escape) { inString = !inString; continue }
-            if (inString) continue
-            if (ch === '{') depth++
-            if (ch === '}') { depth--; if (depth === 0) { lastBrace = j; break } }
-          }
-
-          if (lastBrace > firstBrace) {
-            try {
-              parsed = JSON.parse(text.substring(firstBrace, lastBrace + 1)) as GeneratedArticle
-              parseStrategy = 'balanced-braces'
-            } catch { /* try next strategy */ }
-          }
-        }
-      }
-
-      // Strategy 3: Extract fields individually using regex
-      if (!parsed) {
-        // Use a more robust approach: find "content": " and then scan for the closing "
-        const extractField = (field: string): string | null => {
-          const fieldStart = text.indexOf(`"${field}"`)
-          if (fieldStart === -1) return null
-
-          // Find the opening quote after the colon
-          const colonPos = text.indexOf(':', fieldStart + field.length + 2)
-          if (colonPos === -1) return null
-
-          const quoteStart = text.indexOf('"', colonPos)
-          if (quoteStart === -1) return null
-
-          // Scan for the closing quote (respecting escape sequences)
-          let i = quoteStart + 1
-          let result = ''
-          while (i < text.length) {
-            if (text[i] === '\\' && i + 1 < text.length) {
-              result += text[i] + text[i + 1]
-              i += 2
-            } else if (text[i] === '"') {
-              break
-            } else {
-              result += text[i]
-              i++
-            }
-          }
-
-          return result.replace(/\\n/g, '\n').replace(/\\"/g, '"').replace(/\\t/g, '\t')
-        }
-
-        const extractedContent = extractField('content')
-
-        if (extractedContent) {
-          parseStrategy = 'field-extraction'
-          parsed = {
-            title: extractField('title') || topic,
-            metaDescription: extractField('metaDescription') || `Learn about ${topic} with research-backed insights and practical tips.`,
-            excerpt: extractField('excerpt') || `Discover everything you need to know about ${topic}.`,
-            content: extractedContent,
-            keywords: keywords,
-          }
-        }
-      }
-
-      // Final fallback: use entire response as content
-      if (!parsed) {
-        console.error('All JSON parsing strategies failed, using raw content')
-        parseStrategy = 'raw-fallback'
-        parsed = {
-          title: topic,
-          metaDescription: `Learn about ${topic} with research-backed insights and practical tips.`,
-          excerpt: `Discover everything you need to know about ${topic}.`,
-          content: text,
-          keywords: keywords,
-        }
-      }
-
-      if (parseStrategy !== 'code-block') {
-        console.warn(`JSON parse used fallback strategy: ${parseStrategy}, content length: ${parsed.content.length}`)
-      }
-
-      return parsed
+      return parseGeneratedArticleResponse(response.text, topic, keywords)
     } catch (error) {
       lastError = error as Error
-      console.error(`Gemini key ${i + 1} failed:`, error)
+      const errorMessage = error instanceof Error ? error.message : String(error)
+      console.error(
+        `Gemini attempt ${attempt + 1}/${maxAttempts} failed (key index ${keyIndex + 1}): ${errorMessage}`
+      )
 
-      // If rate limited, try next key
-      if (error instanceof Error && error.message.includes('429')) {
+      const retryable =
+        error instanceof RetryableGenerationError ||
+        (error instanceof Error && isRetryableModelError(error))
+
+      if (retryable && attempt < maxAttempts - 1) {
         continue
       }
 
-      // For other errors, throw immediately
       throw error
     }
   }
@@ -225,6 +302,7 @@ export async function generateAndPublishArticle(): Promise<{
   error?: string
 }> {
   const supabase = getServiceClient()
+  let topic: TopicFromQueue | null = null
 
   try {
     // 1. Get next topic from queue
@@ -238,7 +316,7 @@ export async function generateAndPublishArticle(): Promise<{
       return { success: true, error: 'No pending topics in queue' }
     }
 
-    const topic = topicData[0] as TopicFromQueue
+    topic = topicData[0] as TopicFromQueue
 
     // 2. Get category name
     let categoryName = 'General'
@@ -330,6 +408,22 @@ export async function generateAndPublishArticle(): Promise<{
 
   } catch (error) {
     console.error('Article generation error:', error)
+    if (topic?.id) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+      const { error: updateError } = await supabase
+        .from('blog_topics_queue')
+        .update({
+          status: 'failed',
+          error_message: errorMessage,
+          processed_at: new Date().toISOString(),
+        })
+        .eq('id', topic.id)
+
+      if (updateError) {
+        console.error(`Failed to mark topic ${topic.id} as failed:`, updateError)
+      }
+    }
+
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error',
