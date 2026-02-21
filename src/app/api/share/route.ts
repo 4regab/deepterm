@@ -1,13 +1,62 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerSupabaseClient } from '@/config/supabase/server'
-import { ShareCodeSchema, ShareMaterialTypeSchema } from '@/lib/schemas/sharing'
+import { ShareCodeCreateSchema, ShareMaterialTypeSchema } from '@/lib/schemas/sharing'
 import { z } from 'zod'
+
+const SHARE_CODE_ALPHABET = 'abcdefghijklmnopqrstuvwxyz0123456789'
+const DEFAULT_SHARE_CODE_LENGTH = 16
+const MAX_SHARE_CODE_GENERATION_ATTEMPTS = 6
 
 const CreateShareSchema = z.object({
   materialType: ShareMaterialTypeSchema,
   materialId: z.string().uuid(),
-  customCode: ShareCodeSchema.optional(),
+  customCode: ShareCodeCreateSchema.optional(),
 })
+
+function generateSecureShareCode(length: number = DEFAULT_SHARE_CODE_LENGTH): string {
+  let code = ''
+  const alphabetLength = SHARE_CODE_ALPHABET.length
+  const maxUnbiasedByte = Math.floor(256 / alphabetLength) * alphabetLength
+
+  while (code.length < length) {
+    const randomValues = new Uint8Array(length * 2)
+    crypto.getRandomValues(randomValues)
+
+    for (const value of randomValues) {
+      if (value >= maxUnbiasedByte) {
+        continue
+      }
+      code += SHARE_CODE_ALPHABET[value % alphabetLength]
+      if (code.length === length) {
+        break
+      }
+    }
+  }
+
+  return code
+}
+
+async function generateUniqueShareCode(
+  supabase: Awaited<ReturnType<typeof createServerSupabaseClient>>
+): Promise<string> {
+  for (let attempt = 0; attempt < MAX_SHARE_CODE_GENERATION_ATTEMPTS; attempt++) {
+    const candidate = generateSecureShareCode()
+    const { data: existingCode, error } = await supabase
+      .from('material_shares')
+      .select('id')
+      .eq('share_code', candidate)
+      .maybeSingle()
+
+    if (error) {
+      throw new Error(`Failed to verify generated share code: ${error.message}`)
+    }
+    if (!existingCode) {
+      return candidate
+    }
+  }
+
+  throw new Error('Unable to allocate a unique share code')
+}
 
 // GET - Get share info for a material
 export async function GET(request: NextRequest) {
@@ -97,19 +146,27 @@ export async function POST(request: NextRequest) {
 
   if (shareCode) {
     // Check uniqueness
-    const { data: codeExists } = await supabase
+    const { data: codeExists, error: codeExistsError } = await supabase
       .from('material_shares')
       .select('id')
       .eq('share_code', shareCode)
-      .single()
+      .maybeSingle()
+
+    if (codeExistsError) {
+      console.error('Share code uniqueness check failed:', codeExistsError)
+      return NextResponse.json({ error: 'Failed to create share link' }, { status: 500 })
+    }
 
     if (codeExists) {
       return NextResponse.json({ error: 'Share code already taken' }, { status: 409 })
     }
   } else {
-    // Generate random code
-    const { data: generated } = await supabase.rpc('generate_share_code', { length: 8 })
-    shareCode = generated
+    try {
+      shareCode = await generateUniqueShareCode(supabase)
+    } catch (generationError) {
+      console.error('Share code generation failed:', generationError)
+      return NextResponse.json({ error: 'Failed to create share link' }, { status: 500 })
+    }
   }
 
   // Create share
@@ -125,7 +182,8 @@ export async function POST(request: NextRequest) {
     .single()
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
+    console.error('Share creation failed:', error)
+    return NextResponse.json({ error: 'Failed to create share link' }, { status: 500 })
   }
 
   return NextResponse.json({ share }, { status: 201 })
@@ -154,18 +212,23 @@ export async function PATCH(request: NextRequest) {
   }
 
   if (newCode) {
-    const codeValidation = ShareCodeSchema.safeParse(newCode)
+    const codeValidation = ShareCodeCreateSchema.safeParse(newCode)
     if (!codeValidation.success) {
       return NextResponse.json({ error: codeValidation.error.flatten() }, { status: 400 })
     }
 
     // Check uniqueness
-    const { data: codeExists } = await supabase
+    const { data: codeExists, error: codeExistsError } = await supabase
       .from('material_shares')
       .select('id')
       .eq('share_code', newCode)
       .neq('id', shareId)
-      .single()
+      .maybeSingle()
+
+    if (codeExistsError) {
+      console.error('Share code update uniqueness check failed:', codeExistsError)
+      return NextResponse.json({ error: 'Failed to update share code' }, { status: 500 })
+    }
 
     if (codeExists) {
       return NextResponse.json({ error: 'Share code already taken' }, { status: 409 })
@@ -212,7 +275,8 @@ export async function DELETE(request: NextRequest) {
     .eq('user_id', user.id)
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
+    console.error('Share delete failed:', error)
+    return NextResponse.json({ error: 'Failed to delete share link' }, { status: 500 })
   }
 
   return NextResponse.json({ success: true })

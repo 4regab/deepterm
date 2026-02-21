@@ -4,6 +4,7 @@ import { getServiceClient, generateSlug, calculateReadTime, fetchUnsplashImage }
 
 const MIN_CONTENT_WORDS = 900
 const GENERATION_ATTEMPTS_PER_KEY = 2
+const DISALLOWED_HTML_PATTERN = /<\s*\/?\s*(script|iframe|object|embed|form|style|link|meta|base|svg|math)\b/gi
 
 export class RetryableGenerationError extends Error {
   constructor(message: string) {
@@ -69,6 +70,10 @@ function cleanKeywords(keywords: string[]): string[] {
     .map((keyword) => keyword.trim())
     .filter(Boolean)
     .slice(0, 7)
+}
+
+function neutralizeBlockedHtml(content: string): string {
+  return content.replace(DISALLOWED_HTML_PATTERN, (match) => `&lt;${match.slice(1)}`)
 }
 
 function extractCompleteJsonObjects(text: string): string[] {
@@ -181,9 +186,10 @@ export function parseGeneratedArticleResponse(
       if (!content) {
         continue
       }
+      const safeContent = neutralizeBlockedHtml(content)
 
       sawArticleLikePayload = true
-      const wordCount = countWords(content)
+      const wordCount = countWords(safeContent)
       if (wordCount < MIN_CONTENT_WORDS) {
         maxShortWordCount = Math.max(maxShortWordCount, wordCount)
         continue
@@ -201,7 +207,7 @@ export function parseGeneratedArticleResponse(
           getTextField(payload, 'metaDescription') ||
           `Learn about ${topic} with research-backed insights and practical tips.`,
         excerpt: getTextField(payload, 'excerpt') || `Discover everything you need to know about ${topic}.`,
-        content,
+        content: safeContent,
         keywords: normalizedKeywords.length > 0 ? normalizedKeywords : cleanedFallbackKeywords,
       }
     }

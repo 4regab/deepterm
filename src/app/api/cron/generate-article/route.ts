@@ -53,16 +53,17 @@ export async function GET(request: NextRequest) {
           : result.error || 'No articles to generate',
       })
     } else {
+      console.error('Cron article generation failed:', result.error)
       return NextResponse.json({
         success: false,
-        error: result.error,
+        error: 'Article generation failed',
       }, { status: 500 })
     }
   } catch (error) {
     console.error('Cron job error:', error)
     return NextResponse.json({
       success: false,
-      error: error instanceof Error ? error.message : 'Unknown error',
+      error: 'Cron execution failed',
     }, { status: 500 })
   }
 }

@@ -214,7 +214,7 @@ export default function ShareModal({ isOpen, onClose, materialId, materialType, 
                   </div>
                   {codeError && <p className="text-red-500 text-xs mt-1">{codeError}</p>}
                   <p className="text-xs text-[#171d2b]/50 mt-1">
-                    3-30 characters, lowercase letters, numbers, and hyphens only
+                    8-64 characters, lowercase letters, numbers, and hyphens only
                   </p>
                 </div>
               ) : (
@@ -269,7 +269,7 @@ export default function ShareModal({ isOpen, onClose, materialId, materialType, 
                 />
                 {codeError && <p className="text-red-500 text-xs mt-1">{codeError}</p>}
                 <p className="text-xs text-[#171d2b]/50 mt-1">
-                  3-30 characters, lowercase letters, numbers, and hyphens only
+                  8-64 characters, lowercase letters, numbers, and hyphens only
                 </p>
               </div>
 

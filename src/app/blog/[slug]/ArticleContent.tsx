@@ -7,23 +7,92 @@ interface ArticleContentProps {
   content: string
 }
 
-/**
- * Sanitize HTML output to prevent XSS attacks (defense-in-depth).
- * Strips dangerous elements and attributes that could execute JavaScript.
- * Primary protection is RLS policies on blog_posts table; this is a secondary layer.
- */
-function sanitizeHtml(html: string): string {
-  // Remove <script> tags and their contents
-  let sanitized = html.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
-  // Remove <iframe>, <object>, <embed>, <form>, <base> tags
-  sanitized = sanitized.replace(/<\s*\/?\s*(iframe|object|embed|form|base|meta|link)\b[^>]*>/gi, '')
-  // Remove event handler attributes (onclick, onerror, onload, etc.)
-  sanitized = sanitized.replace(/\s+on\w+\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+)/gi, '')
-  // Remove javascript: protocol in href/src/action attributes
-  sanitized = sanitized.replace(/(href|src|action)\s*=\s*(?:"javascript:[^"]*"|'javascript:[^']*')/gi, '$1=""')
-  // Remove data: protocol in src attributes (can execute scripts in some contexts)
-  sanitized = sanitized.replace(/src\s*=\s*(?:"data:[^"]*"|'data:[^']*')/gi, 'src=""')
-  return sanitized
+const SAFE_LINK_PROTOCOLS = new Set(['http:', 'https:', 'mailto:', 'tel:'])
+const BLOCKED_PROTOCOL_PATTERN = /^(?:javascript|data|vbscript):/i
+
+function escapeHtmlAttribute(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+}
+
+function sanitizeMarkdownUrl(rawUrl: string, allowContactProtocols: boolean): string | null {
+  const trimmed = rawUrl.trim()
+  if (!trimmed) {
+    return null
+  }
+
+  const normalized = trimmed.replace(/[\u0000-\u001F\u007F\s]+/g, '')
+  if (!normalized || BLOCKED_PROTOCOL_PATTERN.test(normalized) || normalized.startsWith('//')) {
+    return null
+  }
+
+  if (
+    normalized.startsWith('#') ||
+    normalized.startsWith('?') ||
+    normalized.startsWith('/') ||
+    normalized.startsWith('./') ||
+    normalized.startsWith('../')
+  ) {
+    return trimmed
+  }
+
+  try {
+    const parsed = new URL(trimmed)
+    if (!SAFE_LINK_PROTOCOLS.has(parsed.protocol)) {
+      return null
+    }
+    if (!allowContactProtocols && (parsed.protocol === 'mailto:' || parsed.protocol === 'tel:')) {
+      return null
+    }
+    return parsed.toString()
+  } catch {
+    return null
+  }
+}
+
+function createSafeRenderer() {
+  const renderer = new marked.Renderer()
+
+  // Drop raw HTML blocks entirely to avoid markdown HTML injection.
+  renderer.html = () => ''
+
+  renderer.link = function ({ href, title, tokens }) {
+    const safeHref = sanitizeMarkdownUrl(href ?? '', true)
+    const linkText = this.parser.parseInline(tokens)
+    if (!safeHref) {
+      return linkText
+    }
+
+    const safeTitle = title ? ` title="${escapeHtmlAttribute(title)}"` : ''
+    const external = safeHref.startsWith('http://') || safeHref.startsWith('https://')
+    const rel = external ? ' rel="nofollow noopener noreferrer"' : ''
+    return `<a href="${escapeHtmlAttribute(safeHref)}"${safeTitle}${rel}>${linkText}</a>`
+  }
+
+  renderer.image = function ({ href, title, text, tokens }) {
+    const safeSrc = sanitizeMarkdownUrl(href ?? '', false)
+    if (!safeSrc) {
+      return ''
+    }
+
+    const altText = tokens ? this.parser.parseInline(tokens, this.parser.textRenderer) : text
+    const safeTitle = title ? ` title="${escapeHtmlAttribute(title)}"` : ''
+    return `<img src="${escapeHtmlAttribute(safeSrc)}" alt="${escapeHtmlAttribute(altText)}"${safeTitle}>`
+  }
+
+  return renderer
+}
+
+function renderSafeMarkdown(markdown: string): string {
+  return marked.parse(markdown, {
+    async: false,
+    gfm: true,
+    renderer: createSafeRenderer(),
+  }) as string
 }
 
 // Extract actual markdown content from JSON or malformed JSON
@@ -161,8 +230,8 @@ function extractContent(raw: string): string {
 export function extractPlainText(content: string): string {
   const markdown = extractContent(content)
 
-  // Convert to HTML first, then strip tags
-  let html = marked.parse(markdown, { async: false }) as string
+  // Convert to safe HTML first, then strip tags.
+  let html = renderSafeMarkdown(markdown)
 
   // Remove citation brackets
   html = html.replace(/\s*\[\d+(?:,\s*\d+)*\]/g, '')
@@ -186,14 +255,11 @@ export function extractPlainText(content: string): string {
 export default function ArticleContent({ content }: ArticleContentProps) {
   const htmlContent = useMemo(() => {
     const markdown = extractContent(content)
-    let html = marked.parse(markdown, { async: false }) as string
+    let html = renderSafeMarkdown(markdown)
 
     // Remove citation brackets
     html = html.replace(/\s*\[\d+(?:,\s*\d+)*\]/g, '')
     html = html.replace(/\s*\[[\d,\s]+\]/g, '')
-
-    // Sanitize HTML to prevent stored XSS (defense-in-depth)
-    html = sanitizeHtml(html)
 
     return html
   }, [content])

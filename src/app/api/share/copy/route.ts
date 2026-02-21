@@ -1,5 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerSupabaseClient } from '@/config/supabase/server'
+import { ShareCodeSchema } from '@/lib/schemas/sharing'
+import { checkShareRateLimit, getRequestIdentifier } from '@/services/shareRateLimit'
+import { z } from 'zod'
+
+const CopySharedMaterialSchema = z.object({
+  shareCode: ShareCodeSchema,
+})
 
 // POST - Copy shared material to user's collection
 export async function POST(request: NextRequest) {
@@ -10,11 +17,27 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const { shareCode } = await request.json()
-  
-  if (!shareCode) {
-    return NextResponse.json({ error: 'Missing shareCode' }, { status: 400 })
+  const requestIdentity = `${user.id}:${getRequestIdentifier(request.headers)}`
+  const rateLimit = checkShareRateLimit('copy', requestIdentity)
+  if (!rateLimit.allowed) {
+    return NextResponse.json(
+      { error: 'Too many share copy attempts. Please try again shortly.' },
+      {
+        status: 429,
+        headers: {
+          'Retry-After': String(rateLimit.retryAfterSeconds),
+        },
+      }
+    )
   }
+
+  const requestBody = await request.json().catch(() => null)
+  const parsedBody = CopySharedMaterialSchema.safeParse(requestBody)
+  if (!parsedBody.success) {
+    return NextResponse.json({ error: 'Invalid share code format' }, { status: 400 })
+  }
+
+  const { shareCode } = parsedBody.data
 
   // Get shared material data using the RPC function
   const { data: sharedData, error: fetchError } = await supabase
@@ -151,7 +174,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Unknown material type' }, { status: 400 })
 
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Copy failed'
-    return NextResponse.json({ error: message }, { status: 500 })
+    console.error('Share copy failed:', err)
+    return NextResponse.json({ error: 'Failed to copy shared material' }, { status: 500 })
   }
 }

@@ -926,20 +926,24 @@ as $$
 $$;
 
 -- 11.3 Generate share code
-create or replace function public.generate_share_code(length integer default 8)
+create or replace function public.generate_share_code(length integer default 16)
 returns text
 language plpgsql
 set search_path = ''
 as $$
 declare
-  chars text := 'abcdefghijklmnopqrstuvwxyz0123456789';
   result text := '';
-  i integer;
 begin
-  for i in 1..length loop
-    result := result || substr(chars, floor(random() * length(chars) + 1)::integer, 1);
+  if length < 8 then
+    raise exception 'Share code length must be at least 8 characters';
+  end if;
+
+  -- gen_random_uuid() is CSPRNG-backed in Postgres/Supabase.
+  while char_length(result) < length loop
+    result := result || replace(gen_random_uuid()::text, '-', '');
   end loop;
-  return result;
+
+  return substr(result, 1, length);
 end;
 $$;
 

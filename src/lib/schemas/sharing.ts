@@ -1,10 +1,12 @@
 import { z } from 'zod'
 
-export const ShareCodeSchema = z
+const ShareCodeBaseSchema = z
   .string()
-  .min(3, 'Share code must be at least 3 characters')
-  .max(30, 'Share code must be at most 30 characters')
+  .max(64, 'Share code must be at most 64 characters')
   .regex(/^[a-z0-9-]+$/, 'Only lowercase letters, numbers, and hyphens allowed')
+
+export const ShareCodeSchema = ShareCodeBaseSchema.min(3, 'Share code must be at least 3 characters')
+export const ShareCodeCreateSchema = ShareCodeBaseSchema.min(8, 'Share code must be at least 8 characters')
 
 export const ShareMaterialTypeSchema = z.enum(['flashcard_set', 'reviewer'])
 export type ShareMaterialType = z.infer<typeof ShareMaterialTypeSchema>

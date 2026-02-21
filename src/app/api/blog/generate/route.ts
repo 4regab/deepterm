@@ -43,18 +43,29 @@ export async function POST(request: NextRequest) {
     // Default: generate new article from queue
     const result = await generateAndPublishArticle()
 
+    if (!result.success) {
+      console.error('Manual article generation failed:', result.error)
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Article generation failed',
+        },
+        { status: 500 }
+      )
+    }
+
     return NextResponse.json({
-      success: result.success,
+      success: true,
       message: result.postId
         ? `Article published: ${result.postId}`
-        : result.error || 'No pending topics',
+        : 'No pending topics',
       postId: result.postId,
     })
   } catch (error) {
     console.error('Generation error:', error)
     return NextResponse.json({
       success: false,
-      error: error instanceof Error ? error.message : 'Unknown error',
+      error: 'Failed to process generation request',
     }, { status: 500 })
   }
 }
