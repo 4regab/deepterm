@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
-import type { UIMessage, UIMessagePart } from "ai";
+import type { UIMessage } from "ai";
 import { Bot, X, Send, Loader2 } from "lucide-react";
 import { useKanbanStore, useCalendarEventStore, useNotificationStore } from "@/lib/stores";
 
@@ -50,7 +50,7 @@ function parseToolResult(result: unknown): ParsedToolResult | null {
 
 function getTextContent(message: UIMessage): string {
   return message.parts
-    .filter((p): p is Extract<UIMessagePart, { type: "text" }> => p.type === "text")
+    .filter((p): p is Extract<typeof message.parts[number], { type: "text" }> => p.type === "text")
     .map((p) => p.text)
     .join("");
 }
