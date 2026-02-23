@@ -1,6 +1,6 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import { FileText, Clock, Menu, X, Zap, Home } from "lucide-react";
+import { FileText, Clock, Menu, X, Zap, Home, LayoutGrid, CalendarDays } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -26,6 +26,18 @@ const Navbar = () => {
         <Button variant="outline" className="neo-border bg-neo-accent3 hover:bg-neo-accent3/90 text-neo-black font-medium flex items-center gap-2 shadow-neo hover:shadow-neo-lg transition-all hover:-translate-y-0.5 hover:-translate-x-0.5">
           <Clock className="h-4 w-4" />
           <span>Pomodoro</span>
+        </Button>
+      </Link>
+      <Link to="/kanban">
+        <Button variant="outline" className="neo-border bg-neo-accent hover:bg-neo-accent/90 text-white font-medium flex items-center gap-2 shadow-neo hover:shadow-neo-lg transition-all hover:-translate-y-0.5 hover:-translate-x-0.5">
+          <LayoutGrid className="h-4 w-4" />
+          <span>Kanban</span>
+        </Button>
+      </Link>
+      <Link to="/calendar">
+        <Button variant="outline" className="neo-border bg-neo-accent4 hover:bg-neo-accent4/90 text-white font-medium flex items-center gap-2 shadow-neo hover:shadow-neo-lg transition-all hover:-translate-y-0.5 hover:-translate-x-0.5">
+          <CalendarDays className="h-4 w-4" />
+          <span>Calendar</span>
         </Button>
       </Link>
     </nav>
@@ -65,6 +77,18 @@ const Navbar = () => {
                     <Button variant="outline" className="neo-border w-full justify-start font-medium bg-neo-accent3 text-neo-black">
                       <Clock className="h-4 w-4 mr-2" />
                       Pomodoro Timer
+                    </Button>
+                  </Link>
+                  <Link to="/kanban" className="w-full">
+                    <Button variant="outline" className="neo-border w-full justify-start font-medium bg-neo-accent text-white">
+                      <LayoutGrid className="h-4 w-4 mr-2" />
+                      Kanban Board
+                    </Button>
+                  </Link>
+                  <Link to="/calendar" className="w-full">
+                    <Button variant="outline" className="neo-border w-full justify-start font-medium bg-neo-accent4 text-white">
+                      <CalendarDays className="h-4 w-4 mr-2" />
+                      Calendar
                     </Button>
                   </Link>
                 </div>

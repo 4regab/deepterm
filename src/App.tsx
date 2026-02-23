@@ -5,11 +5,14 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useEffect } from "react";
 import CookieConsent from "react-cookie-consent";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
+import AgentChatSidebar from "./components/AgentChatSidebar";
 import { PomodoroProvider } from "./context/PomodoroContext";
 import About from "./pages/About";
+import CalendarPage from "./pages/CalendarPage";
 import Contact from "./pages/Contact";
 import Home from "./pages/Home";
 import Index from "./pages/Index";
+import KanbanBoard from "./pages/KanbanBoard";
 import NotFound from "./pages/NotFound";
 import Pomodoro from "./pages/Pomodoro";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
@@ -44,6 +47,8 @@ const App = () => {
               <Route path="/" element={<Home />} />
               <Route path="/extractor" element={<Index />} />
               <Route path="/pomodoro" element={<Pomodoro />} />
+              <Route path="/kanban" element={<KanbanBoard />} />
+              <Route path="/calendar" element={<CalendarPage />} />
               <Route path="/privacy-policy" element={<PrivacyPolicy />} />
               <Route path="/terms" element={<Terms />} />
               <Route path="/contact" element={<Contact />} />
@@ -51,6 +56,8 @@ const App = () => {
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
+
+            <AgentChatSidebar />
 
             <CookieConsent
               location="bottom"
