@@ -4,7 +4,7 @@ const TASKS_KEY = "deepterm-kanban-tasks";
 const COLUMNS_KEY = "deepterm-kanban-columns";
 
 function generateId(): string {
-  return Date.now().toString(36) + Math.random().toString(36).substring(2, 9);
+  return crypto.randomUUID();
 }
 
 export function getColumns(): KanbanColumn[] {

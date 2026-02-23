@@ -8,8 +8,8 @@
 
 import * as kanban from "./kanbanService";
 import * as calendar from "./calendarService";
-import { TaskPriority } from "@/types/kanban";
-import { CalendarEventType } from "@/types/calendar";
+import { KanbanTask, TaskPriority } from "@/types/kanban";
+import { CalendarEvent, CalendarEventType } from "@/types/calendar";
 
 // ─── Kanban Tools ────────────────────────────────────────────────────────────
 
@@ -31,7 +31,7 @@ export function toolCreateTask(params: {
   });
 }
 
-export function toolUpdateTask(params: { taskId: string; fields: Record<string, unknown> }) {
+export function toolUpdateTask(params: { taskId: string; fields: Partial<Omit<KanbanTask, "id" | "createdAt">> }) {
   return kanban.updateTask(params.taskId, params.fields);
 }
 
@@ -65,7 +65,7 @@ export function toolCreateCalendarEvent(params: {
   });
 }
 
-export function toolUpdateCalendarEvent(params: { eventId: string; fields: Record<string, unknown> }) {
+export function toolUpdateCalendarEvent(params: { eventId: string; fields: Partial<Omit<CalendarEvent, "id">> }) {
   return calendar.updateCalendarEvent(params.eventId, params.fields);
 }
 

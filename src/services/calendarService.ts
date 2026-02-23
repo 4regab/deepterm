@@ -3,7 +3,7 @@ import { CalendarEvent, CalendarEventType } from "@/types/calendar";
 const EVENTS_KEY = "deepterm-calendar-events";
 
 function generateId(): string {
-  return Date.now().toString(36) + Math.random().toString(36).substring(2, 9);
+  return crypto.randomUUID();
 }
 
 export function getEvents(): CalendarEvent[] {

@@ -3,7 +3,7 @@ import { ChatMessage } from "@/types/agent";
 const CHAT_KEY = "deepterm-chat-history";
 
 function generateId(): string {
-  return Date.now().toString(36) + Math.random().toString(36).substring(2, 9);
+  return crypto.randomUUID();
 }
 
 export function getChatHistory(): ChatMessage[] {
