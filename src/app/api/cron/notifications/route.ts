@@ -9,19 +9,20 @@ function isAuthorizedCronRequest(request: NextRequest): boolean {
   const cronSecret = process.env.CRON_SECRET
   const isProduction = process.env.NODE_ENV === 'production'
 
+  // In production, always require CRON_SECRET
   if (isProduction && !cronSecret) {
     console.error('CRON_SECRET not configured in production')
     return false
   }
 
+  // If secret is set, require valid Bearer token
   if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
     return false
   }
 
+  // In production, also require Vercel cron user-agent
   if (isProduction && userAgent !== 'vercel-cron/1') {
-    if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
-      return false
-    }
+    return false
   }
 
   return true

@@ -11,21 +11,34 @@ const DispatchRequestSchema = z.object({
   context: z.record(z.string(), z.string()),
 })
 
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;')
+}
+
+function safeContext(context: Record<string, string>, key: string): string {
+  return escapeHtml(context[key] ?? '')
+}
+
 function buildEmailHtml(type: NotificationType, context: Record<string, string>): string {
   let content: string
 
   switch (type) {
     case 'study_reminder':
-      content = `📚 Study Session Reminder: ${context.title} starts at ${context.startTime}`
+      content = `📚 Study Session Reminder: ${safeContext(context, 'title')} starts at ${safeContext(context, 'startTime')}`
       break
     case 'task_deadline':
-      content = `✅ Task Deadline: ${context.taskTitle} is due ${context.dueDate}`
+      content = `✅ Task Deadline: ${safeContext(context, 'taskTitle')} is due ${safeContext(context, 'dueDate')}`
       break
     case 'streak_alert':
-      content = `🔥 Streak Alert: Don't lose your ${context.currentStreak}-day streak!`
+      content = `🔥 Streak Alert: Don't lose your ${safeContext(context, 'currentStreak')}-day streak!`
       break
     case 'weekly_digest':
-      content = `📊 Weekly Progress: ${context.studyMinutes} minutes studied this week`
+      content = `📊 Weekly Progress: ${safeContext(context, 'studyMinutes')} minutes studied this week`
       break
   }
 
