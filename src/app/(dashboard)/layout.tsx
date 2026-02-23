@@ -13,6 +13,10 @@ const Sidebar = dynamic(() => import("@/components/Sidebar"), {
     loading: () => <SidebarSkeleton />,
 });
 
+const ChatSidebar = dynamic(() => import("@/components/AgentChat/ChatSidebar"), {
+    ssr: false,
+});
+
 function SidebarSkeleton() {
     return (
         <aside className="fixed left-0 top-0 h-screen w-[64px] bg-[#f0f0ea] border-r border-[#171d2b]/10 hidden md:block" />
@@ -49,6 +53,7 @@ export default function DashboardLayout({
                     {children}
                 </div>
             </main>
+            <ChatSidebar />
         </div>
     );
 }
