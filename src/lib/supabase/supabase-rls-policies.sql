@@ -12,6 +12,20 @@
 -- Added secure RPC functions for share access
 -- Added check_user_is_unlimited() helper function
 -- ============================================================
+-- SECURITY FIXES APPLIED (2026-03-05):
+-- VULN-003: ai_usage - removed user-facing UPDATE policy (CRITICAL)
+--   Users could reset generation_count to bypass AI rate limits.
+--   All mutations now go through check_and_increment_ai_usage() RPC.
+-- VULN-004: user_stats - removed user-facing UPDATE policy (HIGH)
+--   Users could set arbitrary XP, levels, streaks, and stat counters.
+--   All mutations now go through add_xp(), increment_stat(), etc. RPCs.
+-- VULN-005: user_achievements - removed user-facing UPDATE policy (MEDIUM)
+--   Users could unlock achievements and set arbitrary progress.
+--   All mutations now go through check_achievements() RPC.
+-- VULN-006: study_activity - removed user-facing UPDATE policy (MEDIUM)
+--   Users could inflate study metrics (minutes, flashcards, etc.).
+--   All mutations now go through record_study_activity() RPC.
+-- ============================================================
 
 -- ============================================================
 -- STEP 1: ENABLE RLS ON ALL TABLES
@@ -33,6 +47,7 @@ ALTER TABLE quiz_questions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE quiz_attempts ENABLE ROW LEVEL SECURITY;
 ALTER TABLE material_shares ENABLE ROW LEVEL SECURITY;
 ALTER TABLE unlimited_users ENABLE ROW LEVEL SECURITY;
+ALTER TABLE ai_usage ENABLE ROW LEVEL SECURITY;
 
 -- ============================================================
 -- STEP 2: DROP EXISTING POLICIES (if any) TO AVOID CONFLICTS
@@ -84,17 +99,26 @@ DROP POLICY IF EXISTS "Users can delete own pomodoro_sessions" ON pomodoro_sessi
 DROP POLICY IF EXISTS "Users can view own user_stats" ON user_stats;
 DROP POLICY IF EXISTS "Users can insert own user_stats" ON user_stats;
 DROP POLICY IF EXISTS "Users can update own user_stats" ON user_stats;
+DROP POLICY IF EXISTS "Users can view own stats" ON user_stats;
+DROP POLICY IF EXISTS "Users can insert own stats" ON user_stats;
+DROP POLICY IF EXISTS "Users can update own stats" ON user_stats;
 
 -- user_achievements
 DROP POLICY IF EXISTS "Users can view own user_achievements" ON user_achievements;
 DROP POLICY IF EXISTS "Users can insert own user_achievements" ON user_achievements;
 DROP POLICY IF EXISTS "Users can update own user_achievements" ON user_achievements;
+DROP POLICY IF EXISTS "Users can view own achievements" ON user_achievements;
+DROP POLICY IF EXISTS "Users can insert own achievements" ON user_achievements;
+DROP POLICY IF EXISTS "Users can update own achievements" ON user_achievements;
 
 -- study_activity
 DROP POLICY IF EXISTS "Users can view own study_activity" ON study_activity;
 DROP POLICY IF EXISTS "Users can insert own study_activity" ON study_activity;
 DROP POLICY IF EXISTS "Users can update own study_activity" ON study_activity;
 DROP POLICY IF EXISTS "Users can delete own study_activity" ON study_activity;
+DROP POLICY IF EXISTS "Users can view own study activity" ON study_activity;
+DROP POLICY IF EXISTS "Users can insert own study activity" ON study_activity;
+DROP POLICY IF EXISTS "Users can update own study activity" ON study_activity;
 
 -- materials
 DROP POLICY IF EXISTS "Users can view own materials" ON materials;
@@ -133,6 +157,14 @@ DROP POLICY IF EXISTS "unlimited_users_anon_select" ON unlimited_users;
 DROP POLICY IF EXISTS "Users can view own unlimited_users" ON unlimited_users;
 DROP POLICY IF EXISTS "Allow read access for rate limit check" ON unlimited_users;
 DROP POLICY IF EXISTS "Users can check own unlimited status" ON unlimited_users;
+
+-- ai_usage (SECURITY FIX - VULN-003: CWE-284)
+DROP POLICY IF EXISTS "Users can view own ai_usage" ON ai_usage;
+DROP POLICY IF EXISTS "Users can insert own ai_usage" ON ai_usage;
+DROP POLICY IF EXISTS "Users can update own ai_usage" ON ai_usage;
+DROP POLICY IF EXISTS "Users can view own ai usage" ON ai_usage;
+DROP POLICY IF EXISTS "Users can insert own ai usage" ON ai_usage;
+DROP POLICY IF EXISTS "Users can update own ai usage" ON ai_usage;
 
 -- Drop existing insecure RPC functions if they exist
 DROP FUNCTION IF EXISTS get_shared_flashcards(text);
@@ -248,7 +280,9 @@ CREATE POLICY "Users can delete own pomodoro_sessions" ON pomodoro_sessions
     FOR DELETE USING (auth.uid() = user_id);
 
 -- ------------------------------------------------------------
--- USER_STATS
+-- USER_STATS (SECURITY FIX - VULN-004)
+-- No UPDATE policy: all stat mutations go through SECURITY DEFINER RPCs
+-- (add_xp, increment_stat, record_study_activity, update_study_streak)
 -- ------------------------------------------------------------
 CREATE POLICY "Users can view own user_stats" ON user_stats
     FOR SELECT USING (auth.uid() = user_id);
@@ -256,11 +290,10 @@ CREATE POLICY "Users can view own user_stats" ON user_stats
 CREATE POLICY "Users can insert own user_stats" ON user_stats
     FOR INSERT WITH CHECK (auth.uid() = user_id);
 
-CREATE POLICY "Users can update own user_stats" ON user_stats
-    FOR UPDATE USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
-
 -- ------------------------------------------------------------
--- USER_ACHIEVEMENTS
+-- USER_ACHIEVEMENTS (SECURITY FIX - VULN-005)
+-- No UPDATE policy: achievement progress is managed exclusively
+-- by check_achievements() SECURITY DEFINER RPC
 -- ------------------------------------------------------------
 CREATE POLICY "Users can view own user_achievements" ON user_achievements
     FOR SELECT USING (auth.uid() = user_id);
@@ -268,20 +301,16 @@ CREATE POLICY "Users can view own user_achievements" ON user_achievements
 CREATE POLICY "Users can insert own user_achievements" ON user_achievements
     FOR INSERT WITH CHECK (auth.uid() = user_id);
 
-CREATE POLICY "Users can update own user_achievements" ON user_achievements
-    FOR UPDATE USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
-
 -- ------------------------------------------------------------
--- STUDY_ACTIVITY
+-- STUDY_ACTIVITY (SECURITY FIX - VULN-006)
+-- No UPDATE policy: study activity is updated exclusively by
+-- record_study_activity() SECURITY DEFINER RPC
 -- ------------------------------------------------------------
 CREATE POLICY "Users can view own study_activity" ON study_activity
     FOR SELECT USING (auth.uid() = user_id);
 
 CREATE POLICY "Users can insert own study_activity" ON study_activity
     FOR INSERT WITH CHECK (auth.uid() = user_id);
-
-CREATE POLICY "Users can update own study_activity" ON study_activity
-    FOR UPDATE USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
 
 CREATE POLICY "Users can delete own study_activity" ON study_activity
     FOR DELETE USING (auth.uid() = user_id);
@@ -368,6 +397,19 @@ CREATE POLICY "Users can delete own material_shares" ON material_shares
 -- ------------------------------------------------------------
 CREATE POLICY "Users can check own unlimited status" ON unlimited_users
     FOR SELECT TO authenticated USING (auth.uid() = user_id);
+
+-- ------------------------------------------------------------
+-- AI_USAGE (SECURITY FIX - VULN-003 - CRITICAL)
+-- Rate limit counters (generation_count, reset_date) must NOT be
+-- user-writable. All mutations go through check_and_increment_ai_usage()
+-- and increment_ai_usage() SECURITY DEFINER RPCs.
+-- No UPDATE policy: prevents users from resetting their rate limit.
+-- ------------------------------------------------------------
+CREATE POLICY "Users can view own ai_usage" ON ai_usage
+    FOR SELECT USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert own ai_usage" ON ai_usage
+    FOR INSERT WITH CHECK (auth.uid() = user_id);
 
 -- ============================================================
 -- STEP 4: SECURE RPC FUNCTIONS FOR SHARE ACCESS
