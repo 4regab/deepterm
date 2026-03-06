@@ -261,7 +261,9 @@ alter table public.study_activity enable row level security;
 
 create policy "Users can view own study activity" on public.study_activity for select to authenticated using ((select auth.uid()) = user_id);
 create policy "Users can insert own study activity" on public.study_activity for insert to authenticated with check ((select auth.uid()) = user_id);
-create policy "Users can update own study activity" on public.study_activity for update to authenticated using ((select auth.uid()) = user_id);
+-- SECURITY: No direct UPDATE policy. Study activity is updated exclusively by
+-- record_study_activity() SECURITY DEFINER RPC. This prevents users from
+-- inflating study metrics (minutes, flashcards, quizzes, pomodoros) via the client.
 
 create index if not exists study_activity_user_id_idx on public.study_activity using btree (user_id);
 create index if not exists study_activity_date_idx on public.study_activity using btree (activity_date);
@@ -289,7 +291,9 @@ alter table public.user_stats enable row level security;
 
 create policy "Users can view own stats" on public.user_stats for select to authenticated using ((select auth.uid()) = user_id);
 create policy "Users can insert own stats" on public.user_stats for insert to authenticated with check ((select auth.uid()) = user_id);
-create policy "Users can update own stats" on public.user_stats for update to authenticated using ((select auth.uid()) = user_id);
+-- SECURITY: No direct UPDATE policy. All stat mutations go through SECURITY DEFINER RPCs:
+-- add_xp(), increment_stat(), record_study_activity(), update_study_streak()
+-- This prevents users from setting arbitrary XP, levels, or stats via the client.
 
 -- ============================================
 -- SECTION 3: ACHIEVEMENTS SYSTEM
@@ -329,7 +333,9 @@ alter table public.user_achievements enable row level security;
 
 create policy "Users can view own achievements" on public.user_achievements for select to authenticated using ((select auth.uid()) = user_id);
 create policy "Users can insert own achievements" on public.user_achievements for insert to authenticated with check ((select auth.uid()) = user_id);
-create policy "Users can update own achievements" on public.user_achievements for update to authenticated using ((select auth.uid()) = user_id);
+-- SECURITY: No direct UPDATE policy. Achievement progress is managed exclusively by
+-- check_achievements() SECURITY DEFINER RPC. This prevents users from unlocking
+-- achievements or setting arbitrary progress via the client.
 
 create index if not exists user_achievements_user_id_idx on public.user_achievements using btree (user_id);
 
@@ -353,7 +359,9 @@ alter table public.ai_usage enable row level security;
 
 create policy "Users can view own ai usage" on public.ai_usage for select to authenticated using ((select auth.uid()) = user_id);
 create policy "Users can insert own ai usage" on public.ai_usage for insert to authenticated with check ((select auth.uid()) = user_id);
-create policy "Users can update own ai usage" on public.ai_usage for update to authenticated using ((select auth.uid()) = user_id);
+-- SECURITY: No direct UPDATE policy. Rate limit counters (generation_count, reset_date)
+-- are managed exclusively by check_and_increment_ai_usage() SECURITY DEFINER RPC.
+-- This prevents users from resetting their rate limit via the client.
 
 create index if not exists ai_usage_user_id_idx on public.ai_usage using btree (user_id);
 
