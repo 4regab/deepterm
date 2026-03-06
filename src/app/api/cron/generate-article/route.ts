@@ -3,7 +3,7 @@ import { generateAndPublishArticle } from '@/lib/blog/generator'
 
 // Vercel Cron configuration
 export const runtime = 'nodejs'
-export const maxDuration = 60 // 60 seconds max for article generation
+export const maxDuration = 300 // 5 minutes for gemini-2.5-flash with search grounding
 
 // Verify request is from Vercel Cron
 function isAuthorizedCronRequest(request: NextRequest): boolean {
@@ -48,7 +48,7 @@ export async function GET(request: NextRequest) {
     if (result.success) {
       return NextResponse.json({
         success: true,
-        message: result.postId 
+        message: result.postId
           ? `Article published successfully: ${result.postId}`
           : result.error || 'No articles to generate',
       })

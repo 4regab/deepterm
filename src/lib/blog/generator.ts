@@ -130,7 +130,10 @@ function isRetryableModelError(error: Error): boolean {
     message.includes('timeout') ||
     message.includes('timed out') ||
     message.includes('503') ||
-    message.includes('500')
+    message.includes('500') ||
+    message.includes('api_key_invalid') ||
+    message.includes('api key expired') ||
+    message.includes('api key not valid')
   )
 }
 

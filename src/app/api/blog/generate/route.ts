@@ -3,7 +3,7 @@ import { generateAndPublishArticle, regenerateArticleBySlug } from '@/lib/blog/g
 
 // Manual trigger for article generation (for testing)
 export const runtime = 'nodejs'
-export const maxDuration = 60
+export const maxDuration = 300
 
 export async function POST(request: NextRequest) {
   const authHeader = request.headers.get('authorization')
