@@ -26,10 +26,6 @@ fi
 
 mkdir -p "$APP_DIR"
 
-if [ ! -d "$APP_DIR/.git" ]; then
-  git clone --branch "$DEPLOY_BRANCH" "$REPO_URL" "$APP_DIR"
-fi
-
 cd "$APP_DIR"
 
 current_user=$(id -un)
@@ -48,7 +44,18 @@ if ! git config --global --get-all safe.directory | grep -Fx "$APP_DIR" >/dev/nu
   git config --global --add safe.directory "$APP_DIR"
 fi
 
+if [ ! -d .git ]; then
+  git init
+fi
+
+if git remote | grep -Fx origin >/dev/null 2>&1; then
+  git remote set-url origin "$REPO_URL"
+else
+  git remote add origin "$REPO_URL"
+fi
+
 git fetch origin "$DEPLOY_BRANCH"
+git checkout -B "$DEPLOY_BRANCH" "origin/$DEPLOY_BRANCH"
 git reset --hard "origin/$DEPLOY_BRANCH"
 
 set -a
