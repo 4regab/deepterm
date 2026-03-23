@@ -69,7 +69,7 @@ function createSafeRenderer() {
 
     const safeTitle = title ? ` title="${escapeHtmlAttribute(title)}"` : ''
     const external = safeHref.startsWith('http://') || safeHref.startsWith('https://')
-    const rel = external ? ' rel="nofollow noopener noreferrer"' : ''
+    const rel = external ? ' rel="noopener noreferrer"' : ''
     return `<a href="${escapeHtmlAttribute(safeHref)}"${safeTitle}${rel}>${linkText}</a>`
   }
 
