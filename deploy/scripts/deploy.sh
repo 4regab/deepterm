@@ -32,6 +32,10 @@ fi
 
 cd "$APP_DIR"
 
+if ! git config --global --get-all safe.directory | grep -Fx "$APP_DIR" >/dev/null 2>&1; then
+  git config --global --add safe.directory "$APP_DIR"
+fi
+
 git fetch origin "$DEPLOY_BRANCH"
 git reset --hard "origin/$DEPLOY_BRANCH"
 
