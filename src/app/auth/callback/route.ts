@@ -1,11 +1,12 @@
 import { createServerSupabaseClient } from '@/config/supabase/server'
+import { getRequestOrigin } from '@/lib/requestOrigin'
 import { NextResponse } from 'next/server'
 
 export async function GET(request: Request) {
   const requestUrl = new URL(request.url)
   const code = requestUrl.searchParams.get('code')
   const returnTo = requestUrl.searchParams.get('returnTo')
-  const origin = requestUrl.origin
+  const origin = getRequestOrigin(request)
 
   if (code) {
     const supabase = await createServerSupabaseClient()

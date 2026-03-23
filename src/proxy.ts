@@ -1,5 +1,6 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
+import { getRequestOrigin } from '@/lib/requestOrigin'
 
 // Allowed origins for CORS (SECURITY FIX - CWE-942)
 const ALLOWED_ORIGINS = [
@@ -30,6 +31,7 @@ const AUTH_ROUTES = ['/auth']
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
   const origin = request.headers.get('origin')
+  const requestOrigin = getRequestOrigin(request)
 
   // Create response to modify
   let response = NextResponse.next({
@@ -114,13 +116,13 @@ export async function proxy(request: NextRequest) {
       )
     }
     // For pages, redirect to home
-    const redirectUrl = new URL('/', request.url)
+    const redirectUrl = new URL('/', requestOrigin)
     return NextResponse.redirect(redirectUrl)
   }
 
   // Redirect authenticated users from auth routes to dashboard
   if (isAuthRoute && user) {
-    const redirectUrl = new URL('/dashboard', request.url)
+    const redirectUrl = new URL('/dashboard', requestOrigin)
     return NextResponse.redirect(redirectUrl)
   }
 
