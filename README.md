@@ -163,6 +163,7 @@ src/
 ├── tests/                  # Test files (see Testing section)
 └── utils/                  # Utility functions
 ```
+<img width="5024" height="3984" alt="image" src="https://github.com/user-attachments/assets/d2334640-6e63-4256-abdc-065491bc69d7" />
 
 ### State Management
 
