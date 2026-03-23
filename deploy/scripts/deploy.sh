@@ -32,6 +32,18 @@ fi
 
 cd "$APP_DIR"
 
+current_user=$(id -un)
+current_group=$(id -gn)
+
+if [ ! -w "$APP_DIR" ] || { [ -d "$APP_DIR/.git" ] && [ ! -w "$APP_DIR/.git" ]; }; then
+  app_owner=$(stat -c '%U:%G' "$APP_DIR")
+  git_owner=$(stat -c '%U:%G' "$APP_DIR/.git" 2>/dev/null || echo 'unknown')
+  echo "Deployment user ${current_user}:${current_group} cannot write to $APP_DIR." >&2
+  echo "Current owners: $APP_DIR=$app_owner, $APP_DIR/.git=$git_owner" >&2
+  echo "Fix on the host: sudo chown -R ${current_user}:${current_group} \"$APP_DIR\"" >&2
+  exit 1
+fi
+
 if ! git config --global --get-all safe.directory | grep -Fx "$APP_DIR" >/dev/null 2>&1; then
   git config --global --add safe.directory "$APP_DIR"
 fi

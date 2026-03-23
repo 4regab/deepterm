@@ -31,6 +31,12 @@ sudo chown "$USER:$USER" /opt/deepterm
 git clone --branch main https://github.com/4regab/deepterm /opt/deepterm
 ```
 
+If `/opt/deepterm` or its `.git` directory was ever created with `sudo`, fix the ownership before using the deploy workflow:
+
+```bash
+sudo chown -R "$USER:$USER" /opt/deepterm
+```
+
 ## Prepare Runtime Secrets
 
 Create `/opt/deepterm/.env` with the same runtime variables documented in the root README. Keep the file on the host only. The deploy workflow reads it, but never writes it.
