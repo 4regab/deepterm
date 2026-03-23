@@ -1,14 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { generateAndPublishArticle } from '@/lib/blog/generator'
 
-// Vercel Cron configuration
+// Scheduled article generation endpoint
 export const runtime = 'nodejs'
 export const maxDuration = 300 // 5 minutes for gemini-2.5-flash with search grounding
 
-// Verify request is from Vercel Cron
 function isAuthorizedCronRequest(request: NextRequest): boolean {
   const authHeader = request.headers.get('authorization')
-  const userAgent = request.headers.get('user-agent')
   const cronSecret = process.env.CRON_SECRET
   const isProduction = process.env.NODE_ENV === 'production'
 
@@ -21,14 +19,6 @@ function isAuthorizedCronRequest(request: NextRequest): boolean {
   // Verify the Authorization header matches Bearer <CRON_SECRET>
   if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
     return false
-  }
-
-  // In production, also verify Vercel's user-agent (extra security layer)
-  if (isProduction && userAgent !== 'vercel-cron/1') {
-    // Allow if auth header is correct (for manual triggers with secret)
-    if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
-      return false
-    }
   }
 
   return true

@@ -1,0 +1,12 @@
+.git
+.github
+.next
+.vscode
+coverage
+deploy
+node_modules
+npm-debug.log*
+README.md
+*.log
+.env*
+compose.override.yaml

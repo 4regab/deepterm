@@ -59,6 +59,7 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   reactCompiler: true,
+  output: 'standalone',
   // Optimize barrel file imports - transforms lucide-react imports to direct imports at build time
   // This reduces bundle size by ~1MB and improves cold start by 200-800ms
   experimental: {

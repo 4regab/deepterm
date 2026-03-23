@@ -5,7 +5,6 @@ import { NextResponse, type NextRequest } from 'next/server'
 const ALLOWED_ORIGINS = [
   'https://deepterm.tech',
   'https://www.deepterm.tech',
-  'https://deepterm.vercel.app',
 ]
 
 // Routes that require authentication
@@ -49,6 +48,11 @@ export async function proxy(request: NextRequest) {
 
   // Handle preflight requests
   if (request.method === 'OPTIONS') {
+    return response
+  }
+
+  // Allow container and proxy health checks without hitting Supabase.
+  if (pathname === '/healthz') {
     return response
   }
 

@@ -107,7 +107,7 @@ Stop grinding through notes the hard way. DeepTerm uses AI to turn your PDFs and
 - **fast-check 4.3** - Property-based testing
 
 ### Deployment
-- **Vercel** - Edge deployment with cron jobs
+- **AWS EC2 + Docker + Nginx** - Self-hosted deployment with GitHub Actions and host cron
 
 ## Architecture
 
@@ -410,32 +410,31 @@ Generate categorized reviewer content from PDF or text.
 
 ## Deployment
 
-### Vercel Deployment
+### EC2 + Docker Deployment
 
-The application is optimized for Vercel deployment:
+The application is now deployed as a Dockerized Next.js app on a single EC2 host behind `nginx`, with GitHub-hosted Actions handling the SSH deployment workflow.
 
-1. Connect your GitHub repository to Vercel
-2. Configure environment variables in Vercel dashboard
-3. Deploy
+Core deployment files:
+
+- `Dockerfile` - multi-stage Node 22 image using Next.js standalone output
+- `compose.yaml` - production container definition with health checks and runtime env loading
+- `deploy/scripts/deploy.sh` - idempotent EC2 deploy script used by GitHub Actions
+- `deploy/nginx/deepterm.conf` - host-level reverse proxy config with a 25 MB upload limit
+- `.github/workflows/deploy.yml` - test, smoke, and deploy pipeline for `main`
+
+Detailed host setup instructions live in `deploy/EC2.md`.
 
 ### Cron Jobs
 
-Blog auto-generation is configured via `vercel.json`:
+Blog auto-generation is now configured on the EC2 host through `/etc/cron.d/deepterm-blog` and the wrapper script `deploy/scripts/cron-generate-article.sh`.
 
-```json
-{
-  "crons": [
-    {
-      "path": "/api/cron/generate-article",
-      "schedule": "0 8,20 * * *"
-    }
-  ]
-}
+```cron
+CRON_TZ=UTC
+0 8 * * * root DEEPTERM_ENV_FILE=/opt/deepterm/.env /usr/local/bin/deepterm-generate-article >> /var/log/deepterm-cron.log 2>&1
+0 20 * * * root DEEPTERM_ENV_FILE=/opt/deepterm/.env /usr/local/bin/deepterm-generate-article >> /var/log/deepterm-cron.log 2>&1
 ```
 
-This runs the blog generation endpoint twice daily at 8 AM and 8 PM UTC.
-
-**Note**: Cron jobs require a Vercel Pro plan or higher.
+This keeps the schedule at 8 AM and 8 PM UTC while authenticating requests with `CRON_SECRET` against `http://127.0.0.1:3000/api/cron/generate-article`.
 
 ## Contributing
 

@@ -1,0 +1,86 @@
+name: Deploy
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test-and-deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Run tests
+        run: bun test
+
+      - name: Run lint
+        run: bun run lint
+
+      - name: Build Docker image
+        run: |
+          docker build \
+            --build-arg NEXT_PUBLIC_SUPABASE_URL=https://example.com \
+            --build-arg NEXT_PUBLIC_SUPABASE_ANON_KEY=example-anon-key \
+            --build-arg NEXT_PUBLIC_POSTHOG_HOST=https://us.i.posthog.com \
+            -t deepterm:ci .
+
+      - name: Start smoke container
+        run: |
+          docker run -d \
+            --name deepterm-smoke \
+            -p 3000:3000 \
+            -e NEXT_PUBLIC_SUPABASE_URL=https://example.com \
+            -e NEXT_PUBLIC_SUPABASE_ANON_KEY=example-anon-key \
+            -e CRON_SECRET=smoke-test-secret \
+            deepterm:ci
+
+      - name: Wait for smoke container
+        run: |
+          for attempt in $(seq 1 30); do
+            if curl --fail --silent http://127.0.0.1:3000/healthz >/dev/null; then
+              exit 0
+            fi
+            sleep 2
+          done
+          docker logs deepterm-smoke
+          exit 1
+
+      - name: Clean up smoke container
+        if: always()
+        run: docker rm -f deepterm-smoke || true
+
+      - name: Configure SSH
+        env:
+          EC2_HOST: ${{ secrets.EC2_HOST }}
+          EC2_SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$EC2_SSH_KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -H "$EC2_HOST" >> ~/.ssh/known_hosts
+
+      - name: Deploy to EC2
+        env:
+          EC2_HOST: ${{ secrets.EC2_HOST }}
+          EC2_PORT: ${{ secrets.EC2_PORT }}
+          EC2_USER: ${{ secrets.EC2_USER }}
+        run: |
+          ssh -i ~/.ssh/id_ed25519 -p "${EC2_PORT:-22}" "${EC2_USER}@${EC2_HOST}" \
+            "APP_DIR=/opt/deepterm DEPLOY_BRANCH=main DEEPTERM_ENV_FILE=/opt/deepterm/.env REPO_URL=https://github.com/4regab/deepterm.git bash -s" \
+            < deploy/scripts/deploy.sh
