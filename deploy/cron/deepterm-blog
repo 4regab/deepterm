@@ -1,0 +1,6 @@
+CRON_TZ=UTC
+SHELL=/bin/bash
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
+0 8 * * * root DEEPTERM_ENV_FILE=/opt/deepterm/.env /usr/local/bin/deepterm-generate-article >> /var/log/deepterm-cron.log 2>&1
+0 20 * * * root DEEPTERM_ENV_FILE=/opt/deepterm/.env /usr/local/bin/deepterm-generate-article >> /var/log/deepterm-cron.log 2>&1
