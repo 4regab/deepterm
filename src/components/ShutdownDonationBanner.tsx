@@ -63,8 +63,9 @@ export default function ShutdownDonationBanner() {
                             Announcement
                         </span>
                         Deepterm&apos;s domain will expire on <strong>April 15</strong>. Without enough support
-                        before that date, deepterm.tech may go offline. If Deepterm has helped you, please
-                        donate now to keep it free and available for students. Learn more{" "}
+                        before that date, deepterm.tech may go offline. If you wish to support,
+                        your contribution helps cover the renewal cost and keep Deepterm free for
+                        students. Learn more{" "}
                         <Link href="/about" className="underline decoration-[#171d2b]/40 underline-offset-2 hover:text-[#171d2b]">
                             here
                         </Link>
