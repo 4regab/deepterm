@@ -6,6 +6,7 @@ APP_DIR=${APP_DIR:-/opt/deepterm}
 DEPLOY_BRANCH=${DEPLOY_BRANCH:-main}
 DEEPTERM_ENV_FILE=${DEEPTERM_ENV_FILE:-/opt/deepterm/.env}
 REPO_URL=${REPO_URL:-https://github.com/4regab/deepterm.git}
+MIN_FREE_KB=${MIN_FREE_KB:-6291456}
 
 for command in git docker; do
   if ! command -v "$command" >/dev/null 2>&1; then
@@ -64,6 +65,16 @@ set -a
 set +a
 
 export DEEPTERM_ENV_FILE
+
+available_kb=$(df -Pk "$APP_DIR" | awk 'NR==2 {print $4}')
+if [ "${available_kb:-0}" -lt "$MIN_FREE_KB" ]; then
+  echo "Low free disk space detected (${available_kb}KB). Running Docker cleanup before build..."
+  docker compose down --remove-orphans >/dev/null 2>&1 || true
+  docker builder prune -af >/dev/null 2>&1 || true
+  docker image prune -af >/dev/null 2>&1 || true
+  docker container prune -f >/dev/null 2>&1 || true
+  docker volume prune -f >/dev/null 2>&1 || true
+fi
 
 docker compose build --pull
 docker compose up -d --remove-orphans
