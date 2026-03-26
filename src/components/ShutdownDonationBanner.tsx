@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 
 const BANNER_HIDE_UNTIL_KEY = "deepterm.shutdownBanner.hideUntil.v1";
 const DONATE_URL = "https://ko-fi.com/4regab";
@@ -9,26 +9,33 @@ const DEFAULT_PROOF_URL = "https://www.whois.com/whois/deepterm.tech";
 const HIDE_DURATION_MS = 24 * 60 * 60 * 1000;
 
 export default function ShutdownDonationBanner() {
-    const [isVisible, setIsVisible] = useState(true);
-    const proofUrl = process.env.NEXT_PUBLIC_SHUTDOWN_PROOF_URL || DEFAULT_PROOF_URL;
+    const [isVisible, setIsVisible] = useState(() => {
+        if (typeof window === "undefined") {
+            return true;
+        }
 
-    const isExternalProofUrl = useMemo(() => {
-        return /^https?:\/\//i.test(proofUrl);
-    }, [proofUrl]);
-
-    useEffect(() => {
         try {
             const hideUntilRaw = window.localStorage.getItem(BANNER_HIDE_UNTIL_KEY);
             const hideUntil = hideUntilRaw ? Number(hideUntilRaw) : 0;
+
             if (Number.isFinite(hideUntil) && hideUntil > Date.now()) {
-                setIsVisible(false);
-            } else if (hideUntilRaw) {
+                return false;
+            }
+
+            if (hideUntilRaw) {
                 window.localStorage.removeItem(BANNER_HIDE_UNTIL_KEY);
             }
         } catch {
             // Ignore storage access issues.
         }
-    }, []);
+
+        return true;
+    });
+    const proofUrl = process.env.NEXT_PUBLIC_SHUTDOWN_PROOF_URL || DEFAULT_PROOF_URL;
+
+    const isExternalProofUrl = useMemo(() => {
+        return /^https?:\/\//i.test(proofUrl);
+    }, [proofUrl]);
 
     const dismissBanner = () => {
         setIsVisible(false);
