@@ -55,7 +55,7 @@ export async function GET() {
         '## Optional',
         '',
         '- [GitHub Repository](https://github.com/4regab/deepterm): Open-source codebase',
-        '- [Donate](https://ko-fi.com/deepterm): Support development on Ko-fi',
+        '- [Donate](https://ko-fi.com/4regab): Support development on Ko-fi',
         '',
     ]
 
