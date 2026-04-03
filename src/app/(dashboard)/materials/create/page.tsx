@@ -302,8 +302,7 @@ export default function CreatePage() {
 
         try {
             const supabase = createClient();
-            const { data: { session } } = await supabase.auth.getSession();
-            const user = session?.user;
+            const { data: { user } } = await supabase.auth.getUser();
             if (!user) throw new Error("Not authenticated");
 
             // Create flashcard set
@@ -354,8 +353,7 @@ export default function CreatePage() {
 
         try {
             const supabase = createClient();
-            const { data: { session } } = await supabase.auth.getSession();
-            const user = session?.user;
+            const { data: { user } } = await supabase.auth.getUser();
             if (!user) throw new Error("Not authenticated");
 
             // Create reviewer

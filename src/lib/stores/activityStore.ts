@@ -51,8 +51,7 @@ export const useActivityStore = create<ActivityStore>()((set, get) => ({
       const supabase = createClient()
 
       // Auth guard: skip fetch for unauthenticated users (SECURITY FIX)
-      const { data: { session } } = await supabase.auth.getSession()
-      const user = session?.user
+      const { data: { user } } = await supabase.auth.getUser()
       if (!user) {
         set({ activity: [], stats: null, loading: false, lastFetched: Date.now() })
         return

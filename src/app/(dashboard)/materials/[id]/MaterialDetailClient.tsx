@@ -388,7 +388,7 @@ export default function MaterialDetailClient(props: Props) {
     // Refresh flashcard statuses on mount to get latest progress after study sessions
     useSyncExternalStore(
         useCallback(() => {
-            if (materialType !== 'flashcard') return () => { };
+            if (materialType !== 'flashcard') return () => {};
             let mounted = true;
             const refresh = async () => {
                 const supabase = createClient();
@@ -412,7 +412,7 @@ export default function MaterialDetailClient(props: Props) {
         () => null,
         () => null
     );
-
+    
     const toggleCategory = (id: string) => {
         setExpandedCategories(prev => prev.includes(id) ? prev.filter(c => c !== id) : [...prev, id]);
     };
@@ -453,8 +453,7 @@ export default function MaterialDetailClient(props: Props) {
     const handleAddNew = useCallback(async () => {
         if (!newTerm.front.trim() || !newTerm.back.trim()) return;
         const supabase = createClient();
-        const { data: { session } } = await supabase.auth.getSession();
-        const user = session?.user;
+        const { data: { user } } = await supabase.auth.getUser();
         if (!user) return;
         const { data: newCard } = await supabase.from("flashcards").insert({ set_id: material.id, user_id: user.id, front: newTerm.front, back: newTerm.back }).select().single();
         if (newCard) setTerms(prev => [...prev, { id: newCard.id, front: newCard.front, back: newCard.back, stage: 'new' }]);
@@ -473,8 +472,8 @@ export default function MaterialDetailClient(props: Props) {
     const handleEditReviewerTerm = useCallback(async (categoryId: string, termId: string, term: string, definition: string) => {
         const supabase = createClient();
         await supabase.from("reviewer_terms").update({ term, definition }).eq("id", termId);
-        setCategories(prev => prev.map(cat =>
-            cat.id === categoryId
+        setCategories(prev => prev.map(cat => 
+            cat.id === categoryId 
                 ? { ...cat, terms: cat.terms.map(t => t.id === termId ? { ...t, term, definition } : t) }
                 : cat
         ));
@@ -483,8 +482,8 @@ export default function MaterialDetailClient(props: Props) {
     const handleDeleteReviewerTerm = useCallback(async (categoryId: string, termId: string) => {
         const supabase = createClient();
         await supabase.from("reviewer_terms").delete().eq("id", termId);
-        setCategories(prev => prev.map(cat =>
-            cat.id === categoryId
+        setCategories(prev => prev.map(cat => 
+            cat.id === categoryId 
                 ? { ...cat, terms: cat.terms.filter(t => t.id !== termId) }
                 : cat
         ));
@@ -498,8 +497,8 @@ export default function MaterialDetailClient(props: Props) {
             .select()
             .single();
         if (newTerm) {
-            setCategories(prev => prev.map(cat =>
-                cat.id === categoryId
+            setCategories(prev => prev.map(cat => 
+                cat.id === categoryId 
                     ? { ...cat, terms: [...cat.terms, { id: newTerm.id, term: newTerm.term, definition: newTerm.definition }] }
                     : cat
             ));
@@ -530,9 +529,9 @@ export default function MaterialDetailClient(props: Props) {
                     <div className="flex gap-2 md:hidden">
                         {materialType === 'reviewer' && (
                             <div className="relative">
-                                <button
+                                <button 
                                     onClick={() => setShowDownloadMenu(!showDownloadMenu)}
-                                    className="p-2 rounded-lg border border-[#171d2b]/10 hover:bg-[#171d2b]/5 text-[#171d2b]/60 transition-colors"
+                                    className="p-2 rounded-lg border border-[#171d2b]/10 hover:bg-[#171d2b]/5 text-[#171d2b]/60 transition-colors" 
                                     title="Download"
                                 >
                                     <Download size={18} />
@@ -542,28 +541,28 @@ export default function MaterialDetailClient(props: Props) {
                                         <div className="fixed inset-0 z-40" onClick={() => setShowDownloadMenu(false)} />
                                         <div className="absolute right-0 top-full mt-1 z-50">
                                             <div className="bg-white rounded-lg border border-[#171d2b]/10 shadow-lg py-1 min-w-[140px]">
-                                                <button
-                                                    onClick={() => {
+                                                <button 
+                                                    onClick={() => { 
                                                         const exportCategories = categories.map(c => ({
                                                             name: c.name,
                                                             terms: c.terms.map(t => ({ front: t.term, back: t.definition }))
                                                         }));
                                                         exportToPDF({ title: material.title, terms: [], categories: exportCategories });
                                                         setShowDownloadMenu(false);
-                                                    }}
+                                                    }} 
                                                     className="w-full px-4 py-2 text-left text-sm text-[#171d2b] hover:bg-[#171d2b]/5 transition-colors"
                                                 >
                                                     Download PDF
                                                 </button>
-                                                <button
-                                                    onClick={() => {
+                                                <button 
+                                                    onClick={() => { 
                                                         const exportCategories = categories.map(c => ({
                                                             name: c.name,
                                                             terms: c.terms.map(t => ({ front: t.term, back: t.definition }))
                                                         }));
                                                         exportToDOCX({ title: material.title, terms: [], categories: exportCategories });
                                                         setShowDownloadMenu(false);
-                                                    }}
+                                                    }} 
                                                     className="w-full px-4 py-2 text-left text-sm text-[#171d2b] hover:bg-[#171d2b]/5 transition-colors"
                                                 >
                                                     Download DOCX
@@ -588,9 +587,9 @@ export default function MaterialDetailClient(props: Props) {
                     <div className="hidden md:flex gap-2">
                         {materialType === 'reviewer' && (
                             <div className="relative">
-                                <button
+                                <button 
                                     onClick={() => setShowDownloadMenu(!showDownloadMenu)}
-                                    className="p-2 rounded-lg border border-[#171d2b]/10 hover:bg-[#171d2b]/5 text-[#171d2b]/60 transition-colors"
+                                    className="p-2 rounded-lg border border-[#171d2b]/10 hover:bg-[#171d2b]/5 text-[#171d2b]/60 transition-colors" 
                                     title="Download"
                                 >
                                     <Download size={18} />
@@ -600,28 +599,28 @@ export default function MaterialDetailClient(props: Props) {
                                         <div className="fixed inset-0 z-40" onClick={() => setShowDownloadMenu(false)} />
                                         <div className="absolute right-0 top-full mt-1 z-50">
                                             <div className="bg-white rounded-lg border border-[#171d2b]/10 shadow-lg py-1 min-w-[140px]">
-                                                <button
-                                                    onClick={() => {
+                                                <button 
+                                                    onClick={() => { 
                                                         const exportCategories = categories.map(c => ({
                                                             name: c.name,
                                                             terms: c.terms.map(t => ({ front: t.term, back: t.definition }))
                                                         }));
                                                         exportToPDF({ title: material.title, terms: [], categories: exportCategories });
                                                         setShowDownloadMenu(false);
-                                                    }}
+                                                    }} 
                                                     className="w-full px-4 py-2 text-left text-sm text-[#171d2b] hover:bg-[#171d2b]/5 transition-colors"
                                                 >
                                                     Download PDF
                                                 </button>
-                                                <button
-                                                    onClick={() => {
+                                                <button 
+                                                    onClick={() => { 
                                                         const exportCategories = categories.map(c => ({
                                                             name: c.name,
                                                             terms: c.terms.map(t => ({ front: t.term, back: t.definition }))
                                                         }));
                                                         exportToDOCX({ title: material.title, terms: [], categories: exportCategories });
                                                         setShowDownloadMenu(false);
-                                                    }}
+                                                    }} 
                                                     className="w-full px-4 py-2 text-left text-sm text-[#171d2b] hover:bg-[#171d2b]/5 transition-colors"
                                                 >
                                                     Download DOCX
@@ -713,11 +712,11 @@ export default function MaterialDetailClient(props: Props) {
             )}
 
             {materialType === 'reviewer' && (
-                <ReviewerDisplay
-                    categories={categories}
-                    expandedCategories={expandedCategories}
-                    toggleCategory={toggleCategory}
-                    filterText={filterText}
+                <ReviewerDisplay 
+                    categories={categories} 
+                    expandedCategories={expandedCategories} 
+                    toggleCategory={toggleCategory} 
+                    filterText={filterText} 
                     setFilterText={setFilterText}
                     onEditTerm={handleEditReviewerTerm}
                     onDeleteTerm={handleDeleteReviewerTerm}

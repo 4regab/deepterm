@@ -41,8 +41,8 @@ export default function HomeClient() {
     const checkUser = async () => {
       try {
         const supabase = createClient();
-        const { data: { session } } = await supabase.auth.getSession();
-        setUser(session?.user ?? null);
+        const { data: { user } } = await supabase.auth.getUser();
+        setUser(user);
       } catch {
         // Ignore errors
       }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { motion } from "framer-motion";
 import { createClient } from "@/config/supabase/client";
 import { User, Mail, Trash2 } from "lucide-react";
@@ -14,9 +14,8 @@ interface Profile {
 
 async function fetchAccountProfile(): Promise<{ profile: Profile | null; fullName: string }> {
     const supabase = createClient();
-    const { data: { session } } = await supabase.auth.getSession();
-    const user = session?.user;
-
+    const { data: { user } } = await supabase.auth.getUser();
+    
     if (!user) return { profile: null, fullName: "" };
 
     const { data } = await supabase
@@ -24,26 +23,26 @@ async function fetchAccountProfile(): Promise<{ profile: Profile | null; fullNam
         .select("id, full_name, email, avatar_url")
         .eq("id", user.id)
         .single();
-
+    
     const googleIdentity = user.identities?.find(i => i.provider === "google");
     const identityData = googleIdentity?.identity_data;
-
-    const avatarUrl =
-        data?.avatar_url ||
-        user.user_metadata?.avatar_url ||
+    
+    const avatarUrl = 
+        data?.avatar_url || 
+        user.user_metadata?.avatar_url || 
         user.user_metadata?.picture ||
         identityData?.avatar_url ||
         identityData?.picture;
-
-    const fullName =
-        data?.full_name ||
-        user.user_metadata?.full_name ||
+    
+    const fullName = 
+        data?.full_name || 
+        user.user_metadata?.full_name || 
         user.user_metadata?.name ||
         identityData?.full_name ||
         identityData?.name;
-
+    
     const email = data?.email || user.email;
-
+    
     return {
         profile: {
             id: user.id,
@@ -63,26 +62,15 @@ export default function AccountPage() {
     const [deleting, setDeleting] = useState(false);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const [loading, setLoading] = useState(true);
-
-    useEffect(() => {
-        let mounted = true;
-
-        fetchAccountProfile()
-            .then(({ profile, fullName }) => {
-                if (!mounted) return;
-                setProfile(profile);
-                setFormData({ full_name: fullName });
-                setLoading(false);
-            })
-            .catch(() => {
-                if (!mounted) return;
-                setLoading(false);
-            });
-
-        return () => {
-            mounted = false;
-        };
-    }, []);
+    const fetchTriggered = useState(() => {
+        fetchAccountProfile().then(({ profile, fullName }) => {
+            setProfile(profile);
+            setFormData({ full_name: fullName });
+            setLoading(false);
+        });
+        return true;
+    })[0];
+    void fetchTriggered;
 
     const handleSave = async () => {
         if (!profile) return;
@@ -107,10 +95,10 @@ export default function AccountPage() {
     const handleDeleteAccount = async () => {
         setDeleting(true);
         setMessage(null);
-
+        
         const supabase = createClient();
         const { error } = await supabase.rpc("delete_user");
-
+        
         if (error) {
             setMessage({ type: "error", text: "Failed to delete account. Please try again." });
             setDeleting(false);
@@ -152,7 +140,7 @@ export default function AccountPage() {
             <div className="max-w-2xl">
                 <div className="bg-white rounded-2xl border border-[#171d2b]/10 p-6 mb-6">
                     <h2 className="font-serif text-[20px] text-[#171d2b] mb-6">Profile</h2>
-
+                    
                     <div className="flex items-center gap-6 mb-6">
                         {profile?.avatar_url ? (
                             // eslint-disable-next-line @next/next/no-img-element
@@ -209,10 +197,11 @@ export default function AccountPage() {
                     </div>
 
                     {message && (
-                        <div className={`mt-4 px-4 py-3 rounded-xl font-sans text-[14px] ${message.type === "success"
-                                ? "bg-green-50 text-green-700 border border-green-200"
+                        <div className={`mt-4 px-4 py-3 rounded-xl font-sans text-[14px] ${
+                            message.type === "success" 
+                                ? "bg-green-50 text-green-700 border border-green-200" 
                                 : "bg-red-50 text-red-700 border border-red-200"
-                            }`}>
+                        }`}>
                             {message.text}
                         </div>
                     )}

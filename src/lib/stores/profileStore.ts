@@ -47,8 +47,7 @@ export const useProfileStore = create<ProfileStore>()((set, get) => ({
 
     try {
       const supabase = createClient()
-      const { data: { session } } = await supabase.auth.getSession()
-      const user = session?.user
+      const { data: { user } } = await supabase.auth.getUser()
 
       if (!user) {
         set({ profile: null, loading: false, lastFetched: Date.now() })

@@ -3,10 +3,10 @@ import { createClient } from '@supabase/supabase-js'
 // Service role client for cron jobs (bypasses RLS)
 export function getServiceClient() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const serviceKey = process.env.SUPABASE_SECRET_KEY
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 
   if (!url || !serviceKey) {
-    throw new Error('Missing Supabase service credentials')
+    throw new Error('Missing Supabase service role credentials')
   }
 
   return createClient(url, serviceKey, {
@@ -38,7 +38,7 @@ export function calculateReadTime(content: string): number {
 // Fetch image from Unsplash API
 export async function fetchUnsplashImage(query: string): Promise<string | null> {
   const accessKey = process.env.UNSPLASH_ACCESS_KEY
-
+  
   if (!accessKey) {
     console.log('No Unsplash API key, skipping image fetch')
     return null
@@ -60,7 +60,7 @@ export async function fetchUnsplashImage(query: string): Promise<string | null> 
     }
 
     const data = await response.json()
-
+    
     if (data.results && data.results.length > 0) {
       // Use regular size for OG images
       return data.results[0].urls.regular

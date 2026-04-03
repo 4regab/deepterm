@@ -46,8 +46,7 @@ export async function recordStudyActivity(options: {
     const supabase = createClient();
 
     // Auth guard: require authenticated user (SECURITY FIX)
-    const { data: { session } } = await supabase.auth.getSession();
-    const user = session?.user;
+    const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
         console.warn('Cannot record study activity: No authenticated user');
         return { error: new Error('No authenticated user') };
@@ -83,8 +82,7 @@ export async function addXP(amount: number): Promise<{ leveledUp: boolean; newLe
     const supabase = createClient();
 
     // Check if user is authenticated first
-    const { data: { session } } = await supabase.auth.getSession();
-    const user = session?.user;
+    const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
         console.warn("Cannot add XP: No authenticated user");
         return { leveledUp: false };
@@ -130,8 +128,7 @@ export async function incrementStat(statName: string, amount: number = 1) {
     const supabase = createClient();
 
     // Auth guard: require authenticated user (SECURITY FIX)
-    const { data: { session } } = await supabase.auth.getSession();
-    const user = session?.user;
+    const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
         console.warn('Cannot increment stat: No authenticated user');
         return { error: new Error('No authenticated user') };
@@ -152,8 +149,7 @@ export async function logPomodoroSession(phase: "work" | "shortBreak" | "longBre
     const supabase = createClient();
 
     // Auth guard: require authenticated user (SECURITY FIX)
-    const { data: { session } } = await supabase.auth.getSession();
-    const user = session?.user;
+    const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
         console.warn('Cannot log pomodoro session: No authenticated user');
         return { error: new Error('No authenticated user') };
@@ -198,8 +194,7 @@ export async function logQuizAttempt(quizId: string, score: number, totalQuestio
     const localDate = getLocalDateString();
 
     // Get current user for inserting quiz attempt
-    const { data: { session } } = await supabase.auth.getSession();
-    const user = session?.user;
+    const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
         console.error("Cannot log quiz attempt: No authenticated user");
         return { error: new Error("No authenticated user") };

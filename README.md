@@ -257,8 +257,8 @@ Create a `.env.local` file:
 ```env
 # Supabase (required)
 NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
-NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=your_supabase_publishable_key
-SUPABASE_SECRET_KEY=your_supabase_secret_key
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
 
 # Gemini AI - Support for multiple API keys with rotation (at least one required)
 GEMINI_API_KEY=your_gemini_api_key
