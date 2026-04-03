@@ -9,6 +9,7 @@ import {
   generateSoftwareAppJsonLd,
 } from "@/lib/seo";
 import { PostHogProvider } from "@/components/PostHogProvider";
+import ShutdownDonationBanner from "@/components/ShutdownDonationBanner";
 
 const spaceGrotesk = Space_Grotesk({
   subsets: ["latin"],
@@ -46,7 +47,7 @@ export default function RootLayout({
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,200..900;1,8..60,200..900&display=swap" rel="stylesheet" />
-        
+
         {/* JSON-LD Structured Data */}
         <script
           type="application/ld+json"
@@ -76,6 +77,7 @@ export default function RootLayout({
               gtag('config', 'G-W6BMP2LP3T');
             `}
           </Script>
+          <ShutdownDonationBanner />
           {children}
         </PostHogProvider>
       </body>
