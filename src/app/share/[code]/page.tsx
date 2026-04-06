@@ -26,11 +26,11 @@ async function getSharedMaterial(code: string, requestIdentity?: string) {
 
   const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!
   )
 
-  const { data, error } = await supabase.rpc('get_shared_material', { 
-    p_share_code: parsedCode.data 
+  const { data, error } = await supabase.rpc('get_shared_material', {
+    p_share_code: parsedCode.data
   })
 
   if (error || !data) {

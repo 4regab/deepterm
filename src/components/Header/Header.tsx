@@ -276,9 +276,9 @@ export default function Header({ className }: { className?: string }) {
         hasCheckedRef.current = true;
         try {
             const supabase = createClient();
-            const { data: { user } } = await supabase.auth.getUser();
+            const { data: { session } } = await supabase.auth.getSession();
             if (isMountedRef.current) {
-                setUser(user);
+                setUser(session?.user ?? null);
             }
         } finally {
             if (isMountedRef.current) {

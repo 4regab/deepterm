@@ -54,7 +54,7 @@ export async function proxy(request: NextRequest) {
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
     {
       cookies: {
         getAll() {
@@ -77,8 +77,9 @@ export async function proxy(request: NextRequest) {
     }
   )
 
-  // Refresh session if exists
-  const { data: { user } } = await supabase.auth.getUser()
+  // Validate access token claims for request-time auth gating.
+  const { data: claimsData } = await supabase.auth.getClaims()
+  const isAuthenticated = !!claimsData?.claims?.sub
 
   // Check if route is public (no auth needed)
   const isPublicRoute = PUBLIC_ROUTES.some(route =>
@@ -101,7 +102,7 @@ export async function proxy(request: NextRequest) {
   )
 
   // Redirect unauthenticated users from protected routes
-  if (isProtectedRoute && !user) {
+  if (isProtectedRoute && !isAuthenticated) {
     // For API routes, return 401
     if (pathname.startsWith('/api/')) {
       return NextResponse.json(
@@ -115,7 +116,7 @@ export async function proxy(request: NextRequest) {
   }
 
   // Redirect authenticated users from auth routes to dashboard
-  if (isAuthRoute && user) {
+  if (isAuthRoute && isAuthenticated) {
     const redirectUrl = new URL('/dashboard', request.url)
     return NextResponse.redirect(redirectUrl)
   }

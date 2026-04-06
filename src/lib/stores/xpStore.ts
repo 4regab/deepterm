@@ -64,7 +64,8 @@ export const useXPStore = create<XPStore>()((set, get) => ({
       const supabase = createClient()
 
       // Auth guard: skip fetch for unauthenticated users (SECURITY FIX)
-      const { data: { user } } = await supabase.auth.getUser()
+      const { data: { session } } = await supabase.auth.getSession()
+      const user = session?.user
       if (!user) {
         set({ stats: DEFAULT_STATS, loading: false, lastFetched: Date.now() })
         return
@@ -106,7 +107,8 @@ export const useXPStore = create<XPStore>()((set, get) => ({
       const supabase = createClient()
 
       // Auth guard: require authenticated user (SECURITY FIX)
-      const { data: { user } } = await supabase.auth.getUser()
+      const { data: { session } } = await supabase.auth.getSession()
+      const user = session?.user
       if (!user) {
         console.warn('Cannot add XP: No authenticated user')
         return { leveledUp: false }
