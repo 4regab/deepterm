@@ -25,6 +25,7 @@ import {
 import { Confetti } from "@/components/EmotionalAssets";
 import { createClient } from "@/config/supabase/client";
 import CaptchaModal from "@/components/CaptchaModal";
+import { buildReviewerInsertPayloads } from "@/utils/reviewerBatch";
 
 type CreateType = "material" | "reviewer";
 type InputMode = "manual" | "bulk" | "ai";
@@ -370,36 +371,31 @@ export default function CreatePage() {
 
             if (reviewerError) throw reviewerError;
 
-            // Create categories and terms
-            for (const category of reviewerResults) {
-                const { data: cat, error: catError } = await supabase
+            const { categoryRows, termRows } = buildReviewerInsertPayloads({
+                reviewerId: reviewer.id,
+                userId: user.id,
+                categories: reviewerResults,
+            });
+
+            if (categoryRows.length > 0) {
+                const { error: categoriesError } = await supabase
                     .from("reviewer_categories")
-                    .insert({
-                        reviewer_id: reviewer.id,
-                        user_id: user.id,
-                        name: category.name,
-                        color: category.color,
-                    })
-                    .select()
-                    .single();
+                    .insert(categoryRows);
 
-                if (catError) throw catError;
+                if (categoriesError) {
+                    await supabase.from("reviewers").delete().eq("id", reviewer.id);
+                    throw categoriesError;
+                }
+            }
 
-                if (category.terms.length > 0) {
-                    const termsToInsert = category.terms.map(term => ({
-                        category_id: cat.id,
-                        user_id: user.id,
-                        term: term.term,
-                        definition: term.definition,
-                        examples: term.examples || [],
-                        keywords: term.keywords || [],
-                    }));
+            if (termRows.length > 0) {
+                const { error: termsError } = await supabase
+                    .from("reviewer_terms")
+                    .insert(termRows);
 
-                    const { error: termsError } = await supabase
-                        .from("reviewer_terms")
-                        .insert(termsToInsert);
-
-                    if (termsError) throw termsError;
+                if (termsError) {
+                    await supabase.from("reviewers").delete().eq("id", reviewer.id);
+                    throw termsError;
                 }
             }
 

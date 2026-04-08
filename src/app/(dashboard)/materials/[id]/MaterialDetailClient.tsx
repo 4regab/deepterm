@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence, Reorder } from "framer-motion";
 import {
@@ -385,34 +385,35 @@ export default function MaterialDetailClient(props: Props) {
     const [expandedCategories, setExpandedCategories] = useState<string[]>(props.materialType === 'reviewer' ? props.initialCategories.map(c => c.id) : []);
     const [filterText, setFilterText] = useState("");
 
-    // Refresh flashcard statuses on mount to get latest progress after study sessions
-    useSyncExternalStore(
-        useCallback(() => {
-            if (materialType !== 'flashcard') return () => {};
-            let mounted = true;
-            const refresh = async () => {
-                const supabase = createClient();
-                const { data } = await supabase
-                    .from("flashcards")
-                    .select("id, front, back, status")
-                    .eq("set_id", material.id)
-                    .order("created_at");
-                if (data && mounted) {
-                    setTerms(data.map(card => ({
-                        id: card.id,
-                        front: card.front,
-                        back: card.back,
-                        stage: (card.status || 'new') as LearnStage,
-                    })));
-                }
-            };
-            refresh();
-            return () => { mounted = false; };
-        }, [materialType, material.id]),
-        () => null,
-        () => null
-    );
-    
+    useEffect(() => {
+        if (materialType !== 'flashcard') return;
+
+        let mounted = true;
+
+        const refresh = async () => {
+            const supabase = createClient();
+            const { data } = await supabase
+                .from("flashcards")
+                .select("id, front, back, status")
+                .eq("set_id", material.id)
+                .order("created_at");
+
+            if (data && mounted) {
+                setTerms(data.map(card => ({
+                    id: card.id,
+                    front: card.front,
+                    back: card.back,
+                    stage: (card.status || 'new') as LearnStage,
+                })));
+            }
+        };
+
+        void refresh();
+
+        return () => {
+            mounted = false;
+        };
+    }, [material.id, materialType]);
     const toggleCategory = (id: string) => {
         setExpandedCategories(prev => prev.includes(id) ? prev.filter(c => c !== id) : [...prev, id]);
     };

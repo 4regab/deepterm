@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createServerSupabaseClient } from '@/config/supabase/server'
 import { ShareCodeSchema } from '@/lib/schemas/sharing'
 import { checkShareRateLimit, getRequestIdentifier } from '@/services/shareRateLimit'
+import { buildReviewerInsertPayloads } from '@/utils/reviewerBatch'
 import { z } from 'zod'
 
 const CopySharedMaterialSchema = z.object({
@@ -111,51 +112,31 @@ export async function POST(request: NextRequest) {
         throw new Error('Failed to create reviewer')
       }
 
-      // Copy categories and terms
+      // Copy categories and terms in bulk to avoid N+1 insert calls
       if (sharedData.categories && sharedData.categories.length > 0) {
-        for (const category of sharedData.categories) {
-          const { data: newCategory, error: catError } = await supabase
-            .from('reviewer_categories')
-            .insert({
-              reviewer_id: newReviewer.id,
-              user_id: user.id,
-              name: category.name,
-              color: category.color,
-            })
-            .select()
-            .single()
+        const { categoryRows, termRows } = buildReviewerInsertPayloads({
+          reviewerId: newReviewer.id,
+          userId: user.id,
+          categories: sharedData.categories,
+        })
 
-          if (catError || !newCategory) {
-            // Rollback
+        const { error: categoriesError } = await supabase
+          .from('reviewer_categories')
+          .insert(categoryRows)
+
+        if (categoriesError) {
+          await supabase.from('reviewers').delete().eq('id', newReviewer.id)
+          throw new Error('Failed to copy categories')
+        }
+
+        if (termRows.length > 0) {
+          const { error: termsError } = await supabase
+            .from('reviewer_terms')
+            .insert(termRows)
+
+          if (termsError) {
             await supabase.from('reviewers').delete().eq('id', newReviewer.id)
-            throw new Error('Failed to copy categories')
-          }
-
-          // Copy terms for this category
-          if (category.terms && category.terms.length > 0) {
-            const termsToInsert = category.terms.map((term: { 
-              term: string
-              definition: string
-              examples: string[] | null
-              keywords: string[] | null 
-            }) => ({
-              category_id: newCategory.id,
-              user_id: user.id,
-              term: term.term,
-              definition: term.definition,
-              examples: term.examples || [],
-              keywords: term.keywords || [],
-            }))
-
-            const { error: termsError } = await supabase
-              .from('reviewer_terms')
-              .insert(termsToInsert)
-
-            if (termsError) {
-              // Rollback
-              await supabase.from('reviewers').delete().eq('id', newReviewer.id)
-              throw new Error('Failed to copy terms')
-            }
+            throw new Error('Failed to copy terms')
           }
         }
       }
