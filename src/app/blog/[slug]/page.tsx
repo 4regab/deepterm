@@ -149,7 +149,6 @@ export default async function BlogPostPage({ params }: PageProps) {
             content={post.content}
             formattedDate={formattedDate}
             readTimeMinutes={post.read_time_minutes}
-            views={post.views}
           />
 
           {/* Previous/Next Navigation */}

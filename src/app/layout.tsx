@@ -9,7 +9,6 @@ import {
   generateSoftwareAppJsonLd,
 } from "@/lib/seo";
 import { PostHogProvider } from "@/components/PostHogProvider";
-import ShutdownDonationBanner from "@/components/ShutdownDonationBanner";
 
 const spaceGrotesk = Space_Grotesk({
   subsets: ["latin"],
@@ -77,7 +76,6 @@ export default function RootLayout({
               gtag('config', 'G-W6BMP2LP3T');
             `}
           </Script>
-          <ShutdownDonationBanner />
           {children}
         </PostHogProvider>
       </body>
