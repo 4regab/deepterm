@@ -77,16 +77,25 @@ export default function AccountPage() {
         setSaving(true);
         setMessage(null);
 
+        // Sanitize: strip HTML tags to prevent stored XSS
+        const sanitizedName = formData.full_name.replace(/<[^>]*>/g, '').trim();
+        if (!sanitizedName) {
+            setMessage({ type: "error", text: "Name cannot be empty or contain HTML" });
+            setSaving(false);
+            return;
+        }
+
         const supabase = createClient();
         const { error } = await supabase
             .from("profiles")
-            .update({ full_name: formData.full_name })
+            .update({ full_name: sanitizedName })
             .eq("id", profile.id);
 
         if (error) {
             setMessage({ type: "error", text: "Failed to update profile" });
         } else {
-            setProfile({ ...profile, full_name: formData.full_name });
+            setProfile({ ...profile, full_name: sanitizedName });
+            setFormData({ full_name: sanitizedName });
             setMessage({ type: "success", text: "Profile updated successfully" });
         }
         setSaving(false);

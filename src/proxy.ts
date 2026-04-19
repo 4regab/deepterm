@@ -3,8 +3,8 @@ import { NextResponse, type NextRequest } from 'next/server'
 
 // Allowed origins for CORS (SECURITY FIX - CWE-942)
 const ALLOWED_ORIGINS = [
-  'https://deepterm.tech',
-  'https://www.deepterm.tech',
+  'https://deepterm.app',
+  'https://www.deepterm.app',
   'https://deepterm.vercel.app',
 ]
 
@@ -70,7 +70,12 @@ export async function proxy(request: NextRequest) {
             },
           })
           cookiesToSet.forEach(({ name, value, options }) =>
-            response.cookies.set(name, value, options)
+            response.cookies.set(name, value, {
+              ...options,
+              httpOnly: true,
+              secure: true,
+              sameSite: 'lax',
+            })
           )
         },
       },
@@ -123,7 +128,7 @@ export async function proxy(request: NextRequest) {
   return response
 }
 
-export const config = {
+export const proxyConfig = {
   matcher: [
     /*
      * Match all request paths except:
