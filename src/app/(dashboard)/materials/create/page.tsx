@@ -306,12 +306,13 @@ export default function CreatePage() {
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) throw new Error("Not authenticated");
 
-            // Create flashcard set
+            // Create flashcard set — strip HTML tags to prevent stored XSS
+            const sanitizedTitle = title.replace(/<[^>]*>/g, '').trim();
             const { data: flashcardSet, error: setError } = await supabase
                 .from("flashcard_sets")
                 .insert({
                     user_id: user.id,
-                    title: title.trim(),
+                    title: sanitizedTitle,
                     color: '#E0F2FE'
                 })
                 .select()
@@ -357,12 +358,13 @@ export default function CreatePage() {
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) throw new Error("Not authenticated");
 
-            // Create reviewer
+            // Create reviewer — strip HTML tags to prevent stored XSS
+            const sanitizedReviewerTitle = title.replace(/<[^>]*>/g, '').trim();
             const { data: reviewer, error: reviewerError } = await supabase
                 .from("reviewers")
                 .insert({
                     user_id: user.id,
-                    title: title.trim(),
+                    title: sanitizedReviewerTitle,
                     source_content: selectedFile?.name || '',
                     extraction_mode: extractionMode,
                 })
