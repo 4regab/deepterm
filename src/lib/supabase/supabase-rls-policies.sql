@@ -26,6 +26,15 @@
 --   Users could inflate study metrics (minutes, flashcards, etc.).
 --   All mutations now go through record_study_activity() RPC.
 -- ============================================================
+-- SECURITY FIXES APPLIED (2026-04-19):
+-- VULN-007: Stored XSS - added DB triggers to strip HTML from:
+--   profiles.full_name, reviewers.title on INSERT/UPDATE.
+-- VULN-008: Function search_path - set search_path = '' on:
+--   update_updated_at_column, validate_share_code,
+--   get_shared_flashcard_set, get_shared_flashcards.
+-- VULN-009: Cleaned existing XSS payload from profiles.full_name.
+-- VULN-010: Added client-side HTML stripping for title inputs.
+-- ============================================================
 
 -- ============================================================
 -- STEP 1: ENABLE RLS ON ALL TABLES
