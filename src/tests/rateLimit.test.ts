@@ -77,10 +77,10 @@ describe('rateLimit', () => {
         return Promise.resolve({ error: null })
       }
       
-      await mockRpc('increment_ai_usage', { p_user_id: 'user-1', p_date: '2024-06-15' })
+      await mockRpc('increment_ai_usage', { p_date: '2024-06-15' })
       
       expect(rpcMock.called).toBe(true)
-      expect(rpcMock.args).toEqual({ p_user_id: 'user-1', p_date: '2024-06-15' })
+      expect(rpcMock.args).toEqual({ p_date: '2024-06-15' })
     })
 
     it('should not increment for unauthenticated user', async () => {
