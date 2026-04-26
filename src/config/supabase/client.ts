@@ -28,7 +28,7 @@ function getSupabaseUrl(): string {
 export function createClient() {
   return createBrowserClient(
     getSupabaseUrl(),
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
     {
       cookieOptions: { name: getStorageKey() },
     }
