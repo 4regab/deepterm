@@ -61,6 +61,7 @@ export default function AccountPage() {
     const [formData, setFormData] = useState({ full_name: "" });
     const [deleting, setDeleting] = useState(false);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+    const [deleteConfirmText, setDeleteConfirmText] = useState("");
     const [loading, setLoading] = useState(true);
     const fetchTriggered = useState(() => {
         fetchAccountProfile().then(({ profile, fullName }) => {
@@ -243,12 +244,23 @@ export default function AccountPage() {
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
                     <div className="bg-white rounded-2xl p-6 max-w-md w-full">
                         <h3 className="font-serif text-[20px] text-[#171d2b] mb-2">Delete Account?</h3>
-                        <p className="font-sans text-[14px] text-[#171d2b]/60 mb-6">
+                        <p className="font-sans text-[14px] text-[#171d2b]/60 mb-4">
                             This action cannot be undone. All your data will be permanently deleted.
                         </p>
+                        <p className="font-sans text-[14px] text-[#171d2b]/80 mb-2">
+                            Type <span className="font-mono font-semibold">delete my account</span> to confirm:
+                        </p>
+                        <input
+                            type="text"
+                            value={deleteConfirmText}
+                            onChange={(e) => setDeleteConfirmText(e.target.value)}
+                            placeholder="delete my account"
+                            className="w-full px-4 py-3 rounded-xl border border-red-200 bg-red-50/50 font-mono text-[14px] text-[#171d2b] focus:outline-none focus:border-red-400 transition-colors mb-4"
+                            autoComplete="off"
+                        />
                         <div className="flex gap-3">
                             <button
-                                onClick={() => setShowDeleteConfirm(false)}
+                                onClick={() => { setShowDeleteConfirm(false); setDeleteConfirmText(""); }}
                                 disabled={deleting}
                                 className="flex-1 px-4 py-2.5 bg-[#f0f0ea] text-[#171d2b] font-sans text-[14px] font-medium rounded-xl hover:bg-[#e5e5e0] transition-colors disabled:opacity-50"
                             >
@@ -256,8 +268,8 @@ export default function AccountPage() {
                             </button>
                             <button
                                 onClick={handleDeleteAccount}
-                                disabled={deleting}
-                                className="flex-1 px-4 py-2.5 bg-red-600 text-white font-sans text-[14px] font-medium rounded-xl hover:bg-red-700 transition-colors disabled:opacity-50"
+                                disabled={deleting || deleteConfirmText !== "delete my account"}
+                                className="flex-1 px-4 py-2.5 bg-red-600 text-white font-sans text-[14px] font-medium rounded-xl hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 {deleting ? "Deleting..." : "Delete"}
                             </button>

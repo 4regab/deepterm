@@ -575,21 +575,27 @@ grant execute on function public.delete_user() to authenticated;
 -- ============================================
 
 -- 8.1 Update study streak (with timezone support)
-create or replace function public.update_study_streak(p_user_id uuid, p_local_date date default null)
+create or replace function public.update_study_streak(p_user_id uuid default null, p_local_date date default null)
 returns void
 language plpgsql
 security definer set search_path = ''
 as $$
 declare
+  v_user_id uuid := coalesce(p_user_id, auth.uid());
   v_last_date date;
   v_current_streak integer;
   v_longest_streak integer;
   v_today date := coalesce(p_local_date, current_date);
 begin
+  -- Enforce that the resolved user_id matches the authenticated user
+  if v_user_id is null or v_user_id != auth.uid() then
+    raise exception 'Not authorized';
+  end if;
+
   select last_study_date, current_streak, longest_streak
   into v_last_date, v_current_streak, v_longest_streak
   from public.user_stats
-  where user_id = p_user_id;
+  where user_id = v_user_id;
   
   if v_last_date is null then
     v_current_streak := 1;
@@ -610,7 +616,7 @@ begin
       longest_streak = v_longest_streak,
       last_study_date = v_today,
       updated_at = now()
-  where user_id = p_user_id;
+  where user_id = v_user_id;
 end;
 $$;
 
@@ -835,14 +841,20 @@ grant execute on function public.increment_stat(text, integer) to authenticated;
 -- ============================================
 
 -- 10.1 Increment AI usage
-create or replace function public.increment_ai_usage(p_user_id uuid, p_date date)
+create or replace function public.increment_ai_usage(p_date date)
 returns void
 language plpgsql
 security definer set search_path = ''
 as $$
+declare
+  v_user_id uuid := auth.uid();
 begin
+  if v_user_id is null then
+    raise exception 'Not authenticated';
+  end if;
+
   insert into public.ai_usage (user_id, generation_count, reset_date)
-  values (p_user_id, 1, p_date)
+  values (v_user_id, 1, p_date)
   on conflict (user_id)
   do update set
     generation_count = case 
@@ -855,11 +867,10 @@ begin
 end;
 $$;
 
-grant execute on function public.increment_ai_usage(uuid, date) to authenticated;
+grant execute on function public.increment_ai_usage(date) to authenticated;
 
 -- 10.2 Atomic check and increment AI usage (prevents race conditions)
 create or replace function public.check_and_increment_ai_usage(
-  p_user_id uuid,
   p_date date,
   p_limit integer
 )
@@ -868,8 +879,14 @@ language plpgsql
 security definer set search_path = ''
 as $$
 declare
+  v_user_id uuid := auth.uid();
   v_count integer;
 begin
+  -- Auth check
+  if v_user_id is null then
+    raise exception 'Not authenticated';
+  end if;
+
   -- Input validation
   if p_limit is null or p_limit < 1 then
     p_limit := 10;
@@ -879,7 +896,7 @@ begin
 
   -- Atomic upsert and check
   insert into public.ai_usage (user_id, generation_count, reset_date)
-  values (p_user_id, 1, p_date)
+  values (v_user_id, 1, p_date)
   on conflict (user_id)
   do update set
     generation_count = case 
@@ -895,7 +912,7 @@ begin
 end;
 $$;
 
-grant execute on function public.check_and_increment_ai_usage(uuid, date, integer) to authenticated;
+grant execute on function public.check_and_increment_ai_usage(date, integer) to authenticated;
 
 -- ============================================
 -- SECTION 11: FUNCTIONS - MATERIAL SHARING

@@ -49,7 +49,6 @@ export async function checkAndIncrementAIUsage(): Promise<RateLimitResult> {
   // Atomic check-and-increment using RPC
   // This function should return { allowed, new_count } and handle upsert internally
   const { data, error } = await supabase.rpc('check_and_increment_ai_usage', {
-    p_user_id: user.id,
     p_date: today,
     p_limit: DAILY_AI_LIMIT
   })
@@ -125,5 +124,5 @@ export async function incrementAIUsage(): Promise<void> {
 
   const today = new Date().toISOString().split('T')[0]
 
-  await supabase.rpc('increment_ai_usage', { p_user_id: user.id, p_date: today })
+  await supabase.rpc('increment_ai_usage', { p_date: today })
 }
