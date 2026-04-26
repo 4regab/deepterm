@@ -1,8 +1,5 @@
 import type { NextConfig } from "next";
 
-// Only allow 'unsafe-eval' in development (needed for Next.js HMR/React DevTools)
-const isDev = process.env.NODE_ENV === 'development';
-
 const securityHeaders = [
   {
     key: 'X-DNS-Prefetch-Control',
@@ -38,23 +35,8 @@ const securityHeaders = [
     key: 'Cross-Origin-Resource-Policy',
     value: 'same-origin'
   },
-  {
-    key: 'Content-Security-Policy',
-    // Note: 'unsafe-inline' is required for Next.js hydration inline scripts.
-    // 'unsafe-eval' is only enabled in development mode for HMR/React DevTools.
-    value: [
-      "default-src 'self'",
-      `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ''} https://hcaptcha.com https://*.hcaptcha.com https://www.googletagmanager.com https://www.google-analytics.com https://us-assets.i.posthog.com https://*.posthog.com`,
-      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://hcaptcha.com https://*.hcaptcha.com",
-      "img-src 'self' data: blob: https://lh3.googleusercontent.com https://*.googleusercontent.com https://hcaptcha.com https://*.hcaptcha.com https://www.googletagmanager.com https://www.google-analytics.com",
-      "font-src 'self' data: https://fonts.gstatic.com",
-      "connect-src 'self' https://generativelanguage.googleapis.com https://hcaptcha.com https://*.hcaptcha.com https://www.googletagmanager.com https://www.google-analytics.com https://region1.google-analytics.com https://us.i.posthog.com https://*.posthog.com",
-      "frame-src 'self' https://hcaptcha.com https://*.hcaptcha.com",
-      "frame-ancestors 'self'",
-      "base-uri 'self'",
-      "form-action 'self'"
-    ].join('; ')
-  }
+  // CSP is set dynamically per-request in src/proxy.ts with a nonce.
+  // Do NOT add a static Content-Security-Policy header here.
 ];
 
 const nextConfig: NextConfig = {

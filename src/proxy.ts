@@ -9,6 +9,24 @@ const ALLOWED_ORIGINS = [
   // Development origins are handled separately below
 ]
 
+// Only allow 'unsafe-eval' in development (needed for Next.js HMR/React DevTools)
+const IS_DEV = process.env.NODE_ENV === 'development'
+
+function buildCspHeader(nonce: string): string {
+  return [
+    "default-src 'self'",
+    `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'${IS_DEV ? " 'unsafe-eval'" : ''} https://hcaptcha.com https://*.hcaptcha.com https://www.googletagmanager.com https://www.google-analytics.com https://us-assets.i.posthog.com https://*.posthog.com`,
+    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://hcaptcha.com https://*.hcaptcha.com",
+    "img-src 'self' data: blob: https://lh3.googleusercontent.com https://*.googleusercontent.com https://hcaptcha.com https://*.hcaptcha.com https://www.googletagmanager.com https://www.google-analytics.com",
+    "font-src 'self' data: https://fonts.gstatic.com",
+    "connect-src 'self' https://generativelanguage.googleapis.com https://hcaptcha.com https://*.hcaptcha.com https://www.googletagmanager.com https://www.google-analytics.com https://region1.google-analytics.com https://us.i.posthog.com https://*.posthog.com",
+    "frame-src 'self' https://hcaptcha.com https://*.hcaptcha.com",
+    "frame-ancestors 'self'",
+    "base-uri 'self'",
+    "form-action 'self'"
+  ].join('; ')
+}
+
 // Routes that require authentication
 const PROTECTED_ROUTES = [
   '/dashboard',
@@ -35,12 +53,22 @@ export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
   const origin = request.headers.get('origin')
 
+  // Generate a per-request CSP nonce
+  const nonce = Buffer.from(crypto.randomUUID()).toString('base64')
+
+  // Pass nonce to server components via request header
+  const requestHeaders = new Headers(request.headers)
+  requestHeaders.set('x-nonce', nonce)
+
   // Create response to modify
   let response = NextResponse.next({
     request: {
-      headers: request.headers,
+      headers: requestHeaders,
     },
   })
+
+  // Set CSP with nonce (replaces static unsafe-inline from next.config.ts)
+  response.headers.set('Content-Security-Policy', buildCspHeader(nonce))
 
   // CORS: Only allow trusted origins (SECURITY FIX)
   if (origin) {
@@ -81,9 +109,11 @@ export async function proxy(request: NextRequest) {
           )
           response = NextResponse.next({
             request: {
-              headers: request.headers,
+              headers: requestHeaders,
             },
           })
+          // Re-apply CSP with nonce on the new response
+          response.headers.set('Content-Security-Policy', buildCspHeader(nonce))
           cookiesToSet.forEach(({ name, value, options }) =>
             response.cookies.set(name, value, {
               ...options,
