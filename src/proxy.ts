@@ -61,10 +61,16 @@ export async function proxy(request: NextRequest) {
     return response
   }
 
+  const storageKey = (() => {
+    const projectRef = new URL(process.env.NEXT_PUBLIC_SUPABASE_URL!).hostname.split('.')[0]
+    return `sb-${projectRef}-auth-token`
+  })()
+
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
+      cookieOptions: { name: storageKey },
       cookies: {
         getAll() {
           return request.cookies.getAll()

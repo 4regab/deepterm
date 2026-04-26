@@ -1,6 +1,11 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 
+function getStorageKey(): string {
+  const projectRef = new URL(process.env.NEXT_PUBLIC_SUPABASE_URL!).hostname.split('.')[0]
+  return `sb-${projectRef}-auth-token`
+}
+
 export async function createServerSupabaseClient() {
   const cookieStore = await cookies();
 
@@ -8,6 +13,7 @@ export async function createServerSupabaseClient() {
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
+      cookieOptions: { name: getStorageKey() },
       cookies: {
         getAll() {
           return cookieStore.getAll();
