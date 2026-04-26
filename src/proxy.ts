@@ -137,7 +137,7 @@ export async function proxy(request: NextRequest) {
   return response
 }
 
-export const proxyConfig = {
+export const config = {
   matcher: [
     /*
      * Match all request paths except:
