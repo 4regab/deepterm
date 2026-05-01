@@ -19,7 +19,7 @@ function buildCspHeader(nonce: string): string {
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://hcaptcha.com https://*.hcaptcha.com",
     "img-src 'self' data: blob: https://lh3.googleusercontent.com https://*.googleusercontent.com https://hcaptcha.com https://*.hcaptcha.com https://www.googletagmanager.com https://www.google-analytics.com",
     "font-src 'self' data: https://fonts.gstatic.com",
-    "connect-src 'self' https://generativelanguage.googleapis.com https://hcaptcha.com https://*.hcaptcha.com https://www.googletagmanager.com https://www.google-analytics.com https://region1.google-analytics.com https://us.i.posthog.com https://*.posthog.com",
+    "connect-src 'self' https://generativelanguage.googleapis.com https://hcaptcha.com https://*.hcaptcha.com https://www.googletagmanager.com https://www.google-analytics.com https://region1.google-analytics.com https://us.i.posthog.com https://*.posthog.com https://*.supabase.co",
     "frame-src 'self' https://hcaptcha.com https://*.hcaptcha.com",
     "frame-ancestors 'self'",
     "base-uri 'self'",
@@ -89,39 +89,32 @@ export async function proxy(request: NextRequest) {
     return response
   }
 
-  const storageKey = (() => {
-    const projectRef = new URL(process.env.NEXT_PUBLIC_SUPABASE_URL!).hostname.split('.')[0]
-    return `sb-${projectRef}-auth-token`
-  })()
-
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
     {
-      cookieOptions: { name: storageKey },
       cookies: {
         getAll() {
           return request.cookies.getAll()
         },
         setAll(cookiesToSet) {
+          // Update request cookies for downstream handlers
           cookiesToSet.forEach(({ name, value }) =>
             request.cookies.set(name, value)
           )
-          response = NextResponse.next({
+          // Create new response with updated request headers
+          const newResponse = NextResponse.next({
             request: {
               headers: requestHeaders,
             },
           })
           // Re-apply CSP with nonce on the new response
-          response.headers.set('Content-Security-Policy', buildCspHeader(nonce))
+          newResponse.headers.set('Content-Security-Policy', buildCspHeader(nonce))
+          // Set cookies on response
           cookiesToSet.forEach(({ name, value, options }) =>
-            response.cookies.set(name, value, {
-              ...options,
-              httpOnly: true,
-              secure: true,
-              sameSite: 'lax',
-            })
+            newResponse.cookies.set(name, value, options)
           )
+          response = newResponse
         },
       },
     }

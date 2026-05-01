@@ -190,9 +190,21 @@ export default function CreatePage() {
         setIsGenerating(true);
         setError(null);
         try {
+            // Verify authentication before making API call
+            const supabase = createClient();
+            const { data: { user }, error: authError } = await supabase.auth.getUser();
+            
+            if (authError || !user) {
+                throw new Error("You must be logged in to generate flashcards. Please sign in and try again.");
+            }
+            
             const formData = new FormData();
             formData.append("file", selectedFile);
-            const response = await fetch("/api/generate-cards", { method: "POST", body: formData });
+            const response = await fetch("/api/generate-cards", { 
+                method: "POST", 
+                body: formData,
+                credentials: 'same-origin'
+            });
             if (!response.ok) {
                 const data = await response.json();
                 throw new Error(data.error || "Failed to generate cards");
@@ -224,6 +236,14 @@ export default function CreatePage() {
         setError(null);
 
         try {
+            // Verify authentication before making API call
+            const supabase = createClient();
+            const { data: { user }, error: authError } = await supabase.auth.getUser();
+            
+            if (authError || !user) {
+                throw new Error("You must be logged in to generate a reviewer. Please sign in and try again.");
+            }
+            
             const formData = new FormData();
             formData.append("file", selectedFile);
             formData.append("extractionMode", extractionMode);
@@ -235,6 +255,7 @@ export default function CreatePage() {
                 method: "POST",
                 body: formData,
                 signal: controller.signal,
+                credentials: 'same-origin'
             });
 
             clearTimeout(timeoutId);
