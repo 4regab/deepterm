@@ -55,21 +55,7 @@ const nextConfig: NextConfig = {
     ],
   },
   async rewrites() {
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
     return [
-      // Proxy Supabase REST API through own domain to eliminate CORS exposure
-      {
-        source: '/supabase/rest/:path*',
-        destination: `${supabaseUrl}/rest/:path*`,
-      },
-      {
-        source: '/supabase/auth/:path*',
-        destination: `${supabaseUrl}/auth/:path*`,
-      },
-      {
-        source: '/supabase/storage/:path*',
-        destination: `${supabaseUrl}/storage/:path*`,
-      },
       // Proxy PostHog requests to avoid ad blockers
       // Note: Specific routes must come BEFORE wildcard routes to match correctly
       {
