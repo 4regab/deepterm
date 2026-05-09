@@ -17,7 +17,9 @@ import { mockGeminiResponse, resetAllMocks } from '../setup'
 const mockCheckAndIncrementAIUsage = mock(() => Promise.resolve({ 
   allowed: true, 
   remaining: 9, 
-  resetAt: new Date() 
+  resetAt: new Date(),
+  userId: 'test-user-id',
+  authenticated: true,
 }))
 
 const mockGenerateContentWithRotation = mock(() => Promise.resolve({
@@ -82,7 +84,9 @@ describe('POST /api/generate-cards', () => {
     mockCheckAndIncrementAIUsage.mockResolvedValue({ 
       allowed: true, 
       remaining: 9, 
-      resetAt: new Date() 
+      resetAt: new Date(),
+      userId: 'test-user-id',
+      authenticated: true,
     })
     mockGenerateContentWithRotation.mockResolvedValue({
       text: mockGeminiResponse.text
@@ -112,7 +116,9 @@ describe('POST /api/generate-cards', () => {
       mockCheckAndIncrementAIUsage.mockResolvedValueOnce({ 
         allowed: false, 
         remaining: 0, 
-        resetAt: resetTime 
+        resetAt: resetTime,
+        userId: 'test-user-id',
+        authenticated: true,
       })
 
       const request = createFormDataRequest({ textContent: 'Test content' })
@@ -129,7 +135,9 @@ describe('POST /api/generate-cards', () => {
       mockCheckAndIncrementAIUsage.mockResolvedValueOnce({ 
         allowed: true, 
         remaining: 5, 
-        resetAt: new Date() 
+        resetAt: new Date(),
+        userId: 'test-user-id',
+        authenticated: true,
       })
 
       const request = createFormDataRequest({ textContent: 'Test content' })
