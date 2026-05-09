@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createServerSupabaseClient } from '@/config/supabase/server'
 import { ShareCodeSchema } from '@/lib/schemas/sharing'
 import { checkShareRateLimit, getRequestIdentifier } from '@/services/shareRateLimit'
+import { hashRequestIdentity } from '@/lib/auth/requestIdentity'
 import { buildReviewerInsertPayloads } from '@/utils/reviewerBatch'
 import { z } from 'zod'
 
@@ -41,8 +42,9 @@ export async function POST(request: NextRequest) {
   const { shareCode } = parsedBody.data
 
   // Get shared material data using the RPC function
+  const identityHash = hashRequestIdentity(request.headers)
   const { data: sharedData, error: fetchError } = await supabase
-    .rpc('get_shared_material', { p_share_code: shareCode })
+    .rpc('get_shared_material', { p_share_code: shareCode, p_identifier_hash: identityHash })
 
   if (fetchError || !sharedData) {
     return NextResponse.json({ error: 'Shared material not found' }, { status: 404 })

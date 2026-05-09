@@ -3,7 +3,12 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { createClient } from "@/config/supabase/client";
-import { User, Mail, Trash2 } from "lucide-react";
+import { User, Mail, Trash2, AlertTriangle } from "lucide-react";
+import {
+    requestAccountDeletionAction,
+    cancelAccountDeletionAction,
+    getAccountDeletionStatusAction,
+} from "./actions";
 
 interface Profile {
     id: string;
@@ -12,11 +17,34 @@ interface Profile {
     avatar_url: string | null;
 }
 
-async function fetchAccountProfile(): Promise<{ profile: Profile | null; fullName: string }> {
+interface DeletionStatus {
+    pending: boolean;
+    deletedAt?: string;
+    finalizeAt?: string;
+}
+
+const REQUIRED_PHRASE = "delete my account";
+
+function formatDate(iso?: string): string {
+    if (!iso) return "";
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return "";
+    return d.toLocaleDateString(undefined, {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+    });
+}
+
+async function fetchAccountProfile(): Promise<{
+    profile: Profile | null;
+    fullName: string;
+    deletion: DeletionStatus;
+}> {
     const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();
-    
-    if (!user) return { profile: null, fullName: "" };
+
+    if (!user) return { profile: null, fullName: "", deletion: { pending: false } };
 
     const { data } = await supabase
         .from("profiles")
@@ -42,6 +70,9 @@ async function fetchAccountProfile(): Promise<{ profile: Profile | null; fullNam
         identityData?.name;
     
     const email = data?.email || user.email;
+
+    // Ask the server for authoritative deletion state (RLS-protected RPC).
+    const deletion = await getAccountDeletionStatusAction();
     
     return {
         profile: {
@@ -50,7 +81,8 @@ async function fetchAccountProfile(): Promise<{ profile: Profile | null; fullNam
             email: email || null,
             avatar_url: avatarUrl || null
         },
-        fullName: fullName || ""
+        fullName: fullName || "",
+        deletion,
     };
 }
 
@@ -63,10 +95,13 @@ export default function AccountPage() {
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const [deleteConfirmText, setDeleteConfirmText] = useState("");
     const [loading, setLoading] = useState(true);
+    const [deletion, setDeletion] = useState<DeletionStatus>({ pending: false });
+    const [cancelling, setCancelling] = useState(false);
     const fetchTriggered = useState(() => {
-        fetchAccountProfile().then(({ profile, fullName }) => {
+        fetchAccountProfile().then(({ profile, fullName, deletion }) => {
             setProfile(profile);
             setFormData({ full_name: fullName });
+            setDeletion(deletion);
             setLoading(false);
         });
         return true;
@@ -105,18 +140,41 @@ export default function AccountPage() {
     const handleDeleteAccount = async () => {
         setDeleting(true);
         setMessage(null);
-        
-        const supabase = createClient();
-        const { error } = await supabase.rpc("delete_user");
-        
-        if (error) {
-            setMessage({ type: "error", text: "Failed to delete account. Please try again." });
+
+        const result = await requestAccountDeletionAction({
+            confirmationPhrase: deleteConfirmText,
+        });
+
+        if (!result.ok) {
+            let text = "Failed to delete account. Please try again.";
+            if (result.error === "phrase_mismatch") text = "Confirmation phrase does not match.";
+            else if (result.error === "rate_limited") text = "You already requested deletion recently. Please try again in 24 hours.";
+            else if (result.error === "not_authenticated") text = "Session expired. Please sign in and try again.";
+            setMessage({ type: "error", text });
             setDeleting(false);
             setShowDeleteConfirm(false);
-        } else {
-            await supabase.auth.signOut();
-            window.location.href = "/";
+            setDeleteConfirmText("");
+            return;
         }
+
+        // Sign-out already happened server-side. Drop any local client session too
+        // so the browser state matches, then send the user to the homepage.
+        const supabase = createClient();
+        await supabase.auth.signOut().catch(() => { /* already signed out is fine */ });
+        window.location.href = "/";
+    };
+
+    const handleCancelDeletion = async () => {
+        setCancelling(true);
+        setMessage(null);
+        const result = await cancelAccountDeletionAction();
+        setCancelling(false);
+        if (!result.ok) {
+            setMessage({ type: "error", text: "Failed to cancel deletion. Please try again." });
+            return;
+        }
+        setDeletion({ pending: false });
+        setMessage({ type: "success", text: "Deletion cancelled. Your account is safe." });
     };
 
     const getInitials = (name: string | null) => {
@@ -227,36 +285,70 @@ export default function AccountPage() {
 
                 <div className="bg-white rounded-2xl border border-red-200 p-6">
                     <h2 className="font-serif text-[20px] text-red-600 mb-2">Danger Zone</h2>
-                    <p className="font-sans text-[14px] text-[#171d2b]/60 mb-4">
-                        Once you delete your account, there is no going back. Please be certain.
-                    </p>
-                    <button
-                        onClick={() => setShowDeleteConfirm(true)}
-                        className="flex items-center gap-2 px-4 py-2.5 bg-red-50 text-red-600 font-sans text-[14px] font-medium rounded-xl border border-red-200 hover:bg-red-100 transition-colors"
-                    >
-                        <Trash2 size={16} />
-                        Delete Account
-                    </button>
+
+                    {deletion.pending ? (
+                        <div className="space-y-4">
+                            <div className="flex items-start gap-3 p-4 rounded-xl border border-amber-300 bg-amber-50">
+                                <AlertTriangle size={20} className="text-amber-600 shrink-0 mt-0.5" />
+                                <div className="flex-1">
+                                    <p className="font-sans text-[14px] font-medium text-amber-900">
+                                        Your account is scheduled for deletion.
+                                    </p>
+                                    <p className="font-sans text-[13px] text-amber-800/80 mt-1">
+                                        Requested {formatDate(deletion.deletedAt)}. We will permanently remove
+                                        your data on {formatDate(deletion.finalizeAt)}. You can cancel this
+                                        any time before that date.
+                                    </p>
+                                </div>
+                            </div>
+                            <button
+                                onClick={handleCancelDeletion}
+                                disabled={cancelling}
+                                className="px-4 py-2.5 bg-[#171d2b] text-white font-sans text-[14px] font-medium rounded-xl hover:bg-[#2a3347] transition-colors disabled:opacity-50"
+                            >
+                                {cancelling ? "Cancelling..." : "Cancel Account Deletion"}
+                            </button>
+                        </div>
+                    ) : (
+                        <>
+                            <p className="font-sans text-[14px] text-[#171d2b]/60 mb-4">
+                                Deleting your account is a two-step process. Once requested, your account
+                                enters a 30-day grace window during which you can sign in only to cancel.
+                                After 30 days your data is permanently removed.
+                            </p>
+                            <button
+                                onClick={() => setShowDeleteConfirm(true)}
+                                className="flex items-center gap-2 px-4 py-2.5 bg-red-50 text-red-600 font-sans text-[14px] font-medium rounded-xl border border-red-200 hover:bg-red-100 transition-colors"
+                            >
+                                <Trash2 size={16} />
+                                Request Account Deletion
+                            </button>
+                        </>
+                    )}
                 </div>
             </div>
 
             {showDeleteConfirm && (
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
                     <div className="bg-white rounded-2xl p-6 max-w-md w-full">
-                        <h3 className="font-serif text-[20px] text-[#171d2b] mb-2">Delete Account?</h3>
+                        <h3 className="font-serif text-[20px] text-[#171d2b] mb-2">Request Account Deletion?</h3>
                         <p className="font-sans text-[14px] text-[#171d2b]/60 mb-4">
-                            This action cannot be undone. All your data will be permanently deleted.
+                            Your account will be scheduled for deletion. During the next 30 days
+                            you can sign in and cancel. After that the deletion is permanent.
                         </p>
                         <p className="font-sans text-[14px] text-[#171d2b]/80 mb-2">
-                            Type <span className="font-mono font-semibold">delete my account</span> to confirm:
+                            Type <span className="font-mono font-semibold">{REQUIRED_PHRASE}</span> to confirm:
                         </p>
                         <input
                             type="text"
                             value={deleteConfirmText}
                             onChange={(e) => setDeleteConfirmText(e.target.value)}
-                            placeholder="delete my account"
+                            placeholder={REQUIRED_PHRASE}
                             className="w-full px-4 py-3 rounded-xl border border-red-200 bg-red-50/50 font-mono text-[14px] text-[#171d2b] focus:outline-none focus:border-red-400 transition-colors mb-4"
                             autoComplete="off"
+                            autoCapitalize="off"
+                            autoCorrect="off"
+                            spellCheck={false}
                         />
                         <div className="flex gap-3">
                             <button
@@ -268,10 +360,10 @@ export default function AccountPage() {
                             </button>
                             <button
                                 onClick={handleDeleteAccount}
-                                disabled={deleting || deleteConfirmText !== "delete my account"}
+                                disabled={deleting || deleteConfirmText !== REQUIRED_PHRASE}
                                 className="flex-1 px-4 py-2.5 bg-red-600 text-white font-sans text-[14px] font-medium rounded-xl hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                             >
-                                {deleting ? "Deleting..." : "Delete"}
+                                {deleting ? "Requesting..." : "Request Deletion"}
                             </button>
                         </div>
                     </div>

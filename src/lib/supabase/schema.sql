@@ -17,6 +17,7 @@ create table if not exists public.profiles (
   email text,
   full_name text,
   avatar_url text,
+  deleted_at timestamptz, -- F-001 soft-delete marker (30-day grace window)
   created_at timestamptz default now(),
   updated_at timestamptz default now()
 );
@@ -28,6 +29,7 @@ create policy "Users can update own profile" on public.profiles for update to au
 create policy "Users can insert own profile" on public.profiles for insert to authenticated with check ((select auth.uid()) = id);
 
 create index if not exists profiles_id_idx on public.profiles using btree (id);
+create index if not exists profiles_deleted_at_idx on public.profiles (deleted_at) where deleted_at is not null;
 
 -- 1.2 MATERIALS TABLE (uploaded study materials)
 create table if not exists public.materials (
@@ -365,6 +367,28 @@ create policy "Users can insert own ai usage" on public.ai_usage for insert to a
 
 create index if not exists ai_usage_user_id_idx on public.ai_usage using btree (user_id);
 
+-- 4.1.1 AI_USAGE reset_date bound (SECURITY FIX: F-002)
+-- Prevents a malicious PATCH from pinning the counter years forward.
+-- The NOT VALID is intentional so pre-existing bricked rows (e.g., the
+-- pentest operator's row) don't block the migration; admin_reset_ai_usage
+-- is used to repair them.
+do $$
+begin
+  if not exists (
+    select 1 from pg_constraint
+    where conrelid = 'public.ai_usage'::regclass
+      and conname = 'ai_usage_reset_date_upper_bound'
+  ) then
+    alter table public.ai_usage
+      add constraint ai_usage_reset_date_upper_bound
+      check (reset_date <= (current_date + interval '2 days')::date)
+      not valid;
+  end if;
+end $$;
+
+-- Defence-in-depth: explicit REVOKE on top of the no-UPDATE RLS policy.
+revoke update on public.ai_usage from public, anon, authenticated;
+
 -- 4.2 UNLIMITED USERS TABLE (admin/whitelist)
 create table if not exists public.unlimited_users (
   user_id uuid primary key references auth.users(id) on delete cascade
@@ -404,6 +428,48 @@ create policy "Users can update own shares" on public.material_shares for update
 create policy "Users can delete own shares" on public.material_shares for delete to authenticated using ((select auth.uid()) = user_id);
 -- SECURITY FIX (VULN-001): Removed anonymous SELECT policy that exposed all share codes, user IDs, and material IDs
 -- Share access is now exclusively through the secure get_shared_material() RPC function
+
+
+-- 5.2 SHARE LOOKUP LOG (SECURITY FIX: F-005 — rate limiting + anomaly detection)
+create table if not exists public.share_lookup_log (
+  id bigserial primary key,
+  identifier_hash text not null,
+  share_code text,
+  found boolean not null,
+  looked_up_at timestamptz not null default now()
+);
+
+create index if not exists share_lookup_log_identifier_time_idx
+  on public.share_lookup_log (identifier_hash, looked_up_at desc);
+
+alter table public.share_lookup_log enable row level security;
+revoke all on public.share_lookup_log from public, anon, authenticated;
+
+-- 5.3 ACCOUNT DELETION AUDIT (SECURITY FIX: F-001)
+create table if not exists public.account_deletion_audit (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null,
+  email text,
+  event text not null check (event in ('requested', 'cancelled', 'finalized', 'admin_override')),
+  ip_hash text,
+  user_agent_hash text,
+  details jsonb,
+  created_at timestamptz not null default now()
+);
+
+alter table public.account_deletion_audit enable row level security;
+
+create policy "audit_self_read" on public.account_deletion_audit
+  for select to authenticated
+  using (auth.uid() = user_id);
+
+-- No INSERT/UPDATE/DELETE policy → immutable from client. Only SECURITY DEFINER
+-- RPCs (request_account_deletion, cancel_account_deletion,
+-- finalize_account_deletions, admin_cancel_account_deletion) write here.
+revoke insert, update, delete on public.account_deletion_audit from public, anon, authenticated;
+
+create index if not exists account_deletion_audit_user_id_idx
+  on public.account_deletion_audit (user_id, created_at desc);
 
 
 -- ============================================
@@ -557,18 +623,24 @@ create trigger on_auth_user_created
   after insert on auth.users
   for each row execute function public.handle_new_user();
 
--- 7.2 Delete user account
-create or replace function public.delete_user()
-returns void
-language plpgsql
-security definer set search_path = ''
-as $$
-begin
-  delete from auth.users where id = auth.uid();
-end;
-$$;
-
-grant execute on function public.delete_user() to authenticated;
+-- 7.2 Account deletion (SECURITY FIX: F-001)
+-- The legacy parameterless delete_user() RPC has been removed. It allowed a
+-- single authenticated POST (reachable from any XSS payload) to permanently
+-- destroy a user's account with no re-auth, no confirmation, no audit trail.
+--
+-- The new flow is implemented in migration 002_owasp_remediation.sql:
+--   • public.request_account_deletion(p_confirmation_phrase, ip_hash, ua_hash)
+--       requires the literal phrase "delete my account", rate-limited 1/24h,
+--       sets profiles.deleted_at (30-day soft-delete), writes audit row.
+--   • public.cancel_account_deletion()
+--       reverses the soft-delete during the grace window.
+--   • public.account_deletion_status()
+--       returns { pending, deleted_at, finalize_at } for the UI banner.
+--   • public.finalize_account_deletions(batch_size)   -- service_role only
+--       cron-driven hard delete of auth.users after 30 days.
+--   • public.admin_cancel_account_deletion(uuid)      -- service_role only
+--
+-- See SECURITY.md for the full rationale.
 
 -- ============================================
 -- SECTION 8: FUNCTIONS - STUDY TRACKING
@@ -950,32 +1022,24 @@ as $$
   );
 $$;
 
--- 11.3 Generate share code
-create or replace function public.generate_share_code(length integer default 16)
-returns text
-language plpgsql
-set search_path = ''
-as $$
-declare
-  result text := '';
-begin
-  if length < 8 then
-    raise exception 'Share code length must be at least 8 characters';
-  end if;
+-- 11.3 Generate share code (SECURITY FIX: F-004)
+-- The parameterless public.generate_share_code() RPC has been removed.
+-- Share codes are now generated in the Next.js server action at
+-- src/app/api/share/route.ts using crypto.getRandomValues() and a
+-- rejection-sampling alphabet. The caller MUST be the authenticated
+-- owner of the target material (verified by RLS-gated SELECT before
+-- INSERT), so a stray authenticated JWT alone cannot mint codes.
+-- See migration 002_owasp_remediation.sql and SECURITY.md.
 
-  -- gen_random_uuid() is CSPRNG-backed in Postgres/Supabase.
-  while char_length(result) < length loop
-    result := result || replace(gen_random_uuid()::text, '-', '');
-  end loop;
-
-  return substr(result, 1, length);
-end;
-$$;
-
-grant execute on function public.generate_share_code(integer) to authenticated;
-
--- 11.4 Get shared material data
-create or replace function public.get_shared_material(p_share_code text)
+-- 11.4 Get shared material data (SECURITY FIX: F-005 — rate-limited)
+-- This is a snapshot of the rate-limited signature installed by migration
+-- 002_owasp_remediation.sql. The second argument is an opaque per-caller
+-- identifier hash (e.g., SHA-256 of IP + User-Agent) supplied by the
+-- Next.js edge. When the caller exceeds 30 lookups / minute for that
+-- identifier, the function returns NULL (same shape as "not found") to
+-- avoid oracle behaviour. Lookup events are logged to
+-- public.share_lookup_log for anomaly detection.
+create or replace function public.get_shared_material(p_share_code text, p_identifier_hash text default null)
 returns json
 language plpgsql
 security definer
@@ -984,12 +1048,30 @@ as $$
 declare
   v_share record;
   v_result json;
+  v_recent_count integer;
+  v_rate_limit constant integer := 30;
+  v_window constant interval := interval '1 minute';
 begin
-  select * into v_share 
-  from public.material_shares 
+  if p_identifier_hash is not null and char_length(p_identifier_hash) > 0 then
+    select count(*) into v_recent_count
+    from public.share_lookup_log
+    where identifier_hash = p_identifier_hash
+      and looked_up_at > now() - v_window;
+
+    if v_recent_count >= v_rate_limit then
+      insert into public.share_lookup_log (identifier_hash, share_code, found)
+      values (p_identifier_hash, null, false);
+      return null;
+    end if;
+  end if;
+
+  select * into v_share
+  from public.material_shares
   where share_code = p_share_code and is_active = true;
-  
+
   if not found then
+    insert into public.share_lookup_log (identifier_hash, share_code, found)
+    values (coalesce(p_identifier_hash, ''), p_share_code, false);
     return null;
   end if;
   
@@ -1068,11 +1150,14 @@ begin
     where r.id = v_share.material_id;
   end if;
   
+  insert into public.share_lookup_log (identifier_hash, share_code, found)
+  values (coalesce(p_identifier_hash, ''), p_share_code, true);
+
   return v_result;
 end;
 $$;
 
-grant execute on function public.get_shared_material(text) to anon;
+grant execute on function public.get_shared_material(text, text) to anon, authenticated;
 
 
 -- ============================================

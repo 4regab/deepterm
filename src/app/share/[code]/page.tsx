@@ -6,12 +6,17 @@ import SharePreviewClient from './SharePreviewClient'
 import { siteConfig } from '@/lib/seo'
 import { ShareCodeSchema } from '@/lib/schemas/sharing'
 import { checkShareRateLimit, getRequestIdentifier } from '@/services/shareRateLimit'
+import { hashRequestIdentity } from '@/lib/auth/requestIdentity'
 
 interface PageProps {
   params: Promise<{ code: string }>
 }
 
-async function getSharedMaterial(code: string, requestIdentity?: string) {
+async function getSharedMaterial(
+  code: string,
+  requestIdentity?: string,
+  identityHash?: string,
+) {
   const parsedCode = ShareCodeSchema.safeParse(code)
   if (!parsedCode.success) {
     return null
@@ -29,8 +34,11 @@ async function getSharedMaterial(code: string, requestIdentity?: string) {
     process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!
   )
 
-  const { data, error } = await supabase.rpc('get_shared_material', { 
-    p_share_code: parsedCode.data 
+  // F-005: pass a peppered, non-reversible identity hash so the DB-level
+  // rate limit inside get_shared_material() can throttle abuse.
+  const { data, error } = await supabase.rpc('get_shared_material', {
+    p_share_code: parsedCode.data,
+    p_identifier_hash: identityHash ?? null,
   })
 
   if (error || !data) {
@@ -91,7 +99,8 @@ export default async function SharePage({ params }: PageProps) {
   const { code } = await params
   const requestHeaders = await headers()
   const requestIdentity = getRequestIdentifier(requestHeaders)
-  const sharedData = await getSharedMaterial(code, requestIdentity)
+  const identityHash = hashRequestIdentity(requestHeaders)
+  const sharedData = await getSharedMaterial(code, requestIdentity, identityHash)
 
   if (!sharedData) {
     notFound()

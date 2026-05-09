@@ -12,19 +12,24 @@ interface RateLimitResult {
 
 /**
  * Atomically checks and increments AI usage in a single operation.
- * This prevents race conditions where multiple requests could bypass the limit.
+ *
+ * This is the ONLY sanctioned path to mutate the ai_usage table.
+ * The ai_usage table has RLS that blocks direct client UPDATEs AND an explicit
+ * REVOKE UPDATE on the `authenticated` role (see migration
+ * 002_owasp_remediation.sql, F-002), so all counter mutations must go
+ * through the SECURITY DEFINER RPC `check_and_increment_ai_usage`.
  */
 export async function checkAndIncrementAIUsage(): Promise<RateLimitResult> {
   const supabase = await createServerSupabaseClient()
-  
+
   const { data: { user } } = await supabase.auth.getUser()
-  
+
   if (!user) {
     return { allowed: false, remaining: 0, resetAt: new Date(), authenticated: false }
   }
 
   const today = new Date().toISOString().split('T')[0]
-  
+
   // Calculate reset time (midnight UTC)
   const resetAt = new Date(today)
   resetAt.setUTCDate(resetAt.getUTCDate() + 1)
@@ -48,8 +53,8 @@ export async function checkAndIncrementAIUsage(): Promise<RateLimitResult> {
     }
   }
 
-  // Atomic check-and-increment using RPC
-  // This function should return { allowed, new_count } and handle upsert internally
+  // Atomic check-and-increment using RPC.
+  // The RPC (SECURITY DEFINER) is the only code path allowed to write ai_usage.
   const { data, error } = await supabase.rpc('check_and_increment_ai_usage', {
     p_date: today,
     p_limit: DAILY_AI_LIMIT
@@ -65,68 +70,11 @@ export async function checkAndIncrementAIUsage(): Promise<RateLimitResult> {
   const newCount = result?.new_count ?? DAILY_AI_LIMIT
   const remaining = Math.max(0, DAILY_AI_LIMIT - newCount)
 
-  return { 
+  return {
     allowed,
     remaining,
     resetAt,
     userId: user.id,
     authenticated: true
   }
-}
-
-/**
- * @deprecated Use checkAndIncrementAIUsage for atomic operations
- * Kept for backward compatibility - reads current usage without incrementing
- */
-export async function checkAIRateLimit(): Promise<RateLimitResult> {
-  const supabase = await createServerSupabaseClient()
-  
-  const { data: { user } } = await supabase.auth.getUser()
-  
-  if (!user) {
-    return { allowed: false, remaining: 0, resetAt: new Date(), authenticated: false }
-  }
-
-  const today = new Date().toISOString().split('T')[0]
-  
-  const { data: usage, error } = await supabase
-    .from('ai_usage')
-    .select('generation_count, reset_date')
-    .eq('user_id', user.id)
-    .single()
-
-  if (error && error.code !== 'PGRST116') {
-    console.error('Rate limit check error:', error)
-    return { allowed: false, remaining: 0, resetAt: new Date(), authenticated: true }
-  }
-
-  const resetAt = new Date(today)
-  resetAt.setUTCDate(resetAt.getUTCDate() + 1)
-  resetAt.setUTCHours(0, 0, 0, 0)
-
-  if (!usage || usage.reset_date !== today) {
-    return { allowed: true, remaining: DAILY_AI_LIMIT, resetAt, authenticated: true }
-  }
-
-  const remaining = Math.max(0, DAILY_AI_LIMIT - usage.generation_count)
-  return { 
-    allowed: usage.generation_count < DAILY_AI_LIMIT, 
-    remaining,
-    resetAt,
-    authenticated: true
-  }
-}
-
-/**
- * @deprecated Use checkAndIncrementAIUsage for atomic operations
- */
-export async function incrementAIUsage(): Promise<void> {
-  const supabase = await createServerSupabaseClient()
-  
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return
-
-  const today = new Date().toISOString().split('T')[0]
-
-  await supabase.rpc('increment_ai_usage', { p_date: today })
 }

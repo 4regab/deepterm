@@ -123,6 +123,35 @@ export async function proxy(request: NextRequest) {
   // Refresh session if exists
   const { data: { user } } = await supabase.auth.getUser()
 
+  // Enforce soft-delete lockout: if the profile is marked for deletion, the user
+  // cannot access the app EXCEPT the /account page where they can cancel.
+  // The cancel path must stay open during the 30-day grace window.
+  // Home page is included so a deletion-pending user can always land somewhere.
+  const DELETION_ALLOWED_EXACT = new Set(['/', '/auth'])
+  const DELETION_ALLOWED_PREFIXES = ['/account', '/auth/']
+  const isDeletionAllowed =
+    DELETION_ALLOWED_EXACT.has(pathname) ||
+    DELETION_ALLOWED_PREFIXES.some((prefix) => pathname.startsWith(prefix))
+
+  if (user && !isDeletionAllowed) {
+    const { data: profileRow } = await supabase
+      .from('profiles')
+      .select('deleted_at')
+      .eq('id', user.id)
+      .maybeSingle()
+
+    if (profileRow?.deleted_at) {
+      if (pathname.startsWith('/api/')) {
+        return NextResponse.json(
+          { error: 'Account is scheduled for deletion. Visit /account to cancel.' },
+          { status: 403 }
+        )
+      }
+      const redirectUrl = new URL('/account?deletion_pending=1', request.url)
+      return NextResponse.redirect(redirectUrl)
+    }
+  }
+
   // Check if route is public (no auth needed)
   const isPublicRoute = PUBLIC_ROUTES.some(route =>
     pathname.startsWith(route)
