@@ -84,7 +84,7 @@ describe('POST /api/generate-cards', () => {
         )
       }
       return originalFetch(url)
-    }) as typeof fetch
+    }) as unknown as typeof fetch
     resetAllMocks()
     mockCheckAndIncrementAIUsage.mockClear()
     mockGenerateContentWithRotation.mockClear()
