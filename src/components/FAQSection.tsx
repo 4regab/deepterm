@@ -87,7 +87,7 @@ export default function FAQSection() {
             <p className="text-xs uppercase tracking-[0.12em] text-muted-foreground mb-4">
               Support
             </p>
-            <h2 className="text-[32px] sm:text-[40px] leading-[1.1] tracking-tight font-medium mb-4">
+            <h2 className="font-serif text-[32px] sm:text-[40px] leading-[1.1] tracking-tight font-normal mb-4">
               Frequently asked
             </h2>
             <p className="font-sans text-sm sm:text-[15px] leading-6 text-muted-foreground">

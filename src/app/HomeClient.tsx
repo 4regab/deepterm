@@ -67,7 +67,7 @@ export default function HomeClient() {
 
   const isLoggedIn = !!user;
   return (
-    <div className="bg-background min-h-screen">
+    <div className="landing bg-background min-h-screen">
       <Header />
 
       <main id="main-content" className="mx-auto max-w-[76rem] px-4 sm:px-6 flex flex-col gap-12 sm:gap-20 pb-12 sm:pb-20">
@@ -76,9 +76,13 @@ export default function HomeClient() {
             <p className="text-xs uppercase tracking-[0.12em] text-muted-foreground mb-5">
               Open-source study tools
             </p>
-            <h1 className="text-[40px] sm:text-[56px] lg:text-[72px] leading-[1.05] tracking-tight font-medium mb-5">
-              Study smarter
-              <span className="block text-muted-foreground">not harder</span>
+            <h1 className="relative mb-5">
+              <span className="block font-serif text-[46px] sm:text-[64px] lg:text-[88px] xl:text-[110px] leading-[1.1] tracking-tight text-foreground font-normal">
+                Study smarter
+              </span>
+              <span className="inline-block font-serif italic text-[42px] sm:text-[72px] lg:text-[100px] xl:text-[130px] leading-[1.2] tracking-tight text-muted-foreground font-normal">
+                not harder
+              </span>
             </h1>
           </Reveal>
 
@@ -146,7 +150,7 @@ export default function HomeClient() {
 
         <section className="plate px-6 sm:px-10 py-12 sm:py-16 text-center">
           <Reveal>
-            <h2 className="text-[22px] sm:text-[32px] tracking-tight font-medium mb-3">
+            <h2 className="font-serif text-[22px] sm:text-[32px] tracking-tight font-normal mb-3">
               Ready to study smarter?
             </h2>
             <p className="text-sm text-muted-foreground mb-6 max-w-[36ch] mx-auto">

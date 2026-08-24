@@ -155,7 +155,7 @@ function SessionAwareHeader({ user, isLoading, className }: { user: User | null;
                         <Image alt="DeepTerm" className="w-7 h-7 sm:w-8 sm:h-8" src={imgLogo} width={32} height={32} />
                     </div>
                 </div>
-                <span className="font-sans text-foreground text-[17px] sm:text-[18px] font-medium tracking-tight">deepterm</span>
+                <span className="font-sora text-foreground text-[17px] sm:text-[18px] font-medium tracking-tight">deepterm</span>
             </Link>
 
             <nav className="hidden md:flex items-center gap-4" aria-label="Primary">

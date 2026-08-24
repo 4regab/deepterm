@@ -60,6 +60,9 @@
 
 @theme inline {
   --font-sans: var(--font-inter-tight), ui-sans-serif, system-ui, sans-serif;
+  --font-serif: var(--font-source-serif), "Source Serif 4", ui-serif, serif;
+  --font-sora: var(--font-sora-face), sans-serif;
+  --font-landing: var(--font-space-grotesk), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-geist-mono), ui-monospace, monospace;
 
   --color-ink: var(--ink);
@@ -104,6 +107,14 @@ body {
   font-weight: 400;
   font-size: 14px;
   line-height: 1.5;
+}
+
+.landing {
+  font-family: var(--font-landing);
+}
+
+.landing .font-sora {
+  font-family: var(--font-sora);
 }
 
 code,

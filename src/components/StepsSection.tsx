@@ -31,7 +31,7 @@ export default function StepsSection() {
         <p className="text-xs uppercase tracking-[0.12em] text-muted-foreground mb-3">
           How it works
         </p>
-        <h2 className="text-[28px] sm:text-[36px] leading-[1.1] tracking-tight font-medium mb-3">
+        <h2 className="font-serif text-[28px] sm:text-[36px] leading-[1.1] tracking-tight font-normal mb-3">
           Three steps
         </h2>
         <p className="text-sm max-w-[46ch] mx-auto text-muted-foreground">

@@ -242,9 +242,9 @@ export default function FeaturesShowcase() {
       {/* Mobile/Tablet: Horizontal scroll layout */}
       <section ref={mobileSectionRef} className="lg:hidden relative">
         <div ref={mobileHeaderRef} className="text-center pt-4 pb-6 sm:pt-6 sm:pb-8 px-4 sm:px-6">
-          <h2 className="text-3xl sm:text-4xl md:text-5xl leading-[1.1] tracking-tight font-medium mb-4">
+          <h2 className="font-serif text-3xl sm:text-4xl md:text-5xl leading-[1.1] tracking-tight font-normal mb-4">
             What you&apos;ll unlock
-            <span className="block text-muted-foreground">with DeepTerm</span>
+            <span className="block font-serif italic text-muted-foreground">with DeepTerm</span>
           </h2>
           <p className="text-sm sm:text-base max-w-md mx-auto text-muted-foreground">
             A complete ecosystem of tools designed to transform your study workflow from chaotic to structured.
@@ -271,9 +271,9 @@ export default function FeaturesShowcase() {
       {/* Desktop: Horizontal scroll layout with GSAP */}
       <section ref={containerRef} className="hidden lg:flex relative min-h-[600px] h-[80vh] max-h-[900px] items-center overflow-hidden">
         <div ref={desktopTitleRef} className="w-[320px] xl:w-[380px] flex-shrink-0 pl-8 xl:pl-16 pr-4 z-10">
-          <h2 className="text-4xl xl:text-5xl leading-[1.1] tracking-tight font-medium mb-4">
+          <h2 className="font-serif text-4xl xl:text-5xl leading-[1.1] tracking-tight font-normal mb-4">
             What you&apos;ll unlock with
-            <span className="block text-muted-foreground">DeepTerm</span>
+            <span className="block font-serif italic text-muted-foreground">DeepTerm</span>
           </h2>
           <p className="font-sans text-base xl:text-lg max-w-sm text-muted-foreground">
             A complete ecosystem of tools designed to transform your study workflow from chaotic to structured.

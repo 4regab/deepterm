@@ -39,5 +39,15 @@ describe("interface copy and quality floor", () => {
     expect(css).toContain("color-mix(in srgb, var(--ink) 12%, transparent)");
     expect(css).toContain("--primary: #305dde");
     expect(css).toContain("--font-inter-tight");
+    expect(css).toContain("--font-source-serif");
+    expect(css).toContain(".landing");
+  });
+
+  it("keeps Source Serif on the landing hero", () => {
+    const home = read("app/HomeClient.tsx");
+    expect(home).toContain("landing");
+    expect(home).toContain("font-serif");
+    expect(home).toContain("italic");
+    expect(home).toContain("Study smarter");
   });
 });
