@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "test": "bun test",
-    "test:watch": "bun test --watch"
+    "test:watch": "bun test --watch",
+    "audit": "bun audit"
   },
   "dependencies": {
     "@google/genai": "^2.18.0",
@@ -39,7 +40,22 @@
     "zustand": "^5.0.15"
   },
   "overrides": {
-    "postcss": "^8.5.12"
+    "postcss": "^8.5.12",
+    "dompurify": "3.4.14",
+    "protobufjs": "7.6.5",
+    "@protobufjs/utf8": "1.1.2",
+    "@babel/core": "7.29.7",
+    "ws": "8.21.3",
+    "flatted": "3.4.4",
+    "nanoid": "5.1.16",
+    "postcss>nanoid": "3.3.11",
+    "brace-expansion": "1.1.18",
+    "picomatch": "4.0.7",
+    "micromatch>picomatch": "2.3.2",
+    "minimatch@9": "9.0.9",
+    "@typescript-eslint/typescript-estree>minimatch": "9.0.9",
+    "glob>minimatch": "9.0.9",
+    "@eslint/eslintrc>minimatch": "9.0.9"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.3.3",
