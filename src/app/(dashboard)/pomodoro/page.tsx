@@ -696,7 +696,7 @@ export default function PomodoroPage() {
                       <AnimatePresence initial={false}>
                         {tasks.length === 0 ? (
                           <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="font-sans text-[12px] text-center py-6 text-white/40">
-                            No tasks yet.
+                            No tasks yet. Add one to keep this session on track.
                           </motion.p>
                         ) : (
                           tasks.map((task) => (
@@ -936,7 +936,7 @@ export default function PomodoroPage() {
                       animate={{ opacity: 1 }}
                       className="font-sans text-[13px] text-[#171d2b]/50 text-center py-8"
                     >
-                      No tasks yet. Add one above!
+                      No tasks yet. Add one above.
                     </motion.p>
                   ) : (
                     tasks.map((task) => (

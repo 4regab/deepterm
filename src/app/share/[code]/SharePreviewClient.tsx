@@ -11,6 +11,7 @@ import Link from "next/link"
 import type { SharedMaterialData } from "@/lib/schemas/sharing"
 import { createClient } from "@/config/supabase/client"
 import { exportToPDF, exportToDOCX } from "@/utils/exportReviewer"
+import { Toast } from "@/components/ui"
 
 interface Props {
   data: SharedMaterialData
@@ -114,6 +115,7 @@ export default function SharePreviewClient({ data, shareCode }: Props) {
   const [, setCopying] = useState(false)
   const [copied, setCopied] = useState(false)
   const [adding, setAdding] = useState(false)
+  const [addError, setAddError] = useState<string | null>(null)
   const [showDownloadMenu, setShowDownloadMenu] = useState(false)
 
   const shareUrl = typeof window !== 'undefined' 
@@ -150,6 +152,7 @@ export default function SharePreviewClient({ data, shareCode }: Props) {
 
   const handleAddToCollection = async () => {
     setAdding(true)
+    setAddError(null)
     
     try {
       const res = await fetch('/api/share/copy', {
@@ -175,10 +178,10 @@ export default function SharePreviewClient({ data, shareCode }: Props) {
       if (result.success && result.redirectUrl) {
         router.push(result.redirectUrl)
       } else {
-        alert(result.error || 'Failed to add to collection')
+        setAddError(result.error || 'Unable to add this material. Try again.')
       }
     } catch {
-      alert('Something went wrong')
+      setAddError('Unable to add this material. Check your connection and try again.')
     } finally {
       setAdding(false)
     }
@@ -244,13 +247,13 @@ export default function SharePreviewClient({ data, shareCode }: Props) {
               className="flex items-center gap-2 px-4 py-2 rounded-lg border border-[#171d2b]/10 hover:bg-[#171d2b]/5 transition-colors text-sm"
             >
               {copied ? <Check size={16} className="text-green-600" /> : <Copy size={16} />}
-              {copied ? 'Copied!' : 'Copy Link'}
+              {copied ? 'Copied' : 'Copy link'}
             </button>
           </div>
         </div>
       </header>
 
-      <main className="max-w-5xl mx-auto px-4 sm:px-6 py-8">
+      <main id="main-content" className="max-w-5xl mx-auto px-4 sm:px-6 py-8">
         {/* Material Info Card */}
         <div className="bg-white rounded-2xl border border-[#171d2b]/10 p-6 mb-6">
           <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-4">
@@ -287,9 +290,14 @@ export default function SharePreviewClient({ data, shareCode }: Props) {
               ) : (
                 <ExternalLink size={18} />
               )}
-              {adding ? 'Adding...' : 'Add to My Collection'}
+              {adding ? 'Adding…' : 'Add to my collection'}
             </button>
           </div>
+          {addError ? (
+            <div className="mt-4">
+              <Toast kind="error">{addError}</Toast>
+            </div>
+          ) : null}
         </div>
 
         {/* Content Preview */}

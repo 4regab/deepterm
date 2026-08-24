@@ -33,9 +33,9 @@ function EmptyAchievements() {
                 <div className="w-16 h-16 bg-[#171d2b]/5 rounded-full flex items-center justify-center mb-4">
                     <Trophy size={28} className="text-[#171d2b]/30" />
                 </div>
-                <h3 className="font-sans font-medium text-[#171d2b] text-[16px] mb-2">No achievements yet</h3>
-                <p className="font-sans text-[13px] text-[#171d2b]/50 max-w-xs">
-                    Start studying to unlock achievements and track your progress.
+                <h3 className="font-sans font-medium text-foreground text-[16px] mb-2">No achievements yet</h3>
+                <p className="font-sans text-[13px] text-muted-foreground max-w-xs">
+                    Finish a study session to unlock the first one.
                 </p>
             </div>
         </div>

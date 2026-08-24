@@ -7,7 +7,6 @@ import {
     Clock,
     Trash2,
     FolderOpen,
-    Plus,
     Share2,
     Filter,
     ChevronDown
@@ -15,6 +14,7 @@ import {
 import { useRouter } from "next/navigation";
 import { useMaterialsStore } from "@/lib/stores";
 import type { MaterialItem, MaterialFilter } from "@/lib/schemas/materials";
+import { EmptyState as EmptyStateBlock } from "@/components/ui";
 
 interface MaterialsClientProps {
     initialItems: MaterialItem[];
@@ -29,20 +29,13 @@ function getItemLabel(type: MaterialItem["type"], count: number): string {
 
 function EmptyState({ onCreateClick }: { onCreateClick: () => void }) {
     return (
-        <div className="flex flex-col items-center justify-center py-20 text-center">
-            <div className="w-20 h-20 bg-[#171d2b]/5 rounded-full flex items-center justify-center mb-6">
-                <FolderOpen size={40} className="text-[#171d2b]/20" />
-            </div>
-            <h3 className="text-xl font-sora font-semibold text-[#171d2b] mb-2">No materials yet</h3>
-            <p className="text-[#171d2b]/50 max-w-sm mb-6">Create your first study material to get started.</p>
-            <button
-                onClick={onCreateClick}
-                className="px-6 py-3 bg-[#171d2b] text-white rounded-xl font-medium hover:bg-[#2a3347] transition-colors flex items-center gap-2"
-            >
-                <Plus size={18} />
-                Create New Material
-            </button>
-        </div>
+        <EmptyStateBlock
+            icon={<FolderOpen size={28} />}
+            title="No materials yet"
+            description="Upload a PDF or paste notes to make your first deck or reviewer."
+            actionLabel="Create material"
+            onAction={onCreateClick}
+        />
     );
 }
 

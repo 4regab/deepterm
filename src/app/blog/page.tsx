@@ -75,7 +75,7 @@ export default async function BlogPage({ searchParams }: PageProps) {
     <div className="bg-[#f0f0ea] min-h-screen">
       <Header />
 
-      <main className="max-w-[900px] mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-20">
+      <main id="main-content" className="max-w-[65ch] mx-auto px-4 sm:px-6 py-12 sm:py-20">
         {/* Hero Section */}
         <div className="mb-12 sm:mb-16">
           <h1 className="font-serif text-[42px] sm:text-[56px] lg:text-[72px] text-[#171d2b] leading-[1.1] tracking-tight">
@@ -131,13 +131,13 @@ export default async function BlogPage({ searchParams }: PageProps) {
           </div>
         ) : (
           <div className="py-16 text-center">
-            <h3 className="font-serif text-[20px] text-[#171d2b] mb-2">
+            <h3 className="font-serif text-[20px] text-foreground mb-2">
               No articles yet
             </h3>
-            <p className="font-sans text-[14px] text-[#171d2b]/60 mb-6">
+            <p className="font-sans text-sm text-muted-foreground mb-6">
               {categorySlug
-                ? 'No articles in this category yet. Check back soon!'
-                : 'Articles are coming soon. Check back later!'}
+                ? `No articles in this category. Clear the filter to see the rest of the blog.`
+                : 'New guides publish twice a day. Check back shortly.'}
             </p>
             {categorySlug && (
               <Link

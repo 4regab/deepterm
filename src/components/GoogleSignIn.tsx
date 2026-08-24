@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { createClient } from '@/config/supabase/client'
 import CaptchaModal from '@/components/CaptchaModal'
+import { Button } from '@/components/ui'
 
 export default function GoogleSignIn() {
   const [showCaptcha, setShowCaptcha] = useState(false)
@@ -44,13 +45,9 @@ export default function GoogleSignIn() {
 
   return (
     <>
-      <button
-        onClick={handleLoginClick}
-        disabled={isLoading}
-        className="bg-[#171d2b] h-[42px] rounded-[100px] px-6 text-[#fefeff] font-sora text-[16px] hover:bg-[#2a3347] transition-colors flex items-center justify-center disabled:opacity-50"
-      >
-        {isLoading ? 'Loading...' : 'Log in'}
-      </button>
+      <Button size="sm" onClick={handleLoginClick} loading={isLoading}>
+        Log in
+      </Button>
 
       <CaptchaModal
         isOpen={showCaptcha}

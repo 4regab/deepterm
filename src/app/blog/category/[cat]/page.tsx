@@ -76,7 +76,7 @@ export default async function CategoryPage({ params, searchParams }: PageProps) 
       <div className="bg-[#f0f0ea] min-h-screen">
         <Header />
 
-        <main className="max-w-[900px] mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-20">
+        <main id="main-content" className="max-w-[65ch] mx-auto px-4 sm:px-6 py-12 sm:py-20">
           {/* Hero Section */}
           <div className="mb-12 sm:mb-16">
             <Link 
@@ -138,7 +138,7 @@ export default async function CategoryPage({ params, searchParams }: PageProps) 
                 No articles yet
               </h3>
               <p className="font-sans text-[14px] text-[#171d2b]/60 mb-6">
-                No articles in this category yet. Check back soon!
+                No articles in this category. See the rest of the blog.
               </p>
               <Link
                 href="/blog"

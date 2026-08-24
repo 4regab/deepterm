@@ -10,6 +10,7 @@ import {
   generateSoftwareAppJsonLd,
 } from "@/lib/seo";
 import { PostHogProvider } from "@/components/PostHogProvider";
+import { SkipLink } from "@/components/ui";
 
 const spaceGrotesk = Space_Grotesk({
   subsets: ["latin"],
@@ -43,12 +44,12 @@ export default async function RootLayout({
   const softwareAppJsonLd = generateSoftwareAppJsonLd();
 
   return (
-    <html lang="en" className={`${spaceGrotesk.variable} ${sora.variable}`} suppressHydrationWarning>
+    <html
+      lang="en"
+      className={`${spaceGrotesk.variable} ${sora.variable} ${sourceSerif4.variable}`}
+      suppressHydrationWarning
+    >
       <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,200..900;1,8..60,200..900&display=swap" rel="stylesheet" />
-
         {/* JSON-LD Structured Data */}
         <script
           nonce={nonce}
@@ -67,6 +68,7 @@ export default async function RootLayout({
         />
       </head>
       <body suppressHydrationWarning>
+        <SkipLink />
         <PostHogProvider>
           {/* Google Analytics */}
           <Script

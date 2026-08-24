@@ -39,6 +39,7 @@ export default function FeaturesShowcase() {
 
   useGSAP(() => {
     if (isMobile) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
 
     const scrollContainer = scrollContainerRef.current;
     const container = containerRef.current;
@@ -135,6 +136,7 @@ export default function FeaturesShowcase() {
 
   useGSAP(() => {
     if (!isMobile) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     
     if (mobileHeaderRef.current) {
       gsap.fromTo(mobileHeaderRef.current, 
@@ -175,6 +177,7 @@ export default function FeaturesShowcase() {
 
   useGSAP(() => {
     if (isMobile || !desktopTitleRef.current) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     
     gsap.fromTo(desktopTitleRef.current,
       { opacity: 0, x: -40 },
@@ -197,6 +200,7 @@ export default function FeaturesShowcase() {
 
   useGSAP(() => {
     if (!isMobile) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
 
     const scrollContainer = mobileScrollContainerRef.current;
     const wrapper = mobileWrapperRef.current;

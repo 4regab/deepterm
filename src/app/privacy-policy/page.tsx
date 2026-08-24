@@ -25,14 +25,14 @@ export default function PrivacyPolicyPage() {
             </div>
             <span className="font-sora text-[#171d2b] text-[18px]">deepterm</span>
           </Link>
-          <Link href="/" className="font-sans text-[14px] text-[#171d2b]/60 hover:text-[#171d2b] transition-colors">
-            Back to Home
+          <Link href="/" className="font-sans text-[14px] text-muted-foreground hover:text-foreground transition-colors duration-150">
+            Back to home
           </Link>
         </div>
       </header>
 
       {/* Content */}
-      <main className="px-4 sm:px-6 lg:px-8 py-10 sm:py-14 lg:py-16">
+      <main id="main-content" className="px-4 sm:px-6 py-10 sm:py-14 lg:py-16">
         <div className="max-w-[800px] mx-auto">
           <h1 className="font-serif text-[28px] sm:text-[36px] lg:text-[42px] text-[#171d2b] mb-2">
             Privacy Policy

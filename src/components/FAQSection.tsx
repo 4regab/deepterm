@@ -1,50 +1,54 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState } from "react";
 import { Plus, X, HelpCircle } from "lucide-react";
-import gsap from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
-import { useGSAP } from "@gsap/react";
-
-gsap.registerPlugin(ScrollTrigger);
+import { Reveal } from "@/components/ui";
+import { cn } from "@/lib/cn";
 
 interface FAQItem {
   question: string;
   answer: string;
 }
 
-function AccordionItem({ 
-  item, 
-  isOpen, 
-  onToggle, 
-}: { 
-  item: FAQItem; 
-  isOpen: boolean; 
+function AccordionItem({
+  item,
+  isOpen,
+  onToggle,
+}: {
+  item: FAQItem;
+  isOpen: boolean;
   onToggle: () => void;
 }) {
   return (
-    <div className="border-b transition-colors border-[#171d2b]/10">
+    <div>
       <button
+        type="button"
         onClick={onToggle}
-        className="w-full py-5 sm:py-6 flex items-center justify-between gap-4 text-left transition-colors group"
+        aria-expanded={isOpen}
+        className="w-full py-5 sm:py-6 flex items-center justify-between gap-4 text-left group min-h-11"
       >
-        <span className={`font-sans font-medium text-[15px] sm:text-[17px] lg:text-[18px] pr-4 transition-colors ${
-          isOpen ? "text-[#171d2b]" : "text-[#171d2b]/80 group-hover:text-[#171d2b]"
-        }`}>
+        <span className={cn(
+          "font-sans font-medium text-[15px] sm:text-[17px] pr-4 transition-colors duration-150",
+          isOpen ? "text-foreground" : "text-foreground/80 group-hover:text-foreground"
+        )}>
           {item.question}
         </span>
-        <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 transition-all ${
-          isOpen ? "bg-[#171d2b] text-white" : "bg-[#171d2b]/10 text-[#171d2b]/40"
-        }`}>
+        <span
+          className={cn(
+            "w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 transition-[background-color,color] duration-150",
+            isOpen ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
+          )}
+          aria-hidden="true"
+        >
           {isOpen ? <X className="w-3.5 h-3.5" /> : <Plus className="w-3.5 h-3.5" />}
-        </div>
+        </span>
       </button>
-      <div className={`overflow-hidden transition-all duration-300 ease-out ${
-        isOpen ? "max-h-[500px] opacity-100 pb-5 sm:pb-6" : "max-h-0 opacity-0"
-      }`}>
-        <p className="font-sans text-[14px] sm:text-[15px] leading-[1.7] pr-12 text-[#171d2b]/60">
-          {item.answer}
-        </p>
+      <div className="faq-panel" data-open={isOpen}>
+        <div className="overflow-hidden">
+          <p className="font-sans text-sm sm:text-[15px] leading-6 pr-12 pb-5 text-muted-foreground">
+            {item.answer}
+          </p>
+        </div>
       </div>
     </div>
   );
@@ -52,107 +56,57 @@ function AccordionItem({
 
 export default function FAQSection() {
   const [openIndex, setOpenIndex] = useState<number | null>(0);
-  const sectionRef = useRef<HTMLElement>(null);
 
   const faqs: FAQItem[] = [
     {
       question: "How does DeepTerm generate flashcards?",
-      answer: "DeepTerm uses Google's Gemini AI to analyze your uploaded PDFs or pasted text. It identifies key concepts, definitions, and important terms, then automatically generates flashcards and reviewer notes tailored to your content.",
+      answer: "DeepTerm uses Google Gemini to read your PDF or pasted text, pull out key terms, and turn them into flashcards and reviewer notes.",
     },
     {
       question: "Is DeepTerm really free?",
-      answer: "Yes! DeepTerm is completely free to use. You get 10 AI generations per day, which resets daily. There's no credit card required, no hidden fees, and no premium tier that locks essential features.",
+      answer: "Yes. You get 10 AI generations per day, resetting at midnight UTC. No card, no premium tier that locks the study tools.",
     },
     {
       question: "What file formats are supported?",
-      answer: "DeepTerm supports PDF files and plain text. You can either upload a PDF document or paste text directly into the editor. We're working on adding support for more formats like DOCX and images.",
+      answer: "PDF files and plain text. Upload a document or paste notes into the editor. DOCX and images are on the way.",
     },
     {
       question: "How does the gamification system work?",
-      answer: "Every study action earns you XP - completing flashcard sessions, taking practice tests, maintaining study streaks, and more. As you accumulate XP, you level up and unlock achievements that track your learning milestones.",
+      answer: "Study sessions, practice tests, and streaks earn XP. Levels unlock rank titles and achievements that track milestones.",
     },
     {
       question: "Can I share my study materials?",
-      answer: "Absolutely! You can generate shareable links for any of your flashcard decks or reviewers. Anyone with the link can view and study from your materials without needing an account.",
+      answer: "Yes. Create a share link for any deck or reviewer. Anyone with the link can study it, even without an account.",
     },
   ];
 
-
-  useGSAP(() => {
-    if (!sectionRef.current) return;
-
-    const leftCol = sectionRef.current.querySelector('.faq-left');
-    const rightCol = sectionRef.current.querySelector('.faq-right');
-
-    if (leftCol) {
-      gsap.fromTo(leftCol,
-        { opacity: 0, x: -30 },
-        {
-          opacity: 1,
-          x: 0,
-          duration: 0.7,
-          ease: "power2.out",
-          scrollTrigger: {
-            trigger: sectionRef.current,
-            start: "top 80%",
-            toggleActions: "play none none none",
-          }
-        }
-      );
-    }
-
-    if (rightCol) {
-      gsap.fromTo(rightCol,
-        { opacity: 0, x: 30 },
-        {
-          opacity: 1,
-          x: 0,
-          duration: 0.7,
-          delay: 0.1,
-          ease: "power2.out",
-          scrollTrigger: {
-            trigger: sectionRef.current,
-            start: "top 80%",
-            toggleActions: "play none none none",
-          }
-        }
-      );
-    }
-  }, { scope: sectionRef });
-
   return (
-    <section ref={sectionRef} className="relative z-10 px-4 sm:px-6 lg:px-8 py-12 sm:py-16 lg:py-24">
-      <div className="max-w-[1100px] mx-auto">
+    <section className="relative z-10 px-4 sm:px-6 py-12 sm:py-20">
+      <div className="max-w-[76rem] mx-auto">
         <div className="flex flex-col lg:flex-row gap-10 lg:gap-16">
-          
-          {/* Left Column - Title & Support */}
-          <div className="faq-left lg:w-[320px] flex-shrink-0">
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-[12px] font-medium mb-6 bg-[#171d2b]/5 text-[#171d2b]/60">
-              <HelpCircle className="w-3.5 h-3.5" />
+          <Reveal className="lg:w-[320px] flex-shrink-0">
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium mb-6 bg-muted text-muted-foreground">
+              <HelpCircle className="w-3.5 h-3.5" aria-hidden="true" />
               Support
             </div>
-
-            <h2 className="font-serif text-[32px] sm:text-[40px] lg:text-[48px] leading-[1.1] mb-4 text-[#171d2b]">
-              Frequently<br />
-              <span className="text-[#171d2b]/60">Asked.</span>
+            <h2 className="font-serif text-[32px] sm:text-[40px] lg:text-[48px] leading-[1.1] mb-4 text-foreground">
+              Frequently asked
             </h2>
-
-            <p className="font-sans text-[14px] sm:text-[15px] leading-relaxed text-[#171d2b]/60">
-              Everything you need to know about using DeepTerm.
+            <p className="font-sans text-sm sm:text-[15px] leading-6 text-muted-foreground">
+              Short answers to how DeepTerm works, what it costs, and how sharing works.
             </p>
-          </div>
+          </Reveal>
 
-          {/* Right Column - Accordion */}
-          <div className="faq-right flex-1">
+          <Reveal delay={80} className="flex-1">
             {faqs.map((faq, index) => (
               <AccordionItem
-                key={index}
+                key={faq.question}
                 item={faq}
                 isOpen={openIndex === index}
                 onToggle={() => setOpenIndex(openIndex === index ? null : index)}
               />
             ))}
-          </div>
+          </Reveal>
         </div>
       </div>
     </section>

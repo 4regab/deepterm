@@ -44,10 +44,10 @@ const features = [
 
 export default function AboutClient() {
   return (
-    <div className="min-h-screen bg-[#f0f0ea] flex flex-col">
+    <div className="min-h-screen bg-background flex flex-col">
       <Header />
 
-      <main className="flex-grow">
+      <main id="main-content" className="flex-grow">
         {/* Hero Section */}
         <section className="px-4 sm:px-6 py-10 sm:py-14 text-center max-w-4xl mx-auto">
           <motion.div
@@ -71,14 +71,14 @@ export default function AboutClient() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2, duration: 0.5 }}
-            className="bg-white rounded-2xl p-6 sm:p-8 border border-[#171d2b]/10"
+            className="plate p-6 sm:p-8"
           >
             <div className="flex items-center gap-3 mb-4">
               <div className="w-9 h-9 rounded-lg bg-[#171d2b] flex items-center justify-center">
                 <BookOpen className="w-4 h-4 text-white" />
               </div>
               <h2 className="font-serif text-xl sm:text-2xl text-[#171d2b]">
-                Why I Built This
+                Why I built this
               </h2>
             </div>
             <div className="space-y-3 font-sans text-[#171d2b]/70 text-[14px] sm:text-[15px] leading-relaxed">
@@ -112,7 +112,7 @@ export default function AboutClient() {
             className="text-center mb-6"
           >
             <h2 className="font-serif text-xl sm:text-2xl text-[#171d2b] mb-2">
-              What I Stand For
+              What I stand for
             </h2>
             <p className="font-sans text-[#171d2b]/60 text-[14px]">
               Core values guiding every decision.
@@ -126,7 +126,7 @@ export default function AboutClient() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.4 + index * 0.1, duration: 0.4 }}
-                className="bg-white p-4 sm:p-5 rounded-xl border border-[#171d2b]/10"
+                className="plate p-4 sm:p-5"
               >
                 <div className="w-10 h-10 rounded-lg bg-[#f0f0ea] flex items-center justify-center mb-3">
                   <value.icon className="w-5 h-5 text-[#171d2b]" />
@@ -152,7 +152,7 @@ export default function AboutClient() {
           >
             <div className="relative z-10">
               <h2 className="font-serif text-2xl sm:text-3xl mb-6">
-                What Makes DeepTerm Different
+                What makes DeepTerm different
               </h2>
               <ul className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {features.map((feature, index) => (

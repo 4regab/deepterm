@@ -11,23 +11,19 @@ export const metadata: Metadata = createMetadata({
 
 export default function ChangelogPage() {
   return (
-    <div className="min-h-screen bg-[#f0f0ea]">
-      <div className="sticky top-0 z-50">
-        <div className="max-w-[1440px] mx-auto">
-          <Header />
-        </div>
-      </div>
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
+    <div className="min-h-screen bg-background">
+      <Header />
+      <main id="main-content" className="max-w-5xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
         <div className="mb-8 text-center">
           <h1 className="font-serif text-3xl sm:text-4xl text-[#171d2b] mb-2">Changelog</h1>
-          <p className="font-sans text-base text-[#171d2b]/70">
-            Latest updates and improvements to DeepTerm
+          <p className="font-sans text-base text-muted-foreground">
+            What shipped, in order.
           </p>
         </div>
 
         <div className="space-y-5">
           {/* Version 0.2.1 */}
-          <div className="bg-white rounded-xl border border-[#171d2b]/10 p-5 shadow-sm">
+          <div className="plate p-5">
             <div className="flex items-center gap-3 mb-4">
               <span className="px-2.5 py-0.5 bg-[#171d2b] text-white text-xs font-medium rounded-full">
                 v0.2.1
@@ -48,7 +44,7 @@ export default function ChangelogPage() {
           </div>
 
           {/* Version 0.2.0 */}
-          <div className="bg-white rounded-xl border border-[#171d2b]/10 p-5 shadow-sm">
+          <div className="plate p-5">
             <div className="flex items-center gap-3 mb-4">
               <span className="px-2.5 py-0.5 bg-[#171d2b]/10 text-[#171d2b] text-xs font-medium rounded-full">
                 v0.2.0
@@ -86,7 +82,7 @@ export default function ChangelogPage() {
           </div>
 
           {/* Version 0.1.3 */}
-          <div className="bg-white rounded-xl border border-[#171d2b]/10 p-5 shadow-sm">
+          <div className="plate p-5">
             <div className="flex items-center gap-3 mb-4">
               <span className="px-2.5 py-0.5 bg-[#171d2b]/10 text-[#171d2b] text-xs font-medium rounded-full">
                 v0.1.3
@@ -120,7 +116,7 @@ export default function ChangelogPage() {
           </div>
 
           {/* Version 0.1.2 */}
-          <div className="bg-white rounded-xl border border-[#171d2b]/10 p-5 shadow-sm">
+          <div className="plate p-5">
             <div className="flex items-center gap-3 mb-4">
               <span className="px-2.5 py-0.5 bg-[#171d2b]/10 text-[#171d2b] text-xs font-medium rounded-full">
                 v0.1.2
@@ -159,7 +155,7 @@ export default function ChangelogPage() {
           </div>
 
           {/* Version 0.1.1 */}
-          <div className="bg-white rounded-xl border border-[#171d2b]/10 p-5 shadow-sm">
+          <div className="plate p-5">
             <div className="flex items-center gap-3 mb-4">
               <span className="px-2.5 py-0.5 bg-[#171d2b]/10 text-[#171d2b] text-xs font-medium rounded-full">
                 v0.1.1
@@ -206,7 +202,7 @@ export default function ChangelogPage() {
           </div>
 
           {/* Version 0.1.0 */}
-          <div className="bg-white rounded-xl border border-[#171d2b]/10 p-5 shadow-sm">
+          <div className="plate p-5">
             <div className="flex items-center gap-3 mb-4">
               <span className="px-2.5 py-0.5 bg-[#171d2b]/10 text-[#171d2b] text-xs font-medium rounded-full">
                 v0.1.0
@@ -248,7 +244,7 @@ export default function ChangelogPage() {
             </div>
           </div>
         </div>
-      </div>
+      </main>
     </div>
   );
 }
