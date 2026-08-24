@@ -3,6 +3,7 @@ import { FileState } from "@google/genai";
 import { checkAndIncrementAIUsage } from "@/services/rateLimit";
 import { generateContentWithRotation, uploadFileWithRotation, getApiKeyCount, Type } from "@/services/geminiClient";
 import { verifyTurnstileToken } from "@/services/turnstile";
+import { forbiddenUnlessSameOrigin } from "@/lib/auth/assertSameOrigin";
 
 // File size limits (in bytes)
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB - reduced for faster processing
@@ -75,6 +76,9 @@ const reviewerResponseSchema = {
 };
 
 export async function POST(request: NextRequest) {
+    const csrf = forbiddenUnlessSameOrigin(request);
+    if (csrf) return csrf;
+
     if (getApiKeyCount() === 0) {
         return NextResponse.json({ error: "No Gemini API keys configured" }, { status: 500 });
     }

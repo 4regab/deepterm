@@ -4,6 +4,7 @@ import { checkAndIncrementAIUsage } from "@/services/rateLimit";
 import { generateContentWithRotation, uploadFileWithRotation, getApiKeyCount, Type } from "@/services/geminiClient";
 import { verifyTurnstileToken } from "@/services/turnstile";
 import { z } from "zod";
+import { forbiddenUnlessSameOrigin } from "@/lib/auth/assertSameOrigin";
 
 // File size limits (in bytes)
 const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20MB
@@ -38,6 +39,9 @@ const flashcardResponseSchema = {
 };
 
 export async function POST(request: NextRequest) {
+  const csrf = forbiddenUnlessSameOrigin(request);
+  if (csrf) return csrf;
+
   if (getApiKeyCount() === 0) {
     return NextResponse.json({ error: "No Gemini API keys configured" }, { status: 500 });
   }

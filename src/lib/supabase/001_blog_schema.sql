@@ -164,7 +164,7 @@ BEGIN
   LIMIT p_limit
   OFFSET p_offset;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
 
 -- 8. Function to get single post by slug
@@ -209,7 +209,7 @@ BEGIN
   LEFT JOIN blog_categories bc ON bp.category_id = bc.id
   WHERE bp.slug = p_slug AND bp.status = 'published';
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
 -- 9. Function to get next topic from queue
 CREATE OR REPLACE FUNCTION get_next_topic_for_generation()
@@ -254,7 +254,10 @@ BEGIN
   LEFT JOIN blog_categories bc ON tq.category_id = bc.id
   WHERE tq.id = v_topic_id;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
+
+REVOKE ALL ON FUNCTION get_next_topic_for_generation() FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION get_next_topic_for_generation() TO service_role;
 
 -- 10. Function to get post count by category
 CREATE OR REPLACE FUNCTION get_category_post_counts()
@@ -276,4 +279,4 @@ BEGIN
   GROUP BY bc.id, bc.slug, bc.name, bc.description
   ORDER BY bc.name;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;

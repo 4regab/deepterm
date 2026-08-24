@@ -1,32 +1,6 @@
 import { createServerSupabaseClient } from '@/config/supabase/server'
 import { NextResponse } from 'next/server'
-
-// Trusted origins — prevents host header injection (CWE-644)
-const TRUSTED_ORIGINS = [
-  'https://deepterm.app',
-  'https://www.deepterm.app',
-  'https://deepterm.vercel.app',
-]
-
-/**
- * Returns a trusted origin, falling back to the primary domain.
- * Prevents host header injection by ignoring untrusted request origins.
- */
-function getTrustedOrigin(requestUrl: URL): string {
-  const requestOrigin = requestUrl.origin
-
-  // In development, allow localhost
-  if (process.env.NODE_ENV === 'development' && requestOrigin.startsWith('http://localhost')) {
-    return requestOrigin
-  }
-
-  if (TRUSTED_ORIGINS.includes(requestOrigin)) {
-    return requestOrigin
-  }
-
-  // Fallback to primary domain — never trust an unknown Host header
-  return TRUSTED_ORIGINS[0]
-}
+import { getTrustedOrigin } from '@/lib/auth/trustedOrigins'
 
 /**
  * Validates that a redirect path is safe (relative, no open redirect).

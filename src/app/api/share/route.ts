@@ -1,7 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerSupabaseClient } from '@/config/supabase/server'
 import { ShareCodeCreateSchema, ShareMaterialTypeSchema } from '@/lib/schemas/sharing'
+import { forbiddenUnlessSameOrigin } from '@/lib/auth/assertSameOrigin'
 import { z } from 'zod'
+
+const ShareLookupSchema = z.object({
+  materialType: ShareMaterialTypeSchema,
+  materialId: z.string().uuid(),
+})
 
 const SHARE_CODE_ALPHABET = 'abcdefghijklmnopqrstuvwxyz0123456789'
 const DEFAULT_SHARE_CODE_LENGTH = 16
@@ -60,6 +66,9 @@ async function generateUniqueShareCode(
 
 // GET - Get share info for a material
 export async function GET(request: NextRequest) {
+  const csrf = forbiddenUnlessSameOrigin(request)
+  if (csrf) return csrf
+
   const supabase = await createServerSupabaseClient()
   const { data: { user } } = await supabase.auth.getUser()
 
@@ -68,12 +77,16 @@ export async function GET(request: NextRequest) {
   }
 
   const { searchParams } = new URL(request.url)
-  const materialType = searchParams.get('materialType')
-  const materialId = searchParams.get('materialId')
+  const parsedQuery = ShareLookupSchema.safeParse({
+    materialType: searchParams.get('materialType'),
+    materialId: searchParams.get('materialId'),
+  })
 
-  if (!materialType || !materialId) {
-    return NextResponse.json({ error: 'Missing parameters' }, { status: 400 })
+  if (!parsedQuery.success) {
+    return NextResponse.json({ error: 'Invalid parameters' }, { status: 400 })
   }
+
+  const { materialType, materialId } = parsedQuery.data
 
   // Optimized: only select needed columns
   const { data: share } = await supabase
@@ -89,6 +102,9 @@ export async function GET(request: NextRequest) {
 
 // POST - Create or update share
 export async function POST(request: NextRequest) {
+  const csrf = forbiddenUnlessSameOrigin(request)
+  if (csrf) return csrf
+
   const supabase = await createServerSupabaseClient()
   const { data: { user } } = await supabase.auth.getUser()
 
@@ -191,6 +207,9 @@ export async function POST(request: NextRequest) {
 
 // PATCH - Update share (toggle active, change code)
 export async function PATCH(request: NextRequest) {
+  const csrf = forbiddenUnlessSameOrigin(request)
+  if (csrf) return csrf
+
   const supabase = await createServerSupabaseClient()
   const { data: { user } } = await supabase.auth.getUser()
 
@@ -199,9 +218,11 @@ export async function PATCH(request: NextRequest) {
   }
 
   const body = await request.json()
-  const { shareId, isActive, newCode } = body
+  const shareId = z.string().uuid().safeParse(body?.shareId)
+  const isActive = body?.isActive
+  const newCode = body?.newCode
 
-  if (!shareId) {
+  if (!shareId.success) {
     return NextResponse.json({ error: 'Missing shareId' }, { status: 400 })
   }
 
@@ -222,7 +243,7 @@ export async function PATCH(request: NextRequest) {
       .from('material_shares')
       .select('id')
       .eq('share_code', newCode)
-      .neq('id', shareId)
+      .neq('id', shareId.data)
       .maybeSingle()
 
     if (codeExistsError) {
@@ -240,7 +261,7 @@ export async function PATCH(request: NextRequest) {
   const { data: share, error } = await supabase
     .from('material_shares')
     .update(updates)
-    .eq('id', shareId)
+    .eq('id', shareId.data)
     .eq('user_id', user.id)
     .select()
     .single()
@@ -254,6 +275,9 @@ export async function PATCH(request: NextRequest) {
 
 // DELETE - Remove share
 export async function DELETE(request: NextRequest) {
+  const csrf = forbiddenUnlessSameOrigin(request)
+  if (csrf) return csrf
+
   const supabase = await createServerSupabaseClient()
   const { data: { user } } = await supabase.auth.getUser()
 
@@ -262,16 +286,16 @@ export async function DELETE(request: NextRequest) {
   }
 
   const { searchParams } = new URL(request.url)
-  const shareId = searchParams.get('shareId')
+  const shareId = z.string().uuid().safeParse(searchParams.get('shareId'))
 
-  if (!shareId) {
+  if (!shareId.success) {
     return NextResponse.json({ error: 'Missing shareId' }, { status: 400 })
   }
 
   const { error } = await supabase
     .from('material_shares')
     .delete()
-    .eq('id', shareId)
+    .eq('id', shareId.data)
     .eq('user_id', user.id)
 
   if (error) {

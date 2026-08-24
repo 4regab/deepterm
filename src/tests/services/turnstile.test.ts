@@ -45,7 +45,7 @@ describe("verifyTurnstileToken", () => {
       Promise.resolve(
         new Response(JSON.stringify({ success: true, hostname: "localhost" }), { status: 200 }),
       ),
-    ) as typeof fetch;
+    ) as unknown as typeof fetch;
 
     const result = await verifyTurnstileToken("valid-token", requestWithIp(), enabledConfig);
     expect(result).toEqual({ ok: true });
@@ -58,7 +58,7 @@ describe("verifyTurnstileToken", () => {
           status: 200,
         }),
       ),
-    ) as typeof fetch;
+    ) as unknown as typeof fetch;
 
     const result = await verifyTurnstileToken("bad-token", requestWithIp(), enabledConfig);
     expect(result.ok).toBe(false);
@@ -69,7 +69,7 @@ describe("verifyTurnstileToken", () => {
       Promise.resolve(
         new Response(JSON.stringify({ success: true, hostname: "evil.example" }), { status: 200 }),
       ),
-    ) as typeof fetch;
+    ) as unknown as typeof fetch;
 
     const result = await verifyTurnstileToken("valid-token", requestWithIp(), enabledConfig);
     expect(result.ok).toBe(false);

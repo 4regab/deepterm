@@ -5,6 +5,7 @@ import { checkShareRateLimit, getRequestIdentifier } from '@/services/shareRateL
 import { hashRequestIdentity } from '@/lib/auth/requestIdentity'
 import { buildReviewerInsertPayloads } from '@/utils/reviewerBatch'
 import { z } from 'zod'
+import { forbiddenUnlessSameOrigin } from '@/lib/auth/assertSameOrigin'
 
 const CopySharedMaterialSchema = z.object({
   shareCode: ShareCodeSchema,
@@ -12,6 +13,9 @@ const CopySharedMaterialSchema = z.object({
 
 // POST - Copy shared material to user's collection
 export async function POST(request: NextRequest) {
+  const csrf = forbiddenUnlessSameOrigin(request)
+  if (csrf) return csrf
+
   const supabase = await createServerSupabaseClient()
   const { data: { user } } = await supabase.auth.getUser()
   

@@ -443,7 +443,7 @@ BEGIN
     WHERE ms.share_code = p_share_code 
     AND ms.is_active = true;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
 -- Get shared flashcard set by share code (secure access)
 CREATE OR REPLACE FUNCTION get_shared_flashcard_set(p_share_code text)
@@ -468,7 +468,7 @@ BEGIN
     AND ms.is_active = true
     AND ms.material_type = 'flashcard_set';
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
 -- Get shared flashcards by share code (secure access)
 -- Note: Does NOT expose user study progress (status, last_reviewed)
@@ -493,7 +493,7 @@ BEGIN
     AND ms.is_active = true
     AND ms.material_type = 'flashcard_set';
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
 -- Grant execute permissions to anonymous and authenticated users
 GRANT EXECUTE ON FUNCTION validate_share_code(text) TO anon, authenticated;
