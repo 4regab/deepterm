@@ -77,6 +77,7 @@ export default function HomeClient() {
               alt=""
               src={imgPlanet2}
               fill
+              priority
               className="object-contain"
               style={{ transform: "rotate(10deg)" }}
               unoptimized
@@ -88,6 +89,7 @@ export default function HomeClient() {
               alt=""
               src={imgPlanet1}
               fill
+              priority
               className="object-contain"
               style={{ transform: "rotate(-15deg)" }}
               unoptimized
