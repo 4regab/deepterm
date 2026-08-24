@@ -9,12 +9,21 @@ import {
 } from '@/utils/materialFolder'
 
 describe('sanitizeFolder', () => {
-  it('trims, strips tags, and caps length', () => {
+  it('trims whitespace and caps length', () => {
     expect(sanitizeFolder('  Biology  ')).toBe('Biology')
-    expect(sanitizeFolder('<b>Chem</b>')).toBe('Chem')
     expect(sanitizeFolder('   ')).toBeNull()
     expect(sanitizeFolder(null)).toBeNull()
     expect(sanitizeFolder('a'.repeat(50))?.length).toBe(40)
+  })
+
+  it('strips all angle brackets so residual markup cannot remain', () => {
+    expect(sanitizeFolder('<b>Chem</b>')).toBe('bChem/b')
+    expect(sanitizeFolder('<script')).toBe('script')
+    expect(sanitizeFolder('<<script>alert(1)</script>')).toBe('scriptalert(1)/script')
+    expect(sanitizeFolder('Bio<script src=x')).toBe('Bioscript src=x')
+    expect(sanitizeFolder('<>')).toBeNull()
+    expect(sanitizeFolder('<script')).not.toMatch(/[<>]/)
+    expect(sanitizeFolder('AP Bio 101')).toBe('AP Bio 101')
   })
 })
 

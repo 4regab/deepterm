@@ -3,7 +3,8 @@ export const MAX_FOLDER_LENGTH = 40
 
 export function sanitizeFolder(value: string | null | undefined): string | null {
   if (!value) return null
-  const cleaned = value.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim()
+  // Strip angle brackets entirely so incomplete tags like `<script` cannot remain.
+  const cleaned = value.replace(/[<>]/g, '').replace(/\s+/g, ' ').trim()
   if (!cleaned) return null
   return cleaned.slice(0, MAX_FOLDER_LENGTH)
 }
