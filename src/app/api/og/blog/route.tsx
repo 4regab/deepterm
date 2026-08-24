@@ -132,7 +132,7 @@ export async function GET(request: NextRequest) {
                 DeepTerm
               </span>
               <span style={{ fontSize: '14px', color: 'rgba(255, 255, 255, 0.5)' }}>
-                deepterm.tech/blog
+                deepterm.app/blog
               </span>
             </div>
           </div>

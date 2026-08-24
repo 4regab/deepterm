@@ -121,7 +121,7 @@ export async function GET(request: NextRequest) {
             fontSize: '18px',
           }}
         >
-          deepterm.tech
+          deepterm.app
         </div>
       </div>
     ),

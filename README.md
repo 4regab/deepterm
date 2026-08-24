@@ -271,7 +271,7 @@ GEMINI_API_KEY_5=your_gemini_api_key_5
 # Cloudflare Turnstile - Bot protection (optional, auth works without it)
 NEXT_PUBLIC_TURNSTILE_SITE_KEY=your_turnstile_site_key
 TURNSTILE_SECRET=your_turnstile_secret
-TURNSTILE_HOSTNAMES=deepterm.app,www.deepterm.app,localhost,127.0.0.1,deepterm.vercel.app
+TURNSTILE_HOSTNAMES=deepterm.app,www.deepterm.app,localhost,127.0.0.1
 
 # Unsplash - Blog hero images (optional)
 UNSPLASH_ACCESS_KEY=your_unsplash_access_key
