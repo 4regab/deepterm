@@ -7,8 +7,8 @@ export function serializeJsonLd(data: unknown): string {
 export const siteConfig = {
   name: 'DeepTerm',
   description: 'AI-powered study companion that transforms any material into flashcards, reviewers, and practice tests. Free alternative to Quizlet and Gizmo.',
-  url: 'https://deepterm.tech',
-  ogImage: 'https://deepterm.tech/opengraph-image',
+  url: 'https://deepterm.app',
+  ogImage: 'https://deepterm.app/opengraph-image',
   creator: 'DeepTerm',
   keywords: [
     'study app',
@@ -24,7 +24,7 @@ export const siteConfig = {
     'active learning',
     'study techniques',
   ],
-  authors: [{ name: 'DeepTerm', url: 'https://deepterm.tech' }],
+  authors: [{ name: 'DeepTerm', url: 'https://deepterm.app' }],
   links: {
     github: 'https://github.com/4regab/deepterm',
     twitter: 'https://twitter.com/deepterm',

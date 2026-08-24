@@ -8,19 +8,17 @@ import {
 import { forbiddenUnlessSameOrigin } from '@/lib/auth/assertSameOrigin'
 
 describe('trustedOrigins', () => {
-  it('allows the canonical production origin', () => {
-    expect(isTrustedOrigin('https://deepterm.tech')).toBe(true)
-    expect(isTrustedOrigin('https://www.deepterm.tech')).toBe(true)
-  })
-
-  it('allows legacy and preview origins', () => {
+  it('allows the production domain only', () => {
     expect(isTrustedOrigin('https://deepterm.app')).toBe(true)
-    expect(isTrustedOrigin('https://deepterm.vercel.app')).toBe(true)
+    expect(isTrustedOrigin('https://www.deepterm.app')).toBe(true)
   })
 
-  it('rejects unknown and protocol-relative origins', () => {
+  it('rejects every other host, including old preview URLs', () => {
+    expect(isTrustedOrigin('https://deepterm.tech')).toBe(false)
+    expect(isTrustedOrigin('https://www.deepterm.tech')).toBe(false)
+    expect(isTrustedOrigin('https://deepterm.vercel.app')).toBe(false)
     expect(isTrustedOrigin('https://evil.example')).toBe(false)
-    expect(isTrustedOrigin('https://deepterm.tech.evil.com')).toBe(false)
+    expect(isTrustedOrigin('https://deepterm.app.evil.com')).toBe(false)
     expect(isTrustedOrigin(null)).toBe(false)
   })
 
@@ -28,23 +26,23 @@ describe('trustedOrigins', () => {
     expect(getTrustedOrigin(new URL('https://evil.example/auth/callback'))).toBe(
       CANONICAL_ORIGIN,
     )
-    expect(getTrustedOrigin(new URL('https://deepterm.tech/auth/callback'))).toBe(
-      'https://deepterm.tech',
+    expect(getTrustedOrigin(new URL('https://deepterm.app/auth/callback'))).toBe(
+      'https://deepterm.app',
     )
   })
 })
 
 describe('forbiddenUnlessSameOrigin', () => {
   it('allows a trusted Origin', () => {
-    const request = new NextRequest('https://deepterm.tech/api/share', {
+    const request = new NextRequest('https://deepterm.app/api/share', {
       method: 'POST',
-      headers: { origin: 'https://deepterm.tech' },
+      headers: { origin: 'https://deepterm.app' },
     })
     expect(forbiddenUnlessSameOrigin(request)).toBeNull()
   })
 
   it('rejects a cross-site Origin', async () => {
-    const request = new NextRequest('https://deepterm.tech/api/share', {
+    const request = new NextRequest('https://deepterm.app/api/share', {
       method: 'POST',
       headers: { origin: 'https://evil.example' },
     })
@@ -54,9 +52,9 @@ describe('forbiddenUnlessSameOrigin', () => {
   })
 
   it('falls back to a trusted Referer when Origin is absent', () => {
-    const request = new NextRequest('https://deepterm.tech/api/share', {
+    const request = new NextRequest('https://deepterm.app/api/share', {
       method: 'POST',
-      headers: { referer: 'https://deepterm.tech/materials' },
+      headers: { referer: 'https://deepterm.app/materials' },
     })
     expect(forbiddenUnlessSameOrigin(request)).toBeNull()
   })

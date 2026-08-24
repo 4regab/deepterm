@@ -4,21 +4,23 @@ import { resolveAuthCallbackPath, sanitizeRedirectPath } from '@/lib/auth/redire
 
 describe('trustedOrigins', () => {
   it('includes the canonical production domain from siteConfig', () => {
-    expect(PRIMARY_ORIGIN).toBe('https://deepterm.tech')
-    expect(TRUSTED_PRODUCTION_ORIGINS).toContain('https://deepterm.tech')
-    expect(TRUSTED_PRODUCTION_ORIGINS).toContain('https://www.deepterm.tech')
+    expect(PRIMARY_ORIGIN).toBe('https://deepterm.app')
+    expect(TRUSTED_PRODUCTION_ORIGINS).toContain('https://deepterm.app')
+    expect(TRUSTED_PRODUCTION_ORIGINS).toContain('https://www.deepterm.app')
+    expect(TRUSTED_PRODUCTION_ORIGINS).not.toContain('https://deepterm.tech')
+    expect(TRUSTED_PRODUCTION_ORIGINS).not.toContain('https://deepterm.vercel.app')
   })
 
   it('accepts known production origins and localhost in development', () => {
-    expect(isTrustedOrigin('https://deepterm.tech')).toBe(true)
     expect(isTrustedOrigin('https://deepterm.app')).toBe(true)
+    expect(isTrustedOrigin('https://deepterm.tech')).toBe(false)
     expect(isTrustedOrigin('https://evil.example')).toBe(false)
     expect(isTrustedOrigin('http://localhost:3000', true)).toBe(true)
     expect(isTrustedOrigin('http://localhost:3000', false)).toBe(false)
   })
 
   it('falls back to the canonical origin instead of an untrusted Host header', () => {
-    expect(getTrustedOrigin('https://evil.example')).toBe('https://deepterm.tech')
+    expect(getTrustedOrigin('https://evil.example')).toBe('https://deepterm.app')
     expect(getTrustedOrigin('https://deepterm.app')).toBe('https://deepterm.app')
   })
 })

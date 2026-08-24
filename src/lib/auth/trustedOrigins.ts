@@ -1,15 +1,12 @@
 /**
  * Single allowlist for Origin/Host checks (CORS, CSRF, OAuth redirects).
- * Production canonical host is deepterm.tech; .app and vercel.app are legacy.
+ * Production domain is deepterm.app only.
  */
-export const CANONICAL_ORIGIN = 'https://deepterm.tech'
+export const CANONICAL_ORIGIN = 'https://deepterm.app'
 
 export const TRUSTED_ORIGINS = [
   CANONICAL_ORIGIN,
-  'https://www.deepterm.tech',
-  'https://deepterm.app',
   'https://www.deepterm.app',
-  'https://deepterm.vercel.app',
 ] as const
 
 export const TRUSTED_PRODUCTION_ORIGINS = TRUSTED_ORIGINS
