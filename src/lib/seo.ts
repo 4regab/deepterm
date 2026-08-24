@@ -1,5 +1,9 @@
 import { Metadata } from 'next'
 
+export function serializeJsonLd(data: unknown): string {
+  return JSON.stringify(data).replace(/</g, '\\u003c')
+}
+
 export const siteConfig = {
   name: 'DeepTerm',
   description: 'AI-powered study companion that transforms any material into flashcards, reviewers, and practice tests. Free alternative to Quizlet and Gizmo.',

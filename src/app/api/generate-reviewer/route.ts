@@ -4,6 +4,7 @@ import { checkAndIncrementAIUsage } from "@/services/rateLimit";
 import { generateContentWithRotation, uploadFileWithRotation, getApiKeyCount, Type } from "@/services/geminiClient";
 import { verifyTurnstileToken } from "@/services/turnstile";
 import { MAX_GENERATE_TEXT_LENGTH, MAX_REVIEWER_FILE_SIZE, resolveGenerateMimeType } from "@/utils/generateInput";
+import { forbiddenUnlessSameOrigin } from "@/lib/auth/assertSameOrigin";
 
 // File size limits (in bytes)
 const MAX_FILE_SIZE = MAX_REVIEWER_FILE_SIZE;
@@ -76,6 +77,9 @@ const reviewerResponseSchema = {
 };
 
 export async function POST(request: NextRequest) {
+    const csrf = forbiddenUnlessSameOrigin(request);
+    if (csrf) return csrf;
+
     if (getApiKeyCount() === 0) {
         return NextResponse.json({ error: "No Gemini API keys configured" }, { status: 500 });
     }

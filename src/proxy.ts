@@ -14,9 +14,11 @@ function buildCspHeader(nonce: string): string {
     "font-src 'self' data: https://fonts.gstatic.com",
     "connect-src 'self' https://generativelanguage.googleapis.com https://challenges.cloudflare.com https://www.googletagmanager.com https://www.google-analytics.com https://region1.google-analytics.com https://us.i.posthog.com https://*.posthog.com https://*.supabase.co",
     "frame-src 'self' https://challenges.cloudflare.com",
-    "frame-ancestors 'self'",
+    "frame-ancestors 'none'",
+    "object-src 'none'",
     "base-uri 'self'",
-    "form-action 'self'"
+    "form-action 'self'",
+    ...(IS_DEV ? [] : ["upgrade-insecure-requests"]),
   ].join('; ')
 }
 
@@ -63,17 +65,21 @@ export async function proxy(request: NextRequest) {
   // Set CSP with nonce (replaces static unsafe-inline from next.config.ts)
   response.headers.set('Content-Security-Policy', buildCspHeader(nonce))
 
-  // CORS: Only allow trusted origins (SECURITY FIX)
-  if (origin) {
-    const isDev = process.env.NODE_ENV === 'development'
-    const isAllowed = isTrustedOrigin(origin, isDev)
+  // CORS only on API routes. Reflecting Origin on every document response
+  // is unnecessary and widens the credentialed CORS surface.
+  if (pathname.startsWith('/api/') && origin && isTrustedOrigin(origin)) {
+    response.headers.set('Access-Control-Allow-Origin', origin)
+    response.headers.set('Vary', 'Origin')
+    response.headers.set('Access-Control-Allow-Credentials', 'true')
+    response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS')
+    response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+  }
 
-    if (isAllowed) {
-      response.headers.set('Access-Control-Allow-Origin', origin)
-      response.headers.set('Access-Control-Allow-Credentials', 'true')
-      response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
-      response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization')
-    }
+  if (
+    pathname.startsWith('/api/generate-') ||
+    pathname.startsWith('/api/share')
+  ) {
+    response.headers.set('Cache-Control', 'private, no-store')
   }
 
   // Handle preflight requests
@@ -102,7 +108,18 @@ export async function proxy(request: NextRequest) {
           })
           // Re-apply CSP with nonce on the new response
           newResponse.headers.set('Content-Security-Policy', buildCspHeader(nonce))
-          // Set cookies on response
+          const allowOrigin = response.headers.get('Access-Control-Allow-Origin')
+          if (allowOrigin) {
+            newResponse.headers.set('Access-Control-Allow-Origin', allowOrigin)
+            newResponse.headers.set('Vary', 'Origin')
+            newResponse.headers.set('Access-Control-Allow-Credentials', 'true')
+            newResponse.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS')
+            newResponse.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+          }
+          const cacheControl = response.headers.get('Cache-Control')
+          if (cacheControl) {
+            newResponse.headers.set('Cache-Control', cacheControl)
+          }
           cookiesToSet.forEach(({ name, value, options }) =>
             newResponse.cookies.set(name, value, options)
           )

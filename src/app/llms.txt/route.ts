@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { getPublishedPosts, getCategoriesWithCounts } from '@/lib/blog'
+import { siteConfig } from '@/lib/seo'
 
 export const revalidate = 3600 // Revalidate every hour
 
@@ -9,7 +10,7 @@ export async function GET() {
         getCategoriesWithCounts(),
     ])
 
-    const baseUrl = 'https://deepterm.tech'
+    const baseUrl = siteConfig.url
 
     const categoryLines = categories
         .filter((c) => c.post_count > 0)
@@ -55,7 +56,7 @@ export async function GET() {
         '## Optional',
         '',
         '- [GitHub Repository](https://github.com/4regab/deepterm): Open-source codebase',
-        '- [Donate](https://ko-fi.com/deepterm): Support development on Ko-fi',
+        '- [Donate](https://ko-fi.com/4regab): Support development on Ko-fi',
         '',
     ]
 

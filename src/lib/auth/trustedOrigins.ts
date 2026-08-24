@@ -1,23 +1,50 @@
-export const TRUSTED_PRODUCTION_ORIGINS = [
-  'https://deepterm.tech',
+/**
+ * Single allowlist for Origin/Host checks (CORS, CSRF, OAuth redirects).
+ * Production canonical host is deepterm.tech; .app and vercel.app are legacy.
+ */
+export const CANONICAL_ORIGIN = 'https://deepterm.tech'
+
+export const TRUSTED_ORIGINS = [
+  CANONICAL_ORIGIN,
   'https://www.deepterm.tech',
   'https://deepterm.app',
   'https://www.deepterm.app',
   'https://deepterm.vercel.app',
 ] as const
 
-export const PRIMARY_ORIGIN = TRUSTED_PRODUCTION_ORIGINS[0]
+export const TRUSTED_PRODUCTION_ORIGINS = TRUSTED_ORIGINS
+export const PRIMARY_ORIGIN = CANONICAL_ORIGIN
 
-export function isTrustedOrigin(origin: string, isDev = false): boolean {
-  if ((TRUSTED_PRODUCTION_ORIGINS as readonly string[]).includes(origin)) {
-    return true
-  }
-  return isDev && origin.startsWith('http://localhost')
+export function isLocalDevOrigin(origin: string): boolean {
+  return (
+    origin.startsWith('http://localhost:') ||
+    origin.startsWith('http://127.0.0.1:')
+  )
 }
 
-export function getTrustedOrigin(requestOrigin: string, isDev = false): string {
-  if (isTrustedOrigin(requestOrigin, isDev)) {
-    return requestOrigin
+export function isTrustedOrigin(
+  origin: string | null | undefined,
+  isDev = process.env.NODE_ENV === 'development',
+): boolean {
+  if (!origin) return false
+  if ((TRUSTED_ORIGINS as readonly string[]).includes(origin)) return true
+  if (isDev && isLocalDevOrigin(origin)) {
+    return true
   }
-  return PRIMARY_ORIGIN
+  return false
+}
+
+/** Never reflect the request Host header for redirects. */
+export function getTrustedOrigin(
+  requestOriginOrUrl: string | URL,
+  isDev = process.env.NODE_ENV === 'development',
+): string {
+  const origin =
+    typeof requestOriginOrUrl === 'string'
+      ? requestOriginOrUrl
+      : requestOriginOrUrl.origin
+  if (isTrustedOrigin(origin, isDev)) {
+    return origin
+  }
+  return CANONICAL_ORIGIN
 }

@@ -7,7 +7,7 @@ export async function GET(request: Request) {
   const requestUrl = new URL(request.url)
   const code = requestUrl.searchParams.get('code')
   const returnTo = requestUrl.searchParams.get('returnTo')
-  const origin = getTrustedOrigin(requestUrl.origin, process.env.NODE_ENV === 'development')
+  const origin = getTrustedOrigin(requestUrl)
 
   if (!code) {
     return NextResponse.redirect(`${origin}${resolveAuthCallbackPath({ hasCode: false })}`)

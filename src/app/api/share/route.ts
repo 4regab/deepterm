@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerSupabaseClient } from '@/config/supabase/server'
-import { ShareCodeCreateSchema, ShareMaterialTypeSchema, ShareGetQuerySchema, SharePatchSchema } from '@/lib/schemas/sharing'
+import { ShareCodeCreateSchema, ShareGetQuerySchema, ShareMaterialTypeSchema, SharePatchSchema } from '@/lib/schemas/sharing'
+import { forbiddenUnlessSameOrigin } from '@/lib/auth/assertSameOrigin'
 import { z } from 'zod'
 
 const SHARE_CODE_ALPHABET = 'abcdefghijklmnopqrstuvwxyz0123456789'
@@ -60,6 +61,9 @@ async function generateUniqueShareCode(
 
 // GET - Get share info for a material
 export async function GET(request: NextRequest) {
+  const csrf = forbiddenUnlessSameOrigin(request)
+  if (csrf) return csrf
+
   const supabase = await createServerSupabaseClient()
   const { data: { user } } = await supabase.auth.getUser()
 
@@ -93,6 +97,9 @@ export async function GET(request: NextRequest) {
 
 // POST - Create or update share
 export async function POST(request: NextRequest) {
+  const csrf = forbiddenUnlessSameOrigin(request)
+  if (csrf) return csrf
+
   const supabase = await createServerSupabaseClient()
   const { data: { user } } = await supabase.auth.getUser()
 
@@ -196,6 +203,9 @@ export async function POST(request: NextRequest) {
 
 // PATCH - Update share (toggle active, change code)
 export async function PATCH(request: NextRequest) {
+  const csrf = forbiddenUnlessSameOrigin(request)
+  if (csrf) return csrf
+
   const supabase = await createServerSupabaseClient()
   const { data: { user } } = await supabase.auth.getUser()
 
@@ -261,6 +271,9 @@ export async function PATCH(request: NextRequest) {
 
 // DELETE - Remove share
 export async function DELETE(request: NextRequest) {
+  const csrf = forbiddenUnlessSameOrigin(request)
+  if (csrf) return csrf
+
   const supabase = await createServerSupabaseClient()
   const { data: { user } } = await supabase.auth.getUser()
 
@@ -269,16 +282,16 @@ export async function DELETE(request: NextRequest) {
   }
 
   const { searchParams } = new URL(request.url)
-  const shareId = searchParams.get('shareId')
+  const shareId = z.string().uuid().safeParse(searchParams.get('shareId'))
 
-  if (!shareId) {
+  if (!shareId.success) {
     return NextResponse.json({ error: 'Missing shareId' }, { status: 400 })
   }
 
   const { error } = await supabase
     .from('material_shares')
     .delete()
-    .eq('id', shareId)
+    .eq('id', shareId.data)
     .eq('user_id', user.id)
 
   if (error) {

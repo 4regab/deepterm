@@ -5,6 +5,7 @@ import { generateContentWithRotation, uploadFileWithRotation, getApiKeyCount, Ty
 import { verifyTurnstileToken } from "@/services/turnstile";
 import { MAX_CARDS_FILE_SIZE, MAX_GENERATE_TEXT_LENGTH, resolveGenerateMimeType } from "@/utils/generateInput";
 import { z } from "zod";
+import { forbiddenUnlessSameOrigin } from "@/lib/auth/assertSameOrigin";
 
 // File size limits (in bytes)
 const MAX_FILE_SIZE = MAX_CARDS_FILE_SIZE;
@@ -36,6 +37,9 @@ const flashcardResponseSchema = {
 };
 
 export async function POST(request: NextRequest) {
+  const csrf = forbiddenUnlessSameOrigin(request);
+  if (csrf) return csrf;
+
   if (getApiKeyCount() === 0) {
     return NextResponse.json({ error: "No Gemini API keys configured" }, { status: 500 });
   }

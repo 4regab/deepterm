@@ -8,6 +8,7 @@ import {
   generateWebsiteJsonLd,
   generateOrganizationJsonLd,
   generateSoftwareAppJsonLd,
+  serializeJsonLd,
 } from "@/lib/seo";
 import { PostHogProvider } from "@/components/PostHogProvider";
 import { SkipLink } from "@/components/ui";
@@ -54,17 +55,17 @@ export default async function RootLayout({
         <script
           nonce={nonce}
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd) }}
+          dangerouslySetInnerHTML={{ __html: serializeJsonLd(websiteJsonLd) }}
         />
         <script
           nonce={nonce}
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd) }}
+          dangerouslySetInnerHTML={{ __html: serializeJsonLd(organizationJsonLd) }}
         />
         <script
           nonce={nonce}
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(softwareAppJsonLd) }}
+          dangerouslySetInnerHTML={{ __html: serializeJsonLd(softwareAppJsonLd) }}
         />
       </head>
       <body suppressHydrationWarning>
