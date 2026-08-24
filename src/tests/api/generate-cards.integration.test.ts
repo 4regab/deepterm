@@ -17,7 +17,8 @@ import { mockGeminiResponse, resetAllMocks } from '../setup'
 const mockCheckAndIncrementAIUsage = mock(() => Promise.resolve({ 
   allowed: true, 
   remaining: 9, 
-  resetAt: new Date() 
+  resetAt: new Date(),
+  authenticated: true,
 }))
 
 const mockGenerateContentWithRotation = mock(() => Promise.resolve({
@@ -82,7 +83,8 @@ describe('POST /api/generate-cards', () => {
     mockCheckAndIncrementAIUsage.mockResolvedValue({ 
       allowed: true, 
       remaining: 9, 
-      resetAt: new Date() 
+      resetAt: new Date(),
+      authenticated: true,
     })
     mockGenerateContentWithRotation.mockResolvedValue({
       text: mockGeminiResponse.text
@@ -112,7 +114,8 @@ describe('POST /api/generate-cards', () => {
       mockCheckAndIncrementAIUsage.mockResolvedValueOnce({ 
         allowed: false, 
         remaining: 0, 
-        resetAt: resetTime 
+        resetAt: resetTime,
+        authenticated: true,
       })
 
       const request = createFormDataRequest({ textContent: 'Test content' })
@@ -125,11 +128,28 @@ describe('POST /api/generate-cards', () => {
       expect(body.resetAt).toBe(resetTime.toISOString())
     })
 
+    it('should return 401 when unauthenticated', async () => {
+      mockCheckAndIncrementAIUsage.mockResolvedValueOnce({
+        allowed: false,
+        remaining: 0,
+        resetAt: new Date(),
+        authenticated: false,
+      })
+
+      const request = createFormDataRequest({ textContent: 'Test content' })
+      const response = await POST(request)
+
+      expect(response.status).toBe(401)
+      const body = await response.json()
+      expect(body.error).toBe('Not authenticated')
+    })
+
     it('should include remaining count in successful response', async () => {
       mockCheckAndIncrementAIUsage.mockResolvedValueOnce({ 
         allowed: true, 
         remaining: 5, 
-        resetAt: new Date() 
+        resetAt: new Date(),
+        authenticated: true,
       })
 
       const request = createFormDataRequest({ textContent: 'Test content' })
