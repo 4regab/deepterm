@@ -1,6 +1,7 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": "nextjs",
+  "installCommand": "bun install",
   "crons": [
     {
       "path": "/api/cron/generate-article",

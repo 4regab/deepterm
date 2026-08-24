@@ -121,7 +121,7 @@ Bun test + `src/tests/setup.ts`. Prefer factories there.
 - No `Co-authored-by`, Cursor, or “made with” trailers.
 - Don’t commit unless asked. Don’t force-push `main`.
 - Messages: `feat(security): …`, `fix(auth): …`.
-- Before opening a PR, run `bun audit` and fix every finding (0 vulnerabilities). Nested holes go in `package.json` `overrides` (version-scoped when majors differ). Do not open or update a PR with a dirty audit.
+- Before opening a PR, run `bun audit` and fix every finding (0 vulnerabilities). Nested holes go in `package.json` `overrides`. Use npm nested objects (`"postcss": { ".": "…", "nanoid": "…" }`), never `parent>child` keys — Vercel may run `npm install`. Do not open or update a PR with a dirty audit.
 
 ## Don’t
 
