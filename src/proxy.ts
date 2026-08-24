@@ -15,12 +15,12 @@ const IS_DEV = process.env.NODE_ENV === 'development'
 function buildCspHeader(nonce: string): string {
   return [
     "default-src 'self'",
-    `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'${IS_DEV ? " 'unsafe-eval'" : ''} https://hcaptcha.com https://*.hcaptcha.com https://www.googletagmanager.com https://www.google-analytics.com https://us-assets.i.posthog.com https://*.posthog.com`,
-    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://hcaptcha.com https://*.hcaptcha.com",
-    "img-src 'self' data: blob: https://lh3.googleusercontent.com https://*.googleusercontent.com https://hcaptcha.com https://*.hcaptcha.com https://www.googletagmanager.com https://www.google-analytics.com",
+    `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'${IS_DEV ? " 'unsafe-eval'" : ''} https://challenges.cloudflare.com https://www.googletagmanager.com https://www.google-analytics.com https://us-assets.i.posthog.com https://*.posthog.com`,
+    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://challenges.cloudflare.com",
+    "img-src 'self' data: blob: https://lh3.googleusercontent.com https://*.googleusercontent.com https://challenges.cloudflare.com https://www.googletagmanager.com https://www.google-analytics.com",
     "font-src 'self' data: https://fonts.gstatic.com",
-    "connect-src 'self' https://generativelanguage.googleapis.com https://hcaptcha.com https://*.hcaptcha.com https://www.googletagmanager.com https://www.google-analytics.com https://region1.google-analytics.com https://us.i.posthog.com https://*.posthog.com https://*.supabase.co",
-    "frame-src 'self' https://hcaptcha.com https://*.hcaptcha.com",
+    "connect-src 'self' https://generativelanguage.googleapis.com https://challenges.cloudflare.com https://www.googletagmanager.com https://www.google-analytics.com https://region1.google-analytics.com https://us.i.posthog.com https://*.posthog.com https://*.supabase.co",
+    "frame-src 'self' https://challenges.cloudflare.com",
     "frame-ancestors 'self'",
     "base-uri 'self'",
     "form-action 'self'"

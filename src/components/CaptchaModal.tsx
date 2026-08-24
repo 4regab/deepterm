@@ -2,7 +2,8 @@
 
 import { useRef, useCallback, useEffect } from "react";
 import { X, ShieldCheck } from "lucide-react";
-import HCaptcha from "@hcaptcha/react-hcaptcha";
+import { Turnstile } from "@marsidev/react-turnstile";
+import type { TurnstileInstance } from "@marsidev/react-turnstile";
 
 interface Props {
     isOpen: boolean;
@@ -12,8 +13,8 @@ interface Props {
 }
 
 export default function CaptchaModal({ isOpen, onClose, onVerify, onError }: Props) {
-    const captchaRef = useRef<HCaptcha>(null);
-    const sitekey = process.env.NEXT_PUBLIC_HCAPTCHA_SITEKEY;
+    const captchaRef = useRef<TurnstileInstance>(null);
+    const siteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
 
     const handleVerify = useCallback((token: string) => {
         onVerify(token);
@@ -21,22 +22,20 @@ export default function CaptchaModal({ isOpen, onClose, onVerify, onError }: Pro
     }, [onVerify, onClose]);
 
     const handleExpire = useCallback(() => {
-        captchaRef.current?.resetCaptcha();
+        captchaRef.current?.reset();
     }, []);
 
     const handleError = useCallback(() => {
-        captchaRef.current?.resetCaptcha();
+        captchaRef.current?.reset();
         onError?.();
     }, [onError]);
 
-    // Reset captcha when modal opens
     useEffect(() => {
         if (isOpen) {
-            captchaRef.current?.resetCaptcha();
+            captchaRef.current?.reset();
         }
     }, [isOpen]);
 
-    // Handle escape key
     useEffect(() => {
         const handleEscape = (e: KeyboardEvent) => {
             if (e.key === "Escape" && isOpen) {
@@ -47,7 +46,7 @@ export default function CaptchaModal({ isOpen, onClose, onVerify, onError }: Pro
         return () => window.removeEventListener("keydown", handleEscape);
     }, [isOpen, onClose]);
 
-    if (!isOpen || !sitekey) return null;
+    if (!isOpen || !siteKey) return null;
 
     return (
         <div
@@ -61,7 +60,6 @@ export default function CaptchaModal({ isOpen, onClose, onVerify, onError }: Pro
                 className="bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-4 overflow-hidden"
                 onClick={(e) => e.stopPropagation()}
             >
-                {/* Header */}
                 <div className="px-6 py-4 border-b border-[#171d2b]/10 flex items-center justify-between">
                     <div className="flex items-center gap-2">
                         <ShieldCheck size={20} className="text-[#171d2b]" />
@@ -78,18 +76,17 @@ export default function CaptchaModal({ isOpen, onClose, onVerify, onError }: Pro
                     </button>
                 </div>
 
-                {/* Content */}
                 <div className="p-6 flex flex-col items-center">
                     <p className="text-sm text-[#171d2b]/60 mb-4 text-center">
                         Complete the captcha to continue with AI generation
                     </p>
-                    <HCaptcha
+                    <Turnstile
                         ref={captchaRef}
-                        sitekey={sitekey}
-                        onVerify={handleVerify}
+                        siteKey={siteKey}
+                        onSuccess={handleVerify}
                         onExpire={handleExpire}
                         onError={handleError}
-                        theme="light"
+                        options={{ theme: "light" }}
                     />
                 </div>
             </div>

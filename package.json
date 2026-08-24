@@ -4,8 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "bun --bun next dev",
-    "build": "bun --bun next build",
-    "start": "bun --bun next start",
+    "build": "next build",
+    "start": "next start",
     "lint": "eslint",
     "test": "bun test",
     "test:watch": "bun test --watch"
@@ -13,7 +13,7 @@
   "dependencies": {
     "@google/genai": "^2.18.0",
     "@gsap/react": "^2.1.2",
-    "@hcaptcha/react-hcaptcha": "^2.1.0",
+    "@marsidev/react-turnstile": "^1.6.0",
     "@react-three/drei": "^10.7.8",
     "@react-three/fiber": "^9.7.0",
     "@supabase/ssr": "^0.12.4",

@@ -64,6 +64,8 @@ function createFormDataRequest(data: { textContent?: string; file?: File }): Nex
   if (data.file) {
     formData.append('file', data.file)
   }
+
+  formData.append('cf-turnstile-response', 'test-turnstile-token')
   
   return new NextRequest('http://localhost:3000/api/generate-cards', {
     method: 'POST',
@@ -72,7 +74,17 @@ function createFormDataRequest(data: { textContent?: string; file?: File }): Nex
 }
 
 describe('POST /api/generate-cards', () => {
+  const originalFetch = globalThis.fetch
+
   beforeEach(() => {
+    globalThis.fetch = mock((url: string | URL | Request) => {
+      if (String(url).includes('challenges.cloudflare.com/turnstile/v0/siteverify')) {
+        return Promise.resolve(
+          new Response(JSON.stringify({ success: true, hostname: 'localhost' }), { status: 200 }),
+        )
+      }
+      return originalFetch(url)
+    }) as typeof fetch
     resetAllMocks()
     mockCheckAndIncrementAIUsage.mockClear()
     mockGenerateContentWithRotation.mockClear()
@@ -94,6 +106,7 @@ describe('POST /api/generate-cards', () => {
   })
 
   afterEach(() => {
+    globalThis.fetch = originalFetch
     mock.restore()
   })
 

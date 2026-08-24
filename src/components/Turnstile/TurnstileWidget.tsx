@@ -1,17 +1,18 @@
 'use client'
 
 import { useRef, useState, useCallback } from 'react'
-import HCaptcha from '@hcaptcha/react-hcaptcha'
+import { Turnstile } from '@marsidev/react-turnstile'
+import type { TurnstileInstance } from '@marsidev/react-turnstile'
 
-interface HCaptchaWrapperProps {
+interface TurnstileWidgetProps {
   onVerify: (token: string) => void
   onExpire?: () => void
   onError?: (error: string) => void
 }
 
-export default function HCaptchaWrapper({ onVerify, onExpire, onError }: HCaptchaWrapperProps) {
-  const captchaRef = useRef<HCaptcha>(null)
-  const sitekey = process.env.NEXT_PUBLIC_HCAPTCHA_SITEKEY
+export default function TurnstileWidget({ onVerify, onExpire, onError }: TurnstileWidgetProps) {
+  const captchaRef = useRef<TurnstileInstance>(null)
+  const siteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY
 
   const handleVerify = useCallback((token: string) => {
     onVerify(token)
@@ -25,29 +26,29 @@ export default function HCaptchaWrapper({ onVerify, onExpire, onError }: HCaptch
     onError?.(err)
   }, [onError])
 
-  if (!sitekey) {
-    console.warn('hCaptcha sitekey not configured')
+  if (!siteKey) {
+    console.warn('Turnstile site key not configured')
     return null
   }
 
   return (
     <div className="flex justify-center my-4">
-      <HCaptcha
+      <Turnstile
         ref={captchaRef}
-        sitekey={sitekey}
-        onVerify={handleVerify}
+        siteKey={siteKey}
+        onSuccess={handleVerify}
         onExpire={handleExpire}
         onError={handleError}
-        theme="light"
+        options={{ theme: 'light' }}
       />
     </div>
   )
 }
 
-export function useHCaptcha() {
+export function useTurnstile() {
   const [token, setToken] = useState<string | null>(null)
   const [isVerified, setIsVerified] = useState(false)
-  const captchaRef = useRef<HCaptcha>(null)
+  const captchaRef = useRef<TurnstileInstance>(null)
 
   const handleVerify = useCallback((captchaToken: string) => {
     setToken(captchaToken)
@@ -60,7 +61,7 @@ export function useHCaptcha() {
   }, [])
 
   const resetCaptcha = useCallback(() => {
-    captchaRef.current?.resetCaptcha()
+    captchaRef.current?.reset()
     setToken(null)
     setIsVerified(false)
   }, [])

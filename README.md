@@ -63,7 +63,7 @@ Stop grinding through notes the hard way. DeepTerm uses AI to turn your PDFs and
 ### Account & Settings
 
 - **Google OAuth** - Sign in with Google account
-- **hCaptcha Protection** - Bot protection on authentication (optional)
+- **Cloudflare Turnstile** - Bot protection on authentication (optional)
 - **Daily Rate Limits** - 10 AI generations per day per user (with unlimited user whitelist support)
 - **Help Center** - In-app documentation and support
 - **Account Deletion** - Self-service account deletion
@@ -100,7 +100,7 @@ Stop grinding through notes the hard way. DeepTerm uses AI to turn your PDFs and
 
 ### Analytics & Security
 - **PostHog** - Product analytics (with proxy for ad-blocker bypass)
-- **hCaptcha** - Bot protection (optional)
+- **Cloudflare Turnstile** - Bot protection (optional)
 
 ### Testing
 - **Bun Test** - Fast test runner
@@ -143,7 +143,7 @@ src/
 │   └── share/[code]/       # Public share pages
 ├── components/             # React components
 │   ├── Dashboard/          # Dashboard widgets
-│   ├── HCaptcha/           # Captcha components
+│   ├── Turnstile/          # Captcha components
 │   ├── Header/             # Header component
 │   └── Sidebar/            # Navigation sidebar
 ├── config/                 # Configuration
@@ -198,7 +198,7 @@ Key tables in Supabase:
 - **Input validation** with Zod schemas
 - **XP bounds checking** (1-100 per operation)
 - **Secure share access** via RPC functions
-- **hCaptcha bot protection** on authentication
+- **Cloudflare Turnstile** bot protection on authentication
 
 #### Security Headers
 
@@ -268,8 +268,10 @@ GEMINI_API_KEY_3=your_gemini_api_key_3
 GEMINI_API_KEY_4=your_gemini_api_key_4
 GEMINI_API_KEY_5=your_gemini_api_key_5
 
-# hCaptcha - Bot protection (optional, auth works without it)
-NEXT_PUBLIC_HCAPTCHA_SITEKEY=your_hcaptcha_sitekey
+# Cloudflare Turnstile - Bot protection (optional, auth works without it)
+NEXT_PUBLIC_TURNSTILE_SITE_KEY=your_turnstile_site_key
+TURNSTILE_SECRET=your_turnstile_secret
+TURNSTILE_HOSTNAMES=deepterm.app,www.deepterm.app,localhost,127.0.0.1,deepterm.vercel.app
 
 # Unsplash - Blog hero images (optional)
 UNSPLASH_ACCESS_KEY=your_unsplash_access_key
@@ -285,7 +287,7 @@ CRON_SECRET=your_cron_secret
 **Where to get these:**
 - **Supabase**: [Dashboard → Project Settings → API](https://supabase.com/dashboard/project/_/settings/api)
 - **Gemini**: [Google AI Studio](https://aistudio.google.com/app/apikey)
-- **hCaptcha**: [hCaptcha Dashboard](https://dashboard.hcaptcha.com/) (optional)
+- **Cloudflare Turnstile**: [Cloudflare Dashboard → Turnstile](https://dash.cloudflare.com/?to=/:account/turnstile) (optional)
 - **Unsplash**: [Unsplash Developers](https://unsplash.com/developers) (optional)
 - **PostHog**: [PostHog Dashboard](https://posthog.com/) (optional)
 

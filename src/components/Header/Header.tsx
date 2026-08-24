@@ -52,7 +52,7 @@ function SessionAwareHeader({ user, isLoading, className }: { user: User | null;
     const isScrolled = useScrolled(20);
     const [isResourcesOpen, setIsResourcesOpen] = useState(false);
     const [showCaptcha, setShowCaptcha] = useState(false);
-    const sitekey = process.env.NEXT_PUBLIC_HCAPTCHA_SITEKEY;
+    const sitekey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
 
     // Use selector pattern to subscribe only to needed values - prevents re-renders on unrelated store changes (Rule 5.4)
     const isMenuOpen = useUIStore((state) => state.sidebarMobileOpen);

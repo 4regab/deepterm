@@ -8,7 +8,7 @@ export default function GoogleSignIn() {
   const [showCaptcha, setShowCaptcha] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const supabase = createClient()
-  const sitekey = process.env.NEXT_PUBLIC_HCAPTCHA_SITEKEY
+  const sitekey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY
 
   const handleLoginClick = () => {
     if (sitekey) {

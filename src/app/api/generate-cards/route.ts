@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { FileState } from "@google/genai";
 import { checkAndIncrementAIUsage } from "@/services/rateLimit";
 import { generateContentWithRotation, uploadFileWithRotation, getApiKeyCount, Type } from "@/services/geminiClient";
+import { verifyTurnstileToken } from "@/services/turnstile";
 import { z } from "zod";
 
 // File size limits (in bytes)
@@ -41,6 +42,18 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "No Gemini API keys configured" }, { status: 500 });
   }
 
+  let formData: FormData;
+  try {
+    formData = await request.formData();
+  } catch {
+    return NextResponse.json({ error: "Invalid form data" }, { status: 400 });
+  }
+
+  const captcha = await verifyTurnstileToken(formData.get("cf-turnstile-response"), request);
+  if (!captcha.ok) {
+    return NextResponse.json({ error: captcha.error }, { status: captcha.status });
+  }
+
   // Atomic rate limit check and increment
   const rateLimit = await checkAndIncrementAIUsage();
   
@@ -61,7 +74,6 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const formData = await request.formData();
     const file = formData.get("file") as File | null;
     const rawTextContent = formData.get("textContent");
 

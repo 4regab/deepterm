@@ -32,7 +32,7 @@ export default function HomeClient() {
   const [user, setUser] = useState<User | null>(null);
   const [showCaptcha, setShowCaptcha] = useState(false);
   const hasCheckedRef = useRef(false);
-  const sitekey = process.env.NEXT_PUBLIC_HCAPTCHA_SITEKEY;
+  const sitekey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
 
   useEffect(() => {
     if (hasCheckedRef.current) return;

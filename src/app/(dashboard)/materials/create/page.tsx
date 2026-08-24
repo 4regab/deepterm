@@ -101,7 +101,7 @@ function parseTextToCards(text: string): Card[] {
 export default function CreatePage() {
     const router = useRouter();
     const fileInputRef = useRef<HTMLInputElement>(null);
-    const sitekey = process.env.NEXT_PUBLIC_HCAPTCHA_SITEKEY;
+    const sitekey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
 
     const [createType, setCreateType] = useState<CreateType>("material");
     const [title, setTitle] = useState("");
@@ -113,6 +113,7 @@ export default function CreatePage() {
     // Captcha state for AI generation
     const [showCaptchaModal, setShowCaptchaModal] = useState(false);
     const [captchaVerified, setCaptchaVerified] = useState(false);
+    const [captchaToken, setCaptchaToken] = useState<string | null>(null);
 
     const [inputMode, setInputMode] = useState<InputMode>("manual");
     const [cards, setCards] = useState<Card[]>([{ id: "1", term: "", definition: "" }]);
@@ -127,16 +128,19 @@ export default function CreatePage() {
     const [filterText, setFilterText] = useState("");
 
     // Captcha handlers
-    const handleCaptchaVerify = useCallback(() => {
+    const handleCaptchaVerify = useCallback((token: string) => {
+        setCaptchaToken(token);
         setCaptchaVerified(true);
     }, []);
 
     const handleCaptchaError = useCallback(() => {
+        setCaptchaToken(null);
         setCaptchaVerified(false);
         setError("Captcha verification failed. Please try again.");
     }, []);
 
     const resetCaptcha = useCallback(() => {
+        setCaptchaToken(null);
         setCaptchaVerified(false);
     }, []);
 
@@ -200,6 +204,9 @@ export default function CreatePage() {
             
             const formData = new FormData();
             formData.append("file", selectedFile);
+            if (captchaToken) {
+                formData.append("cf-turnstile-response", captchaToken);
+            }
             const response = await fetch("/api/generate-cards", { 
                 method: "POST", 
                 body: formData,
@@ -226,6 +233,7 @@ export default function CreatePage() {
             setError(err instanceof Error ? err.message : "Failed to generate cards");
         } finally {
             setIsGenerating(false);
+            resetCaptcha();
         }
     };
 
@@ -247,6 +255,9 @@ export default function CreatePage() {
             const formData = new FormData();
             formData.append("file", selectedFile);
             formData.append("extractionMode", extractionMode);
+            if (captchaToken) {
+                formData.append("cf-turnstile-response", captchaToken);
+            }
 
             const controller = new AbortController();
             const timeoutId = setTimeout(() => controller.abort(), 90000); // 90s client timeout
@@ -305,6 +316,7 @@ export default function CreatePage() {
             setReviewerStep("input");
         } finally {
             setIsGenerating(false);
+            resetCaptcha();
         }
     };
 
