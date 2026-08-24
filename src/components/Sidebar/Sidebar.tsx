@@ -111,7 +111,7 @@ export default function Sidebar() {
 
             <aside
                 className={cn(
-                    "fixed left-0 top-0 h-screen bg-background border-r border-border flex flex-col z-50 overflow-hidden",
+                    "fixed left-0 top-0 h-screen bg-white border-r border-border flex flex-col z-50 overflow-hidden",
                     "transition-[width,transform,box-shadow] duration-200 ease-[cubic-bezier(0.23,1,0.32,1)]",
                     sidebarMobileOpen ? "w-[220px] translate-x-0" : "-translate-x-full w-[220px]",
                     sidebarPinned
@@ -136,7 +136,7 @@ export default function Sidebar() {
                             </div>
                         </div>
                         <span className={cn(
-                            "font-sora text-foreground text-[20px] whitespace-nowrap overflow-hidden transition-opacity duration-200",
+                            "font-sans text-foreground text-[20px] whitespace-nowrap overflow-hidden transition-opacity duration-200",
                             sidebarPinned ? "md:opacity-100" : "md:opacity-0 md:group-hover:opacity-100"
                         )}>
                             deepterm
@@ -233,7 +233,7 @@ export default function Sidebar() {
                                 className="w-9 h-9 rounded-full flex-shrink-0 object-cover"
                             />
                         ) : (
-                            <div className="w-9 h-9 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-sora text-sm flex-shrink-0" aria-hidden="true">
+                            <div className="w-9 h-9 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-sans text-sm flex-shrink-0" aria-hidden="true">
                                 {getInitials(profile?.full_name ?? null)}
                             </div>
                         )}

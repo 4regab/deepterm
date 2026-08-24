@@ -6,7 +6,7 @@ const imgLogo = "/assets/logo.svg";
 
 export default function Footer() {
   return (
-    <footer className="relative z-10 px-4 sm:px-6 py-10 sm:py-16 bg-background">
+    <footer className="relative z-10 px-4 sm:px-6 py-12 sm:py-20">
       <div className="max-w-[76rem] mx-auto flex flex-col gap-10">
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-8">
           <div className="col-span-2 sm:col-span-1">
@@ -17,7 +17,7 @@ export default function Footer() {
                   <img alt="" className="w-[22px] h-[22px] sm:w-[26px] sm:h-[26px]" src={imgLogo} />
                 </div>
               </div>
-              <span className="font-sora text-foreground text-[18px]">deepterm</span>
+              <span className="font-sans text-foreground text-[18px] font-medium tracking-tight">deepterm</span>
             </Link>
             <p className="font-sans text-sm text-muted-foreground leading-6 max-w-[220px]">
               AI study tools that turn notes into cards, reviewers, and practice tests.
@@ -25,7 +25,7 @@ export default function Footer() {
           </div>
 
           <div>
-            <h2 className="font-sora text-sm font-medium text-foreground mb-3">Resources</h2>
+            <h2 className="font-sans text-sm font-medium text-foreground mb-3">Resources</h2>
             <ul className="flex flex-col gap-2">
               <li><Link href="/blog" className="inline-flex min-h-8 items-center font-sans text-sm text-muted-foreground hover:text-foreground transition-colors duration-150">Blog</Link></li>
               <li><Link href="/about" className="inline-flex min-h-8 items-center font-sans text-sm text-muted-foreground hover:text-foreground transition-colors duration-150">About</Link></li>
@@ -35,7 +35,7 @@ export default function Footer() {
           </div>
 
           <div>
-            <h2 className="font-sora text-sm font-medium text-foreground mb-3">Legal</h2>
+            <h2 className="font-sans text-sm font-medium text-foreground mb-3">Legal</h2>
             <ul className="flex flex-col gap-2">
               <li><Link href="/privacy-policy" className="inline-flex min-h-8 items-center font-sans text-sm text-muted-foreground hover:text-foreground transition-colors duration-150">Privacy policy</Link></li>
               <li><Link href="/terms" className="inline-flex min-h-8 items-center font-sans text-sm text-muted-foreground hover:text-foreground transition-colors duration-150">Terms of service</Link></li>
@@ -43,7 +43,7 @@ export default function Footer() {
           </div>
 
           <div>
-            <h2 className="font-sora text-sm font-medium text-foreground mb-3">Connect</h2>
+            <h2 className="font-sans text-sm font-medium text-foreground mb-3">Connect</h2>
             <ul className="flex flex-col gap-2">
               <li><a href="https://ko-fi.com/deepterm" target="_blank" rel="noopener noreferrer" className="inline-flex min-h-8 items-center font-sans text-sm text-muted-foreground hover:text-foreground transition-colors duration-150">Donate</a></li>
               <li><a href="https://github.com/4regab/deepterm" target="_blank" rel="noopener noreferrer" className="inline-flex min-h-8 items-center font-sans text-sm text-muted-foreground hover:text-foreground transition-colors duration-150">GitHub</a></li>

@@ -14,14 +14,14 @@ function AllAchievementsSkeleton() {
     return (
         <div>
             <div className="flex items-center justify-between mb-6">
-                <h2 className="font-serif text-[20px] text-[#171d2b]">All Achievements</h2>
-                <div className="h-5 w-16 bg-[#171d2b]/10 rounded animate-pulse" />
+                <h2 className="font-sans tracking-tight text-[20px] text-foreground">All Achievements</h2>
+                <div className="h-5 w-16 bg-muted rounded animate-pulse" />
             </div>
             <div className="mb-6">
-                <div className="h-2 bg-[#171d2b]/10 rounded-full animate-pulse" />
+                <div className="h-2 bg-muted rounded-full animate-pulse" />
             </div>
             <div className="flex items-center justify-center py-12">
-                <div className="w-6 h-6 border-2 border-[#171d2b] border-t-transparent rounded-full animate-spin" />
+                <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
             </div>
         </div>
     );
@@ -31,12 +31,12 @@ function EmptyAchievements() {
     return (
         <div>
             <div className="flex items-center justify-between mb-6">
-                <h2 className="font-serif text-[20px] text-[#171d2b]">All Achievements</h2>
-                <span className="text-[#171d2b]/60 text-sm font-sans">0/0</span>
+                <h2 className="font-sans tracking-tight text-[20px] text-foreground">All Achievements</h2>
+                <span className="text-muted-foreground text-sm font-sans">0/0</span>
             </div>
-            <div className="flex flex-col items-center justify-center py-12 text-center bg-white rounded-2xl border border-[#171d2b]/5">
-                <div className="w-16 h-16 bg-[#171d2b]/5 rounded-full flex items-center justify-center mb-4">
-                    <Trophy size={28} className="text-[#171d2b]/30" />
+            <div className="flex flex-col items-center justify-center py-12 text-center bg-white rounded-2xl border border-border">
+                <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mb-4">
+                    <Trophy size={28} className="text-muted-foreground" />
                 </div>
                 <h3 className="font-sans font-medium text-foreground text-[16px] mb-2">No achievements yet</h3>
                 <p className="font-sans text-[13px] text-muted-foreground max-w-xs">
@@ -49,13 +49,13 @@ function EmptyAchievements() {
 
 // Map vibrant colors to muted brand-consistent colors
 const COLOR_MAP: Record<string, { bg: string; color: string }> = {
-    'text-blue-600': { bg: 'bg-[#e8e4d8]', color: 'text-[#171d2b]/70' },
-    'text-purple-600': { bg: 'bg-[#e0dcd0]', color: 'text-[#171d2b]/70' },
-    'text-green-600': { bg: 'bg-[#d8d4c8]', color: 'text-[#171d2b]/70' },
-    'text-cyan-600': { bg: 'bg-[#e8e4d8]', color: 'text-[#171d2b]/70' },
+    'text-blue-600': { bg: 'bg-[#e8e4d8]', color: 'text-muted-foreground' },
+    'text-purple-600': { bg: 'bg-[#e0dcd0]', color: 'text-muted-foreground' },
+    'text-green-600': { bg: 'bg-[#d8d4c8]', color: 'text-muted-foreground' },
+    'text-cyan-600': { bg: 'bg-[#e8e4d8]', color: 'text-muted-foreground' },
     'text-yellow-600': { bg: 'bg-[#f5e6c8]', color: 'text-[#c4875a]' },
     'text-orange-600': { bg: 'bg-[#f5e6c8]', color: 'text-[#c4875a]' },
-    'text-red-600': { bg: 'bg-[#e8e4d8]', color: 'text-[#171d2b]/70' },
+    'text-red-600': { bg: 'bg-[#e8e4d8]', color: 'text-muted-foreground' },
 };
 
 const BG_MAP: Record<string, string> = {
@@ -87,8 +87,8 @@ export default function AllAchievements() {
     return (
         <div>
             <div className="flex items-center justify-between mb-4">
-                <h2 className="font-serif text-[20px] text-[#171d2b]">All Achievements</h2>
-                <span className="text-[#171d2b]/60 text-sm font-sans font-medium">
+                <h2 className="font-sans tracking-tight text-[20px] text-foreground">All Achievements</h2>
+                <span className="text-muted-foreground text-sm font-sans font-medium">
                     {unlockedCount}/{achievements.length}
                 </span>
             </div>
@@ -96,10 +96,10 @@ export default function AllAchievements() {
             {/* Overall Progress Bar */}
             <div className="mb-6">
                 <div className="flex items-center justify-between mb-2">
-                    <span className="text-[12px] text-[#171d2b]/50 font-sans">Overall Progress</span>
-                    <span className="text-[12px] text-[#171d2b]/70 font-sans font-medium">{overallProgress}%</span>
+                    <span className="text-[12px] text-muted-foreground font-sans">Overall Progress</span>
+                    <span className="text-[12px] text-muted-foreground font-sans font-medium">{overallProgress}%</span>
                 </div>
-                <div className="w-full h-2 bg-[#171d2b]/5 rounded-full overflow-hidden">
+                <div className="w-full h-2 bg-muted rounded-full overflow-hidden">
                     <div
                         className="h-full rounded-full bg-gradient-to-r from-[#c4a574] to-[#c4875a] transition-all duration-500"
                         style={{ width: `${overallProgress}%` }}
@@ -121,29 +121,29 @@ export default function AllAchievements() {
                         <div
                             key={achievement.id}
                             className={`relative p-4 rounded-xl border transition-all ${achievement.unlocked
-                                ? "bg-white border-[#171d2b]/10 shadow-sm"
-                                : "bg-[#f9f9f7] border-[#171d2b]/5 opacity-60 grayscale hover:grayscale-0 hover:opacity-100"
+                                ? "bg-white border-border shadow-sm"
+                                : "bg-muted border-border opacity-60 grayscale hover:grayscale-0 hover:opacity-100"
                             }`}
                         >
                             <div className={`w-10 h-10 rounded-full ${mutedBg} flex items-center justify-center mb-3`}>
                                 <IconComponent size={20} className={mutedColor} />
                             </div>
 
-                            <h3 className="font-sans font-medium text-[#171d2b] text-[15px] mb-1">
+                            <h3 className="font-sans font-medium text-foreground text-[15px] mb-1">
                                 {achievement.title}
                             </h3>
-                            <p className="font-sans text-[12px] text-[#171d2b]/60 mb-3 leading-tight">
+                            <p className="font-sans text-[12px] text-muted-foreground mb-3 leading-tight">
                                 {achievement.description}
                             </p>
 
                             {/* Individual Progress Bar */}
-                            <div className="w-full h-1.5 bg-[#171d2b]/5 rounded-full overflow-hidden">
+                            <div className="w-full h-1.5 bg-muted rounded-full overflow-hidden">
                                 <div
-                                    className={`h-full rounded-full transition-all ${achievement.unlocked ? "bg-[#c4875a]" : "bg-[#171d2b]/40"}`}
+                                    className={`h-full rounded-full transition-all ${achievement.unlocked ? "bg-[#c4875a]" : "bg-primary/40"}`}
                                     style={{ width: `${progressPercent}%` }}
                                 />
                             </div>
-                            <p className="font-sans text-[10px] text-[#171d2b]/40 mt-1">
+                            <p className="font-sans text-[10px] text-muted-foreground mt-1">
                                 {achievement.progress}/{achievement.requirement_value}
                             </p>
                         </div>

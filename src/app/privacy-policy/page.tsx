@@ -12,9 +12,9 @@ export const metadata: Metadata = createMetadata({
 
 export default function PrivacyPolicyPage() {
   return (
-    <div className="bg-[#f0f0ea] min-h-screen">
+    <div className="bg-background min-h-screen">
       {/* Header */}
-      <header className="px-4 sm:px-6 lg:px-8 py-4 border-b border-[#171d2b]/10">
+      <header className="px-4 sm:px-6 lg:px-8 py-4 border-b border-border">
         <div className="max-w-[1000px] mx-auto flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2">
             <div className="w-[28px] h-[28px] flex items-center justify-center">
@@ -23,7 +23,7 @@ export default function PrivacyPolicyPage() {
                 <img alt="Deepterm Logo" className="w-[22px] h-[22px]" src={imgLogo} />
               </div>
             </div>
-            <span className="font-sora text-[#171d2b] text-[18px]">deepterm</span>
+            <span className="font-sans text-foreground text-[18px]">deepterm</span>
           </Link>
           <Link href="/" className="font-sans text-[14px] text-muted-foreground hover:text-foreground transition-colors duration-150">
             Back to home
@@ -34,16 +34,16 @@ export default function PrivacyPolicyPage() {
       {/* Content */}
       <main id="main-content" className="px-4 sm:px-6 py-10 sm:py-14 lg:py-16">
         <div className="max-w-[800px] mx-auto">
-          <h1 className="font-serif text-[28px] sm:text-[36px] lg:text-[42px] text-[#171d2b] mb-2">
+          <h1 className="font-sans tracking-tight text-[28px] sm:text-[36px] lg:text-[42px] text-foreground mb-2">
             Privacy Policy
           </h1>
-          <p className="font-sans text-[13px] sm:text-[14px] text-[#171d2b]/50 mb-8">
+          <p className="font-sans text-[13px] sm:text-[14px] text-muted-foreground mb-8">
             Last updated: November 2025
           </p>
 
-          <div className="space-y-8 font-sans text-[14px] sm:text-[15px] text-[#171d2b]/80 leading-[1.7]">
+          <div className="space-y-8 font-sans text-[14px] sm:text-[15px] text-foreground/80 leading-[1.7]">
             <section>
-              <h2 className="font-serif text-[18px] sm:text-[20px] text-[#171d2b] mb-3">1. Information We Collect</h2>
+              <h2 className="font-sans tracking-tight text-[18px] sm:text-[20px] text-foreground mb-3">1. Information We Collect</h2>
               <p className="mb-3">We collect information you provide directly to us, including:</p>
               <ul className="list-disc pl-5 space-y-1">
                 <li>Account information (email, name) when you sign up</li>
@@ -54,7 +54,7 @@ export default function PrivacyPolicyPage() {
             </section>
 
             <section>
-              <h2 className="font-serif text-[18px] sm:text-[20px] text-[#171d2b] mb-3">2. How We Use Your Information</h2>
+              <h2 className="font-sans tracking-tight text-[18px] sm:text-[20px] text-foreground mb-3">2. How We Use Your Information</h2>
               <p className="mb-3">We use the information we collect to:</p>
               <ul className="list-disc pl-5 space-y-1">
                 <li>Provide, maintain, and improve our services</li>
@@ -65,7 +65,7 @@ export default function PrivacyPolicyPage() {
             </section>
 
             <section>
-              <h2 className="font-serif text-[18px] sm:text-[20px] text-[#171d2b] mb-3">3. Data Security</h2>
+              <h2 className="font-sans tracking-tight text-[18px] sm:text-[20px] text-foreground mb-3">3. Data Security</h2>
               <p>
                 We implement appropriate security measures to protect your personal information. 
                 However, no method of transmission over the Internet is 100% secure.
@@ -73,7 +73,7 @@ export default function PrivacyPolicyPage() {
             </section>
 
             <section>
-              <h2 className="font-serif text-[18px] sm:text-[20px] text-[#171d2b] mb-3">4. Third-Party Services</h2>
+              <h2 className="font-sans tracking-tight text-[18px] sm:text-[20px] text-foreground mb-3">4. Third-Party Services</h2>
               <p>
                 We may use third-party services for authentication (Google Sign-In) and AI processing. 
                 These services have their own privacy policies governing the use of your information.
@@ -81,7 +81,7 @@ export default function PrivacyPolicyPage() {
             </section>
 
             <section>
-              <h2 className="font-serif text-[18px] sm:text-[20px] text-[#171d2b] mb-3">5. Your Rights</h2>
+              <h2 className="font-sans tracking-tight text-[18px] sm:text-[20px] text-foreground mb-3">5. Your Rights</h2>
               <p className="mb-3">You have the right to:</p>
               <ul className="list-disc pl-5 space-y-1">
                 <li>Access your personal data</li>
@@ -92,10 +92,10 @@ export default function PrivacyPolicyPage() {
             </section>
 
             <section>
-              <h2 className="font-serif text-[18px] sm:text-[20px] text-[#171d2b] mb-3">6. Contact Us</h2>
+              <h2 className="font-sans tracking-tight text-[18px] sm:text-[20px] text-foreground mb-3">6. Contact Us</h2>
               <p>
                 If you have questions about this Privacy Policy, please contact us at{" "}
-                <a href="mailto:deeptermai@gmail.com" className="text-[#171d2b] underline hover:no-underline">
+                <a href="mailto:deeptermai@gmail.com" className="text-foreground underline hover:no-underline">
                   deeptermai@gmail.com
                 </a>
               </p>

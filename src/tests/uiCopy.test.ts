@@ -35,8 +35,9 @@ describe("interface copy and quality floor", () => {
 
   it("derives neutrals from a single ink token", () => {
     const css = read("styles/globals.css");
-    expect(css).toContain("--ink: #171d2b");
+    expect(css).toContain("--ink: #292929");
     expect(css).toContain("color-mix(in srgb, var(--ink) 12%, transparent)");
-    expect(css).toContain("--primary: #171d2b");
+    expect(css).toContain("--primary: #305dde");
+    expect(css).toContain("--font-inter-tight");
   });
 });

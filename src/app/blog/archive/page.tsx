@@ -40,44 +40,44 @@ export default async function BlogArchivePage() {
     )
 
     return (
-        <div className="bg-[#f0f0ea] min-h-screen">
+        <div className="bg-background min-h-screen">
             <Header />
 
             <main id="main-content" className="max-w-[65ch] mx-auto px-4 sm:px-6 py-12 sm:py-20">
                 {/* Hero */}
                 <div className="mb-8 sm:mb-12">
-                    <nav className="flex items-center gap-2 text-[13px] font-sans text-[#171d2b]/50 mb-4">
+                    <nav className="flex items-center gap-2 text-[13px] font-sans text-muted-foreground mb-4">
                         <Link
                             href="/blog"
-                            className="hover:text-[#171d2b] transition-colors"
+                            className="hover:text-foreground transition-colors"
                         >
                             Blog
                         </Link>
                         <span>/</span>
-                        <span className="text-[#171d2b]/70">Archive</span>
+                        <span className="text-muted-foreground">Archive</span>
                     </nav>
 
-                    <h1 className="font-serif text-[36px] sm:text-[48px] text-[#171d2b] leading-tight mb-3">
+                    <h1 className="font-sans tracking-tight text-[36px] sm:text-[48px] text-foreground leading-tight mb-3">
                         All Articles
                     </h1>
-                    <p className="font-sans text-[15px] text-[#171d2b]/60 max-w-[600px]">
+                    <p className="font-sans text-[15px] text-muted-foreground max-w-[600px]">
                         Browse our complete collection of {posts.length} research-backed
                         articles on study methods, learning science, productivity, and more.
                     </p>
                 </div>
 
                 {/* Category Quick Nav */}
-                <div className="flex flex-wrap gap-2 mb-10 pb-6 border-b border-[#171d2b]/10">
+                <div className="flex flex-wrap gap-2 mb-10 pb-6 border-b border-border">
                     {categories
                         .filter((c) => c.post_count > 0)
                         .map((cat) => (
                             <a
                                 key={cat.slug}
                                 href={'#' + cat.slug}
-                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#171d2b]/5 hover:bg-[#171d2b]/10 font-sans text-[13px] text-[#171d2b]/70 transition-colors"
+                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-muted hover:bg-accent font-sans text-[13px] text-muted-foreground transition-colors"
                             >
                                 {cat.name}
-                                <span className="text-[#171d2b]/40">({cat.post_count})</span>
+                                <span className="text-muted-foreground">({cat.post_count})</span>
                             </a>
                         ))}
                 </div>
@@ -89,14 +89,14 @@ export default async function BlogArchivePage() {
 
                     return (
                         <section key={categoryName} id={slug} className="mb-10">
-                            <h2 className="font-serif text-[22px] sm:text-[26px] text-[#171d2b] mb-4 flex items-baseline gap-3">
+                            <h2 className="font-sans tracking-tight text-[22px] sm:text-[26px] text-foreground mb-4 flex items-baseline gap-3">
                                 <Link
                                     href={'/blog/category/' + slug}
-                                    className="hover:text-[#171d2b]/70 transition-colors"
+                                    className="hover:text-foreground/70 transition-colors"
                                 >
                                     {categoryName}
                                 </Link>
-                                <span className="font-sans text-[14px] text-[#171d2b]/40">
+                                <span className="font-sans text-[14px] text-muted-foreground">
                                     {categoryPosts.length} articles
                                 </span>
                             </h2>
@@ -114,14 +114,14 @@ export default async function BlogArchivePage() {
                                         <li key={post.id}>
                                             <Link
                                                 href={'/blog/' + post.slug}
-                                                className="group flex items-baseline gap-3 py-1.5 hover:text-[#171d2b]/70 transition-colors"
+                                                className="group flex items-baseline gap-3 py-1.5 hover:text-foreground/70 transition-colors"
                                             >
                                                 {date && (
-                                                    <span className="font-sans text-[12px] text-[#171d2b]/40 w-[50px] shrink-0">
+                                                    <span className="font-sans text-[12px] text-muted-foreground w-[50px] shrink-0">
                                                         {date}
                                                     </span>
                                                 )}
-                                                <span className="font-sans text-[14px] sm:text-[15px] text-[#171d2b] group-hover:text-[#171d2b]/70">
+                                                <span className="font-sans text-[14px] sm:text-[15px] text-foreground group-hover:text-foreground/70">
                                                     {post.title}
                                                 </span>
                                             </Link>
@@ -136,7 +136,7 @@ export default async function BlogArchivePage() {
                 {/* Uncategorized */}
                 {uncategorized.length > 0 && (
                     <section className="mb-10">
-                        <h2 className="font-serif text-[22px] text-[#171d2b] mb-4">
+                        <h2 className="font-sans tracking-tight text-[22px] text-foreground mb-4">
                             Other Articles
                         </h2>
                         <ul className="space-y-1.5">
@@ -144,7 +144,7 @@ export default async function BlogArchivePage() {
                                 <li key={post.id}>
                                     <Link
                                         href={'/blog/' + post.slug}
-                                        className="font-sans text-[14px] text-[#171d2b] hover:text-[#171d2b]/70 transition-colors py-1.5 block"
+                                        className="font-sans text-[14px] text-foreground hover:text-foreground/70 transition-colors py-1.5 block"
                                     >
                                         {post.title}
                                     </Link>

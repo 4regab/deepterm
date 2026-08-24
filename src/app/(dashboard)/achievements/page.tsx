@@ -29,13 +29,13 @@ const BG_MAP: Record<string, string> = {
 };
 
 const COLOR_MAP: Record<string, { color: string }> = {
-    "text-blue-600": { color: "text-[#171d2b]/70" },
-    "text-purple-600": { color: "text-[#171d2b]/70" },
-    "text-green-600": { color: "text-[#171d2b]/70" },
-    "text-cyan-600": { color: "text-[#171d2b]/70" },
+    "text-blue-600": { color: "text-muted-foreground" },
+    "text-purple-600": { color: "text-muted-foreground" },
+    "text-green-600": { color: "text-muted-foreground" },
+    "text-cyan-600": { color: "text-muted-foreground" },
     "text-yellow-600": { color: "text-[#c4875a]" },
     "text-orange-600": { color: "text-[#c4875a]" },
-    "text-red-600": { color: "text-[#171d2b]/70" },
+    "text-red-600": { color: "text-muted-foreground" },
 };
 
 let achievementsFetchTriggered = false;
@@ -70,8 +70,8 @@ export default function AchievementsPage() {
     return (
         <div>
             <header className="mb-6">
-                <h1 className="font-serif text-[28px] text-[#171d2b] mb-1">Achievements</h1>
-                <p className="text-[#171d2b]/60 font-sans text-[15px]">
+                <h1 className="font-sans tracking-tight text-[28px] text-foreground mb-1">Achievements</h1>
+                <p className="text-muted-foreground font-sans text-[15px]">
                     Track your progress and unlock rewards
                 </p>
             </header>
@@ -84,25 +84,25 @@ export default function AchievementsPage() {
                             onClick={() => setFilter(f.value)}
                             className={`px-4 py-2 rounded-lg font-sans text-[14px] transition-all ${
                                 filter === f.value
-                                    ? "bg-[#171d2b] text-white"
-                                    : "bg-white border border-[#171d2b]/10 text-[#171d2b]/70 hover:bg-[#171d2b]/5"
+                                    ? "bg-primary text-white"
+                                    : "bg-white border border-border text-muted-foreground hover:bg-accent"
                             }`}
                         >
                             {f.label}
                         </button>
                     ))}
                 </div>
-                <span className="text-[#171d2b]/60 text-sm font-sans font-medium">
+                <span className="text-muted-foreground text-sm font-sans font-medium">
                     {unlockedCount}/{achievements.length} Unlocked
                 </span>
             </div>
 
             <div className="mb-6">
                 <div className="flex items-center justify-between mb-2">
-                    <span className="text-[12px] text-[#171d2b]/50 font-sans">Overall Progress</span>
-                    <span className="text-[12px] text-[#171d2b]/70 font-sans font-medium">{overallProgress}%</span>
+                    <span className="text-[12px] text-muted-foreground font-sans">Overall Progress</span>
+                    <span className="text-[12px] text-muted-foreground font-sans font-medium">{overallProgress}%</span>
                 </div>
-                <div className="w-full h-2 bg-[#171d2b]/5 rounded-full overflow-hidden">
+                <div className="w-full h-2 bg-muted rounded-full overflow-hidden">
                     <div
                         className="h-full rounded-full bg-gradient-to-r from-[#c4a574] to-[#c4875a] transition-all duration-500"
                         style={{ width: `${overallProgress}%` }}
@@ -111,14 +111,14 @@ export default function AchievementsPage() {
             </div>
 
             {filteredAchievements.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-12 text-center bg-white rounded-2xl border border-[#171d2b]/5">
-                    <div className="w-16 h-16 bg-[#171d2b]/5 rounded-full flex items-center justify-center mb-4">
-                        <Trophy size={28} className="text-[#171d2b]/30" />
+                <div className="flex flex-col items-center justify-center py-12 text-center bg-white rounded-2xl border border-border">
+                    <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mb-4">
+                        <Trophy size={28} className="text-muted-foreground" />
                     </div>
-                    <h3 className="font-sans font-medium text-[#171d2b] text-[16px] mb-2">
+                    <h3 className="font-sans font-medium text-foreground text-[16px] mb-2">
                         No {filter} achievements
                     </h3>
-                    <p className="font-sans text-[13px] text-[#171d2b]/50 max-w-xs">
+                    <p className="font-sans text-[13px] text-muted-foreground max-w-xs">
                         {filter === "unlocked" 
                             ? "Keep studying to unlock achievements." 
                             : "You have unlocked all achievements."}
@@ -137,28 +137,28 @@ export default function AchievementsPage() {
                                 key={achievement.id}
                                 className={`relative p-4 rounded-xl border transition-all ${
                                     achievement.unlocked
-                                        ? "bg-white border-[#171d2b]/10 shadow-sm"
-                                        : "bg-[#f9f9f7] border-[#171d2b]/5 opacity-60 grayscale hover:grayscale-0 hover:opacity-100"
+                                        ? "bg-white border-border shadow-sm"
+                                        : "bg-muted border-border opacity-60 grayscale hover:grayscale-0 hover:opacity-100"
                                 }`}
                             >
                                 <div className={`w-10 h-10 rounded-full ${mutedBg} flex items-center justify-center mb-3`}>
                                     <IconComponent size={20} className={mutedColor} />
                                 </div>
-                                <h3 className="font-sans font-medium text-[#171d2b] text-[15px] mb-1">
+                                <h3 className="font-sans font-medium text-foreground text-[15px] mb-1">
                                     {achievement.title}
                                 </h3>
-                                <p className="font-sans text-[12px] text-[#171d2b]/60 mb-3 leading-tight">
+                                <p className="font-sans text-[12px] text-muted-foreground mb-3 leading-tight">
                                     {achievement.description}
                                 </p>
-                                <div className="w-full h-1.5 bg-[#171d2b]/5 rounded-full overflow-hidden">
+                                <div className="w-full h-1.5 bg-muted rounded-full overflow-hidden">
                                     <div
                                         className={`h-full rounded-full transition-all ${
-                                            achievement.unlocked ? "bg-[#c4875a]" : "bg-[#171d2b]/40"
+                                            achievement.unlocked ? "bg-[#c4875a]" : "bg-primary/40"
                                         }`}
                                         style={{ width: `${progressPercent}%` }}
                                     />
                                 </div>
-                                <p className="font-sans text-[10px] text-[#171d2b]/40 mt-1">
+                                <p className="font-sans text-[10px] text-muted-foreground mt-1">
                                     {achievement.progress}/{achievement.requirement_value}
                                 </p>
                             </div>
@@ -174,18 +174,18 @@ function AchievementsSkeleton() {
     return (
         <div>
             <header className="mb-6 animate-pulse">
-                <div className="h-8 bg-[#171d2b]/10 rounded w-48 mb-2" />
-                <div className="h-5 bg-[#171d2b]/5 rounded w-64" />
+                <div className="h-8 bg-muted rounded w-48 mb-2" />
+                <div className="h-5 bg-muted rounded w-64" />
             </header>
             <div className="flex gap-2 mb-6">
                 {[1, 2, 3].map((i) => (
-                    <div key={i} className="h-10 w-20 bg-[#171d2b]/10 rounded-lg" />
+                    <div key={i} className="h-10 w-20 bg-muted rounded-lg" />
                 ))}
             </div>
-            <div className="h-2 bg-[#171d2b]/5 rounded w-full mb-6" />
+            <div className="h-2 bg-muted rounded w-full mb-6" />
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-4">
                 {Array.from({ length: 10 }).map((_, i) => (
-                    <div key={i} className="h-32 bg-[#171d2b]/5 rounded-xl" />
+                    <div key={i} className="h-32 bg-muted rounded-xl" />
                 ))}
             </div>
         </div>
@@ -196,14 +196,14 @@ function EmptyAchievements() {
     return (
         <div>
             <header className="mb-6">
-                <h1 className="font-serif text-[28px] text-[#171d2b] mb-1">Achievements</h1>
-                <p className="text-[#171d2b]/60 font-sans text-[15px]">
+                <h1 className="font-sans tracking-tight text-[28px] text-foreground mb-1">Achievements</h1>
+                <p className="text-muted-foreground font-sans text-[15px]">
                     Track your progress and unlock rewards
                 </p>
             </header>
-            <div className="flex flex-col items-center justify-center py-12 text-center bg-white rounded-2xl border border-[#171d2b]/5">
-                <div className="w-16 h-16 bg-[#171d2b]/5 rounded-full flex items-center justify-center mb-4">
-                    <Trophy size={28} className="text-[#171d2b]/30" />
+            <div className="flex flex-col items-center justify-center py-12 text-center bg-white rounded-2xl border border-border">
+                <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mb-4">
+                    <Trophy size={28} className="text-muted-foreground" />
                 </div>
                 <h3 className="font-sans font-medium text-foreground text-[16px] mb-2">No achievements yet</h3>
                 <p className="font-sans text-[13px] text-muted-foreground max-w-xs">

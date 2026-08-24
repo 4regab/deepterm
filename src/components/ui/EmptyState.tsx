@@ -24,7 +24,7 @@ export function EmptyState({
           {icon}
         </div>
       ) : null}
-      <h3 className="font-sora text-lg font-medium text-foreground">{title}</h3>
+      <h3 className="font-sans text-lg font-medium text-foreground">{title}</h3>
       <p className="mt-1 max-w-sm text-sm text-muted-foreground text-pretty">{description}</p>
       {actionLabel && onAction ? (
         <Button size="sm" className="mt-5" onClick={onAction}>

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, X, HelpCircle } from "lucide-react";
+import { Plus, X } from "lucide-react";
 import { Reveal } from "@/components/ui";
 import { cn } from "@/lib/cn";
 
@@ -81,15 +81,13 @@ export default function FAQSection() {
   ];
 
   return (
-    <section className="relative z-10 px-4 sm:px-6 py-12 sm:py-20">
-      <div className="max-w-[76rem] mx-auto">
-        <div className="flex flex-col lg:flex-row gap-10 lg:gap-16">
+    <section className="relative z-10">
+      <div className="flex flex-col lg:flex-row gap-10 lg:gap-16">
           <Reveal className="lg:w-[320px] flex-shrink-0">
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium mb-6 bg-muted text-muted-foreground">
-              <HelpCircle className="w-3.5 h-3.5" aria-hidden="true" />
+            <p className="text-xs uppercase tracking-[0.12em] text-muted-foreground mb-4">
               Support
-            </div>
-            <h2 className="font-serif text-[32px] sm:text-[40px] lg:text-[48px] leading-[1.1] mb-4 text-foreground">
+            </p>
+            <h2 className="text-[32px] sm:text-[40px] leading-[1.1] tracking-tight font-medium mb-4">
               Frequently asked
             </h2>
             <p className="font-sans text-sm sm:text-[15px] leading-6 text-muted-foreground">
@@ -97,7 +95,7 @@ export default function FAQSection() {
             </p>
           </Reveal>
 
-          <Reveal delay={80} className="flex-1">
+          <Reveal delay={80} className="flex-1 plate px-5 sm:px-6">
             {faqs.map((faq, index) => (
               <AccordionItem
                 key={faq.question}
@@ -108,7 +106,6 @@ export default function FAQSection() {
             ))}
           </Reveal>
         </div>
-      </div>
     </section>
   );
 }

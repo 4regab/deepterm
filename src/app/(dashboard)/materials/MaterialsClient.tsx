@@ -92,25 +92,25 @@ export default function MaterialsClient({ initialItems }: MaterialsClientProps) 
                 {/* Mobile: Search + Filter dropdown */}
                 <div className="flex gap-2 md:hidden">
                     <div className="relative flex-1">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[#171d2b]/40" size={18} />
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
                         <input
                             type="text"
                             placeholder="Search..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            className="w-full pl-9 pr-3 py-3 rounded-xl border border-[#171d2b]/10 focus:border-[#171d2b] outline-none bg-white transition-all focus:shadow-sm text-sm"
+                            className="w-full pl-9 pr-3 py-3 rounded-xl border border-border focus:border-primary outline-none bg-white transition-all focus:shadow-sm text-sm"
                         />
                     </div>
                     <div className="relative">
                         <button
                             onClick={() => setShowFilterMenu(!showFilterMenu)}
-                            className="flex items-center gap-1 px-3 py-3 rounded-xl border border-[#171d2b]/10 bg-white text-[#171d2b]/60 text-sm"
+                            className="flex items-center gap-1 px-3 py-3 rounded-xl border border-border bg-white text-muted-foreground text-sm"
                         >
                             <Filter size={16} />
                             <ChevronDown size={14} />
                         </button>
                         {showFilterMenu && (
-                            <div className="absolute right-0 top-full mt-1 bg-white rounded-lg shadow-lg border border-[#171d2b]/10 py-1 z-50 min-w-[120px]">
+                            <div className="absolute right-0 top-full mt-1 bg-white rounded-lg shadow-lg border border-border py-1 z-50 min-w-[120px]">
                                 {FILTERS.map((filter) => (
                                     <button
                                         key={filter}
@@ -119,8 +119,8 @@ export default function MaterialsClient({ initialItems }: MaterialsClientProps) 
                                             setShowFilterMenu(false);
                                         }}
                                         className={`w-full px-3 py-2 text-left text-sm flex items-center gap-2 ${activeFilter === filter
-                                            ? "bg-[#171d2b]/5 text-[#171d2b] font-medium"
-                                            : "text-[#171d2b]/60 hover:bg-[#171d2b]/5"
+                                            ? "bg-muted text-foreground font-medium"
+                                            : "text-muted-foreground hover:bg-accent"
                                             }`}
                                     >
                                         {filter === "All" ? "All Items" : filter}
@@ -133,13 +133,13 @@ export default function MaterialsClient({ initialItems }: MaterialsClientProps) 
                 {/* Desktop: Search + Filter buttons in same row */}
                 <div className="hidden md:flex gap-4">
                     <div className="relative flex-1">
-                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[#171d2b]/40" size={20} />
+                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" size={20} />
                         <input
                             type="text"
                             placeholder="Search by title..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            className="w-full pl-12 pr-4 py-3 rounded-xl border border-[#171d2b]/10 focus:border-[#171d2b] outline-none bg-white transition-all focus:shadow-sm"
+                            className="w-full pl-12 pr-4 py-3 rounded-xl border border-border focus:border-primary outline-none bg-white transition-all focus:shadow-sm"
                         />
                     </div>
                     <div className="flex gap-2">
@@ -148,8 +148,8 @@ export default function MaterialsClient({ initialItems }: MaterialsClientProps) 
                                 key={filter}
                                 onClick={() => setActiveFilter(filter)}
                                 className={`px-4 py-3 rounded-xl font-medium transition-all whitespace-nowrap ${activeFilter === filter
-                                    ? "bg-[#171d2b] text-white shadow-md"
-                                    : "bg-white text-[#171d2b]/60 hover:bg-[#171d2b]/5 hover:text-[#171d2b] border border-[#171d2b]/10"
+                                    ? "bg-primary text-white shadow-md"
+                                    : "bg-white text-muted-foreground hover:bg-accent hover:text-foreground border border-border"
                                     }`}
                             >
                                 {filter === "All" ? "All Items" : filter}
@@ -172,18 +172,18 @@ export default function MaterialsClient({ initialItems }: MaterialsClientProps) 
                                 transition={{ duration: 0.15, ease: "easeOut" }}
                                 whileHover={{ y: -4 }}
                                 onClick={() => router.push(`/materials/${item.id}`)}
-                                className="bg-white rounded-xl p-4 border border-[#171d2b]/5 hover:border-[#171d2b]/20 hover:shadow-lg transition-all cursor-pointer group"
+                                className="bg-white rounded-xl p-4 border border-border hover:border-border hover:shadow-lg transition-all cursor-pointer group"
                             >
                                 <div className="flex justify-between items-start mb-2">
                                     <span className={`px-2 py-0.5 rounded-md text-[10px] font-medium uppercase tracking-wider ${item.type === "Reviewer"
-                                        ? "bg-[#171d2b] text-white"
-                                        : "bg-[#171d2b]/10 text-[#171d2b]"
+                                        ? "bg-primary text-white"
+                                        : "bg-muted text-foreground"
                                         }`}>
                                         {item.type === "Flashcards" ? "Cards" : item.type} · {getItemLabel(item.type, item.itemsCount)}
                                     </span>
                                     <div className="relative">
                                         <button
-                                            className="p-1 rounded-full hover:bg-[#171d2b]/5 text-[#171d2b]/30 hover:text-[#171d2b] transition-colors"
+                                            className="p-1 rounded-full hover:bg-accent text-muted-foreground hover:text-foreground transition-colors"
                                             onClick={(e) => {
                                                 e.stopPropagation();
                                                 setOpenMenuId(openMenuId === item.id ? null : item.id);
@@ -194,11 +194,11 @@ export default function MaterialsClient({ initialItems }: MaterialsClientProps) 
                                         </button>
                                         {openMenuId === item.id && (
                                             <div 
-                                                className="absolute right-0 top-full mt-1 bg-white rounded-lg shadow-lg border border-[#171d2b]/10 py-1 z-50 min-w-[120px]"
+                                                className="absolute right-0 top-full mt-1 bg-white rounded-lg shadow-lg border border-border py-1 z-50 min-w-[120px]"
                                                 onClick={(e) => e.stopPropagation()}
                                             >
                                                 <button
-                                                    className="w-full px-3 py-2 text-left text-sm text-[#171d2b] hover:bg-[#171d2b]/5 flex items-center gap-2"
+                                                    className="w-full px-3 py-2 text-left text-sm text-foreground hover:bg-accent flex items-center gap-2"
                                                     onClick={(e) => {
                                                         e.stopPropagation();
                                                         setOpenMenuId(null);
@@ -209,7 +209,7 @@ export default function MaterialsClient({ initialItems }: MaterialsClientProps) 
                                                     Share
                                                 </button>
                                                 <button
-                                                    className="w-full px-3 py-2 text-left text-sm text-[#171d2b] hover:bg-[#171d2b]/5 flex items-center gap-2"
+                                                    className="w-full px-3 py-2 text-left text-sm text-foreground hover:bg-accent flex items-center gap-2"
                                                     onClick={(e) => {
                                                         e.stopPropagation();
                                                         setOpenMenuId(null);
@@ -224,9 +224,9 @@ export default function MaterialsClient({ initialItems }: MaterialsClientProps) 
                                     </div>
                                 </div>
                                 <div className="mb-2">
-                                    <h3 className="font-sora font-semibold text-sm text-[#171d2b] line-clamp-2">{item.title}</h3>
+                                    <h3 className="font-sans font-medium text-sm text-foreground line-clamp-2">{item.title}</h3>
                                 </div>
-                                <div className="flex items-center text-[#171d2b]/40 text-xs">
+                                <div className="flex items-center text-muted-foreground text-xs">
                                     <div className="flex items-center gap-1">
                                         <Clock size={12} />
                                         <span>{item.lastAccessed}</span>

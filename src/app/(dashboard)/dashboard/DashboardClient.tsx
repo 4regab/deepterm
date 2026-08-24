@@ -20,10 +20,10 @@ function StudyCalendarSkeleton() {
     return (
         <div className="plate p-6">
             <div className="animate-pulse">
-                <div className="h-6 bg-[#171d2b]/10 rounded w-32 mb-4" />
+                <div className="h-6 bg-muted rounded w-32 mb-4" />
                 <div className="grid grid-cols-7 gap-2">
                     {Array.from({ length: 42 }).map((_, i) => (
-                        <div key={i} className="h-8 bg-[#171d2b]/5 rounded" />
+                        <div key={i} className="h-8 bg-muted rounded" />
                     ))}
                 </div>
             </div>
@@ -80,24 +80,24 @@ function HeaderSkeleton() {
         <header className="mb-6">
             <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-4">
                 <div>
-                    <div className="h-10 w-64 bg-[#171d2b]/10 rounded-lg animate-pulse mb-2" />
-                    <div className="h-5 w-48 bg-[#171d2b]/5 rounded animate-pulse" />
+                    <div className="h-10 w-64 bg-muted rounded-lg animate-pulse mb-2" />
+                    <div className="h-5 w-48 bg-muted rounded animate-pulse" />
                 </div>
             </div>
             <div className="plate p-4">
                 <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-3">
-                        <div className="h-7 w-20 bg-[#171d2b]/10 rounded-md animate-pulse" />
-                        <div className="h-5 w-24 bg-[#171d2b]/5 rounded animate-pulse" />
+                        <div className="h-7 w-20 bg-muted rounded-md animate-pulse" />
+                        <div className="h-5 w-24 bg-muted rounded animate-pulse" />
                     </div>
-                    <div className="h-5 w-20 bg-[#171d2b]/5 rounded animate-pulse" />
+                    <div className="h-5 w-20 bg-muted rounded animate-pulse" />
                 </div>
-                <div className="h-3 bg-[#171d2b]/5 rounded-full mb-4" />
+                <div className="h-3 bg-muted rounded-full mb-4" />
                 <div className="grid grid-cols-3 gap-3">
                     {[1, 2, 3].map(i => (
                         <div key={i} className="bg-[#f5f0e0] rounded-lg p-3 animate-pulse">
-                            <div className="h-3 bg-[#171d2b]/10 rounded w-16 mb-2" />
-                            <div className="h-5 bg-[#171d2b]/10 rounded w-12" />
+                            <div className="h-3 bg-muted rounded w-16 mb-2" />
+                            <div className="h-5 bg-muted rounded w-12" />
                         </div>
                     ))}
                 </div>
@@ -153,7 +153,7 @@ export function DashboardHeader({ initialData }: DashboardHeaderProps) {
             className="mb-6"
         >
             <div className="mb-4">
-                <h1 className="font-serif text-[32px] sm:text-[40px] text-foreground mb-1">
+                <h1 className="font-sans tracking-tight text-[32px] sm:text-[40px] text-foreground mb-1">
                     {`${greeting}, ${firstName}`}
                 </h1>
                 <p className="font-sans text-base text-muted-foreground">

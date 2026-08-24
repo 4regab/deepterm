@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
           flexDirection: 'column',
           alignItems: 'flex-start',
           justifyContent: 'flex-end',
-          backgroundColor: '#171d2b',
+          backgroundColor: '#292929',
           padding: '60px',
         }}
       >
@@ -30,7 +30,7 @@ export async function GET(request: NextRequest) {
             left: 0,
             right: 0,
             bottom: 0,
-            background: 'linear-gradient(135deg, #171d2b 0%, #2a3347 50%, #171d2b 100%)',
+            background: 'linear-gradient(135deg, #292929 0%, #2a3347 50%, #292929 100%)',
           }}
         />
         

@@ -16,7 +16,7 @@ export default function NotFound() {
           />
         </div>
 
-        <p className="font-sora text-6xl md:text-8xl font-medium text-foreground tabular mb-3">
+        <p className="font-sans text-6xl md:text-8xl font-medium text-foreground tabular mb-3">
           404
         </p>
 

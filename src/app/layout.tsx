@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { headers } from "next/headers";
-import { Space_Grotesk, Sora, Source_Serif_4 } from "next/font/google";
+import { Inter_Tight, Geist_Mono } from "next/font/google";
 import Script from "next/script";
 import "@/styles/globals.css";
 import {
@@ -12,23 +12,18 @@ import {
 import { PostHogProvider } from "@/components/PostHogProvider";
 import { SkipLink } from "@/components/ui";
 
-const spaceGrotesk = Space_Grotesk({
+const interTight = Inter_Tight({
   subsets: ["latin"],
-  variable: "--font-space-grotesk",
+  variable: "--font-inter-tight",
+  weight: ["300", "400", "500"],
   display: "swap",
 });
 
-const sora = Sora({
+const geistMono = Geist_Mono({
   subsets: ["latin"],
-  variable: "--font-sora",
+  variable: "--font-geist-mono",
+  weight: ["400", "500"],
   display: "swap",
-});
-
-const sourceSerif4 = Source_Serif_4({
-  subsets: ["latin"],
-  variable: "--font-source-serif",
-  display: "swap",
-  style: ["normal", "italic"],
 });
 
 export const metadata: Metadata = defaultMetadata;
@@ -38,7 +33,7 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const nonce = (await headers()).get('x-nonce') ?? '';
+  const nonce = (await headers()).get("x-nonce") ?? "";
   const websiteJsonLd = generateWebsiteJsonLd();
   const organizationJsonLd = generateOrganizationJsonLd();
   const softwareAppJsonLd = generateSoftwareAppJsonLd();
@@ -46,11 +41,10 @@ export default async function RootLayout({
   return (
     <html
       lang="en"
-      className={`${spaceGrotesk.variable} ${sora.variable} ${sourceSerif4.variable}`}
+      className={`${interTight.variable} ${geistMono.variable}`}
       suppressHydrationWarning
     >
       <head>
-        {/* JSON-LD Structured Data */}
         <script
           nonce={nonce}
           type="application/ld+json"
@@ -67,10 +61,9 @@ export default async function RootLayout({
           dangerouslySetInnerHTML={{ __html: JSON.stringify(softwareAppJsonLd) }}
         />
       </head>
-      <body suppressHydrationWarning>
+      <body className="font-sans" suppressHydrationWarning>
         <SkipLink />
         <PostHogProvider>
-          {/* Google Analytics */}
           <Script
             nonce={nonce}
             src="https://www.googletagmanager.com/gtag/js?id=G-W6BMP2LP3T"

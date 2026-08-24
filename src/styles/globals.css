@@ -2,15 +2,15 @@
 @plugin "@tailwindcss/typography";
 
 /*
- * DeepTerm tokens, adapted from OA Design's "derive, don't pick" system.
- * Identity stays DeepTerm: warm paper stage, navy ink, serif display.
- * Neutrals are --ink mixed into transparency at stated percentages.
+ * OA Design tokens, installed as written.
+ * One ink, one accent, Inter Tight 300–500, pills for actions.
+ * Emil easings sit beside the OA springs for named CSS transitions.
  */
 
 :root {
-  --ink: #171d2b;
+  --ink: #292929;
 
-  --background: #f0f0ea;
+  --background: #f6f6f6;
   --card: #ffffff;
   --popover: #ffffff;
   --foreground: var(--ink);
@@ -21,13 +21,13 @@
   --accent: color-mix(in srgb, var(--ink) 5%, transparent);
   --accent-foreground: var(--ink);
   --muted: color-mix(in srgb, var(--ink) 5%, transparent);
-  --muted-foreground: color-mix(in srgb, var(--ink) 60%, #6d6d6d);
+  --muted-foreground: #6d6d6d;
 
-  --primary: #171d2b;
-  --primary-foreground: #fefeff;
+  --primary: #305dde;
+  --primary-foreground: #ffffff;
   --ring: #3ba6f1;
 
-  --secondary: color-mix(in srgb, var(--ink) 8%, #f0f0ea);
+  --secondary: #e9e9e9;
   --secondary-foreground: var(--ink);
 
   --destructive: oklch(0.637 0.237 25.331);
@@ -38,6 +38,8 @@
   --warning-foreground: oklch(0.555 0.163 48.998);
   --info: oklch(0.623 0.214 259.815);
   --info-foreground: oklch(0.488 0.243 264.376);
+
+  --chart-1: #296ff0;
 
   --radius: 0.625rem;
   --radius-sm: calc(var(--radius) * 0.6);
@@ -57,9 +59,8 @@
 }
 
 @theme inline {
-  --font-sans: var(--font-space-grotesk), ui-sans-serif, system-ui, sans-serif;
-  --font-serif: var(--font-source-serif), "Source Serif 4", ui-serif, serif;
-  --font-sora: var(--font-sora), sans-serif;
+  --font-sans: var(--font-inter-tight), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
 
   --color-ink: var(--ink);
   --color-background: var(--background);
@@ -92,24 +93,38 @@ html {
   overflow-x: clip;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  font-synthesis-weight: none;
 }
 
 body {
-  background-color: var(--background);
+  background: #ffffff;
   color: var(--foreground);
   overflow-x: clip;
   font-family: var(--font-sans);
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 1.5;
 }
 
-.source-serif-4 {
-  font-family: var(--font-source-serif), "Source Serif 4", serif;
-  font-optical-sizing: auto;
+code,
+kbd,
+samp,
+pre {
+  font-family: var(--font-mono);
   font-weight: 400;
-  font-style: normal;
+}
+
+h1,
+h2,
+h3,
+h4,
+b,
+strong {
+  font-weight: 500;
 }
 
 ::selection {
-  background: color-mix(in srgb, var(--ink) 18%, transparent);
+  background: color-mix(in srgb, var(--primary) 18%, transparent);
   color: var(--foreground);
 }
 
@@ -229,6 +244,18 @@ select {
 }
 
 .header-pill {
+  position: relative;
+  margin-inline: auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 3.5rem;
+  width: 100%;
+  max-width: 56rem;
+  border-radius: 9999px;
+  border: 1px solid transparent;
+  background: transparent;
+  padding-inline: 1rem;
   transition:
     max-width 700ms var(--ease-drawer),
     height 700ms var(--ease-drawer),
@@ -239,14 +266,34 @@ select {
     box-shadow 700ms var(--ease-drawer);
 }
 
+@media (min-width: 640px) {
+  .header-pill {
+    height: 4rem;
+    padding-inline: 1rem;
+  }
+}
+
 .header-pill[data-scrolled="true"] {
-  background-color: color-mix(in srgb, var(--background) 80%, transparent);
-  border-color: color-mix(in srgb, var(--ink) 8%, transparent);
-  backdrop-filter: blur(16px) saturate(125%);
+  margin-top: 0.75rem;
+  height: 2.75rem;
+  max-width: calc(100% - 1.5rem);
+  padding-inline: 0.5rem;
+  background-color: rgb(217 217 217 / 0.5);
+  border-color: rgb(143 143 143 / 0.3);
+  backdrop-filter: blur(24px) saturate(125%);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.35),
     inset 0 -1px 0 rgba(255, 255, 255, 0.12),
-    var(--shadow-floating);
+    0 1px 1px rgba(0, 0, 0, 0.06),
+    0 8px 24px rgba(0, 0, 0, 0.1);
+}
+
+@media (min-width: 640px) {
+  .header-pill[data-scrolled="true"] {
+    height: 3rem;
+    max-width: 42rem;
+    padding-inline: 0.625rem;
+  }
 }
 
 @keyframes oa-skeleton {

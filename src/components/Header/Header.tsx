@@ -70,7 +70,7 @@ function NavDropdown({
         <div className="relative" ref={rootRef}>
             <button
                 type="button"
-                className="font-sans text-foreground text-[15px] sm:text-[16px] hover:opacity-70 transition-opacity duration-150 flex items-center gap-1 rounded-full px-1 min-h-10"
+                className="font-sans text-foreground text-sm hover:opacity-70 transition-opacity duration-150 flex items-center gap-1 rounded-full px-1 min-h-10"
                 aria-expanded={open}
                 aria-haspopup="menu"
                 onClick={() => setOpen((value) => !value)}
@@ -147,24 +147,20 @@ function SessionAwareHeader({ user, isLoading, className }: { user: User | null;
     return (
         <header
             data-scrolled={isScrolled}
-            className={cn(
-                "header-pill relative flex items-center justify-between px-4 sm:px-6 h-14 sm:h-16 rounded-full mx-3 sm:mx-4 mt-3 border border-transparent bg-transparent",
-                className
-            )}
+            className={cn("header-pill", className)}
         >
             <Link href="/" className="flex items-center min-h-10 hover:opacity-70 transition-opacity duration-150">
-                <div className="w-[40px] h-[40px] sm:w-[45px] sm:h-[45px] flex items-center justify-center">
+                <div className="w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center">
                     <div className="rotate-[292deg]">
-                        <Image alt="DeepTerm" className="w-[32px] h-[32px] sm:w-[38px] sm:h-[38px]" src={imgLogo} width={38} height={38} />
+                        <Image alt="DeepTerm" className="w-7 h-7 sm:w-8 sm:h-8" src={imgLogo} width={32} height={32} />
                     </div>
                 </div>
-                <span className="font-sora text-foreground text-[20px] sm:text-[24px]">deepterm</span>
+                <span className="font-sans text-foreground text-[17px] sm:text-[18px] font-medium tracking-tight">deepterm</span>
             </Link>
 
-            <nav className="hidden md:flex items-center gap-5" aria-label="Primary">
-                <div className="flex items-center gap-3">
+            <nav className="hidden md:flex items-center gap-4" aria-label="Primary">
+                <div className="flex items-center gap-4">
                     <NavDropdown label="Learn" items={LEARN_ITEMS} />
-                    <span className="w-px h-4 bg-border" aria-hidden="true" />
                     <NavDropdown label="Resources" items={RESOURCES_ITEMS} />
                 </div>
                 {isLoading ? (
@@ -302,10 +298,8 @@ export default function Header({ className }: { className?: string }) {
     }, [checkUser]);
 
     return (
-        <div ref={mountRef} className="sticky top-0 z-50 w-full pt-2 sm:pt-3 lg:pt-4 h-[4.5rem] sm:h-[5.25rem]">
-            <div className="max-w-[76rem] mx-auto">
-                <SessionAwareHeader user={user} isLoading={isLoading} className={className} />
-            </div>
+        <div ref={mountRef} className="sticky top-0 z-50 w-full h-16 sm:h-20">
+            <SessionAwareHeader user={user} isLoading={isLoading} className={className} />
         </div>
     );
 }

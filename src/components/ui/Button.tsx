@@ -8,7 +8,7 @@ type Variant = "primary" | "secondary" | "ghost" | "destructive" | "outline";
 type Size = "lg" | "md" | "sm" | "xs";
 
 const BASE =
-  "inline-flex cursor-pointer items-center justify-center gap-2 whitespace-nowrap font-medium font-sora " +
+  "inline-flex cursor-pointer items-center justify-center gap-2 whitespace-nowrap font-medium " +
   "transition-[transform,background-color,color,border-color,box-shadow] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] " +
   "focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none " +
   "disabled:pointer-events-none disabled:opacity-50 " +
@@ -16,11 +16,13 @@ const BASE =
 
 const VARIANTS: Record<Variant, string> = {
   primary:
-    "bg-primary text-primary-foreground shadow-[inset_0_1px_0_rgba(255,255,255,0.18),inset_0_-1px_0_rgba(0,0,0,0.18)] " +
-    "hover:bg-[#2a3347]",
+    "border border-[color-mix(in_srgb,var(--primary)_80%,#3a3480)] " +
+    "bg-[color-mix(in_srgb,var(--primary)_90%,#3a3480)] text-primary-foreground " +
+    "shadow-[inset_0_1px_0_rgba(255,255,255,0.22),inset_0_-1px_0_rgba(58,52,128,0.30)] " +
+    "hover:bg-primary hover:border-[color-mix(in_srgb,var(--primary)_70%,#3a3480)]",
   secondary:
     "border border-transparent bg-secondary text-secondary-foreground " +
-    "hover:bg-[color-mix(in_srgb,var(--secondary)_92%,var(--ink))]",
+    "hover:bg-[color-mix(in_srgb,var(--secondary)_95%,var(--ink))]",
   ghost: "text-muted-foreground hover:text-foreground hover:bg-accent",
   destructive: "bg-destructive text-white hover:bg-destructive/90",
   outline:

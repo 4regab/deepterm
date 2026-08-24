@@ -105,7 +105,7 @@ export function Modal({
             )}
           >
             {title ? (
-              <h2 id={titleId} className="font-sora text-base font-medium text-foreground mb-3">
+              <h2 id={titleId} className="font-sans text-base font-medium text-foreground mb-3">
                 {title}
               </h2>
             ) : null}

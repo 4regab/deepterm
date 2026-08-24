@@ -35,12 +35,12 @@ function formatTimeAgo(date: Date): string {
 function EmptyState() {
     return (
         <>
-            <div className="col-span-2 md:col-span-3 lg:col-span-3 bg-white rounded-xl p-5 border border-[#171d2b]/5 flex flex-col items-center justify-center text-center">
-                <div className="w-12 h-12 bg-[#171d2b]/5 rounded-full flex items-center justify-center mb-3">
-                    <Clock size={20} className="text-[#171d2b]/30" />
+            <div className="col-span-2 md:col-span-3 lg:col-span-3 bg-white rounded-xl p-5 border border-border flex flex-col items-center justify-center text-center">
+                <div className="w-12 h-12 bg-muted rounded-full flex items-center justify-center mb-3">
+                    <Clock size={20} className="text-muted-foreground" />
                 </div>
-                <h3 className="font-sans font-medium text-[#171d2b] text-[15px] mb-1">No recent activity</h3>
-                <p className="font-sans text-[12px] text-[#171d2b]/50 max-w-xs">
+                <h3 className="font-sans font-medium text-foreground text-[15px] mb-1">No recent activity</h3>
+                <p className="font-sans text-[12px] text-muted-foreground max-w-xs">
                     Your recent files will appear here.
                 </p>
             </div>
@@ -53,10 +53,10 @@ function LoadingSkeleton() {
     return (
         <>
             {[1, 2, 3].map((i) => (
-                <div key={i} className="bg-white rounded-xl p-3 border border-[#171d2b]/5 animate-pulse">
-                    <div className="w-9 h-9 rounded-lg bg-[#171d2b]/10 mb-2" />
-                    <div className="h-4 bg-[#171d2b]/10 rounded w-3/4 mb-1.5" />
-                    <div className="h-3 bg-[#171d2b]/5 rounded w-1/2" />
+                <div key={i} className="bg-white rounded-xl p-3 border border-border animate-pulse">
+                    <div className="w-9 h-9 rounded-lg bg-muted mb-2" />
+                    <div className="h-4 bg-muted rounded w-3/4 mb-1.5" />
+                    <div className="h-3 bg-muted rounded w-1/2" />
                 </div>
             ))}
             <CreateNewButton />
@@ -68,7 +68,7 @@ function CreateNewButton() {
     return (
         <Link
             href="/materials/create"
-            className="group bg-[#171d2b]/5 rounded-xl p-3 border border-dashed border-[#171d2b]/20 hover:border-[#171d2b]/40 hover:bg-[#171d2b]/10 transition-all flex flex-col items-center justify-center gap-2 text-[#171d2b]/60 hover:text-[#171d2b] min-h-[120px]"
+            className="group bg-muted rounded-xl p-3 border border-dashed border-border hover:border-primary/40 hover:bg-accent transition-all flex flex-col items-center justify-center gap-2 text-muted-foreground hover:text-foreground min-h-[120px]"
         >
             <div className="w-9 h-9 rounded-full bg-white flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform">
                 <span className="text-xl font-light leading-none">+</span>
@@ -148,8 +148,8 @@ export default function RecentFiles() {
     return (
         <div className="mb-8">
             <div className="flex items-center justify-between mb-4">
-                <h2 className="font-serif text-[24px] text-[#171d2b]">Recent Activity</h2>
-                <Link href="/materials" className="text-[#171d2b]/60 hover:text-[#171d2b] text-sm font-sans transition-colors">
+                <h2 className="font-sans tracking-tight text-[24px] text-foreground">Recent Activity</h2>
+                <Link href="/materials" className="text-muted-foreground hover:text-foreground text-sm font-sans transition-colors">
                     View all
                 </Link>
             </div>
@@ -165,17 +165,17 @@ export default function RecentFiles() {
                             <Link
                                 key={file.id}
                                 href={`/materials/${file.id}`}
-                                className="group bg-white rounded-xl p-3 border border-[#171d2b]/5 hover:border-[#171d2b]/20 hover:shadow-md transition-all cursor-pointer"
+                                className="group bg-white rounded-xl p-3 border border-border hover:border-border hover:shadow-md transition-all cursor-pointer"
                             >
                                 <div className="flex items-start justify-between mb-2">
                                     <div className={`w-9 h-9 rounded-lg ${file.color} flex items-center justify-center`} />
                                 </div>
 
-                                <h3 className="font-sans font-medium text-[#171d2b] text-[15px] mb-1 line-clamp-1 group-hover:text-[#171d2b]/70 transition-colors">
+                                <h3 className="font-sans font-medium text-foreground text-[15px] mb-1 line-clamp-1 group-hover:text-foreground/70 transition-colors">
                                     {file.title}
                                 </h3>
 
-                                <div className="flex items-center gap-1.5 text-[#171d2b]/50 text-[11px] font-sans">
+                                <div className="flex items-center gap-1.5 text-muted-foreground text-[11px] font-sans">
                                     <span>{file.type}</span>
                                     <span>·</span>
                                     <div className="flex items-center gap-1">

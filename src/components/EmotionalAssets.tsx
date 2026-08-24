@@ -85,7 +85,7 @@ export const FloatingOrb = ({ state = "idle" }: { state?: "idle" | "thinking" | 
     };
 
     const colors: Record<string, string> = {
-        idle: "#171d2b",
+        idle: "var(--ink)",
         thinking: "#8B5CF6",
         happy: "#10B981",
         focus: "#3B82F6"
@@ -187,10 +187,10 @@ export const EncouragementToast = ({ message, isVisible, onClose }: { message: s
                     initial={{ opacity: 0, y: 50, scale: 0.9 }}
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: 20, scale: 0.9 }}
-                    className="fixed bottom-8 left-1/2 -translate-x-1/2 bg-[#171d2b] text-white px-6 py-3 rounded-full shadow-xl flex items-center gap-3 z-50 cursor-pointer"
+                    className="fixed bottom-8 left-1/2 -translate-x-1/2 bg-primary text-white px-6 py-3 rounded-full shadow-xl flex items-center gap-3 z-50 cursor-pointer"
                     onClick={onClose}
                 >
-                    <span className="font-sora font-medium">{message}</span>
+                    <span className="font-sans font-medium">{message}</span>
                 </motion.div>
             )}
         </AnimatePresence>
@@ -222,7 +222,7 @@ export const SadBirdMascot = ({ className = "w-20 h-20" }: { className?: string 
 );
 
 // --- Animated Progress Bar (Segmented) ---
-export const AnimatedProgress = ({ value, total, color = "#171d2b" }: { value: number, total: number, color?: string }) => {
+export const AnimatedProgress = ({ value, total, color = "var(--ink)" }: { value: number, total: number, color?: string }) => {
     return (
         <div className="w-full flex gap-1.5">
             {Array.from({ length: total }).map((_, i) => {
@@ -230,7 +230,7 @@ export const AnimatedProgress = ({ value, total, color = "#171d2b" }: { value: n
                 const isCompleted = i < value - 1;
 
                 return (
-                    <div key={i} className="flex-1 h-2 rounded-full bg-[#171d2b]/10 overflow-hidden relative">
+                    <div key={i} className="flex-1 h-2 rounded-full bg-muted overflow-hidden relative">
                         <motion.div
                             initial={{ width: "0%" }}
                             animate={{
@@ -287,38 +287,38 @@ export const SessionResultCard = ({
     };
 
     return (
-        <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden bg-[#f0f0ea]">
+        <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden bg-background">
             {showConfetti && percentage >= 70 && <Confetti isActive={true} />}
             <motion.div
                 initial={{ scale: 0.9, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
-                className="bg-white rounded-3xl p-8 md:p-12 max-w-2xl w-full text-center shadow-xl border border-[#171d2b]/5 z-10"
+                className="bg-white rounded-3xl p-8 md:p-12 max-w-2xl w-full text-center shadow-xl border border-border z-10"
             >
                 <div className="mb-6 flex flex-col items-center">
                     <div className="mb-4">
                         {getMascot()}
                     </div>
-                    <h2 className="text-2xl md:text-3xl font-sora font-bold text-[#171d2b] mb-1">
+                    <h2 className="text-2xl md:text-3xl font-sans font-medium text-foreground mb-1">
                         {getMessage()}
                     </h2>
-                    <p className="text-[#171d2b]/60">{title}</p>
+                    <p className="text-muted-foreground">{title}</p>
                 </div>
 
                 {/* Score Display */}
-                <div className="bg-[#171d2b] rounded-2xl p-6 mb-6">
-                    <div className="text-5xl md:text-6xl font-bold text-white mb-2">{percentage}%</div>
+                <div className="bg-primary rounded-2xl p-6 mb-6">
+                    <div className="text-5xl md:text-6xl font-medium text-white mb-2">{percentage}%</div>
                     <p className="text-white/60 text-sm">{correct} out of {total} correct</p>
                 </div>
 
                 {/* Stats Pills */}
                 <div className="flex justify-center gap-4 mb-8">
-                    <div className="px-5 py-3 bg-[#171d2b]/5 rounded-xl">
-                        <div className="text-xl font-bold text-[#171d2b]">{correct}</div>
-                        <div className="text-xs text-[#171d2b]/60">Correct</div>
+                    <div className="px-5 py-3 bg-muted rounded-xl">
+                        <div className="text-xl font-medium text-foreground">{correct}</div>
+                        <div className="text-xs text-muted-foreground">Correct</div>
                     </div>
-                    <div className="px-5 py-3 bg-[#171d2b]/5 rounded-xl">
-                        <div className="text-xl font-bold text-[#171d2b]">{total - correct}</div>
-                        <div className="text-xs text-[#171d2b]/60">To Review</div>
+                    <div className="px-5 py-3 bg-muted rounded-xl">
+                        <div className="text-xl font-medium text-foreground">{total - correct}</div>
+                        <div className="text-xs text-muted-foreground">To Review</div>
                     </div>
                 </div>
 
@@ -326,13 +326,13 @@ export const SessionResultCard = ({
                 <div className="flex gap-3 justify-center">
                     <button
                         onClick={onBack}
-                        className="flex-1 max-w-[160px] h-12 bg-white border border-[#171d2b]/10 text-[#171d2b] rounded-xl font-medium hover:bg-gray-50 transition-colors text-sm"
+                        className="flex-1 max-w-[160px] h-12 bg-white border border-border text-foreground rounded-xl font-medium hover:bg-gray-50 transition-colors text-sm"
                     >
                         {backLabel}
                     </button>
                     <button
                         onClick={onRetry}
-                        className="flex-1 max-w-[160px] h-12 bg-[#171d2b] text-white rounded-xl font-medium hover:bg-[#2a3347] transition-colors text-sm"
+                        className="flex-1 max-w-[160px] h-12 bg-primary text-white rounded-xl font-medium hover:bg-[#2a3347] transition-colors text-sm"
                     >
                         {retryLabel}
                     </button>

@@ -18,8 +18,8 @@ interface RecentActivityItem {
 }
 
 const TYPE_COLORS: Record<string, string> = {
-    flashcards: "bg-[#171d2b]/10",
-    reviewer: "bg-[#171d2b]/10",
+    flashcards: "bg-muted",
+    reviewer: "bg-muted",
     achievement: "bg-[#f5e6c8]",
 };
 
@@ -42,12 +42,12 @@ function formatTimeAgo(date: Date): string {
 
 function EmptyState() {
     return (
-        <div className="bg-white rounded-xl p-5 border border-[#171d2b]/5 flex flex-col items-center justify-center text-center">
-            <div className="w-12 h-12 bg-[#171d2b]/5 rounded-full flex items-center justify-center mb-3">
-                <Clock size={20} className="text-[#171d2b]/30" />
+        <div className="bg-white rounded-xl p-5 border border-border flex flex-col items-center justify-center text-center">
+            <div className="w-12 h-12 bg-muted rounded-full flex items-center justify-center mb-3">
+                <Clock size={20} className="text-muted-foreground" />
             </div>
-            <h3 className="font-sans font-medium text-[#171d2b] text-[15px] mb-1">No recent activity</h3>
-            <p className="font-sans text-[12px] text-[#171d2b]/50 max-w-xs">
+            <h3 className="font-sans font-medium text-foreground text-[15px] mb-1">No recent activity</h3>
+            <p className="font-sans text-[12px] text-muted-foreground max-w-xs">
                 Your recent files and achievements will appear here.
             </p>
         </div>
@@ -58,11 +58,11 @@ function LoadingSkeleton() {
     return (
         <div className="flex flex-col gap-2">
             {[1, 2, 3, 4].map((i) => (
-                <div key={i} className="bg-white rounded-xl p-3 border border-[#171d2b]/5 animate-pulse flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-lg bg-[#171d2b]/10 shrink-0" />
+                <div key={i} className="bg-white rounded-xl p-3 border border-border animate-pulse flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-lg bg-muted shrink-0" />
                     <div className="flex-1">
-                        <div className="h-4 bg-[#171d2b]/10 rounded w-3/4 mb-1.5" />
-                        <div className="h-3 bg-[#171d2b]/5 rounded w-1/2" />
+                        <div className="h-4 bg-muted rounded w-3/4 mb-1.5" />
+                        <div className="h-3 bg-muted rounded w-1/2" />
                     </div>
                 </div>
             ))}
@@ -75,15 +75,15 @@ function AchievementRow({ item }: { item: RecentActivityItem }) {
     const IconComponent = ICON_MAP[item.icon as AchievementIcon] || Trophy;
     
     return (
-        <div className="group bg-white rounded-lg p-3 border border-[#171d2b]/5 hover:border-[#171d2b]/15 hover:shadow-sm transition-all flex items-center gap-3">
+        <div className="group bg-white rounded-lg p-3 border border-border hover:border-primary/15 hover:shadow-sm transition-all flex items-center gap-3">
             <div className="w-8 h-8 rounded-full bg-[#f5e6c8] flex items-center justify-center shrink-0">
                 <IconComponent size={16} className="text-[#c4875a]" />
             </div>
             <div className="flex-1 min-w-0">
-                <h3 className="font-sans font-medium text-[#171d2b] text-[12px] truncate">
+                <h3 className="font-sans font-medium text-foreground text-[12px] truncate">
                     {item.title}
                 </h3>
-                <div className="flex items-center gap-1.5 text-[#171d2b]/50 text-[10px] font-sans">
+                <div className="flex items-center gap-1.5 text-muted-foreground text-[10px] font-sans">
                     <span className="text-[#c4875a] font-medium">Achievement</span>
                     <span>·</span>
                     <span>{item.date}</span>
@@ -187,12 +187,12 @@ export default function RecentActivity() {
         .slice(0, 5);
 
     return (
-        <div className="bg-white rounded-xl border border-[#171d2b]/5 shadow-sm overflow-hidden h-full flex flex-col">
+        <div className="bg-white rounded-xl border border-border shadow-sm overflow-hidden h-full flex flex-col">
             {/* Header - matching Study History style */}
-            <div className="bg-[#f5e6c8] px-3 py-2 border-b border-[#171d2b]/5">
+            <div className="bg-[#f5e6c8] px-3 py-2 border-b border-border">
                 <div className="flex items-center gap-2">
-                    <Trophy size={16} className="text-[#171d2b]/70" />
-                    <h2 className="font-serif-4 text-sm text-[#171d2b]">Recent Activity</h2>
+                    <Trophy size={16} className="text-muted-foreground" />
+                    <h2 className="font-sans tracking-tight text-sm text-foreground">Recent Activity</h2>
                 </div>
             </div>
 
@@ -211,20 +211,20 @@ export default function RecentActivity() {
                                 <Link
                                     key={item.id}
                                     href={`/materials/${item.id}`}
-                                    className="group bg-[#f5f5f0] rounded-lg p-3 border border-[#171d2b]/5 hover:border-[#171d2b]/15 hover:shadow-sm transition-all flex items-center gap-3"
+                                    className="group bg-[#f5f5f0] rounded-lg p-3 border border-border hover:border-primary/15 hover:shadow-sm transition-all flex items-center gap-3"
                                 >
                                     <div className={`w-8 h-8 rounded-full bg-white flex items-center justify-center shrink-0`}>
                                         {item.type === 'flashcards' ? (
-                                            <FileText size={14} className="text-[#171d2b]/60" />
+                                            <FileText size={14} className="text-muted-foreground" />
                                         ) : (
-                                            <BookOpen size={14} className="text-[#171d2b]/60" />
+                                            <BookOpen size={14} className="text-muted-foreground" />
                                         )}
                                     </div>
                                     <div className="flex-1 min-w-0">
-                                        <h3 className="font-sans font-medium text-[#171d2b] text-[12px] truncate group-hover:text-[#171d2b]/70 transition-colors">
+                                        <h3 className="font-sans font-medium text-foreground text-[12px] truncate group-hover:text-foreground/70 transition-colors">
                                             {item.title}
                                         </h3>
-                                        <div className="flex items-center gap-1.5 text-[#171d2b]/50 text-[10px] font-sans">
+                                        <div className="flex items-center gap-1.5 text-muted-foreground text-[10px] font-sans">
                                             <span>{item.type === 'flashcards' ? 'Flashcards' : 'Reviewer'}</span>
                                             <span>·</span>
                                             <span>{item.date}</span>

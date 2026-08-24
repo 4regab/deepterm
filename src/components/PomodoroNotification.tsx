@@ -110,14 +110,14 @@ export default function PomodoroNotification() {
         exit={{ opacity: 0, y: -20, scale: 0.95 }}
         className="fixed top-4 left-1/2 -translate-x-1/2 z-[100] w-[90%] max-w-md"
       >
-        <div className="bg-[#171d2b] text-white rounded-2xl shadow-2xl overflow-hidden">
+        <div className="bg-primary text-white rounded-2xl shadow-2xl overflow-hidden">
           <div className="p-4">
             <div className="flex items-start gap-3">
               <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center flex-shrink-0">
                 <Timer size={20} />
               </div>
               <div className="flex-1 min-w-0">
-                <h3 className="font-sora font-semibold text-base mb-1">
+                <h3 className="font-sans font-medium text-base mb-1">
                   {completedPhaseLabel} Complete!
                 </h3>
                 <p className="text-white/70 text-sm">

@@ -80,16 +80,16 @@ export default function FlashcardsPage() {
 
     if (isLoading) {
         return (
-            <div className="min-h-screen bg-[#f0f0ea] flex items-center justify-center">
-                <Loader2 size={32} className="animate-spin text-[#171d2b]/40" />
+            <div className="min-h-screen bg-background flex items-center justify-center">
+                <Loader2 size={32} className="animate-spin text-muted-foreground" />
             </div>
         );
     }
 
     if (!studySession || studySession.cards.length === 0) {
         return (
-            <div className="min-h-screen bg-[#f0f0ea] flex items-center justify-center">
-                <p className="text-[#171d2b]/50">No flashcards found</p>
+            <div className="min-h-screen bg-background flex items-center justify-center">
+                <p className="text-muted-foreground">No flashcards found</p>
             </div>
         );
     }
@@ -215,7 +215,7 @@ export default function FlashcardsPage() {
     };
 
     return (
-        <div className="min-h-screen flex flex-col max-w-5xl mx-auto px-4 sm:px-8 py-8 bg-[#f0f0ea]">
+        <div className="min-h-screen flex flex-col max-w-5xl mx-auto px-4 sm:px-8 py-8 bg-background">
             <EncouragementToast message={toastMessage} isVisible={showToast} onClose={() => setShowToast(false)} />
             <ExitPopup
                 isOpen={showExitPopup}
@@ -231,21 +231,21 @@ export default function FlashcardsPage() {
 
             {/* Header */}
             <div className="flex justify-between items-center mb-8 pt-14 md:pt-0">
-                <button onClick={() => setShowExitPopup(true)} className="p-2 hover:bg-[#171d2b]/5 rounded-full transition-colors">
+                <button onClick={() => setShowExitPopup(true)} className="p-2 hover:bg-accent rounded-full transition-colors">
                     <X size={24} />
                 </button>
                 <div className="flex flex-col items-center">
-                    <span className="font-sora font-semibold text-[#171d2b]">Flashcards</span>
-                    <span className="text-sm text-[#171d2b]/40">Card {studySession.currentIndex + 1} of {studySession.cards.length}</span>
+                    <span className="font-sans font-medium text-foreground">Flashcards</span>
+                    <span className="text-sm text-muted-foreground">Card {studySession.currentIndex + 1} of {studySession.cards.length}</span>
                 </div>
-                <button onClick={() => setShowSettings(true)} className="p-2 hover:bg-[#171d2b]/5 rounded-full transition-colors">
+                <button onClick={() => setShowSettings(true)} className="p-2 hover:bg-accent rounded-full transition-colors">
                     <Settings size={24} />
                 </button>
             </div>
 
             {/* Progress Bar */}
             <div className="w-full mb-12">
-                <AnimatedProgress value={studySession.currentIndex} total={studySession.cards.length} color="#171d2b" />
+                <AnimatedProgress value={studySession.currentIndex} total={studySession.cards.length} color="var(--ink)" />
             </div>
 
             {/* Card Area */}
@@ -261,19 +261,19 @@ export default function FlashcardsPage() {
                         style={{ transformStyle: "preserve-3d" }}
                     >
                         {/* Front */}
-                        <div className="absolute inset-0 backface-hidden bg-white rounded-3xl shadow-xl border border-[#171d2b]/5 flex flex-col items-center justify-center px-4 sm:px-8 pt-12 sm:pt-16 pb-10 sm:pb-12 text-center hover:shadow-2xl transition-shadow overflow-hidden">
-                            <span className="absolute top-4 sm:top-6 left-4 sm:left-6 text-xs font-bold text-[#171d2b]/20 uppercase tracking-widest">{frontLabel}</span>
+                        <div className="absolute inset-0 backface-hidden bg-white rounded-3xl shadow-xl border border-border flex flex-col items-center justify-center px-4 sm:px-8 pt-12 sm:pt-16 pb-10 sm:pb-12 text-center hover:shadow-2xl transition-shadow overflow-hidden">
+                            <span className="absolute top-4 sm:top-6 left-4 sm:left-6 text-xs font-medium text-foreground/20 uppercase tracking-widest">{frontLabel}</span>
                             <div className="w-full h-full flex items-center justify-center overflow-y-auto">
-                                <p className="font-sora font-medium text-[#171d2b] leading-relaxed break-words" style={{ fontSize: getResponsiveFontSize(frontContent) }}>{frontContent}</p>
+                                <p className="font-sans font-medium text-foreground leading-relaxed break-words" style={{ fontSize: getResponsiveFontSize(frontContent) }}>{frontContent}</p>
                             </div>
-                            <span className="absolute bottom-4 sm:bottom-6 text-xs text-[#171d2b]/40 opacity-0 group-hover:opacity-100 transition-opacity">Click to flip</span>
+                            <span className="absolute bottom-4 sm:bottom-6 text-xs text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity">Click to flip</span>
                         </div>
 
                         {/* Back */}
-                        <div className="absolute inset-0 backface-hidden bg-[#171d2b] rounded-3xl shadow-xl flex flex-col items-center justify-center px-4 sm:px-8 pt-12 sm:pt-16 pb-10 sm:pb-12 text-center overflow-hidden" style={{ transform: "rotateY(180deg)" }}>
-                            <span className="absolute top-4 sm:top-6 left-4 sm:left-6 text-xs font-bold text-white/20 uppercase tracking-widest">{backLabel}</span>
+                        <div className="absolute inset-0 backface-hidden bg-primary rounded-3xl shadow-xl flex flex-col items-center justify-center px-4 sm:px-8 pt-12 sm:pt-16 pb-10 sm:pb-12 text-center overflow-hidden" style={{ transform: "rotateY(180deg)" }}>
+                            <span className="absolute top-4 sm:top-6 left-4 sm:left-6 text-xs font-medium text-white/20 uppercase tracking-widest">{backLabel}</span>
                             <div className="w-full h-full flex items-center justify-center overflow-y-auto">
-                                <p className="font-sora font-medium text-white leading-relaxed break-words" style={{ fontSize: getResponsiveFontSize(backContent) }}>{backContent}</p>
+                                <p className="font-sans font-medium text-white leading-relaxed break-words" style={{ fontSize: getResponsiveFontSize(backContent) }}>{backContent}</p>
                             </div>
                         </div>
                     </motion.div>
@@ -284,7 +284,7 @@ export default function FlashcardsPage() {
                     {!studySession.isFlipped ? (
                         <button
                             onClick={() => studySession && setStudySession({ ...studySession, isFlipped: true })}
-                            className="px-6 py-3 rounded-full font-sora font-medium bg-[#171d2b] text-white hover:bg-[#2a3347] shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 transition-all flex items-center gap-2"
+                            className="px-6 py-3 rounded-full font-sans font-medium bg-primary text-white hover:bg-[#2a3347] shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 transition-all flex items-center gap-2"
                         >
                             <RotateCcw size={18} />
                             Show Answer
@@ -295,13 +295,13 @@ export default function FlashcardsPage() {
                                 <div className="w-16 h-16 rounded-full bg-red-100 text-red-600 flex items-center justify-center text-2xl border-2 border-transparent group-hover:border-red-200 transition-all hover:scale-110 active:scale-95">
                                     <X />
                                 </div>
-                                <span className="text-sm font-medium text-[#171d2b]/60 group-hover:text-red-600">Review</span>
+                                <span className="text-sm font-medium text-muted-foreground group-hover:text-red-600">Review</span>
                             </button>
                             <button onClick={(e) => { e.stopPropagation(); handleRate(true); }} className="flex flex-col items-center gap-2 group">
                                 <div className="w-16 h-16 rounded-full bg-green-100 text-green-600 flex items-center justify-center text-2xl border-2 border-transparent group-hover:border-green-200 transition-all hover:scale-110 active:scale-95">
                                     <Check />
                                 </div>
-                                <span className="text-sm font-medium text-[#171d2b]/60 group-hover:text-green-600">Knew it</span>
+                                <span className="text-sm font-medium text-muted-foreground group-hover:text-green-600">Knew it</span>
                             </button>
                         </div>
                     )}

@@ -186,7 +186,7 @@ export default function AccountPage() {
     if (loading) {
         return (
             <div className="flex items-center justify-center min-h-[400px]">
-                <div className="w-8 h-8 border-2 border-[#171d2b] border-t-transparent rounded-full animate-spin" />
+                <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
             </div>
         );
     }
@@ -198,17 +198,17 @@ export default function AccountPage() {
             transition={{ duration: 0.5 }}
         >
             <header className="mb-8">
-                <h1 className="font-serif text-[32px] sm:text-[40px] text-[#171d2b] mb-2">
+                <h1 className="font-sans tracking-tight text-[32px] sm:text-[40px] text-foreground mb-2">
                     Account settings
                 </h1>
-                <p className="font-sans text-[16px] text-[#171d2b]/60">
+                <p className="font-sans text-[16px] text-muted-foreground">
                     Manage your name and account
                 </p>
             </header>
 
             <div className="max-w-2xl">
-                <div className="bg-white rounded-2xl border border-[#171d2b]/10 p-6 mb-6">
-                    <h2 className="font-serif text-[20px] text-[#171d2b] mb-6">Profile</h2>
+                <div className="bg-white rounded-2xl border border-border p-6 mb-6">
+                    <h2 className="font-sans tracking-tight text-[20px] text-foreground mb-6">Profile</h2>
                     
                     <div className="flex items-center gap-6 mb-6">
                         {profile?.avatar_url ? (
@@ -219,15 +219,15 @@ export default function AccountPage() {
                                 className="w-20 h-20 rounded-full object-cover"
                             />
                         ) : (
-                            <div className="w-20 h-20 rounded-full bg-gradient-to-br from-[#171d2b] to-[#2a3347] flex items-center justify-center text-white font-sora text-xl">
+                            <div className="w-20 h-20 rounded-full bg-gradient-to-br from-primary to-[#2a3347] flex items-center justify-center text-white font-sans text-xl">
                                 {getInitials(profile?.full_name ?? null)}
                             </div>
                         )}
                         <div>
-                            <p className="font-sans text-[16px] font-medium text-[#171d2b]">
+                            <p className="font-sans text-[16px] font-medium text-foreground">
                                 {profile?.full_name || "No name set"}
                             </p>
-                            <p className="font-sans text-[14px] text-[#171d2b]/60">
+                            <p className="font-sans text-[14px] text-muted-foreground">
                                 {profile?.email}
                             </p>
                         </div>
@@ -235,7 +235,7 @@ export default function AccountPage() {
 
                     <div className="space-y-4">
                         <div>
-                            <label htmlFor="full-name" className="flex items-center gap-2 font-sans text-[14px] text-[#171d2b]/70 mb-2">
+                            <label htmlFor="full-name" className="flex items-center gap-2 font-sans text-[14px] text-muted-foreground mb-2">
                                 <User size={16} aria-hidden="true" />
                                 Full name
                             </label>
@@ -244,13 +244,13 @@ export default function AccountPage() {
                                 type="text"
                                 value={formData.full_name}
                                 onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
-                                className="w-full px-4 py-3 rounded-xl border border-[#171d2b]/10 bg-[#f0f0ea] font-sans text-[15px] text-[#171d2b] focus:outline-none focus:border-[#171d2b]/30 transition-colors"
+                                className="w-full px-4 py-3 rounded-xl border border-border bg-background font-sans text-[15px] text-foreground focus:outline-none focus:border-primary/30 transition-colors"
                                 placeholder="Ada Lovelace"
                             />
                         </div>
 
                         <div>
-                            <label htmlFor="account-email" className="flex items-center gap-2 font-sans text-[14px] text-[#171d2b]/70 mb-2">
+                            <label htmlFor="account-email" className="flex items-center gap-2 font-sans text-[14px] text-muted-foreground mb-2">
                                 <Mail size={16} aria-hidden="true" />
                                 Email
                             </label>
@@ -259,9 +259,9 @@ export default function AccountPage() {
                                 type="email"
                                 value={profile?.email || ""}
                                 disabled
-                                className="w-full px-4 py-3 rounded-xl border border-[#171d2b]/10 bg-[#e5e5e0] font-sans text-[15px] text-[#171d2b]/50 cursor-not-allowed"
+                                className="w-full px-4 py-3 rounded-xl border border-border bg-[#e5e5e0] font-sans text-[15px] text-muted-foreground cursor-not-allowed"
                             />
-                            <p className="font-sans text-[12px] text-[#171d2b]/40 mt-1">
+                            <p className="font-sans text-[12px] text-muted-foreground mt-1">
                                 Email cannot be changed
                             </p>
                         </div>
@@ -285,7 +285,7 @@ export default function AccountPage() {
                 </div>
 
                 <div className="bg-white rounded-2xl border border-red-200 p-6">
-                    <h2 className="font-serif text-[20px] text-destructive-foreground mb-2">Delete account</h2>
+                    <h2 className="font-sans tracking-tight text-[20px] text-destructive-foreground mb-2">Delete account</h2>
 
                     {deletion.pending ? (
                         <div className="space-y-4">
@@ -311,7 +311,7 @@ export default function AccountPage() {
                         </div>
                     ) : (
                         <>
-                            <p className="font-sans text-[14px] text-[#171d2b]/60 mb-4">
+                            <p className="font-sans text-[14px] text-muted-foreground mb-4">
                                 Deleting your account is a two-step process. Once requested, your account
                                 enters a 30-day grace window during which you can sign in only to cancel.
                                 After 30 days your data is permanently removed.

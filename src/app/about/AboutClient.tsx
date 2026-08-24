@@ -55,10 +55,10 @@ export default function AboutClient() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
           >
-            <h1 className="font-serif text-[32px] sm:text-[44px] text-[#171d2b] mb-4 leading-tight">
+            <h1 className="font-sans tracking-tight font-medium text-[32px] sm:text-[44px] text-foreground mb-4 leading-tight">
               About DeepTerm
             </h1>
-            <p className="font-sans text-[#171d2b]/70 text-[15px] sm:text-[17px] leading-relaxed max-w-2xl mx-auto">
+            <p className="font-sans text-muted-foreground text-[15px] sm:text-[17px] leading-relaxed max-w-2xl mx-auto">
               Every student deserves access to powerful study tools without
               financial barriers or technical hurdles.
             </p>
@@ -74,14 +74,14 @@ export default function AboutClient() {
             className="plate p-6 sm:p-8"
           >
             <div className="flex items-center gap-3 mb-4">
-              <div className="w-9 h-9 rounded-lg bg-[#171d2b] flex items-center justify-center">
+              <div className="w-9 h-9 rounded-lg bg-primary flex items-center justify-center">
                 <BookOpen className="w-4 h-4 text-white" />
               </div>
-              <h2 className="font-serif text-xl sm:text-2xl text-[#171d2b]">
+              <h2 className="font-sans tracking-tight text-xl sm:text-2xl text-foreground">
                 Why I built this
               </h2>
             </div>
-            <div className="space-y-3 font-sans text-[#171d2b]/70 text-[14px] sm:text-[15px] leading-relaxed">
+            <div className="space-y-3 font-sans text-muted-foreground text-[14px] sm:text-[15px] leading-relaxed">
               <p>
                 I started DeepTerm because students everywhere were struggling
                 with expensive study apps, complicated software requiring
@@ -111,10 +111,10 @@ export default function AboutClient() {
             transition={{ delay: 0.3, duration: 0.5 }}
             className="text-center mb-6"
           >
-            <h2 className="font-serif text-xl sm:text-2xl text-[#171d2b] mb-2">
+            <h2 className="font-sans tracking-tight text-xl sm:text-2xl text-foreground mb-2">
               What I stand for
             </h2>
-            <p className="font-sans text-[#171d2b]/60 text-[14px]">
+            <p className="font-sans text-muted-foreground text-[14px]">
               Core values guiding every decision.
             </p>
           </motion.div>
@@ -128,13 +128,13 @@ export default function AboutClient() {
                 transition={{ delay: 0.4 + index * 0.1, duration: 0.4 }}
                 className="plate p-4 sm:p-5"
               >
-                <div className="w-10 h-10 rounded-lg bg-[#f0f0ea] flex items-center justify-center mb-3">
-                  <value.icon className="w-5 h-5 text-[#171d2b]" />
+                <div className="w-10 h-10 rounded-lg bg-background flex items-center justify-center mb-3">
+                  <value.icon className="w-5 h-5 text-foreground" />
                 </div>
-                <h3 className="font-serif text-[15px] sm:text-[16px] text-[#171d2b] mb-1">
+                <h3 className="font-sans tracking-tight text-[15px] sm:text-[16px] text-foreground mb-1">
                   {value.title}
                 </h3>
-                <p className="font-sans text-[#171d2b]/60 text-[12px] sm:text-[13px] leading-relaxed">
+                <p className="font-sans text-muted-foreground text-[12px] sm:text-[13px] leading-relaxed">
                   {value.description}
                 </p>
               </motion.div>
@@ -148,10 +148,10 @@ export default function AboutClient() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.6, duration: 0.5 }}
-            className="bg-[#171d2b] rounded-3xl p-8 sm:p-12 text-white relative overflow-hidden"
+            className="bg-primary rounded-3xl p-8 sm:p-12 text-white relative overflow-hidden"
           >
             <div className="relative z-10">
-              <h2 className="font-serif text-2xl sm:text-3xl mb-6">
+              <h2 className="font-sans tracking-tight text-2xl sm:text-3xl mb-6">
                 What makes DeepTerm different
               </h2>
               <ul className="grid grid-cols-1 sm:grid-cols-2 gap-4">

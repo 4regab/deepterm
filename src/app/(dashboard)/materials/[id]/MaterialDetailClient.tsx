@@ -81,11 +81,11 @@ const StudyToolButton = ({ title, icon: Icon, href }: {
     href: string;
 }) => (
     <Link href={href} className="group">
-        <div className="flex items-center gap-3 px-4 py-3 bg-white rounded-xl border border-[#171d2b]/5 hover:border-[#171d2b]/20 hover:shadow-md transition-all">
-            <div className="w-10 h-10 rounded-lg bg-[#171d2b] flex items-center justify-center group-hover:scale-105 transition-transform">
+        <div className="flex items-center gap-3 px-4 py-3 bg-white rounded-xl border border-border hover:border-border hover:shadow-md transition-all">
+            <div className="w-10 h-10 rounded-lg bg-primary flex items-center justify-center group-hover:scale-105 transition-transform">
                 <Icon className="w-5 h-5 text-white" />
             </div>
-            <span className="font-sora font-medium text-[#171d2b] text-sm">{title}</span>
+            <span className="font-sans font-medium text-foreground text-sm">{title}</span>
         </div>
     </Link>
 );
@@ -102,13 +102,13 @@ const TermItem = ({ term, onEdit, onDelete, isEditing, onSave, onCancel, editDat
 }) => {
     if (isEditing) {
         return (
-            <div className="px-4 py-3 bg-[#f0f0ea]/50 border-b border-[#171d2b]/5">
+            <div className="px-4 py-3 bg-background/50 border-b border-border">
                 <div className="flex flex-col md:flex-row gap-3">
-                    <input type="text" value={editData.front} onChange={(e) => setEditData({ ...editData, front: e.target.value })} placeholder="Term" className="flex-1 px-3 py-2 rounded-lg border border-[#171d2b]/10 focus:outline-none focus:ring-2 focus:ring-[#171d2b]/20 text-sm bg-white" />
-                    <input type="text" value={editData.back} onChange={(e) => setEditData({ ...editData, back: e.target.value })} placeholder="Definition" className="flex-[2] px-3 py-2 rounded-lg border border-[#171d2b]/10 focus:outline-none focus:ring-2 focus:ring-[#171d2b]/20 text-sm bg-white" />
+                    <input type="text" value={editData.front} onChange={(e) => setEditData({ ...editData, front: e.target.value })} placeholder="Term" className="flex-1 px-3 py-2 rounded-lg border border-border focus:outline-none focus:ring-2 focus:ring-[var(--ink)]/20 text-sm bg-white" />
+                    <input type="text" value={editData.back} onChange={(e) => setEditData({ ...editData, back: e.target.value })} placeholder="Definition" className="flex-[2] px-3 py-2 rounded-lg border border-border focus:outline-none focus:ring-2 focus:ring-[var(--ink)]/20 text-sm bg-white" />
                     <div className="flex gap-2">
-                        <button onClick={onSave} className="p-2 rounded-lg bg-[#171d2b] text-white hover:bg-[#2a3347] transition-colors"><Check size={16} /></button>
-                        <button onClick={onCancel} className="p-2 rounded-lg bg-[#171d2b]/10 text-[#171d2b] hover:bg-[#171d2b]/20 transition-colors"><X size={16} /></button>
+                        <button onClick={onSave} className="p-2 rounded-lg bg-primary text-white hover:bg-[#2a3347] transition-colors"><Check size={16} /></button>
+                        <button onClick={onCancel} className="p-2 rounded-lg bg-muted text-foreground hover:bg-primary/20 transition-colors"><X size={16} /></button>
                     </div>
                 </div>
             </div>
@@ -116,13 +116,13 @@ const TermItem = ({ term, onEdit, onDelete, isEditing, onSave, onCancel, editDat
     }
 
     return (
-        <Reorder.Item value={term} id={term.id} className="px-4 py-3 hover:bg-[#f0f0ea]/30 transition-colors flex items-center gap-3 border-b border-[#171d2b]/5 group bg-white cursor-grab active:cursor-grabbing">
-            <div className="text-[#171d2b]/30 flex-shrink-0 hover:text-[#171d2b]/60 transition-colors"><GripVertical size={16} /></div>
-            <div className="flex-1 min-w-0"><p className="text-[#171d2b] font-medium text-sm truncate">{term.front}</p></div>
-            <div className="hidden md:block flex-[2] min-w-0 border-l border-[#171d2b]/5 pl-4"><p className="text-[#171d2b]/60 text-sm truncate">{term.back}</p></div>
+        <Reorder.Item value={term} id={term.id} className="px-4 py-3 hover:bg-background/30 transition-colors flex items-center gap-3 border-b border-border group bg-white cursor-grab active:cursor-grabbing">
+            <div className="text-muted-foreground flex-shrink-0 hover:text-foreground/60 transition-colors"><GripVertical size={16} /></div>
+            <div className="flex-1 min-w-0"><p className="text-foreground font-medium text-sm truncate">{term.front}</p></div>
+            <div className="hidden md:block flex-[2] min-w-0 border-l border-border pl-4"><p className="text-muted-foreground text-sm truncate">{term.back}</p></div>
             <div className="flex gap-1 md:opacity-0 md:group-hover:opacity-100 transition-opacity flex-shrink-0">
-                <button onClick={onEdit} className="p-1.5 rounded-lg hover:bg-[#171d2b]/5 text-[#171d2b]/50 hover:text-[#171d2b]"><Edit size={14} /></button>
-                <button onClick={onDelete} className="p-1.5 rounded-lg hover:bg-red-50 text-[#171d2b]/50 hover:text-red-500"><Trash2 size={14} /></button>
+                <button onClick={onEdit} className="p-1.5 rounded-lg hover:bg-accent text-muted-foreground hover:text-foreground"><Edit size={14} /></button>
+                <button onClick={onDelete} className="p-1.5 rounded-lg hover:bg-red-50 text-muted-foreground hover:text-red-500"><Trash2 size={14} /></button>
             </div>
         </Reorder.Item>
     );
@@ -194,13 +194,13 @@ const ReviewerDisplay = ({ categories, expandedCategories, toggleCategory, filte
     return (
         <div className="space-y-4">
             <div className="relative">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[#171d2b]/40" size={18} />
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
                 <input
                     type="text"
                     value={filterText}
                     onChange={(e) => setFilterText(e.target.value)}
                     placeholder="Filter terms..."
-                    className="w-full pl-12 pr-4 py-3 rounded-xl border border-[#171d2b]/10 focus:border-[#171d2b] outline-none bg-white transition-all focus:shadow-sm text-sm"
+                    className="w-full pl-12 pr-4 py-3 rounded-xl border border-border focus:border-primary outline-none bg-white transition-all focus:shadow-sm text-sm"
                 />
             </div>
 
@@ -210,7 +210,7 @@ const ReviewerDisplay = ({ categories, expandedCategories, toggleCategory, filte
                         key={category.id}
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className="bg-white rounded-xl border border-[#171d2b]/10 overflow-hidden shadow-sm hover:shadow-md transition-shadow"
+                        className="bg-white rounded-xl border border-border overflow-hidden shadow-sm hover:shadow-md transition-shadow"
                     >
                         <div
                             onClick={() => toggleCategory(category.id)}
@@ -218,8 +218,8 @@ const ReviewerDisplay = ({ categories, expandedCategories, toggleCategory, filte
                             style={{ borderLeft: `4px solid ${category.color}` }}
                         >
                             <div className="flex items-center gap-4">
-                                <h3 className="font-sora font-semibold text-[#171d2b]">{category.name}</h3>
-                                <span className="px-2 py-0.5 rounded-full bg-[#171d2b]/5 text-xs font-medium text-[#171d2b]/60">
+                                <h3 className="font-sans font-medium text-foreground">{category.name}</h3>
+                                <span className="px-2 py-0.5 rounded-full bg-muted text-xs font-medium text-muted-foreground">
                                     {category.terms.length} terms
                                 </span>
                             </div>
@@ -230,7 +230,7 @@ const ReviewerDisplay = ({ categories, expandedCategories, toggleCategory, filte
                                         setAddingToCategoryId(addingToCategoryId === category.id ? null : category.id);
                                         setNewTermData({ term: '', definition: '' });
                                     }}
-                                    className="p-1.5 rounded-lg hover:bg-[#171d2b]/10 text-[#171d2b]/50 hover:text-[#171d2b] transition-colors"
+                                    className="p-1.5 rounded-lg hover:bg-accent text-muted-foreground hover:text-foreground transition-colors"
                                     title="Add term"
                                 >
                                     <Plus size={16} />
@@ -242,7 +242,7 @@ const ReviewerDisplay = ({ categories, expandedCategories, toggleCategory, filte
                                             onDeleteCategory(category.id);
                                         }
                                     }}
-                                    className="p-1.5 rounded-lg hover:bg-red-50 text-[#171d2b]/50 hover:text-red-500 transition-colors"
+                                    className="p-1.5 rounded-lg hover:bg-red-50 text-muted-foreground hover:text-red-500 transition-colors"
                                     title="Delete category"
                                 >
                                     <Trash2 size={16} />
@@ -256,17 +256,17 @@ const ReviewerDisplay = ({ categories, expandedCategories, toggleCategory, filte
                                     initial={{ height: 0, opacity: 0 }}
                                     animate={{ height: "auto", opacity: 1 }}
                                     exit={{ height: 0, opacity: 0 }}
-                                    className="border-t border-[#171d2b]/5"
+                                    className="border-t border-border"
                                 >
                                     {addingToCategoryId === category.id && (
-                                        <div className="p-4 bg-[#171d2b]/5 border-b border-[#171d2b]/10">
+                                        <div className="p-4 bg-muted border-b border-border">
                                             <div className="flex flex-col gap-2">
                                                 <input
                                                     type="text"
                                                     value={newTermData.term}
                                                     onChange={(e) => setNewTermData({ ...newTermData, term: e.target.value })}
                                                     placeholder="Term"
-                                                    className="w-full px-3 py-2 rounded-lg border border-[#171d2b]/10 focus:outline-none focus:ring-2 focus:ring-[#171d2b]/20 text-sm bg-white"
+                                                    className="w-full px-3 py-2 rounded-lg border border-border focus:outline-none focus:ring-2 focus:ring-[var(--ink)]/20 text-sm bg-white"
                                                     autoFocus
                                                 />
                                                 <textarea
@@ -274,19 +274,19 @@ const ReviewerDisplay = ({ categories, expandedCategories, toggleCategory, filte
                                                     onChange={(e) => setNewTermData({ ...newTermData, definition: e.target.value })}
                                                     placeholder="Definition"
                                                     rows={2}
-                                                    className="w-full px-3 py-2 rounded-lg border border-[#171d2b]/10 focus:outline-none focus:ring-2 focus:ring-[#171d2b]/20 text-sm bg-white resize-none"
+                                                    className="w-full px-3 py-2 rounded-lg border border-border focus:outline-none focus:ring-2 focus:ring-[var(--ink)]/20 text-sm bg-white resize-none"
                                                 />
                                                 <div className="flex gap-2 justify-end">
                                                     <button
                                                         onClick={() => { setAddingToCategoryId(null); setNewTermData({ term: '', definition: '' }); }}
-                                                        className="px-3 py-1.5 rounded-lg bg-[#171d2b]/10 text-[#171d2b] text-sm hover:bg-[#171d2b]/20 transition-colors"
+                                                        className="px-3 py-1.5 rounded-lg bg-muted text-foreground text-sm hover:bg-primary/20 transition-colors"
                                                     >
                                                         Cancel
                                                     </button>
                                                     <button
                                                         onClick={() => handleAddTerm(category.id)}
                                                         disabled={!newTermData.term.trim() || !newTermData.definition.trim()}
-                                                        className="px-3 py-1.5 rounded-lg bg-[#171d2b] text-white text-sm hover:bg-[#2a3347] transition-colors disabled:opacity-50"
+                                                        className="px-3 py-1.5 rounded-lg bg-primary text-white text-sm hover:bg-[#2a3347] transition-colors disabled:opacity-50"
                                                     >
                                                         Add Term
                                                     </button>
@@ -296,27 +296,27 @@ const ReviewerDisplay = ({ categories, expandedCategories, toggleCategory, filte
                                     )}
                                     <div className="p-4 grid gap-4 grid-cols-1 lg:grid-cols-2">
                                         {category.terms.map(term => (
-                                            <div key={term.id} className="p-4 rounded-xl bg-[#f8f9fa] border border-[#171d2b]/5 hover:border-[#171d2b]/20 transition-colors group relative">
+                                            <div key={term.id} className="p-4 rounded-xl bg-muted border border-border hover:border-border transition-colors group relative">
                                                 {editingTermId === term.id ? (
                                                     <div className="flex flex-col gap-2">
                                                         <input
                                                             type="text"
                                                             value={editTermData.term}
                                                             onChange={(e) => setEditTermData({ ...editTermData, term: e.target.value })}
-                                                            className="w-full px-3 py-2 rounded-lg border border-[#171d2b]/10 focus:outline-none focus:ring-2 focus:ring-[#171d2b]/20 text-sm bg-white font-bold"
+                                                            className="w-full px-3 py-2 rounded-lg border border-border focus:outline-none focus:ring-2 focus:ring-[var(--ink)]/20 text-sm bg-white font-medium"
                                                             autoFocus
                                                         />
                                                         <textarea
                                                             value={editTermData.definition}
                                                             onChange={(e) => setEditTermData({ ...editTermData, definition: e.target.value })}
                                                             rows={3}
-                                                            className="w-full px-3 py-2 rounded-lg border border-[#171d2b]/10 focus:outline-none focus:ring-2 focus:ring-[#171d2b]/20 text-sm bg-white resize-none"
+                                                            className="w-full px-3 py-2 rounded-lg border border-border focus:outline-none focus:ring-2 focus:ring-[var(--ink)]/20 text-sm bg-white resize-none"
                                                         />
                                                         <div className="flex gap-2 justify-end">
-                                                            <button onClick={handleCancelEdit} className="p-1.5 rounded-lg bg-[#171d2b]/10 text-[#171d2b] hover:bg-[#171d2b]/20 transition-colors">
+                                                            <button onClick={handleCancelEdit} className="p-1.5 rounded-lg bg-muted text-foreground hover:bg-primary/20 transition-colors">
                                                                 <X size={14} />
                                                             </button>
-                                                            <button onClick={() => handleSaveEdit(category.id)} className="p-1.5 rounded-lg bg-[#171d2b] text-white hover:bg-[#2a3347] transition-colors">
+                                                            <button onClick={() => handleSaveEdit(category.id)} className="p-1.5 rounded-lg bg-primary text-white hover:bg-[#2a3347] transition-colors">
                                                                 <Check size={14} />
                                                             </button>
                                                         </div>
@@ -324,32 +324,32 @@ const ReviewerDisplay = ({ categories, expandedCategories, toggleCategory, filte
                                                 ) : (
                                                     <>
                                                         <div className="flex justify-between items-start mb-2">
-                                                            <h4 className="font-bold text-[#171d2b] pr-16">{term.term}</h4>
+                                                            <h4 className="font-medium text-foreground pr-16">{term.term}</h4>
                                                             <div className="absolute top-4 right-4 flex gap-1 md:opacity-0 md:group-hover:opacity-100 transition-all">
                                                                 <button
                                                                     onClick={(e) => { e.stopPropagation(); handleStartEdit(term); }}
-                                                                    className="p-1.5 hover:bg-[#171d2b]/10 rounded-lg text-[#171d2b]/40 hover:text-[#171d2b] transition-colors"
+                                                                    className="p-1.5 hover:bg-accent rounded-lg text-muted-foreground hover:text-foreground transition-colors"
                                                                     title="Edit"
                                                                 >
                                                                     <Edit size={14} />
                                                                 </button>
                                                                 <button
                                                                     onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(`${term.term}: ${term.definition}`); }}
-                                                                    className="p-1.5 hover:bg-[#171d2b]/10 rounded-lg text-[#171d2b]/40 hover:text-[#171d2b] transition-colors"
+                                                                    className="p-1.5 hover:bg-accent rounded-lg text-muted-foreground hover:text-foreground transition-colors"
                                                                     title="Copy"
                                                                 >
                                                                     <Copy size={14} />
                                                                 </button>
                                                                 <button
                                                                     onClick={(e) => { e.stopPropagation(); onDeleteTerm(category.id, term.id); }}
-                                                                    className="p-1.5 hover:bg-red-50 rounded-lg text-[#171d2b]/40 hover:text-red-500 transition-colors"
+                                                                    className="p-1.5 hover:bg-red-50 rounded-lg text-muted-foreground hover:text-red-500 transition-colors"
                                                                     title="Delete"
                                                                 >
                                                                     <Trash2 size={14} />
                                                                 </button>
                                                             </div>
                                                         </div>
-                                                        <p className="text-[#171d2b]/80 text-sm leading-relaxed">{term.definition}</p>
+                                                        <p className="text-foreground/80 text-sm leading-relaxed">{term.definition}</p>
                                                     </>
                                                 )}
                                             </div>
@@ -363,14 +363,14 @@ const ReviewerDisplay = ({ categories, expandedCategories, toggleCategory, filte
             </div>
 
             {categories.length === 0 && (
-                <div className="bg-white rounded-xl border border-[#171d2b]/5 shadow-sm p-10 text-center">
-                    <p className="text-[#171d2b]/50 text-sm">No categories yet.</p>
+                <div className="bg-white rounded-xl border border-border shadow-sm p-10 text-center">
+                    <p className="text-muted-foreground text-sm">No categories yet.</p>
                 </div>
             )}
 
             {filterText && filteredCategories.length === 0 && categories.length > 0 && (
-                <div className="bg-white rounded-xl border border-[#171d2b]/5 shadow-sm p-10 text-center">
-                    <p className="text-[#171d2b]/50 text-sm">No terms match &quot;{filterText}&quot;</p>
+                <div className="bg-white rounded-xl border border-border shadow-sm p-10 text-center">
+                    <p className="text-muted-foreground text-sm">No terms match &quot;{filterText}&quot;</p>
                 </div>
             )}
         </div>
@@ -524,7 +524,7 @@ export default function MaterialDetailClient(props: Props) {
             />
             <div className="mb-5">
                 <div className="flex items-center justify-between mb-3">
-                    <button onClick={() => router.back()} className="flex items-center gap-2 text-[#171d2b]/50 hover:text-[#171d2b] transition-colors">
+                    <button onClick={() => router.back()} className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors">
                         <ArrowLeft size={16} /><span className="font-sans text-sm">Back to Materials</span>
                     </button>
                     <div className="flex gap-2 md:hidden">
@@ -532,7 +532,7 @@ export default function MaterialDetailClient(props: Props) {
                             <div className="relative">
                                 <button 
                                     onClick={() => setShowDownloadMenu(!showDownloadMenu)}
-                                    className="p-2 rounded-lg border border-[#171d2b]/10 hover:bg-[#171d2b]/5 text-[#171d2b]/60 transition-colors" 
+                                    className="p-2 rounded-lg border border-border hover:bg-accent text-muted-foreground transition-colors" 
                                     title="Download"
                                 >
                                     <Download size={18} />
@@ -541,7 +541,7 @@ export default function MaterialDetailClient(props: Props) {
                                     <>
                                         <div className="fixed inset-0 z-40" onClick={() => setShowDownloadMenu(false)} />
                                         <div className="absolute right-0 top-full mt-1 z-50">
-                                            <div className="bg-white rounded-lg border border-[#171d2b]/10 shadow-lg py-1 min-w-[140px]">
+                                            <div className="bg-white rounded-lg border border-border shadow-lg py-1 min-w-[140px]">
                                                 <button 
                                                     onClick={() => { 
                                                         const exportCategories = categories.map(c => ({
@@ -551,7 +551,7 @@ export default function MaterialDetailClient(props: Props) {
                                                         exportToPDF({ title: material.title, terms: [], categories: exportCategories });
                                                         setShowDownloadMenu(false);
                                                     }} 
-                                                    className="w-full px-4 py-2 text-left text-sm text-[#171d2b] hover:bg-[#171d2b]/5 transition-colors"
+                                                    className="w-full px-4 py-2 text-left text-sm text-foreground hover:bg-accent transition-colors"
                                                 >
                                                     Download PDF
                                                 </button>
@@ -564,7 +564,7 @@ export default function MaterialDetailClient(props: Props) {
                                                         exportToDOCX({ title: material.title, terms: [], categories: exportCategories });
                                                         setShowDownloadMenu(false);
                                                     }} 
-                                                    className="w-full px-4 py-2 text-left text-sm text-[#171d2b] hover:bg-[#171d2b]/5 transition-colors"
+                                                    className="w-full px-4 py-2 text-left text-sm text-foreground hover:bg-accent transition-colors"
                                                 >
                                                     Download DOCX
                                                 </button>
@@ -574,14 +574,14 @@ export default function MaterialDetailClient(props: Props) {
                                 )}
                             </div>
                         )}
-                        <button onClick={() => setShowShareModal(true)} className="p-2 rounded-lg border border-[#171d2b]/10 hover:bg-[#171d2b]/5 text-[#171d2b]/60 transition-colors" title="Share"><Share2 size={18} /></button>
-                        <button onClick={() => setShowDeleteConfirm(true)} className="p-2 rounded-lg border border-[#171d2b]/10 hover:bg-red-50 hover:border-red-200 text-red-500 transition-colors" title="Delete"><Trash2 size={18} /></button>
+                        <button onClick={() => setShowShareModal(true)} className="p-2 rounded-lg border border-border hover:bg-accent text-muted-foreground transition-colors" title="Share"><Share2 size={18} /></button>
+                        <button onClick={() => setShowDeleteConfirm(true)} className="p-2 rounded-lg border border-border hover:bg-red-50 hover:border-red-200 text-red-500 transition-colors" title="Delete"><Trash2 size={18} /></button>
                     </div>
                 </div>
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
                     <div>
-                        <h1 className="text-2xl md:text-3xl font-sora font-bold text-[#171d2b] mb-1">{material.title}</h1>
-                        <div className="flex flex-wrap items-center gap-2 text-[#171d2b]/50 text-xs">
+                        <h1 className="text-2xl md:text-3xl font-sans font-medium text-foreground mb-1">{material.title}</h1>
+                        <div className="flex flex-wrap items-center gap-2 text-muted-foreground text-xs">
                             <span>{materialType === 'flashcard' ? terms.length : categories.reduce((sum, c) => sum + c.terms.length, 0)} terms</span><span>•</span><span>Last updated {formatTimeAgo(new Date(material.updated_at))}</span>
                         </div>
                     </div>
@@ -590,7 +590,7 @@ export default function MaterialDetailClient(props: Props) {
                             <div className="relative">
                                 <button 
                                     onClick={() => setShowDownloadMenu(!showDownloadMenu)}
-                                    className="p-2 rounded-lg border border-[#171d2b]/10 hover:bg-[#171d2b]/5 text-[#171d2b]/60 transition-colors" 
+                                    className="p-2 rounded-lg border border-border hover:bg-accent text-muted-foreground transition-colors" 
                                     title="Download"
                                 >
                                     <Download size={18} />
@@ -599,7 +599,7 @@ export default function MaterialDetailClient(props: Props) {
                                     <>
                                         <div className="fixed inset-0 z-40" onClick={() => setShowDownloadMenu(false)} />
                                         <div className="absolute right-0 top-full mt-1 z-50">
-                                            <div className="bg-white rounded-lg border border-[#171d2b]/10 shadow-lg py-1 min-w-[140px]">
+                                            <div className="bg-white rounded-lg border border-border shadow-lg py-1 min-w-[140px]">
                                                 <button 
                                                     onClick={() => { 
                                                         const exportCategories = categories.map(c => ({
@@ -609,7 +609,7 @@ export default function MaterialDetailClient(props: Props) {
                                                         exportToPDF({ title: material.title, terms: [], categories: exportCategories });
                                                         setShowDownloadMenu(false);
                                                     }} 
-                                                    className="w-full px-4 py-2 text-left text-sm text-[#171d2b] hover:bg-[#171d2b]/5 transition-colors"
+                                                    className="w-full px-4 py-2 text-left text-sm text-foreground hover:bg-accent transition-colors"
                                                 >
                                                     Download PDF
                                                 </button>
@@ -622,7 +622,7 @@ export default function MaterialDetailClient(props: Props) {
                                                         exportToDOCX({ title: material.title, terms: [], categories: exportCategories });
                                                         setShowDownloadMenu(false);
                                                     }} 
-                                                    className="w-full px-4 py-2 text-left text-sm text-[#171d2b] hover:bg-[#171d2b]/5 transition-colors"
+                                                    className="w-full px-4 py-2 text-left text-sm text-foreground hover:bg-accent transition-colors"
                                                 >
                                                     Download DOCX
                                                 </button>
@@ -632,8 +632,8 @@ export default function MaterialDetailClient(props: Props) {
                                 )}
                             </div>
                         )}
-                        <button onClick={() => setShowShareModal(true)} className="p-2 rounded-lg border border-[#171d2b]/10 hover:bg-[#171d2b]/5 text-[#171d2b]/60 transition-colors" title="Share"><Share2 size={18} /></button>
-                        <button onClick={() => setShowDeleteConfirm(true)} className="p-2 rounded-lg border border-[#171d2b]/10 hover:bg-red-50 hover:border-red-200 text-red-500 transition-colors" title="Delete"><Trash2 size={18} /></button>
+                        <button onClick={() => setShowShareModal(true)} className="p-2 rounded-lg border border-border hover:bg-accent text-muted-foreground transition-colors" title="Share"><Share2 size={18} /></button>
+                        <button onClick={() => setShowDeleteConfirm(true)} className="p-2 rounded-lg border border-border hover:bg-red-50 hover:border-red-200 text-red-500 transition-colors" title="Delete"><Trash2 size={18} /></button>
                     </div>
                 </div>
             </div>
@@ -642,8 +642,8 @@ export default function MaterialDetailClient(props: Props) {
             {showDeleteConfirm && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
                     <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-4 p-6">
-                        <h2 className="font-sora font-bold text-lg text-[#171d2b] mb-2">Delete {materialType === 'flashcard' ? 'Flashcard Set' : 'Reviewer'}?</h2>
-                        <p className="text-[#171d2b]/60 text-sm mb-6">
+                        <h2 className="font-sans font-medium text-lg text-foreground mb-2">Delete {materialType === 'flashcard' ? 'Flashcard Set' : 'Reviewer'}?</h2>
+                        <p className="text-muted-foreground text-sm mb-6">
                             This will permanently delete &quot;{material.title}&quot; and all its {materialType === 'flashcard' ? 'flashcards' : 'terms'}. This action cannot be undone.
                         </p>
                         <div className="flex gap-3">
@@ -678,22 +678,22 @@ export default function MaterialDetailClient(props: Props) {
 
                     <StudyingProgress items={terms.map(t => ({ id: t.id, status: t.stage === 'review' ? 'almost_done' : t.stage }))} className="mb-5" />
 
-                    <div className="bg-white rounded-xl border border-[#171d2b]/5 shadow-sm overflow-hidden">
-                        <div className="px-4 py-3 border-b border-[#171d2b]/5 flex items-center justify-between">
-                            <h3 className="font-sora font-semibold text-[#171d2b] text-sm">Terms ({terms.length})</h3>
-                            <button onClick={() => setIsAddingNew(true)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#171d2b] text-white text-xs font-medium hover:bg-[#2a3347] transition-colors"><Plus size={14} />Add Term</button>
+                    <div className="bg-white rounded-xl border border-border shadow-sm overflow-hidden">
+                        <div className="px-4 py-3 border-b border-border flex items-center justify-between">
+                            <h3 className="font-sans font-medium text-foreground text-sm">Terms ({terms.length})</h3>
+                            <button onClick={() => setIsAddingNew(true)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary text-white text-xs font-medium hover:bg-[#2a3347] transition-colors"><Plus size={14} />Add Term</button>
                         </div>
 
                         <AnimatePresence>
                             {isAddingNew && (
                                 <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
-                                    <div className="px-4 py-3 bg-[#171d2b]/5 border-b border-[#171d2b]/5">
+                                    <div className="px-4 py-3 bg-muted border-b border-border">
                                         <div className="flex flex-col md:flex-row gap-2">
-                                            <input type="text" value={newTerm.front} onChange={(e) => setNewTerm({ ...newTerm, front: e.target.value })} placeholder="Enter term" className="flex-1 px-3 py-2 rounded-lg border border-[#171d2b]/10 focus:outline-none focus:ring-2 focus:ring-[#171d2b]/20 text-sm bg-white" autoFocus />
-                                            <input type="text" value={newTerm.back} onChange={(e) => setNewTerm({ ...newTerm, back: e.target.value })} placeholder="Enter definition" className="flex-[2] px-3 py-2 rounded-lg border border-[#171d2b]/10 focus:outline-none focus:ring-2 focus:ring-[#171d2b]/20 text-sm bg-white" />
+                                            <input type="text" value={newTerm.front} onChange={(e) => setNewTerm({ ...newTerm, front: e.target.value })} placeholder="Enter term" className="flex-1 px-3 py-2 rounded-lg border border-border focus:outline-none focus:ring-2 focus:ring-[var(--ink)]/20 text-sm bg-white" autoFocus />
+                                            <input type="text" value={newTerm.back} onChange={(e) => setNewTerm({ ...newTerm, back: e.target.value })} placeholder="Enter definition" className="flex-[2] px-3 py-2 rounded-lg border border-border focus:outline-none focus:ring-2 focus:ring-[var(--ink)]/20 text-sm bg-white" />
                                             <div className="flex gap-2">
-                                                <button onClick={handleAddNew} disabled={!newTerm.front.trim() || !newTerm.back.trim()} className="px-3 py-2 rounded-lg bg-[#171d2b] text-white text-sm font-medium hover:bg-[#2a3347] transition-colors disabled:opacity-50">Add</button>
-                                                <button onClick={() => { setIsAddingNew(false); setNewTerm({ front: '', back: '' }); }} className="p-2 rounded-lg bg-[#171d2b]/10 text-[#171d2b] hover:bg-[#171d2b]/20 transition-colors"><X size={16} /></button>
+                                                <button onClick={handleAddNew} disabled={!newTerm.front.trim() || !newTerm.back.trim()} className="px-3 py-2 rounded-lg bg-primary text-white text-sm font-medium hover:bg-[#2a3347] transition-colors disabled:opacity-50">Add</button>
+                                                <button onClick={() => { setIsAddingNew(false); setNewTerm({ front: '', back: '' }); }} className="p-2 rounded-lg bg-muted text-foreground hover:bg-primary/20 transition-colors"><X size={16} /></button>
                                             </div>
                                         </div>
                                     </div>
@@ -701,13 +701,13 @@ export default function MaterialDetailClient(props: Props) {
                             )}
                         </AnimatePresence>
 
-                        <Reorder.Group axis="y" values={terms} onReorder={setTerms} className="divide-y divide-[#171d2b]/5">
+                        <Reorder.Group axis="y" values={terms} onReorder={setTerms} className="divide-y divide-[var(--ink)]/5">
                             {terms.map((term) => (
                                 <TermItem key={term.id} term={term} onEdit={() => handleEdit(term)} onDelete={() => handleDelete(term.id)} isEditing={editingId === term.id} onSave={handleSaveEdit} onCancel={handleCancelEdit} editData={editData} setEditData={setEditData} />
                             ))}
                         </Reorder.Group>
 
-                        {terms.length === 0 && <div className="p-10 text-center"><p className="text-[#171d2b]/50 text-sm">No terms yet. Add your first term to get started.</p></div>}
+                        {terms.length === 0 && <div className="p-10 text-center"><p className="text-muted-foreground text-sm">No terms yet. Add your first term to get started.</p></div>}
                     </div>
                 </>
             )}

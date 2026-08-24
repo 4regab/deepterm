@@ -41,7 +41,7 @@ export default function ExitPopup({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="absolute inset-0 bg-[#171d2b]/40 backdrop-blur-sm"
+            className="absolute inset-0 bg-primary/40 backdrop-blur-sm"
             onClick={onClose}
           />
 
@@ -56,7 +56,7 @@ export default function ExitPopup({
             {/* Close button */}
             <button
               onClick={onClose}
-              className="absolute top-4 right-4 p-2 text-[#171d2b]/40 hover:text-[#171d2b] hover:bg-[#171d2b]/5 rounded-full transition-colors z-10"
+              className="absolute top-4 right-4 p-2 text-muted-foreground hover:text-foreground hover:bg-accent rounded-full transition-colors z-10"
             >
               <X size={24} />
             </button>
@@ -75,18 +75,18 @@ export default function ExitPopup({
             {/* Content */}
             <div className="pt-16 pb-8 px-8">
               {/* Level progress card */}
-              <div className="bg-[#f8f9fa] rounded-[20px] p-5 mb-8 border border-[#171d2b]/5">
+              <div className="bg-muted rounded-[20px] p-5 mb-8 border border-border">
                 <div className="flex items-center justify-between mb-3">
-                  <span className="font-sora font-semibold text-[#171d2b] text-lg">
+                  <span className="font-sans font-medium text-foreground text-lg">
                     Level {currentLevel}
                   </span>
                   <div className="w-10 h-10 rounded-full bg-purple-100 border border-purple-200 flex items-center justify-center">
-                    <span className="font-sora font-bold text-purple-600 text-sm">{nextLevel}</span>
+                    <span className="font-sans font-medium text-purple-600 text-sm">{nextLevel}</span>
                   </div>
                 </div>
 
                 {/* Progress bar */}
-                <div className="relative h-3 bg-[#171d2b]/5 rounded-full overflow-hidden mb-2">
+                <div className="relative h-3 bg-muted rounded-full overflow-hidden mb-2">
                   <motion.div
                     initial={{ width: `${progressPercent}%` }}
                     animate={{ width: `${Math.max(progressPercent - (xpToLose / maxXp) * 100, 0)}%` }}
@@ -100,18 +100,18 @@ export default function ExitPopup({
                 </div>
 
                 <div className="flex items-center gap-2 text-sm">
-                  <span className="text-[#171d2b]/60 font-sans font-medium">{currentXp}/{maxXp} XP</span>
-                  <span className="text-red-500 font-sans font-bold">- {xpToLose} XP</span>
+                  <span className="text-muted-foreground font-sans font-medium">{currentXp}/{maxXp} XP</span>
+                  <span className="text-red-500 font-sans font-medium">- {xpToLose} XP</span>
                 </div>
               </div>
 
               {/* Warning text */}
               <div className="text-center mb-8">
-                <h3 className="font-sora font-bold text-[#171d2b] text-xl mb-3 leading-tight">
+                <h3 className="font-sans font-medium text-foreground text-xl mb-3 leading-tight">
                   Wait! You&apos;ll lose progress
                 </h3>
-                <p className="font-sans text-[#171d2b]/60 text-[15px] leading-relaxed">
-                  If you leave now, you&apos;ll lose <strong className="text-[#171d2b]">{xpToLose} XP</strong> and your study session won&apos;t be saved.
+                <p className="font-sans text-muted-foreground text-[15px] leading-relaxed">
+                  If you leave now, you&apos;ll lose <strong className="text-foreground">{xpToLose} XP</strong> and your study session won&apos;t be saved.
                 </p>
               </div>
 
@@ -119,13 +119,13 @@ export default function ExitPopup({
               <div className="flex gap-3 justify-center">
                 <button
                   onClick={onExit}
-                  className="flex-1 px-6 py-3.5 bg-white border-2 border-[#171d2b]/10 text-[#171d2b] rounded-2xl font-sora font-semibold hover:bg-gray-50 hover:border-[#171d2b]/20 transition-all"
+                  className="flex-1 px-6 py-3.5 bg-white border-2 border-border text-foreground rounded-2xl font-sans font-medium hover:bg-gray-50 hover:border-border transition-all"
                 >
                   Exit
                 </button>
                 <button
                   onClick={onClose}
-                  className="flex-1 px-6 py-3.5 bg-[#171d2b] text-white rounded-2xl font-sora font-semibold hover:bg-[#2a3347] transition-all shadow-lg hover:shadow-xl hover:scale-[1.02] active:scale-[0.98]"
+                  className="flex-1 px-6 py-3.5 bg-primary text-white rounded-2xl font-sans font-medium hover:bg-[#2a3347] transition-all shadow-lg hover:shadow-xl hover:scale-[1.02] active:scale-[0.98]"
                 >
                   Keep going
                 </button>

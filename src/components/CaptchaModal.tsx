@@ -44,7 +44,7 @@ export default function CaptchaModal({ isOpen, onClose, onVerify, onError }: Pro
             <div className="flex items-center justify-between gap-3 mb-4">
                 <div className="flex items-center gap-2">
                     <ShieldCheck size={20} className="text-foreground" aria-hidden="true" />
-                    <h2 id="captcha-modal-title" className="font-sora font-medium text-base text-foreground">
+                    <h2 id="captcha-modal-title" className="font-sans font-medium text-base text-foreground">
                         Verify you&apos;re human
                     </h2>
                 </div>

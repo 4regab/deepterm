@@ -15,7 +15,7 @@ const Sidebar = dynamic(() => import("@/components/Sidebar"), {
 
 function SidebarSkeleton() {
     return (
-        <aside className="fixed left-0 top-0 h-screen w-16 bg-background border-r border-border hidden md:block" aria-hidden="true" />
+        <aside className="fixed left-0 top-0 h-screen w-16 bg-white border-r border-border hidden md:block" aria-hidden="true" />
     );
 }
 
@@ -35,7 +35,7 @@ export default function DashboardLayout({
     );
 
     return (
-        <div className="min-h-screen bg-background">
+        <div className="min-h-screen bg-white">
             <PomodoroNotification />
             <TaskReminderNotification />
             {!isStudyMode && (
