@@ -11,8 +11,7 @@ import PracticeSettingsModal, { PracticeSettings } from "@/components/PracticeSe
 import { createClient } from "@/config/supabase/client";
 import { useXPStore } from "@/lib/stores";
 import { addXP, recordStudyActivity, batchUpdateFlashcardStatuses, XP_REWARDS, type FlashcardStatusUpdate } from "@/services/activity";
-
-type QuestionType = "multipleChoice" | "trueFalse" | "fillBlank";
+import { generateQuestionsFromCards, gradePracticeAnswer, type QuestionType } from "@/utils/practiceQuestions";
 
 type CardStatus = 'new' | 'learning' | 'review' | 'mastered';
 
@@ -53,60 +52,6 @@ const DEFAULT_PRACTICE_SETTINGS: PracticeSettings = {
     autoNextDuration: 2,
     answerFeedback: false,
 };
-
-function generateQuestionsFromCards(cards: FlashcardData[], types: QuestionType[], cardCount: number): Question[] {
-    const questions: Question[] = [];
-    const shuffled = [...cards].sort(() => Math.random() - 0.5);
-    const selectedCards = shuffled.slice(0, cardCount);
-
-    selectedCards.forEach((card, idx) => {
-        const type = types[idx % types.length];
-
-        if (type === 'trueFalse') {
-            // True/False: Show definition, display a term, ask if it's correct
-            const isCorrectPairing = Math.random() > 0.5;
-            let displayedTerm: string;
-
-            if (isCorrectPairing) {
-                displayedTerm = card.term;
-            } else {
-                const others = cards.filter(c => c.id !== card.id);
-                displayedTerm = others.length > 0
-                    ? others[Math.floor(Math.random() * others.length)].term
-                    : card.term;
-            }
-
-            questions.push({
-                id: card.id,
-                type,
-                question: card.definition,
-                correctAnswer: isCorrectPairing ? 'true' : 'false',
-                tfDisplayedTerm: displayedTerm,
-                tfIsCorrectPairing: isCorrectPairing,
-            });
-        } else if (type === 'fillBlank') {
-            questions.push({
-                id: card.id,
-                type,
-                question: `${card.definition.split(' ').slice(0, 3).join(' ')} _____ ${card.definition.split(' ').slice(-2).join(' ')}`,
-                correctAnswer: card.term.toLowerCase(),
-            });
-        } else {
-            // Multiple choice - show definition, ask for term (like learn mode)
-            const others = cards.filter(c => c.id !== card.id).map(c => c.term);
-            const wrongOptions = others.sort(() => Math.random() - 0.5).slice(0, 3);
-            questions.push({
-                id: card.id,
-                type,
-                question: card.definition,
-                correctAnswer: card.term,
-                options: [...wrongOptions, card.term].sort(() => Math.random() - 0.5),
-            });
-        }
-    });
-
-    return questions;
-}
 
 export default function PracticePage() {
     const router = useRouter();
@@ -210,9 +155,7 @@ export default function PracticePage() {
         const updated = [...questions];
         updated[currentQuestionIndex].userAnswer = answer;
         const current = updated[currentQuestionIndex];
-        const isCorrect = current.type === "fillBlank"
-            ? answer.toLowerCase().trim().includes(current.correctAnswer.toLowerCase().trim().split(" ")[0])
-            : answer.toLowerCase() === current.correctAnswer.toLowerCase();
+        const isCorrect = gradePracticeAnswer(current.type, answer, current.correctAnswer);
         updated[currentQuestionIndex].isCorrect = isCorrect;
         setQuestions(updated);
 
@@ -336,14 +279,14 @@ export default function PracticePage() {
 
     if (stage === "loading") {
         return (
-            <div className="min-h-screen bg-[#f0f0ea] flex items-center justify-center">
-                <Loader2 size={32} className="animate-spin text-[#171d2b]/40" />
+            <div className="min-h-screen bg-background flex items-center justify-center">
+                <Loader2 size={32} className="animate-spin text-muted-foreground" />
             </div>
         );
     }
 
     return (
-        <div className="bg-[#f0f0ea] min-h-screen flex justify-center">
+        <div className="bg-background min-h-screen flex justify-center">
             <EncouragementToast message={toastMessage} isVisible={showToast} onClose={() => setShowToast(false)} />
             <main className="w-full max-w-[900px] px-4 sm:px-8 py-8">
                 <AnimatePresence mode="wait">
@@ -358,11 +301,11 @@ export default function PracticePage() {
                                 currentSettings={settings}
                             />
                             <div className="mb-8"><FloatingOrb state="idle" /></div>
-                            <h3 className="font-sora text-2xl font-bold text-[#171d2b] mb-2">Practice Test</h3>
-                            <p className="text-[#171d2b]/60 mb-6">Configure your test settings</p>
+                            <h3 className="font-sans text-2xl font-medium text-foreground mb-2">Practice Test</h3>
+                            <p className="text-muted-foreground mb-6">Configure your test settings</p>
                             <button
                                 onClick={() => setShowSettings(true)}
-                                className="px-8 py-3 bg-[#171d2b] text-white font-semibold rounded-xl hover:bg-[#2a3347] transition-colors"
+                                className="px-8 py-3 bg-primary text-white font-medium rounded-xl hover:bg-[#2a3347] transition-colors"
                             >
                                 Open Settings
                             </button>
@@ -418,11 +361,11 @@ export default function PracticePage() {
                                 currentSettings={settings}
                             />
                             <div className="flex items-center justify-between mb-4">
-                                <button onClick={() => setShowExitPopup(true)} className="p-2 hover:bg-[#171d2b]/5 rounded-full transition-colors"><X size={24} /></button>
-                                <span className="font-sora font-semibold text-[#171d2b]">Practice Test</span>
+                                <button onClick={() => setShowExitPopup(true)} className="p-2 hover:bg-accent rounded-full transition-colors"><X size={24} /></button>
+                                <span className="font-sans font-medium text-foreground">Practice Test</span>
                                 <button
                                     onClick={() => setShowSettings(true)}
-                                    className="px-3 sm:px-4 py-2 bg-white border border-gray-200 rounded-full font-semibold text-[#171d2b] text-xs sm:text-sm hover:bg-gray-50 transition-colors shadow-sm"
+                                    className="px-3 sm:px-4 py-2 bg-white border border-gray-200 rounded-full font-medium text-foreground text-xs sm:text-sm hover:bg-gray-50 transition-colors shadow-sm"
                                 >
                                     Options
                                 </button>
@@ -437,7 +380,7 @@ export default function PracticePage() {
                                             <button
                                                 key={i}
                                                 onClick={() => setCurrentQuestionIndex(i)}
-                                                className={`flex-1 h-2 rounded-full transition-all ${isAnswered || isCurrent ? 'bg-[#171d2b]' : 'bg-[#171d2b]/10'
+                                                className={`flex-1 h-2 rounded-full transition-all ${isAnswered || isCurrent ? 'bg-primary' : 'bg-muted'
                                                     } hover:opacity-80`}
                                                 title={`Question ${i + 1}${isAnswered ? ' (answered)' : ''}`}
                                             />
@@ -445,16 +388,16 @@ export default function PracticePage() {
                                     })}
                                 </div>
                             ) : (
-                                <AnimatedProgress value={currentQuestionIndex + 1} total={questions.length} color="#171d2b" />
+                                <AnimatedProgress value={currentQuestionIndex + 1} total={questions.length} color="var(--ink)" />
                             )}
 
                             {/* Question Card */}
                             <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-8 min-h-[200px] flex flex-col mb-6">
                                 <div className="flex items-center justify-between mb-6">
                                     <span className="text-gray-500 text-sm font-medium">Question {currentQuestionIndex + 1} of {questions.length}</span>
-                                    <span className="px-3 py-1 bg-gray-100 rounded-full text-xs font-bold text-[#171d2b]">{QUESTION_TYPE_LABELS[currentQuestion.type]}</span>
+                                    <span className="px-3 py-1 bg-gray-100 rounded-full text-xs font-medium text-foreground">{QUESTION_TYPE_LABELS[currentQuestion.type]}</span>
                                 </div>
-                                <h3 className="font-sora text-xl font-medium text-[#171d2b] leading-relaxed">{currentQuestion.question}</h3>
+                                <h3 className="font-sans text-xl font-medium text-foreground leading-relaxed">{currentQuestion.question}</h3>
                             </div>
 
                             {/* Answer Section */}
@@ -468,7 +411,7 @@ export default function PracticePage() {
 
                                             let borderClass = "border-gray-200";
                                             let bgClass = "bg-white";
-                                            let textClass = "text-[#171d2b]";
+                                            let textClass = "text-foreground";
 
                                             if (showFeedbackColors) {
                                                 if (isCorrectAnswer) {
@@ -484,14 +427,14 @@ export default function PracticePage() {
                                                     textClass = "text-gray-400";
                                                 }
                                             } else if (isSelected) {
-                                                borderClass = "border-[#171d2b]";
+                                                borderClass = "border-primary";
                                                 bgClass = "bg-gray-50";
                                             }
 
                                             return (
                                                 <button key={i} onClick={() => !showFeedbackColors && handleAnswer(opt)} disabled={showFeedbackColors}
                                                     className={`w-full p-4 rounded-xl border-2 text-left font-medium transition-all flex items-center gap-4 ${borderClass} ${bgClass} ${textClass} hover:shadow-md`}>
-                                                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${showFeedbackColors && isCorrectAnswer ? "bg-green-200 text-green-700" :
+                                                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${showFeedbackColors && isCorrectAnswer ? "bg-green-200 text-green-700" :
                                                         showFeedbackColors && isSelected ? "bg-red-200 text-red-700" :
                                                             "bg-blue-100 text-blue-600"
                                                         }`}>
@@ -508,14 +451,14 @@ export default function PracticePage() {
                                         {/* Show the term being asked about */}
                                         <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 mb-4">
                                             <span className="text-xs text-gray-500 block mb-1">Is this the correct term?</span>
-                                            <p className="text-lg font-semibold text-[#171d2b]">{currentQuestion.tfDisplayedTerm}</p>
+                                            <p className="text-lg font-medium text-foreground">{currentQuestion.tfDisplayedTerm}</p>
                                         </div>
 
                                         {/* Show correct term after answer if wrong - only in feedback mode */}
                                         {settings.answerFeedback && showAnswer && !currentQuestion.tfIsCorrectPairing && (
                                             <div className="bg-green-50 border border-green-200 rounded-xl p-4 mb-4">
                                                 <span className="text-xs text-green-600 block mb-1">Correct Term</span>
-                                                <p className="text-lg font-semibold text-green-700">
+                                                <p className="text-lg font-medium text-green-700">
                                                     {flashcardData.find(c => c.id === currentQuestion.id)?.term}
                                                 </p>
                                             </div>
@@ -529,7 +472,7 @@ export default function PracticePage() {
 
                                                 let borderClass = "border-gray-200";
                                                 let bgClass = "bg-white";
-                                                let textClass = "text-[#171d2b]";
+                                                let textClass = "text-foreground";
 
                                                 if (showFeedbackColors) {
                                                     if (isCorrectAnswer) {
@@ -545,14 +488,14 @@ export default function PracticePage() {
                                                         textClass = "text-gray-400";
                                                     }
                                                 } else if (isSelected) {
-                                                    borderClass = "border-[#171d2b]";
+                                                    borderClass = "border-primary";
                                                     bgClass = "bg-gray-50";
                                                 }
 
                                                 return (
                                                     <button key={val} onClick={() => !showFeedbackColors && handleAnswer(val)} disabled={showFeedbackColors}
                                                         className={`h-20 rounded-xl border-2 font-medium transition-all flex items-center justify-center gap-3 ${borderClass} ${bgClass} ${textClass} hover:shadow-md`}>
-                                                        <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${showFeedbackColors && isCorrectAnswer ? "bg-green-200 text-green-700" :
+                                                        <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${showFeedbackColors && isCorrectAnswer ? "bg-green-200 text-green-700" :
                                                             showFeedbackColors && isSelected ? "bg-red-200 text-red-700" :
                                                                 i === 0 ? "bg-blue-100 text-blue-600" : "bg-orange-100 text-orange-600"
                                                             }`}>
@@ -585,8 +528,8 @@ export default function PracticePage() {
                                                 }
                                             }}
                                             className={`w-full p-4 rounded-xl border-2 focus:outline-none text-lg bg-white placeholder:text-gray-400 ${currentQuestion.userAnswer
-                                                    ? 'border-[#171d2b] bg-gray-50'
-                                                    : 'border-gray-200 focus:border-[#171d2b]'
+                                                    ? 'border-primary bg-gray-50'
+                                                    : 'border-gray-200 focus:border-primary'
                                                 }`}
                                         />
                                         {!(settings.answerFeedback && showAnswer) && !currentQuestion.userAnswer && (
@@ -600,16 +543,16 @@ export default function PracticePage() {
                             {settings.answerFeedback && showAnswer && (
                                 <div className="mb-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
                                     {currentQuestion.isCorrect ? (
-                                        <h3 className="text-[#2D9F83] font-bold text-lg flex items-center gap-2">
+                                        <h3 className="text-[#2D9F83] font-medium text-lg flex items-center gap-2">
                                             Nice work! That&apos;s some impressive stuff!
                                         </h3>
                                     ) : (
-                                        <h3 className="text-[#FF6B6B] font-bold text-lg flex items-center gap-2">
+                                        <h3 className="text-[#FF6B6B] font-medium text-lg flex items-center gap-2">
                                             No worries, you&apos;re still learning.
                                         </h3>
                                     )}
                                     {!currentQuestion.isCorrect && (
-                                        <p className="text-[#171d2b]/80 text-sm mt-2">Correct answer: <span className="font-bold">{currentQuestion.correctAnswer}</span></p>
+                                        <p className="text-foreground/80 text-sm mt-2">Correct answer: <span className="font-medium">{currentQuestion.correctAnswer}</span></p>
                                     )}
                                 </div>
                             )}
@@ -633,14 +576,14 @@ export default function PracticePage() {
                             {currentQuestionIndex > 0 ? (
                                 <button
                                     onClick={() => setCurrentQuestionIndex(prev => Math.max(0, prev - 1))}
-                                    className="px-4 sm:px-6 py-2 sm:py-3 rounded-full bg-gray-100 text-[#171d2b] font-bold hover:bg-gray-200 transition-colors text-sm sm:text-base"
+                                    className="px-4 sm:px-6 py-2 sm:py-3 rounded-full bg-gray-100 text-foreground font-medium hover:bg-gray-200 transition-colors text-sm sm:text-base"
                                 >
                                     Previous
                                 </button>
                             ) : (
                                 <div className="w-[88px] sm:w-[106px]" />
                             )}
-                            <span className="text-sm text-[#171d2b]/60 font-medium">
+                            <span className="text-sm text-muted-foreground font-medium">
                                 {questions.filter(q => q.userAnswer !== undefined).length} of {questions.length} answered
                             </span>
                             {currentQuestionIndex === questions.length - 1 ? (
@@ -667,7 +610,7 @@ export default function PracticePage() {
                                         setStage("results");
                                     }}
                                     disabled={questions.some(q => q.userAnswer === undefined)}
-                                    className={`px-6 sm:px-8 py-2 sm:py-3 rounded-full font-bold transition-colors text-sm sm:text-base ${questions.some(q => q.userAnswer === undefined)
+                                    className={`px-6 sm:px-8 py-2 sm:py-3 rounded-full font-medium transition-colors text-sm sm:text-base ${questions.some(q => q.userAnswer === undefined)
                                             ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
                                             : 'bg-[#2D9F83] text-white hover:bg-[#258a70]'
                                         }`}
@@ -678,9 +621,9 @@ export default function PracticePage() {
                                 <button
                                     onClick={() => setCurrentQuestionIndex(prev => Math.min(questions.length - 1, prev + 1))}
                                     disabled={currentQuestion?.userAnswer === undefined}
-                                    className={`px-4 sm:px-6 py-2 sm:py-3 rounded-full font-bold transition-colors text-sm sm:text-base ${currentQuestion?.userAnswer === undefined
+                                    className={`px-4 sm:px-6 py-2 sm:py-3 rounded-full font-medium transition-colors text-sm sm:text-base ${currentQuestion?.userAnswer === undefined
                                             ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                                            : 'bg-[#171d2b] text-white hover:bg-[#2a3347]'
+                                            : 'bg-primary text-white hover:bg-[#2a3347]'
                                         }`}
                                 >
                                     Next
@@ -701,7 +644,7 @@ export default function PracticePage() {
                         className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-3 sm:p-4 shadow-[0_-4px_20px_rgba(0,0,0,0.05)] z-40"
                     >
                         <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-0 relative">
-                            <div className="hidden md:block text-[#171d2b]/60 font-medium">
+                            <div className="hidden md:block text-muted-foreground font-medium">
                                 {currentQuestion.isCorrect ? "Great job!" : "Keep practicing!"}
                             </div>
 
@@ -717,7 +660,7 @@ export default function PracticePage() {
                                     </div>
                                     <button
                                         onClick={nextQuestion}
-                                        className="px-6 sm:px-8 py-2 sm:py-3 rounded-full bg-[#2D9F83] text-white font-bold hover:bg-[#258a70] transition-colors flex items-center gap-2 relative z-10 text-sm sm:text-base"
+                                        className="px-6 sm:px-8 py-2 sm:py-3 rounded-full bg-[#2D9F83] text-white font-medium hover:bg-[#258a70] transition-colors flex items-center gap-2 relative z-10 text-sm sm:text-base"
                                     >
                                         {currentQuestionIndex === questions.length - 1 ? "See Results" : "Next"}
                                     </button>

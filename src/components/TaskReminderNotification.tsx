@@ -143,14 +143,14 @@ export default function TaskReminderNotification() {
           exit={{ opacity: 0, y: -20, scale: 0.95 }}
           className="fixed top-4 left-1/2 -translate-x-1/2 z-[100] w-[90%] max-w-md"
         >
-          <div className="rounded-2xl shadow-2xl overflow-hidden bg-[#171d2b] text-white">
+          <div className="rounded-2xl shadow-2xl overflow-hidden bg-primary text-white">
             <div className="p-4">
               <div className="flex items-start gap-3">
                 <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 bg-white/10">
                   <Bell size={20} className="text-white" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <h3 className="font-sora font-semibold text-base mb-1 text-white">
+                  <h3 className="font-sans font-medium text-base mb-1 text-white">
                     Task Reminder
                   </h3>
                   <p className="text-sm text-white/70">

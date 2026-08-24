@@ -1,23 +1,359 @@
 @import "tailwindcss";
 @plugin "@tailwindcss/typography";
 
-@theme inline {
-    --font-sans: var(--font-space-grotesk), sans-serif;
-    --font-serif: "Source Serif 4", serif;
-    --font-sora: var(--font-sora), sans-serif;
+/*
+ * DeepTerm tokens, adapted from OA Design's "derive, don't pick" system.
+ * Identity stays DeepTerm: warm paper stage, navy ink, serif display.
+ * Neutrals are --ink mixed into transparency at stated percentages.
+ */
+
+:root {
+  --ink: #171d2b;
+
+  --background: #f0f0ea;
+  --card: #ffffff;
+  --popover: #ffffff;
+  --foreground: var(--ink);
+  --card-foreground: var(--ink);
+
+  --border: color-mix(in srgb, var(--ink) 12%, transparent);
+  --input: color-mix(in srgb, var(--ink) 14%, transparent);
+  --accent: color-mix(in srgb, var(--ink) 5%, transparent);
+  --accent-foreground: var(--ink);
+  --muted: color-mix(in srgb, var(--ink) 5%, transparent);
+  --muted-foreground: color-mix(in srgb, var(--ink) 60%, #6d6d6d);
+
+  --primary: #171d2b;
+  --primary-foreground: #fefeff;
+  --ring: #3ba6f1;
+
+  --secondary: color-mix(in srgb, var(--ink) 8%, #f0f0ea);
+  --secondary-foreground: var(--ink);
+
+  --destructive: oklch(0.637 0.237 25.331);
+  --destructive-foreground: oklch(0.505 0.213 27.518);
+  --success: oklch(0.596 0.145 163.225);
+  --success-foreground: oklch(0.508 0.118 165.612);
+  --warning: oklch(0.769 0.188 70.08);
+  --warning-foreground: oklch(0.555 0.163 48.998);
+  --info: oklch(0.623 0.214 259.815);
+  --info-foreground: oklch(0.488 0.243 264.376);
+
+  --radius: 0.625rem;
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+
+  --shadow-resting: 0 1px 2px rgba(0, 0, 0, 0.06);
+  --shadow-floating: 0 1px 2px rgba(0, 0, 0, 0.08), 0 8px 24px rgba(0, 0, 0, 0.08);
+
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
 }
 
-.source-serif-4 {
-    font-family: var(--font-source-serif), serif;
-    font-optical-sizing: auto;
-    font-weight: 400;
-    font-style: normal;
+@theme inline {
+  --font-sans: var(--font-space-grotesk), ui-sans-serif, system-ui, sans-serif;
+  --font-serif: var(--font-source-serif), "Source Serif 4", ui-serif, serif;
+  --font-sora: var(--font-sora), sans-serif;
+
+  --color-ink: var(--ink);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-ring: var(--ring);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-info: var(--info);
+  --color-info-foreground: var(--info-foreground);
+}
+
+html {
+  overflow-x: clip;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 body {
-    background-color: #f0f0ea;
-    color: var(--foreground);
-    overflow-x: hidden;
-    font-family: var(--font-sans);
+  background-color: var(--background);
+  color: var(--foreground);
+  overflow-x: clip;
+  font-family: var(--font-sans);
 }
 
+.source-serif-4 {
+  font-family: var(--font-source-serif), "Source Serif 4", serif;
+  font-optical-sizing: auto;
+  font-weight: 400;
+  font-style: normal;
+}
+
+::selection {
+  background: color-mix(in srgb, var(--ink) 18%, transparent);
+  color: var(--foreground);
+}
+
+h1,
+h2,
+h3 {
+  text-wrap: balance;
+}
+
+p,
+li,
+dd {
+  text-wrap: pretty;
+}
+
+:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+:focus:not(:focus-visible) {
+  outline: none;
+}
+
+@media (forced-colors: active) {
+  :focus-visible {
+    outline: 2px solid CanvasText;
+  }
+}
+
+.skip-link {
+  position: absolute;
+  inset-inline-start: 1rem;
+  top: 0;
+  z-index: 100;
+  transform: translateY(-120%);
+  border-radius: 9999px;
+  background: var(--primary);
+  color: var(--primary-foreground);
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.skip-link:focus {
+  transform: translateY(0.75rem);
+}
+
+.pressable {
+  transition: transform 150ms var(--ease-out);
+}
+
+.pressable:active {
+  transform: translateY(1px) scale(0.96);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .hover-lift:hover {
+    transform: translateY(-1px);
+  }
+}
+
+input,
+textarea,
+select {
+  font-size: 1rem;
+}
+
+@media (min-width: 640px) {
+  input,
+  textarea,
+  select {
+    font-size: inherit;
+  }
+}
+
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+.squircle {
+  border-radius: 26px;
+  --card-clip-radius: 14px;
+  --card-clip-handle: 2.25px;
+  clip-path: shape(
+    from var(--card-clip-radius) 0px,
+    line to calc(100% - var(--card-clip-radius)) 0px,
+    curve to 100% var(--card-clip-radius)
+      with calc(100% - var(--card-clip-handle)) 0px / 100% var(--card-clip-handle),
+    line to 100% calc(100% - var(--card-clip-radius)),
+    curve to calc(100% - var(--card-clip-radius)) 100%
+      with 100% calc(100% - var(--card-clip-handle)) / calc(100% - var(--card-clip-handle)) 100%,
+    line to var(--card-clip-radius) 100%,
+    curve to 0px calc(100% - var(--card-clip-radius))
+      with var(--card-clip-handle) 100% / 0px calc(100% - var(--card-clip-handle)),
+    line to 0px var(--card-clip-radius),
+    curve to var(--card-clip-radius) 0px
+      with 0px var(--card-clip-handle) / var(--card-clip-handle) 0px,
+    close
+  );
+  corner-shape: squircle;
+}
+
+@media (min-width: 640px) {
+  .squircle {
+    border-radius: 40px;
+    --card-clip-radius: 20px;
+    --card-clip-handle: 3px;
+  }
+}
+
+.plate {
+  background: var(--card);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-resting);
+  border-radius: 1.25rem;
+}
+
+.header-pill {
+  transition:
+    max-width 700ms var(--ease-drawer),
+    height 700ms var(--ease-drawer),
+    margin 700ms var(--ease-drawer),
+    padding 700ms var(--ease-drawer),
+    background-color 700ms var(--ease-drawer),
+    border-color 700ms var(--ease-drawer),
+    box-shadow 700ms var(--ease-drawer);
+}
+
+.header-pill[data-scrolled="true"] {
+  background-color: color-mix(in srgb, var(--background) 80%, transparent);
+  border-color: color-mix(in srgb, var(--ink) 8%, transparent);
+  backdrop-filter: blur(16px) saturate(125%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.35),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.12),
+    var(--shadow-floating);
+}
+
+@keyframes oa-skeleton {
+  to {
+    background-position: -200% 0;
+  }
+}
+
+.skeleton-bar {
+  background-image: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--ink) 8%, transparent) 0%,
+    color-mix(in srgb, var(--ink) 14%, transparent) 50%,
+    color-mix(in srgb, var(--ink) 8%, transparent) 100%
+  );
+  background-size: 200% 100%;
+  animation: oa-skeleton 1.4s linear infinite;
+}
+
+@keyframes oa-arrive {
+  from {
+    opacity: 0.4;
+    filter: blur(4px);
+  }
+  to {
+    opacity: 1;
+    filter: blur(0);
+  }
+}
+
+.oa-arrive {
+  animation: oa-arrive 0.3s var(--ease-out);
+  filter: blur(0);
+}
+
+@keyframes oa-toast-success-odd {
+  0% { scale: 1; }
+  30% { scale: 1.025; }
+  60% { scale: 0.99; }
+  100% { scale: 1; }
+}
+@keyframes oa-toast-success-even {
+  0% { scale: 1; }
+  30% { scale: 1.025; }
+  60% { scale: 0.99; }
+  100% { scale: 1; }
+}
+@keyframes oa-toast-error-odd {
+  0% { translate: 0 0; }
+  25% { translate: -3px 0; }
+  50% { translate: 3px 0; }
+  75% { translate: -3px 0; }
+  100% { translate: 0 0; }
+}
+@keyframes oa-toast-error-even {
+  0% { translate: 0 0; }
+  25% { translate: -3px 0; }
+  50% { translate: 3px 0; }
+  75% { translate: -3px 0; }
+  100% { translate: 0 0; }
+}
+
+.reveal {
+  opacity: 0;
+  translate: 0 14px;
+  transition:
+    opacity 0.7s ease-out,
+    translate 0.7s ease-out;
+  transition-delay: var(--reveal-delay, 0s);
+}
+
+.reveal.is-inview {
+  opacity: 1;
+  translate: 0 0;
+}
+
+.faq-panel {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 200ms var(--ease-out);
+}
+
+.faq-panel[data-open="true"] {
+  grid-template-rows: 1fr;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal {
+    opacity: 1;
+    translate: 0 0;
+    transition: none;
+  }
+
+  .oa-arrive,
+  .skeleton-bar {
+    animation: none;
+  }
+
+  .pressable:active {
+    transform: none;
+  }
+
+  .header-pill {
+    transition: none;
+  }
+
+  .faq-panel {
+    transition: none;
+  }
+}

@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { imgLogo } from "@/config/assets";
 import { createClient } from "@/config/supabase/client";
 import { useUIStore, useProfileStore } from "@/lib/stores";
+import { cn } from "@/lib/cn";
 import {
     Home,
     Library,
@@ -35,7 +36,6 @@ export default function Sidebar() {
     const pathname = usePathname();
     const profileMenuRef = useRef<HTMLDivElement>(null);
 
-    // Use selector pattern to subscribe only to needed values - prevents re-renders on unrelated store changes (Rule 5.4)
     const sidebarPinned = useUIStore((state) => state.sidebarPinned);
     const sidebarMobileOpen = useUIStore((state) => state.sidebarMobileOpen);
     const profileMenuOpen = useUIStore((state) => state.profileMenuOpen);
@@ -45,12 +45,27 @@ export default function Sidebar() {
 
     const profile = useProfileStore((state) => state.profile);
 
-    // Use useEffect for one-time data fetching on mount
     useEffect(() => {
         useProfileStore.getState().fetchProfile();
     }, []);
 
-
+    useEffect(() => {
+        if (!profileMenuOpen) return;
+        const onPointer = (event: PointerEvent) => {
+            if (!profileMenuRef.current?.contains(event.target as Node)) {
+                setProfileMenuOpen(false);
+            }
+        };
+        const onKey = (event: KeyboardEvent) => {
+            if (event.key === "Escape") setProfileMenuOpen(false);
+        };
+        document.addEventListener("pointerdown", onPointer);
+        document.addEventListener("keydown", onKey);
+        return () => {
+            document.removeEventListener("pointerdown", onPointer);
+            document.removeEventListener("keydown", onKey);
+        };
+    }, [profileMenuOpen, setProfileMenuOpen]);
 
     const handleSignOut = async () => {
         const supabase = createClient();
@@ -60,57 +75,87 @@ export default function Sidebar() {
 
     const closeMobileMenu = () => setSidebarMobileOpen(false);
 
+    const labelClass = cn(
+        "font-sans text-[15px] ml-4 whitespace-nowrap overflow-hidden transition-[opacity,max-width,margin] duration-200 ease-[cubic-bezier(0.23,1,0.32,1)]",
+        sidebarPinned
+            ? "md:opacity-100 md:max-w-[150px] md:ml-4"
+            : "md:opacity-0 md:max-w-0 md:ml-0 md:group-hover:opacity-100 md:group-hover:max-w-[150px] md:group-hover:ml-4"
+    );
+
+    const itemLayout = cn(
+        "flex items-center rounded-full min-h-11 px-3",
+        "transition-[background-color,color,padding,justify-content] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)]",
+        sidebarPinned
+            ? "md:justify-start md:pl-4 md:pr-3"
+            : "md:justify-center md:pl-0 md:pr-0 md:group-hover:justify-start md:group-hover:pl-4 md:group-hover:pr-3",
+        "justify-start pl-4 pr-3"
+    );
+
     return (
         <>
             <button
                 onClick={() => setSidebarMobileOpen(true)}
-                className="fixed top-4 left-4 z-50 md:hidden w-10 h-10 bg-[#171d2b] text-white rounded-lg flex items-center justify-center shadow-lg"
+                className="fixed top-4 left-4 z-50 md:hidden w-10 h-10 bg-primary text-primary-foreground rounded-full flex items-center justify-center shadow-[var(--shadow-floating)] pressable"
                 aria-label="Open menu"
             >
-                <Menu size={20} />
+                <Menu size={20} aria-hidden="true" />
             </button>
 
             {sidebarMobileOpen && (
                 <div
-                    className="fixed inset-0 bg-black/50 z-40 md:hidden"
+                    className="fixed inset-0 bg-black/40 z-40 md:hidden"
                     onClick={closeMobileMenu}
+                    aria-hidden="true"
                 />
             )}
 
-            <aside className={`fixed left-0 top-0 h-screen bg-[#f0f0ea] border-r border-[#171d2b]/10 flex flex-col z-50 transition-all duration-300 overflow-hidden shadow-sm
-                ${sidebarMobileOpen ? "w-[220px] translate-x-0" : "-translate-x-full w-[220px]"}
-                ${sidebarPinned ? "md:translate-x-0 md:w-[220px]" : "md:translate-x-0 md:w-[64px] md:hover:w-[220px] md:hover:shadow-xl group"}`}>
-
+            <aside
+                className={cn(
+                    "fixed left-0 top-0 h-screen bg-background border-r border-border flex flex-col z-50 overflow-hidden",
+                    "transition-[width,transform,box-shadow] duration-200 ease-[cubic-bezier(0.23,1,0.32,1)]",
+                    sidebarMobileOpen ? "w-[220px] translate-x-0" : "-translate-x-full w-[220px]",
+                    sidebarPinned
+                        ? "md:translate-x-0 md:w-[220px]"
+                        : "md:translate-x-0 md:w-[64px] md:hover:w-[220px] md:hover:shadow-[var(--shadow-floating)] group"
+                )}
+            >
                 <button
                     onClick={closeMobileMenu}
-                    className="absolute top-4 right-4 md:hidden w-8 h-8 flex items-center justify-center text-[#171d2b]/60 hover:text-[#171d2b]"
+                    className="absolute top-4 right-4 md:hidden w-10 h-10 flex items-center justify-center text-muted-foreground hover:text-foreground"
                     aria-label="Close menu"
                 >
-                    <X size={20} />
+                    <X size={20} aria-hidden="true" />
                 </button>
 
-                <div className="p-4 flex items-center justify-between h-[64px]">
-                    <div className="flex items-center gap-1">
-                        <div className="w-[32px] h-[32px] flex items-center justify-center flex-shrink-0">
+                <div className="p-4 flex items-center justify-between h-16">
+                    <Link href="/dashboard" className="flex items-center gap-1 min-h-10" onClick={closeMobileMenu}>
+                        <div className="w-8 h-8 flex items-center justify-center flex-shrink-0">
                             <div className="rotate-[292deg]">
                                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                                <img alt="Deepterm Logo" className="w-[26px] h-[26px]" src={imgLogo} />
+                                <img alt="" className="w-[26px] h-[26px]" src={imgLogo} />
                             </div>
                         </div>
-                        <span className={`font-sora text-[#171d2b] text-[20px] transition-opacity duration-300 whitespace-nowrap overflow-hidden ${sidebarPinned ? "md:opacity-100" : "md:opacity-0 md:group-hover:opacity-100"}`}>
+                        <span className={cn(
+                            "font-sans text-foreground text-[20px] whitespace-nowrap overflow-hidden transition-opacity duration-200",
+                            sidebarPinned ? "md:opacity-100" : "md:opacity-0 md:group-hover:opacity-100"
+                        )}>
                             deepterm
                         </span>
-                    </div>
+                    </Link>
                     <button
                         onClick={toggleSidebarPinned}
-                        className={`hidden md:flex items-center justify-center w-8 h-8 rounded-lg transition-all duration-200 flex-shrink-0 ${sidebarPinned
-                            ? "opacity-100 bg-[#171d2b]/10 text-[#171d2b]"
-                            : "opacity-0 group-hover:opacity-100 text-[#171d2b]/60 hover:bg-[#171d2b]/5 hover:text-[#171d2b]"
-                            }`}
-                        title={sidebarPinned ? "Unpin sidebar (collapsible)" : "Pin sidebar (fixed)"}
+                        className={cn(
+                            "hidden md:flex items-center justify-center w-8 h-8 rounded-full flex-shrink-0",
+                            "transition-[opacity,background-color,color] duration-150",
+                            sidebarPinned
+                                ? "opacity-100 bg-accent text-foreground"
+                                : "opacity-0 group-hover:opacity-100 text-muted-foreground hover:bg-accent hover:text-foreground"
+                        )}
+                        title={sidebarPinned ? "Unpin sidebar" : "Pin sidebar"}
                         aria-label={sidebarPinned ? "Unpin sidebar" : "Pin sidebar"}
+                        aria-pressed={sidebarPinned}
                     >
-                        <Pin size={16} className={`transition-transform ${sidebarPinned ? "rotate-0" : "rotate-45"}`} />
+                        <Pin size={16} className={cn("transition-transform duration-150", sidebarPinned ? "rotate-0" : "rotate-45")} aria-hidden="true" />
                     </button>
                 </div>
 
@@ -118,16 +163,20 @@ export default function Sidebar() {
                     <Link
                         href="/materials/create"
                         onClick={closeMobileMenu}
-                        className={`w-full h-[44px] rounded-xl flex items-center font-sans font-medium transition-all duration-300 overflow-hidden ${sidebarPinned ? "md:justify-start md:pl-4" : "md:justify-center md:pl-0 md:group-hover:justify-start md:group-hover:pl-4"} justify-start pl-4 ${pathname === "/materials/create" ? "bg-[#171d2b] text-white" : "text-[#171d2b]/60 hover:bg-[#171d2b]/5 hover:text-[#171d2b]"}`}
+                        className={cn(
+                            itemLayout,
+                            "font-medium overflow-hidden",
+                            pathname === "/materials/create"
+                                ? "bg-primary text-primary-foreground"
+                                : "text-muted-foreground hover:bg-accent hover:text-foreground"
+                        )}
                     >
-                        <Plus size={20} className="flex-shrink-0" />
-                        <span className={`ml-4 transition-all duration-300 whitespace-nowrap overflow-hidden ${sidebarPinned ? "md:opacity-100 md:max-w-[150px] md:ml-4" : "md:opacity-0 md:max-w-0 md:ml-0 md:group-hover:opacity-100 md:group-hover:max-w-[150px] md:group-hover:ml-4"}`}>
-                            Create
-                        </span>
+                        <Plus size={20} className="flex-shrink-0" aria-hidden="true" />
+                        <span className={labelClass}>Create</span>
                     </Link>
                 </div>
 
-                <nav className="flex-1 px-3 space-y-1 overflow-y-auto overflow-x-hidden">
+                <nav className="flex-1 px-3 space-y-1 overflow-y-auto overflow-x-hidden" aria-label="Dashboard">
                     {NAV_ITEMS.map((item) => {
                         const isActive = pathname === item.href;
                         return (
@@ -135,18 +184,20 @@ export default function Sidebar() {
                                 key={item.href}
                                 href={item.href}
                                 onClick={closeMobileMenu}
-                                className={`flex items-center py-2.5 rounded-lg transition-all duration-200 ${sidebarPinned ? "md:justify-start md:pl-4 md:pr-3" : "md:justify-center md:pl-0 md:pr-0 md:group-hover:justify-start md:group-hover:pl-4 md:group-hover:pr-3"} justify-start pl-4 pr-3 ${isActive
-                                    ? "bg-[#171d2b] text-white font-medium"
-                                    : "text-[#171d2b]/60 hover:bg-[#171d2b]/5 hover:text-[#171d2b]"
-                                    }`}
+                                aria-current={isActive ? "page" : undefined}
+                                className={cn(
+                                    itemLayout,
+                                    isActive
+                                        ? "bg-primary text-primary-foreground font-medium"
+                                        : "text-muted-foreground hover:bg-accent hover:text-foreground"
+                                )}
                             >
                                 <item.icon
                                     size={20}
-                                    className={`flex-shrink-0 ${isActive ? "text-white" : "text-[#171d2b]/60"}`}
+                                    className={cn("flex-shrink-0", isActive ? "text-primary-foreground" : "text-muted-foreground")}
+                                    aria-hidden="true"
                                 />
-                                <span className={`font-sans text-[15px] ml-4 transition-all duration-300 whitespace-nowrap overflow-hidden ${sidebarPinned ? "md:opacity-100 md:max-w-[150px] md:ml-4" : "md:opacity-0 md:max-w-0 md:ml-0 md:group-hover:opacity-100 md:group-hover:max-w-[150px] md:group-hover:ml-4"}`}>
-                                    {item.label}
-                                </span>
+                                <span className={labelClass}>{item.label}</span>
                             </Link>
                         );
                     })}
@@ -156,54 +207,69 @@ export default function Sidebar() {
                     <Link
                         href="/help"
                         onClick={closeMobileMenu}
-                        className={`flex items-center py-2.5 rounded-lg transition-all duration-200 ${sidebarPinned ? "md:justify-start md:pl-4 md:pr-3" : "md:justify-center md:pl-0 md:pr-0 md:group-hover:justify-start md:group-hover:pl-4 md:group-hover:pr-3"} justify-start pl-4 pr-3 text-[#171d2b]/60 hover:bg-[#171d2b]/5 hover:text-[#171d2b]`}
+                        className={cn(itemLayout, "text-muted-foreground hover:bg-accent hover:text-foreground")}
                     >
-                        <LifeBuoy size={20} className="flex-shrink-0" />
-                        <span className={`font-sans text-[15px] ml-4 transition-all duration-300 whitespace-nowrap overflow-hidden ${sidebarPinned ? "md:opacity-100 md:max-w-[150px] md:ml-4" : "md:opacity-0 md:max-w-0 md:ml-0 md:group-hover:opacity-100 md:group-hover:max-w-[150px] md:group-hover:ml-4"}`}>
-                            Help Center
-                        </span>
+                        <LifeBuoy size={20} className="flex-shrink-0" aria-hidden="true" />
+                        <span className={labelClass}>Help center</span>
                     </Link>
                 </div>
 
-                <div className="p-2 border-t border-[#171d2b]/10 relative" ref={profileMenuRef}>
+                <div className="p-2 relative" ref={profileMenuRef}>
                     <button
                         onClick={() => setProfileMenuOpen(!profileMenuOpen)}
-                        className={`w-full flex items-center py-2 rounded-lg hover:bg-[#171d2b]/5 transition-all duration-200 cursor-pointer ${sidebarPinned ? "md:justify-start md:pl-2" : "md:justify-center md:pl-0 md:group-hover:justify-start md:group-hover:pl-2"} justify-start pl-2`}
+                        aria-expanded={profileMenuOpen}
+                        aria-haspopup="menu"
+                        className={cn(
+                            "w-full flex items-center py-2 rounded-full hover:bg-accent transition-colors duration-150 cursor-pointer min-h-11",
+                            sidebarPinned ? "md:justify-start md:pl-2" : "md:justify-center md:pl-0 md:group-hover:justify-start md:group-hover:pl-2",
+                            "justify-start pl-2"
+                        )}
                     >
                         {profile?.avatar_url ? (
                             // eslint-disable-next-line @next/next/no-img-element
                             <img
                                 src={profile.avatar_url}
-                                alt="Profile"
+                                alt=""
                                 className="w-9 h-9 rounded-full flex-shrink-0 object-cover"
                             />
                         ) : (
-                            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#171d2b] to-[#2a3347] flex items-center justify-center text-white font-sora text-sm flex-shrink-0">
+                            <div className="w-9 h-9 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-sans text-sm flex-shrink-0" aria-hidden="true">
                                 {getInitials(profile?.full_name ?? null)}
                             </div>
                         )}
-                        <div className={`min-w-0 ml-3 transition-all duration-300 overflow-hidden ${sidebarPinned ? "md:opacity-100 md:max-w-[150px] md:ml-3" : "md:opacity-0 md:max-w-0 md:ml-0 md:group-hover:opacity-100 md:group-hover:max-w-[150px] md:group-hover:ml-3"}`}>
-                            <p className="font-sans text-[14px] font-medium text-[#171d2b] truncate">
-                                {profile?.full_name || "Loading..."}
+                        <span className="sr-only">Account menu{profile?.full_name ? ` for ${profile.full_name}` : ""}</span>
+                        <div className={cn(
+                            "min-w-0 ml-3 overflow-hidden transition-[opacity,max-width,margin] duration-200",
+                            sidebarPinned
+                                ? "md:opacity-100 md:max-w-[150px] md:ml-3"
+                                : "md:opacity-0 md:max-w-0 md:ml-0 md:group-hover:opacity-100 md:group-hover:max-w-[150px] md:group-hover:ml-3"
+                        )}>
+                            <p className="font-sans text-sm font-medium text-foreground truncate">
+                                {profile?.full_name || "Account"}
                             </p>
                         </div>
                     </button>
 
                     {profileMenuOpen && (
-                        <div className="absolute bottom-full left-2 mb-2 bg-white border border-[#171d2b]/10 rounded-lg shadow-lg py-1 min-w-[160px] z-50">
+                        <div
+                            role="menu"
+                            className="absolute bottom-full left-2 mb-2 bg-card border border-border rounded-2xl py-1 min-w-[168px] z-50 shadow-[var(--shadow-floating)] origin-bottom-left"
+                        >
                             <Link
                                 href="/account"
+                                role="menuitem"
                                 onClick={() => { setProfileMenuOpen(false); closeMobileMenu(); }}
-                                className="flex items-center gap-3 px-4 py-2.5 text-[#171d2b]/70 hover:bg-[#171d2b]/5 hover:text-[#171d2b] transition-colors"
+                                className="flex items-center gap-3 mx-1 rounded-lg px-3 py-2.5 text-muted-foreground hover:bg-accent hover:text-foreground transition-colors duration-150"
                             >
-                                <span className="font-sans text-[14px]">Account Settings</span>
+                                <span className="font-sans text-sm">Account settings</span>
                             </Link>
                             <button
+                                role="menuitem"
                                 onClick={handleSignOut}
-                                className="w-full flex items-center gap-3 px-4 py-2.5 text-[#171d2b]/70 hover:bg-red-50 hover:text-red-600 transition-colors"
+                                className="w-[calc(100%-0.5rem)] mx-1 flex items-center gap-3 rounded-lg px-3 py-2.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive-foreground transition-colors duration-150"
                             >
-                                <LogOut size={18} />
-                                <span className="font-sans text-[14px]">Sign Out</span>
+                                <LogOut size={16} aria-hidden="true" />
+                                <span className="font-sans text-sm">Sign out</span>
                             </button>
                         </div>
                     )}

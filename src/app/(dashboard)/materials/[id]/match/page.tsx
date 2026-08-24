@@ -9,6 +9,7 @@ import ExitPopup from "@/components/ExitPopup";
 import { createClient } from "@/config/supabase/client";
 import { useXPStore } from "@/lib/stores";
 import { addXP, recordStudyActivity, updateFlashcardStatus, XP_REWARDS } from "@/services/activity";
+import { createGameCards } from "@/utils/matchGame";
 
 type CardStatus = 'new' | 'learning' | 'review' | 'mastered';
 
@@ -29,16 +30,6 @@ interface MatchCard {
 
 type Stage = "loading" | "playing" | "results";
 
-function createGameCards(data: FlashcardData[]): MatchCard[] {
-    const gameCards: MatchCard[] = [];
-    const selected = data.slice(0, 6);
-    selected.forEach(item => {
-        gameCards.push({ id: `term-${item.id}`, content: item.term, type: 'term', pairId: item.id, isMatched: false });
-        gameCards.push({ id: `def-${item.id}`, content: item.definition, type: 'definition', pairId: item.id, isMatched: false });
-    });
-    return gameCards.sort(() => Math.random() - 0.5);
-}
-
 export default function MatchPage() {
     const router = useRouter();
     const params = useParams();
@@ -53,6 +44,7 @@ export default function MatchPage() {
     const [finalTime, setFinalTime] = useState(0);
     const [showExitPopup, setShowExitPopup] = useState(false);
     const timerRef = useRef<NodeJS.Timeout | null>(null);
+    const timeElapsedRef = useRef(0);
 
     useEffect(() => {
         let mounted = true;
@@ -80,7 +72,11 @@ export default function MatchPage() {
                 setFlashcardData(fcData);
                 setCards(createGameCards(fcData));
                 setStage("playing");
-                timerRef.current = setInterval(() => setTimeElapsed(prev => prev + 0.1), 100);
+                timeElapsedRef.current = 0;
+                timerRef.current = setInterval(() => {
+                    timeElapsedRef.current += 0.1;
+                    setTimeElapsed(timeElapsedRef.current);
+                }, 100);
             } else {
                 setStage("playing");
             }
@@ -115,7 +111,11 @@ export default function MatchPage() {
         setFinalXpEarned(0);
         setFinalTime(0);
         setStage("playing");
-        timerRef.current = setInterval(() => setTimeElapsed(prev => prev + 0.1), 100);
+        timeElapsedRef.current = 0;
+        timerRef.current = setInterval(() => {
+            timeElapsedRef.current += 0.1;
+            setTimeElapsed(timeElapsedRef.current);
+        }, 100);
     }, [stopTimer, flashcardData]);
 
     const handleCardClick = (card: MatchCard) => {
@@ -146,11 +146,10 @@ export default function MatchPage() {
                     setSelectedCards([]);
 
                     if (allMatched) {
-                        // Stop timer and capture final time in state
                         stopTimer();
-                        setFinalTime(timeElapsed);
+                        const completedTime = timeElapsedRef.current;
+                        setFinalTime(completedTime);
 
-                        // Persist XP at moment of completion (not during render)
                         const newMatchCount = matchCount + 1;
                         const xpEarned = newMatchCount * XP_REWARDS.FLASHCARD_CORRECT;
                         setFinalXpEarned(xpEarned);
@@ -160,7 +159,7 @@ export default function MatchPage() {
                                 await addXP(xpEarned);
                                 useXPStore.getState().fetchXPStats();
                             }
-                            const minutesStudied = Math.max(1, Math.round(timeElapsed / 60));
+                            const minutesStudied = Math.max(1, Math.round(completedTime / 60));
                             await recordStudyActivity({ flashcards: newMatchCount, minutes: minutesStudied });
                         };
                         persistResults();
@@ -183,8 +182,8 @@ export default function MatchPage() {
 
     if (stage === "loading") {
         return (
-            <div className="min-h-screen bg-[#f0f0ea] flex items-center justify-center">
-                <Loader2 size={32} className="animate-spin text-[#171d2b]/40" />
+            <div className="min-h-screen bg-background flex items-center justify-center">
+                <Loader2 size={32} className="animate-spin text-muted-foreground" />
             </div>
         );
     }
@@ -195,7 +194,7 @@ export default function MatchPage() {
             id: item.id,
             term: item.term,
             definition: item.definition,
-            status: 'new' as 'new' | 'learning' | 'almost_done' | 'mastered'
+            status: (item.status === 'review' ? 'almost_done' : item.status) as 'new' | 'learning' | 'almost_done' | 'mastered'
         }));
 
         return (
@@ -217,15 +216,15 @@ export default function MatchPage() {
 
     if (cards.length === 0) {
         return (
-            <div className="min-h-screen bg-[#f0f0ea] flex items-center justify-center">
-                <p className="text-[#171d2b]/50">No flashcards found</p>
+            <div className="min-h-screen bg-background flex items-center justify-center">
+                <p className="text-muted-foreground">No flashcards found</p>
             </div>
         );
     }
 
     // Playing Screen
     return (
-        <div className="min-h-screen bg-[#f0f0ea] p-4 sm:p-6">
+        <div className="min-h-screen bg-background p-4 sm:p-6">
             <ExitPopup
                 isOpen={showExitPopup}
                 onClose={() => setShowExitPopup(false)}
@@ -239,14 +238,14 @@ export default function MatchPage() {
             <div className="max-w-5xl mx-auto">
                 {/* Header */}
                 <div className="flex items-center justify-between mb-6">
-                    <button onClick={() => setShowExitPopup(true)} className="p-2 hover:bg-[#171d2b]/5 rounded-lg transition-colors">
+                    <button onClick={() => setShowExitPopup(true)} className="p-2 hover:bg-accent rounded-lg transition-colors">
                         <X size={22} />
                     </button>
-                    <div className="flex items-center gap-3 bg-white px-5 py-2.5 rounded-xl shadow-sm border border-[#171d2b]/5">
-                        <Timer size={18} className="text-[#171d2b]/60" />
-                        <span className="font-mono text-lg font-bold text-[#171d2b] w-14 text-center">{formatTime(timeElapsed)}</span>
+                    <div className="flex items-center gap-3 bg-white px-5 py-2.5 rounded-xl shadow-sm border border-border">
+                        <Timer size={18} className="text-muted-foreground" />
+                        <span className="font-mono text-lg font-medium text-foreground w-14 text-center">{formatTime(timeElapsed)}</span>
                     </div>
-                    <div className="flex items-center gap-2 text-sm text-[#171d2b]/60">
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
                         <span>{matchCount}/{Math.min(flashcardData.length, 6)}</span>
                     </div>
                 </div>
@@ -270,8 +269,8 @@ export default function MatchPage() {
                                         ${isSelected
                                             ? isWrong
                                                 ? 'bg-red-50 border-2 border-red-300 text-red-700'
-                                                : 'bg-[#171d2b] text-white scale-[1.02] shadow-lg'
-                                            : 'bg-white text-[#171d2b] border border-[#171d2b]/5 hover:border-[#171d2b]/20 hover:shadow-md'
+                                                : 'bg-primary text-white scale-[1.02] shadow-lg'
+                                            : 'bg-white text-foreground border border-border hover:border-border hover:shadow-md'
                                         }`}
                                 >
                                     {card.content}

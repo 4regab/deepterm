@@ -103,7 +103,7 @@ const getMaterials = cache(async (): Promise<MaterialItem[]> => {
 function LoadingFallback() {
     return (
         <div className="flex items-center justify-center py-20">
-            <div className="w-8 h-8 border-2 border-[#171d2b]/20 border-t-[#171d2b] rounded-full animate-spin" />
+            <div className="w-8 h-8 border-2 border-border border-t-[var(--ink)] rounded-full animate-spin" />
         </div>
     );
 }
@@ -114,7 +114,7 @@ export default async function MaterialsPage() {
     return (
         <div>
             <div className="mb-8">
-                <h1 className="text-4xl font-sora font-bold text-[#171d2b] mb-2">Materials</h1>
+                <h1 className="text-4xl font-sans font-medium text-foreground mb-2">Materials</h1>
             </div>
             <Suspense fallback={<LoadingFallback />}>
                 <MaterialsClient initialItems={materials} />

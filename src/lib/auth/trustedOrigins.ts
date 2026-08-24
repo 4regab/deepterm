@@ -12,6 +12,9 @@ export const TRUSTED_ORIGINS = [
   'https://deepterm.vercel.app',
 ] as const
 
+export const TRUSTED_PRODUCTION_ORIGINS = TRUSTED_ORIGINS
+export const PRIMARY_ORIGIN = CANONICAL_ORIGIN
+
 export function isLocalDevOrigin(origin: string): boolean {
   return (
     origin.startsWith('http://localhost:') ||
@@ -19,19 +22,29 @@ export function isLocalDevOrigin(origin: string): boolean {
   )
 }
 
-export function isTrustedOrigin(origin: string | null | undefined): boolean {
+export function isTrustedOrigin(
+  origin: string | null | undefined,
+  isDev = process.env.NODE_ENV === 'development',
+): boolean {
   if (!origin) return false
   if ((TRUSTED_ORIGINS as readonly string[]).includes(origin)) return true
-  if (process.env.NODE_ENV === 'development' && isLocalDevOrigin(origin)) {
+  if (isDev && isLocalDevOrigin(origin)) {
     return true
   }
   return false
 }
 
 /** Never reflect the request Host header for redirects. */
-export function getTrustedOrigin(requestUrl: URL): string {
-  if (isTrustedOrigin(requestUrl.origin)) {
-    return requestUrl.origin
+export function getTrustedOrigin(
+  requestOriginOrUrl: string | URL,
+  isDev = process.env.NODE_ENV === 'development',
+): string {
+  const origin =
+    typeof requestOriginOrUrl === 'string'
+      ? requestOriginOrUrl
+      : requestOriginOrUrl.origin
+  if (isTrustedOrigin(origin, isDev)) {
+    return origin
   }
   return CANONICAL_ORIGIN
 }

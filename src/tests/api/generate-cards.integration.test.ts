@@ -20,6 +20,7 @@ const mockCheckAndIncrementAIUsage = mock(() => Promise.resolve({
   resetAt: new Date(),
   userId: 'test-user-id',
   authenticated: true,
+  unavailable: false,
 }))
 
 const mockGenerateContentWithRotation = mock(() => Promise.resolve({
@@ -99,6 +100,7 @@ describe('POST /api/generate-cards', () => {
       resetAt: new Date(),
       userId: 'test-user-id',
       authenticated: true,
+      unavailable: false,
     })
     mockGenerateContentWithRotation.mockResolvedValue({
       text: mockGeminiResponse.text
@@ -132,6 +134,7 @@ describe('POST /api/generate-cards', () => {
         resetAt: resetTime,
         userId: 'test-user-id',
         authenticated: true,
+        unavailable: false,
       })
 
       const request = createFormDataRequest({ textContent: 'Test content' })
@@ -144,6 +147,24 @@ describe('POST /api/generate-cards', () => {
       expect(body.resetAt).toBe(resetTime.toISOString())
     })
 
+    it('should return 503 when the rate limit service is unavailable', async () => {
+      mockCheckAndIncrementAIUsage.mockResolvedValueOnce({
+        allowed: false,
+        remaining: 0,
+        resetAt: new Date(),
+        userId: 'test-user-id',
+        authenticated: true,
+        unavailable: true,
+      })
+
+      const request = createFormDataRequest({ textContent: 'Test content' })
+      const response = await POST(request)
+
+      expect(response.status).toBe(503)
+      const body = await response.json()
+      expect(body.error).toBe('Rate limit service unavailable. Please try again.')
+    })
+
     it('should include remaining count in successful response', async () => {
       mockCheckAndIncrementAIUsage.mockResolvedValueOnce({ 
         allowed: true, 
@@ -151,6 +172,7 @@ describe('POST /api/generate-cards', () => {
         resetAt: new Date(),
         userId: 'test-user-id',
         authenticated: true,
+        unavailable: false,
       })
 
       const request = createFormDataRequest({ textContent: 'Test content' })
@@ -170,6 +192,7 @@ describe('POST /api/generate-cards', () => {
       expect(response.status).toBe(400)
       const body = await response.json()
       expect(body.error).toBe('No file or text content provided')
+      expect(mockCheckAndIncrementAIUsage).not.toHaveBeenCalled()
     })
 
     it('should return 400 when text content exceeds maximum length', async () => {
@@ -205,6 +228,7 @@ describe('POST /api/generate-cards', () => {
       expect(response.status).toBe(400)
       const body = await response.json()
       expect(body.error).toBe('Unsupported file type. Only PDF files are allowed.')
+      expect(mockCheckAndIncrementAIUsage).not.toHaveBeenCalled()
     })
 
     it('should return 400 for files exceeding size limit', async () => {

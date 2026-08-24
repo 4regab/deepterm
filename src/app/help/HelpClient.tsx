@@ -401,14 +401,14 @@ function FAQAccordion({ faqs }: { faqs: FAQItem[] }) {
       {faqs.map((faq, index) => (
         <motion.div
           key={index}
-          className="bg-white rounded-xl border border-[#171d2b]/10 overflow-hidden"
+          className="bg-white rounded-xl border border-border overflow-hidden"
           initial={false}
         >
           <button
             onClick={() => setOpenIndex(openIndex === index ? null : index)}
             className="w-full px-5 py-4 flex items-center justify-between text-left"
           >
-            <span className="font-sans text-[15px] text-[#171d2b] font-medium pr-4">
+            <span className="font-sans text-[15px] text-foreground font-medium pr-4">
               {faq.question}
             </span>
             <motion.div
@@ -416,7 +416,7 @@ function FAQAccordion({ faqs }: { faqs: FAQItem[] }) {
               transition={{ duration: 0.2 }}
               className="flex-shrink-0"
             >
-              <ChevronDown className="w-5 h-5 text-[#171d2b]/60" />
+              <ChevronDown className="w-5 h-5 text-muted-foreground" />
             </motion.div>
           </button>
           <AnimatePresence initial={false}>
@@ -428,7 +428,7 @@ function FAQAccordion({ faqs }: { faqs: FAQItem[] }) {
                 transition={{ duration: 0.2 }}
               >
                 <div className="px-5 pb-4">
-                  <p className="font-sans text-[14px] text-[#171d2b]/70 leading-relaxed">
+                  <p className="font-sans text-[14px] text-muted-foreground leading-relaxed">
                     {faq.answer}
                   </p>
                 </div>
@@ -460,39 +460,39 @@ function CategoryDetail({
       {/* Back Button */}
       <button
         onClick={onBack}
-        className="flex items-center gap-2 text-[#171d2b]/70 hover:text-[#171d2b] transition-colors mb-6 font-sans text-[14px]"
+        className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors mb-6 font-sans text-[14px]"
       >
         <ArrowRight className="w-4 h-4 rotate-180" />
-        Back to Help Center
+        Back to help center
       </button>
 
       {/* Category Header */}
-      <div className="bg-white rounded-2xl border border-[#171d2b]/10 p-6 sm:p-8 mb-6">
+      <div className="bg-white rounded-2xl border border-border p-6 sm:p-8 mb-6">
         <div className="flex items-center gap-4 mb-4">
-          <div className="w-12 h-12 rounded-xl bg-[#171d2b]/5 flex items-center justify-center text-[#171d2b]">
+          <div className="w-12 h-12 rounded-xl bg-muted flex items-center justify-center text-foreground">
             {category.icon}
           </div>
-          <h1 className="font-serif text-[28px] sm:text-[32px] text-[#171d2b]">
+          <h1 className="font-sans tracking-tight font-medium text-[28px] sm:text-[32px] text-foreground">
             {category.title}
           </h1>
         </div>
-        <p className="font-sans text-[15px] sm:text-[16px] text-[#171d2b]/70 leading-relaxed">
+        <p className="font-sans text-[15px] sm:text-[16px] text-muted-foreground leading-relaxed">
           {category.content}
         </p>
       </div>
 
       {/* Features Section */}
       {category.features && category.features.length > 0 && (
-        <div className="bg-white rounded-2xl border border-[#171d2b]/10 p-6 sm:p-8 mb-6">
-          <h2 className="font-serif text-[20px] sm:text-[22px] text-[#171d2b] mb-4">
+        <div className="bg-white rounded-2xl border border-border p-6 sm:p-8 mb-6">
+          <h2 className="font-sans tracking-tight text-[20px] sm:text-[22px] text-foreground mb-4">
             Key Features
           </h2>
           <ul className="space-y-3">
             {category.features.map((feature, index) => (
               <li key={index} className="flex items-start gap-3">
-                <div className="w-5 h-5 rounded-full bg-[#171d2b]/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+                <div className="w-5 h-5 rounded-full bg-muted flex items-center justify-center flex-shrink-0 mt-0.5">
                   <svg
-                    className="w-3 h-3 text-[#171d2b]"
+                    className="w-3 h-3 text-foreground"
                     fill="none"
                     viewBox="0 0 24 24"
                     stroke="currentColor"
@@ -505,7 +505,7 @@ function CategoryDetail({
                     />
                   </svg>
                 </div>
-                <span className="font-sans text-[14px] sm:text-[15px] text-[#171d2b]/70">
+                <span className="font-sans text-[14px] sm:text-[15px] text-muted-foreground">
                   {feature}
                 </span>
               </li>
@@ -516,19 +516,19 @@ function CategoryDetail({
 
       {/* Steps Section */}
       {category.steps && category.steps.length > 0 && (
-        <div className="bg-white rounded-2xl border border-[#171d2b]/10 p-6 sm:p-8 mb-6">
-          <h2 className="font-serif text-[20px] sm:text-[22px] text-[#171d2b] mb-4">
+        <div className="bg-white rounded-2xl border border-border p-6 sm:p-8 mb-6">
+          <h2 className="font-sans tracking-tight text-[20px] sm:text-[22px] text-foreground mb-4">
             How to Use
           </h2>
           <ol className="space-y-4">
             {category.steps.map((step, index) => (
               <li key={index} className="flex items-start gap-4">
-                <div className="w-7 h-7 rounded-full bg-[#171d2b] flex items-center justify-center flex-shrink-0">
+                <div className="w-7 h-7 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
                   <span className="font-sans text-[13px] text-white font-medium">
                     {index + 1}
                   </span>
                 </div>
-                <span className="font-sans text-[14px] sm:text-[15px] text-[#171d2b]/70 pt-1">
+                <span className="font-sans text-[14px] sm:text-[15px] text-muted-foreground pt-1">
                   {step}
                 </span>
               </li>
@@ -540,8 +540,8 @@ function CategoryDetail({
       {/* FAQs Section */}
       {category.faqs && category.faqs.length > 0 && (
         <div className="mb-6">
-          <h2 className="font-serif text-[20px] sm:text-[22px] text-[#171d2b] mb-4">
-            Frequently Asked Questions
+          <h2 className="font-sans tracking-tight text-[20px] sm:text-[22px] text-foreground mb-4">
+            Frequently asked
           </h2>
           <FAQAccordion faqs={category.faqs} />
         </div>
@@ -570,8 +570,10 @@ export default function HelpClient() {
   );
 
   return (
-    <div className="bg-[#f0f0ea] relative max-w-[1440px] min-h-screen mx-auto">
-      <Header className="!mt-4 sm:!mt-5 lg:!mt-6" />
+    <div className="bg-background relative max-w-[76rem] min-h-screen mx-auto">
+      <Header />
+
+      <main id="main-content">
 
       {/* Hero Section */}
       <section className="relative z-10 mx-auto pt-8 sm:pt-12 lg:pt-16 pb-8 sm:pb-12 px-4 sm:px-6 lg:px-8">
@@ -580,15 +582,15 @@ export default function HelpClient() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
-            className="font-serif text-[36px] sm:text-[48px] lg:text-[56px] text-[#171d2b] mb-4 leading-[1.1]"
+            className="font-sans tracking-tight font-medium text-[36px] sm:text-[48px] lg:text-[56px] text-foreground mb-4 leading-[1.1]"
           >
-            Help Center
+            Help center
           </motion.h1>
           <motion.p
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.1 }}
-            className="font-sans text-[15px] sm:text-[17px] text-[#171d2b]/70 mb-8 max-w-[500px] mx-auto"
+            className="font-sans text-[15px] sm:text-[17px] text-muted-foreground mb-8 max-w-[500px] mx-auto"
           >
             Find answers to your questions and learn how to get the most out of
             DeepTerm.
@@ -602,14 +604,16 @@ export default function HelpClient() {
             className="relative max-w-[500px] mx-auto"
           >
             <div className="absolute left-4 top-1/2 -translate-y-1/2">
-              <Search className="w-5 h-5 text-[#171d2b]/40" />
+              <Search className="w-5 h-5 text-muted-foreground" />
             </div>
+            <label htmlFor="help-search" className="sr-only">Search help articles</label>
             <input
-              type="text"
-              placeholder="Search for help..."
+              id="help-search"
+              type="search"
+              placeholder="Pomodoro, flashcards, sharing…"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full h-[52px] sm:h-[56px] pl-12 pr-4 rounded-full bg-white border border-[#171d2b]/10 font-sans text-[15px] text-[#171d2b] placeholder:text-[#171d2b]/40 focus:outline-none focus:border-[#171d2b]/30 transition-colors"
+              className="w-full h-[52px] sm:h-[56px] pl-12 pr-4 rounded-full bg-white border border-border font-sans text-[15px] text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary/30 transition-colors"
             />
           </motion.div>
         </div>
@@ -642,22 +646,22 @@ export default function HelpClient() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.3, delay: index * 0.05 }}
                     onClick={() => setSelectedCategory(category.id)}
-                    className="bg-white rounded-2xl border border-[#171d2b]/10 p-5 sm:p-6 text-left hover:border-[#171d2b]/20 hover:shadow-lg transition-all duration-300 group"
+                    className="bg-white rounded-2xl border border-border p-5 sm:p-6 text-left hover:border-border hover:shadow-lg transition-all duration-300 group"
                   >
                     <div className="flex items-start gap-4">
-                      <div className="w-11 h-11 rounded-xl bg-[#171d2b]/5 flex items-center justify-center text-[#171d2b] group-hover:bg-[#171d2b] group-hover:text-white transition-colors">
+                      <div className="w-11 h-11 rounded-xl bg-muted flex items-center justify-center text-foreground group-hover:bg-primary group-hover:text-white transition-colors">
                         {category.icon}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <h3 className="font-serif text-[17px] sm:text-[18px] text-[#171d2b] mb-1 group-hover:text-[#171d2b] transition-colors">
+                        <h3 className="font-sans tracking-tight text-[17px] sm:text-[18px] text-foreground mb-1 group-hover:text-foreground transition-colors">
                           {category.title}
                         </h3>
-                        <p className="font-sans text-[13px] sm:text-[14px] text-[#171d2b]/60 line-clamp-2">
+                        <p className="font-sans text-[13px] sm:text-[14px] text-muted-foreground line-clamp-2">
                           {category.description}
                         </p>
                       </div>
                     </div>
-                    <div className="flex items-center gap-1 mt-4 text-[#171d2b]/50 group-hover:text-[#171d2b] transition-colors">
+                    <div className="flex items-center gap-1 mt-4 text-muted-foreground group-hover:text-foreground transition-colors">
                       <span className="font-sans text-[13px]">Learn more</span>
                       <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                     </div>
@@ -672,13 +676,13 @@ export default function HelpClient() {
                   animate={{ opacity: 1 }}
                   className="text-center py-12"
                 >
-                  <div className="w-16 h-16 rounded-full bg-[#171d2b]/5 flex items-center justify-center mx-auto mb-4">
-                    <Search className="w-7 h-7 text-[#171d2b]/40" />
+                  <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
+                    <Search className="w-7 h-7 text-muted-foreground" />
                   </div>
-                  <h3 className="font-serif text-[20px] text-[#171d2b] mb-2">
+                  <h3 className="font-sans tracking-tight text-[20px] text-foreground mb-2">
                     No results found
                   </h3>
-                  <p className="font-sans text-[14px] text-[#171d2b]/60">
+                  <p className="font-sans text-[14px] text-muted-foreground">
                     Try searching with different keywords
                   </p>
                 </motion.div>
@@ -689,19 +693,19 @@ export default function HelpClient() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: 0.4 }}
-                className="mt-12 sm:mt-16 bg-white rounded-2xl border border-[#171d2b]/10 p-6 sm:p-8 text-center"
+                className="mt-12 sm:mt-16 bg-white rounded-2xl border border-border p-6 sm:p-8 text-center"
               >
-                <h2 className="font-serif text-[22px] sm:text-[26px] text-[#171d2b] mb-3">
+                <h2 className="font-sans tracking-tight text-[22px] sm:text-[26px] text-foreground mb-3">
                   Still need help?
                 </h2>
-                <p className="font-sans text-[14px] sm:text-[15px] text-[#171d2b]/60 mb-6 max-w-[400px] mx-auto">
+                <p className="font-sans text-[14px] sm:text-[15px] text-muted-foreground mb-6 max-w-[400px] mx-auto">
                   Can&apos;t find what you&apos;re looking for? Reach out to us
                   and we&apos;ll be happy to help.
                 </p>
                 <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4">
                   <a
                     href="mailto:deeptermai@gmail.com"
-                    className="w-full sm:w-auto h-[46px] px-6 rounded-full bg-[#171d2b] text-white font-sora text-[14px] hover:bg-[#2a3347] transition-colors flex items-center justify-center gap-2"
+                    className="w-full sm:w-auto h-[46px] px-6 rounded-full bg-primary text-white font-sans text-[14px] hover:bg-[#2a3347] transition-colors flex items-center justify-center gap-2"
                   >
                     <svg
                       className="w-4 h-4"
@@ -716,7 +720,7 @@ export default function HelpClient() {
                     href="https://github.com/4regab/deepterm/issues"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="w-full sm:w-auto h-[46px] px-6 rounded-full border-2 border-[#171d2b]/20 text-[#171d2b] font-sora text-[14px] hover:bg-[#171d2b]/5 transition-colors flex items-center justify-center gap-2"
+                    className="w-full sm:w-auto h-[46px] px-6 rounded-full border-2 border-border text-foreground font-sans text-[14px] hover:bg-accent transition-colors flex items-center justify-center gap-2"
                   >
                     <svg
                       className="w-4 h-4"
@@ -725,7 +729,7 @@ export default function HelpClient() {
                     >
                       <path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" />
                     </svg>
-                    Report an Issue
+                    Report an issue
                   </a>
                 </div>
               </motion.div>
@@ -733,8 +737,8 @@ export default function HelpClient() {
           )}
         </AnimatePresence>
       </section>
+      </main>
 
-      {/* Footer */}
       <Footer />
     </div>
   );

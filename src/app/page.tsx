@@ -1,5 +1,5 @@
 import { Metadata } from "next";
-import Script from "next/script";
+import { headers } from "next/headers";
 import HomeClient from "./HomeClient";
 import { generateFAQJsonLd, siteConfig } from "@/lib/seo";
 
@@ -94,17 +94,17 @@ const homeFaqs = [
   },
 ];
 
-export default function Home() {
+export default async function Home() {
+  const nonce = (await headers()).get("x-nonce") ?? "";
   const faqJsonLd = generateFAQJsonLd(homeFaqs);
 
   return (
     <>
-      {/* JSON-LD structured data for FAQ - using Next.js Script to avoid hydration issues */}
-      <Script
+      <script
         id="faq-jsonld"
+        nonce={nonce}
         type="application/ld+json"
-        strategy="beforeInteractive"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd).replace(/</g, '\\u003c') }}
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd).replace(/</g, "\\u003c") }}
       />
       <HomeClient />
     </>

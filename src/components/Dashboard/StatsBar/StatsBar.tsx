@@ -32,14 +32,14 @@ function StatCard({ label, value, icon, bgColor, iconColor, loading }: StatCardP
     }
 
     return (
-        <div className={`${bgColor} rounded-xl p-4 transition-all hover:shadow-md border border-[#171d2b]/5`}>
+        <div className={`${bgColor} rounded-xl p-4 transition-all hover:shadow-md border border-border`}>
             <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center">
                     <span className={iconColor}>{icon}</span>
                 </div>
                 <div>
-                    <p className="font-sans text-[12px] text-[#171d2b]/60 mb-0.5">{label}</p>
-                    <p className="font-sans font-semibold text-[20px] text-[#171d2b]">{value}</p>
+                    <p className="font-sans text-[12px] text-muted-foreground mb-0.5">{label}</p>
+                    <p className="font-sans font-medium text-[20px] text-foreground">{value}</p>
                 </div>
             </div>
         </div>
@@ -68,7 +68,7 @@ export default function StatsBar() {
                     value={`${todayMinutes} min`}
                     icon={<Clock size={20} />}
                     bgColor="bg-[#f5f0e0]"
-                    iconColor="text-[#171d2b]/70"
+                    iconColor="text-muted-foreground"
                     loading={loading}
                 />
                 <StatCard
@@ -76,7 +76,7 @@ export default function StatsBar() {
                     value={`${currentStreak} days`}
                     icon={<Flame size={20} />}
                     bgColor="bg-[#e8e4d8]"
-                    iconColor="text-[#171d2b]/70"
+                    iconColor="text-muted-foreground"
                     loading={loading}
                 />
                 <StatCard
@@ -84,7 +84,7 @@ export default function StatsBar() {
                     value={`${bestStreak} days`}
                     icon={<Trophy size={20} />}
                     bgColor="bg-[#e0dcd0]"
-                    iconColor="text-[#171d2b]/70"
+                    iconColor="text-muted-foreground"
                     loading={loading}
                 />
             </div>

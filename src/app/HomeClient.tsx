@@ -69,6 +69,7 @@ export default function HomeClient() {
     <div className="bg-[#f0f0ea] relative max-w-[1440px] min-h-screen mx-auto">
       <Header className="!mt-4 sm:!mt-5 lg:!mt-6" />
 
+      <main id="main-content">
       {/* Hero Section */}
       <section className="relative z-10 mx-auto pt-4 sm:pt-8 lg:pt-10 pb-8 sm:pb-12 lg:pb-16 px-4 sm:px-6 lg:px-8 flex flex-col items-center justify-center overflow-visible min-h-[75vh] sm:min-h-[70vh] lg:min-h-[80vh]">
         {/* Planet positioned top-left */}
@@ -219,6 +220,8 @@ export default function HomeClient() {
           </p>
         </div>
       </section>
+
+      </main>
 
       {/* Footer */}
       <Footer />

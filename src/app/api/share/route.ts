@@ -1,13 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerSupabaseClient } from '@/config/supabase/server'
-import { ShareCodeCreateSchema, ShareMaterialTypeSchema } from '@/lib/schemas/sharing'
+import { ShareCodeCreateSchema, ShareGetQuerySchema, ShareMaterialTypeSchema, SharePatchSchema } from '@/lib/schemas/sharing'
 import { forbiddenUnlessSameOrigin } from '@/lib/auth/assertSameOrigin'
 import { z } from 'zod'
-
-const ShareLookupSchema = z.object({
-  materialType: ShareMaterialTypeSchema,
-  materialId: z.string().uuid(),
-})
 
 const SHARE_CODE_ALPHABET = 'abcdefghijklmnopqrstuvwxyz0123456789'
 const DEFAULT_SHARE_CODE_LENGTH = 16
@@ -77,13 +72,13 @@ export async function GET(request: NextRequest) {
   }
 
   const { searchParams } = new URL(request.url)
-  const parsedQuery = ShareLookupSchema.safeParse({
+  const parsedQuery = ShareGetQuerySchema.safeParse({
     materialType: searchParams.get('materialType'),
     materialId: searchParams.get('materialId'),
   })
 
   if (!parsedQuery.success) {
-    return NextResponse.json({ error: 'Invalid parameters' }, { status: 400 })
+    return NextResponse.json({ error: 'Missing or invalid parameters' }, { status: 400 })
   }
 
   const { materialType, materialId } = parsedQuery.data
@@ -141,7 +136,8 @@ export async function POST(request: NextRequest) {
     .select('id, share_code, is_active, created_at')
     .eq('material_type', materialType)
     .eq('material_id', materialId)
-    .single()
+    .eq('user_id', user.id)
+    .maybeSingle()
 
   if (existing) {
     // Reactivate if inactive
@@ -218,13 +214,13 @@ export async function PATCH(request: NextRequest) {
   }
 
   const body = await request.json()
-  const shareId = z.string().uuid().safeParse(body?.shareId)
-  const isActive = body?.isActive
-  const newCode = body?.newCode
+  const parsed = SharePatchSchema.safeParse(body)
 
-  if (!shareId.success) {
-    return NextResponse.json({ error: 'Missing shareId' }, { status: 400 })
+  if (!parsed.success) {
+    return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 })
   }
+
+  const { shareId, isActive, newCode } = parsed.data
 
   const updates: Record<string, unknown> = { updated_at: new Date().toISOString() }
 
@@ -243,7 +239,7 @@ export async function PATCH(request: NextRequest) {
       .from('material_shares')
       .select('id')
       .eq('share_code', newCode)
-      .neq('id', shareId.data)
+      .neq('id', shareId)
       .maybeSingle()
 
     if (codeExistsError) {
@@ -261,7 +257,7 @@ export async function PATCH(request: NextRequest) {
   const { data: share, error } = await supabase
     .from('material_shares')
     .update(updates)
-    .eq('id', shareId.data)
+    .eq('id', shareId)
     .eq('user_id', user.id)
     .select()
     .single()

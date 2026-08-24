@@ -34,7 +34,7 @@ function FloatingPaths({
   return (
     <div className="absolute inset-0 pointer-events-none" style={{ minHeight: "100%" }}>
       <svg
-        className="w-full text-[#171d2b]"
+        className="w-full text-foreground"
         viewBox="0 0 696 2400"
         fill="none"
         preserveAspectRatio="xMidYMin slice"

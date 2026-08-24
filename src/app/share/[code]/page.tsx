@@ -7,6 +7,7 @@ import { siteConfig } from '@/lib/seo'
 import { ShareCodeSchema } from '@/lib/schemas/sharing'
 import { checkShareRateLimit, getRequestIdentifier } from '@/services/shareRateLimit'
 import { hashRequestIdentity } from '@/lib/auth/requestIdentity'
+import { buildSharePageMeta, parseSharedMaterial } from '@/utils/shareMetadata'
 
 interface PageProps {
   params: Promise<{ code: string }>
@@ -45,12 +46,15 @@ async function getSharedMaterial(
     return null
   }
 
-  return data
+  return parseSharedMaterial(data)
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { code } = await params
-  const data = await getSharedMaterial(code)
+  const requestHeaders = await headers()
+  const requestIdentity = getRequestIdentifier(requestHeaders)
+  const identityHash = hashRequestIdentity(requestHeaders)
+  const data = await getSharedMaterial(code, requestIdentity, identityHash)
 
   if (!data) {
     return {
@@ -59,10 +63,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     }
   }
 
-  const title = data.title || 'Shared Study Material'
-  const type = data.type === 'cards' ? 'Flashcards' : 'Reviewer'
-  const itemCount = data.items?.length || 0
-  const description = `Study ${title} - ${itemCount} ${type.toLowerCase()} on DeepTerm. Free AI-powered study tools.`
+  const { title, typeLabel: type, itemCount, description } = buildSharePageMeta(data)
   const url = `${siteConfig.url}/share/${code}`
 
   return {

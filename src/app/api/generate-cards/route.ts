@@ -3,20 +3,18 @@ import { FileState } from "@google/genai";
 import { checkAndIncrementAIUsage } from "@/services/rateLimit";
 import { generateContentWithRotation, uploadFileWithRotation, getApiKeyCount, Type } from "@/services/geminiClient";
 import { verifyTurnstileToken } from "@/services/turnstile";
+import { MAX_CARDS_FILE_SIZE, MAX_GENERATE_TEXT_LENGTH, resolveGenerateMimeType } from "@/utils/generateInput";
 import { z } from "zod";
 import { forbiddenUnlessSameOrigin } from "@/lib/auth/assertSameOrigin";
 
 // File size limits (in bytes)
-const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20MB
-const MAX_TEXT_LENGTH = 100000; // 100k characters
+const MAX_FILE_SIZE = MAX_CARDS_FILE_SIZE;
+const MAX_TEXT_LENGTH = MAX_GENERATE_TEXT_LENGTH;
 
 // Zod schema for input validation
 const GenerateCardsInputSchema = z.object({
   textContent: z.string().max(MAX_TEXT_LENGTH, `Text too long. Maximum length is ${MAX_TEXT_LENGTH} characters`).optional().nullable(),
 });
-
-// Allowed MIME types whitelist
-const ALLOWED_MIME_TYPES = ["application/pdf"] as const;
 
 // Structured output schema for flashcards - enforces non-empty term and definition
 const flashcardResponseSchema = {
@@ -58,25 +56,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: captcha.error }, { status: captcha.status });
   }
 
-  // Atomic rate limit check and increment
-  const rateLimit = await checkAndIncrementAIUsage();
-  
-  // Check authentication first
-  if (!rateLimit.authenticated) {
-    return NextResponse.json({
-      error: "Not authenticated"
-    }, { status: 401 });
-  }
-  
-  // Then check rate limit
-  if (!rateLimit.allowed) {
-    return NextResponse.json({
-      error: "Daily AI generation limit reached (10/day)",
-      remaining: rateLimit.remaining,
-      resetAt: rateLimit.resetAt.toISOString()
-    }, { status: 429 });
-  }
-
   try {
     const file = formData.get("file") as File | null;
     const rawTextContent = formData.get("textContent");
@@ -107,29 +86,51 @@ export async function POST(request: NextRequest) {
     }
 
     // MIME type validation against whitelist
-    if (file) {
-      const mimeType = file.type || getMimeTypeFromName(file.name);
-      if (!mimeType || !ALLOWED_MIME_TYPES.includes(mimeType as typeof ALLOWED_MIME_TYPES[number])) {
-        return NextResponse.json({ error: "Unsupported file type. Only PDF files are allowed." }, { status: 400 });
-      }
+    const resolvedMimeType = file ? resolveGenerateMimeType(file) : null;
+    if (file && !resolvedMimeType) {
+      return NextResponse.json({ error: "Unsupported file type. Only PDF files are allowed." }, { status: 400 });
+    }
+
+    // Consume quota only after the request is known to be valid
+    const rateLimit = await checkAndIncrementAIUsage();
+
+    if (!rateLimit.authenticated) {
+      return NextResponse.json({
+        error: "Not authenticated"
+      }, { status: 401 });
+    }
+
+    if (rateLimit.unavailable) {
+      return NextResponse.json({
+        error: "Rate limit service unavailable. Please try again."
+      }, { status: 503 });
+    }
+
+    if (!rateLimit.allowed) {
+      return NextResponse.json({
+        error: "Daily AI generation limit reached (10/day)",
+        remaining: rateLimit.remaining,
+        resetAt: rateLimit.resetAt.toISOString()
+      }, { status: 429 });
     }
 
     let fileUri: string | null = null;
     let mimeType: string | null = null;
+    let uploadKeyIndex = 0;
 
     // Handle file upload to Gemini Files API
     if (file) {
-      mimeType = file.type || getMimeTypeFromName(file.name);
-      // MIME type already validated above, safe to assert non-null
-      const validMimeType = mimeType!;
+      const validMimeType = resolvedMimeType!;
+      mimeType = validMimeType;
 
       const arrayBuffer = await file.arrayBuffer();
       const blob = new Blob([arrayBuffer], { type: validMimeType });
 
-      const { uploadedFile, ai } = await uploadFileWithRotation({
+      const { uploadedFile, ai, keyIndex } = await uploadFileWithRotation({
         file: blob,
         config: { mimeType: validMimeType, displayName: file.name },
       });
+      uploadKeyIndex = keyIndex;
 
       // Wait for file processing
       let geminiFile = await ai.files.get({ name: uploadedFile.name! });
@@ -201,6 +202,7 @@ MANDATORY:
     const { text: responseText } = await generateContentWithRotation({
       model: "gemini-2.5-flash-lite",
       contents,
+      preferredKeyIndex: uploadKeyIndex,
       config: {
         systemInstruction: systemPrompt,
         temperature: 0.2,
@@ -262,10 +264,3 @@ MANDATORY:
   }
 }
 
-function getMimeTypeFromName(filename: string): string | null {
-  const ext = filename.toLowerCase().split(".").pop();
-  switch (ext) {
-    case "pdf": return "application/pdf";
-    default: return null;
-  }
-}
