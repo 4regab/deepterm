@@ -105,7 +105,7 @@ export default async function Image() {
             fontSize: '20px',
           }}
         >
-          deepterm.tech
+          deepterm.app
         </div>
       </div>
     ),

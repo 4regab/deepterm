@@ -2,7 +2,7 @@
 
 AI study app: notes/PDFs → flashcards, reviewers, practice tests.
 
-- Canonical origin: `https://deepterm.tech` (legacy: `deepterm.app`, `deepterm.vercel.app`)
+- Canonical origin: `https://deepterm.app` (www allowed; nothing else)
 - Repo: `4regab/deepterm`
 - Live Supabase: `lopurzvtignkqyubqgtz` (`ap-southeast-1`)
 

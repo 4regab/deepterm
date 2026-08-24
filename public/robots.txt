@@ -279,4 +279,4 @@ Disallow: /dashboard/
 # ============================================
 # Sitemap & LLM Discovery
 # ============================================
-Sitemap: https://deepterm.tech/sitemap.xml
+Sitemap: https://deepterm.app/sitemap.xml

@@ -14,7 +14,7 @@ export async function GET(
         return new NextResponse('Post not found', { status: 404 })
     }
 
-    const baseUrl = 'https://deepterm.tech'
+    const baseUrl = 'https://deepterm.app'
 
     const meta: string[] = []
     if (post.category_name) meta.push('Category: ' + post.category_name)
