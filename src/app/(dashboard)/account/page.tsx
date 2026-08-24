@@ -174,8 +174,13 @@ export default function AccountPage() {
             setMessage({ type: "error", text: "Unable to cancel deletion. Check your connection and try again." });
             return;
         }
-        setDeletion({ pending: false });
-        setMessage({ type: "success", text: "Deletion cancelled. The account stays active." });
+        const status = await getAccountDeletionStatusAction();
+        setDeletion({
+            pending: status.pending,
+            deletedAt: status.deletedAt,
+            finalizeAt: status.finalizeAt,
+        });
+        setMessage({ type: "success", text: "Deletion cancelled. Your account is safe." });
     };
 
     const getInitials = (name: string | null) => {

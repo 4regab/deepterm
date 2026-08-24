@@ -186,8 +186,8 @@ describe('materialsStore', () => {
       expect(filtered[0].type).toBe('Note')
     })
 
-    it('should filter by type Flashcards', () => {
-      useMaterialsStore.getState().setActiveFilter('Flashcards')
+    it('should treat Cards as an alias for Flashcards', () => {
+      useMaterialsStore.getState().setActiveFilter('Cards')
       const filtered = useMaterialsStore.getState().getFilteredItems()
       expect(filtered).toHaveLength(1)
       expect(filtered[0].type).toBe('Flashcards')

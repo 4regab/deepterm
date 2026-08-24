@@ -38,7 +38,8 @@ export default function GoogleSignIn() {
     }
   }
 
-  const handleCaptchaVerify = () => {
+  const handleCaptchaVerify = (token?: string) => {
+    if (!token) return
     setShowCaptcha(false)
     handleGoogleSignIn()
   }

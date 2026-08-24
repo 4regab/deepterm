@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useCallback } from "react"
+import { useState, useCallback, useEffect } from "react"
 import { X, Copy, Check, Link2, Loader2, RefreshCw } from "lucide-react"
 import type { MaterialShare, ShareMaterialType } from "@/lib/schemas/sharing"
 
@@ -33,10 +33,11 @@ export default function ShareModal({ isOpen, onClose, materialId, materialType, 
     }
   }, [materialId, materialType])
 
-  // Fetch on open
-  useState(() => {
-    if (isOpen) fetchShare()
-  })
+  useEffect(() => {
+    if (isOpen) {
+      void fetchShare()
+    }
+  }, [isOpen, fetchShare])
 
   const createShare = async () => {
     setLoading(true)
