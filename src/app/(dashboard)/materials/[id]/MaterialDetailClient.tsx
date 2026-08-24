@@ -17,7 +17,8 @@ import {
     ChevronDown,
     ChevronUp,
     Copy,
-    Search
+    Search,
+    Folder
 } from "lucide-react";
 import { exportToPDF, exportToDOCX } from "@/utils/exportReviewer";
 import Link from "next/link";
@@ -31,6 +32,8 @@ import StudyingProgress from "@/components/StudyingProgress";
 import ShareModal from "@/components/ShareModal";
 import { createClient } from "@/config/supabase/client";
 import { buildReviewerTermInsert } from "@/utils/reviewerTerms";
+import { isMissingColumnError } from "@/utils/optionalColumn";
+import { sanitizeFolder } from "@/utils/materialFolder";
 
 type LearnStage = 'new' | 'learning' | 'review' | 'mastered';
 
@@ -58,6 +61,7 @@ export interface MaterialData {
     id: string;
     title: string;
     updated_at: string;
+    folder?: string | null;
 }
 
 type FlashcardProps = {
@@ -426,6 +430,9 @@ export default function MaterialDetailClient(props: Props) {
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const [showDownloadMenu, setShowDownloadMenu] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
+    const [folder, setFolder] = useState(material.folder ?? "");
+    const [editingFolder, setEditingFolder] = useState(false);
+    const [folderDraft, setFolderDraft] = useState(material.folder ?? "");
 
     const handleEdit = useCallback((term: Term) => {
         setEditingId(term.id);
@@ -470,6 +477,21 @@ export default function MaterialDetailClient(props: Props) {
         await supabase.from(table).delete().eq("id", material.id);
         router.push("/materials");
     }, [material.id, router, materialType]);
+
+    const handleSaveFolder = async () => {
+        const next = sanitizeFolder(folderDraft);
+        const supabase = createClient();
+        const table = materialType === 'flashcard' ? "flashcard_sets" : "reviewers";
+        const { error } = await supabase.from(table).update({ folder: next } as never).eq("id", material.id);
+        if (error && !isMissingColumnError(error, "folder")) {
+            setEditingFolder(false);
+            setFolderDraft(folder);
+            return;
+        }
+        setFolder(next ?? "");
+        setFolderDraft(next ?? "");
+        setEditingFolder(false);
+    };
 
     const handleEditReviewerTerm = useCallback(async (categoryId: string, termId: string, term: string, definition: string) => {
         const supabase = createClient();
@@ -587,6 +609,36 @@ export default function MaterialDetailClient(props: Props) {
                         <div className="flex flex-wrap items-center gap-2 text-muted-foreground text-xs">
                             <span>{materialType === 'flashcard' ? terms.length : categories.reduce((sum, c) => sum + c.terms.length, 0)} terms</span><span>•</span><span>Last updated {formatTimeAgo(new Date(material.updated_at))}</span>
                         </div>
+                        {editingFolder ? (
+                            <form
+                                className="mt-2 flex items-center gap-2"
+                                onSubmit={(event) => {
+                                    event.preventDefault();
+                                    void handleSaveFolder();
+                                }}
+                            >
+                                <input
+                                    autoFocus
+                                    type="text"
+                                    value={folderDraft}
+                                    maxLength={40}
+                                    placeholder="Folder name"
+                                    onChange={(event) => setFolderDraft(event.target.value)}
+                                    className="px-2 py-1 rounded-md border border-border text-sm outline-none focus:border-primary"
+                                />
+                                <button type="submit" className="p-1.5 rounded-lg bg-primary text-white hover:bg-[#2a3347]"><Check size={14} /></button>
+                                <button type="button" onClick={() => { setEditingFolder(false); setFolderDraft(folder); }} className="p-1.5 rounded-lg bg-muted text-foreground"><X size={14} /></button>
+                            </form>
+                        ) : (
+                            <button
+                                type="button"
+                                onClick={() => { setFolderDraft(folder); setEditingFolder(true); }}
+                                className="mt-2 inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
+                            >
+                                <Folder size={12} />
+                                {folder || "Add folder"}
+                            </button>
+                        )}
                     </div>
                     <div className="hidden md:flex gap-2">
                         {materialType === 'reviewer' && (

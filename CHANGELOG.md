@@ -4,6 +4,34 @@ All notable changes to DeepTerm will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.3.0] - 2026-08-25
+
+### Added
+
+- Gemini now loads `GEMINI_API_KEY` as well as numbered rotation keys
+- Practice keyboard shortcuts (1–9 / A–D, T/F, Enter)
+- Remaining daily AI generations on the create page
+- DOCX and image uploads for generation (PDF still supported)
+- SM-2 review fields, due dates, folders, share expiry, and usage refund RPCs (see `src/lib/supabase/004_study_integrity.sql`)
+- Materials list grouping and folder labels (degrades if the `folder` column is not applied yet)
+- Share copy prefers a single transactional RPC, with the previous path as fallback
+- Cached share lookups so metadata and the page share one RPC call
+
+### Fixed
+
+- Fill-in-the-blank prompts now show a blank; true/false never lies on a one-card deck
+- Practice shuffle uses Fisher–Yates
+- Match mode no longer drops flashcard status writes
+- Stat/XP increments are chunked so live RPC caps no longer silently drop progress
+- Failed or aborted generations refund the daily AI quota
+- Reviewer generation now supports abort/timeout, DOCX/images, Zod validation, and quota refunds
+- Practice, Learn, and Match persist SM-2 reviews
+- Share links can expire after 7 or 30 days
+- Practice sessions are saved; dashboard lists cards due today
+- Email magic-link sign-in and a basic PWA service worker
+
+---
+
 ## [0.2.1] - 2026-01-20
 
 ### Added

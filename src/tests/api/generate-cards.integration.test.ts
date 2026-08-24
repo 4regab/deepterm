@@ -40,13 +40,15 @@ const mockGetApiKeyCount = mock(() => 1)
 
 // Mock modules before importing the route
 mock.module('@/services/rateLimit', () => ({
-  checkAndIncrementAIUsage: mockCheckAndIncrementAIUsage
+  checkAndIncrementAIUsage: mockCheckAndIncrementAIUsage,
+  refundAIGeneration: mock(() => Promise.resolve(true)),
 }))
 
 mock.module('@/services/geminiClient', () => ({
   generateContentWithRotation: mockGenerateContentWithRotation,
   uploadFileWithRotation: mockUploadFileWithRotation,
-  getApiKeyCount: mockGetApiKeyCount
+  getApiKeyCount: mockGetApiKeyCount,
+  Type: { ARRAY: 'ARRAY', OBJECT: 'OBJECT', STRING: 'STRING' },
 }))
 
 // Import the actual route handler AFTER mocking dependencies
@@ -227,7 +229,7 @@ describe('POST /api/generate-cards', () => {
       
       expect(response.status).toBe(400)
       const body = await response.json()
-      expect(body.error).toBe('Unsupported file type. Only PDF files are allowed.')
+      expect(body.error).toContain('Unsupported file type')
       expect(mockCheckAndIncrementAIUsage).not.toHaveBeenCalled()
     })
 

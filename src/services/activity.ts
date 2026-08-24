@@ -1,4 +1,6 @@
 import { createClient } from "@/config/supabase/client";
+import { splitIntoChunks } from "@/utils/chunks";
+import { qualityFromCorrect, reviewSM2 } from "@/utils/sm2";
 
 // XP rewards configuration
 const XP_REWARDS = {
@@ -88,24 +90,28 @@ export async function addXP(amount: number): Promise<{ leveledUp: boolean; newLe
         return { leveledUp: false };
     }
 
-    const { data, error } = await supabase.rpc("add_xp", { p_amount: safeAmount });
+    let leftover = safeAmount;
+    let leveledUp = false;
+    let newLevel: number | undefined;
+    const XP_CHUNK = 100;
 
-    if (error) {
-        // Only log actual errors, not empty objects
-        if (error.message || error.code) {
-            console.error("Failed to add XP:", error.message || error.code);
+    while (leftover > 0) {
+        const chunk = Math.min(XP_CHUNK, leftover);
+        const { data, error } = await supabase.rpc("add_xp", { p_amount: chunk });
+        if (error) {
+            if (error.message || error.code) {
+                console.error("Failed to add XP:", error.message || error.code);
+            }
+            return { leveledUp };
         }
-        return { leveledUp: false };
+        if (data && data.length > 0) {
+            leveledUp = leveledUp || Boolean(data[0].leveled_up);
+            newLevel = data[0].new_level;
+        }
+        leftover -= chunk;
     }
 
-    if (data && data.length > 0) {
-        return {
-            leveledUp: data[0].leveled_up || false,
-            newLevel: data[0].new_level
-        };
-    }
-
-    return { leveledUp: false };
+    return { leveledUp, newLevel };
 }
 
 export { XP_REWARDS };
@@ -123,7 +129,7 @@ export async function incrementStat(statName: string, amount: number = 1) {
         return { error: new Error("Invalid amount") };
     }
 
-    const safeAmount = Math.max(1, Math.min(Math.floor(amount), 100));
+    const safeAmount = Math.max(1, Math.min(Math.floor(amount), 1000));
 
     const supabase = createClient();
 
@@ -134,11 +140,21 @@ export async function incrementStat(statName: string, amount: number = 1) {
         return { error: new Error('No authenticated user') };
     }
 
-    const { error } = await supabase.rpc("increment_stat", {
-        p_stat_name: statName,
-        p_amount: safeAmount
-    });
-    return { error };
+    // Live increment_stat historically rejected amounts above 10.
+    const CHUNK = 10;
+    let lastError: Awaited<ReturnType<typeof supabase.rpc>>['error'] = null;
+    for (const chunk of splitIntoChunks(safeAmount, CHUNK)) {
+        const { error } = await supabase.rpc("increment_stat", {
+            p_stat_name: statName,
+            p_amount: chunk
+        });
+        if (error) {
+            console.error("Failed to increment stat:", error.message || error.code);
+            lastError = error;
+            break;
+        }
+    }
+    return { error: lastError };
 }
 
 /**
@@ -318,4 +334,51 @@ export async function batchUpdateFlashcardStatuses(updates: FlashcardStatusUpdat
         error: errors.length > 0 ? errors[0] : null,
         masteredCount
     };
+}
+
+export async function applyCardReview(cardId: string, correct: boolean) {
+    const supabase = createClient();
+    const { data: card, error: readError } = await supabase
+        .from('flashcards')
+        .select('ease_factor, interval_days, repetitions, status')
+        .eq('id', cardId)
+        .maybeSingle();
+
+    const next = reviewSM2({
+        ease: Number(card?.ease_factor ?? 2.5),
+        intervalDays: Number(card?.interval_days ?? 0),
+        repetitions: Number(card?.repetitions ?? 0),
+    }, qualityFromCorrect(correct));
+
+    const status: FlashcardStatusUpdate['status'] = !correct
+        ? 'learning'
+        : next.intervalDays >= 21
+            ? 'mastered'
+            : next.intervalDays >= 1
+                ? 'review'
+                : 'learning';
+
+    const { error } = await supabase
+        .from('flashcards')
+        .update({
+            ease_factor: next.ease,
+            interval_days: next.intervalDays,
+            repetitions: next.repetitions,
+            due_at: next.dueAt,
+            status,
+            last_reviewed: new Date().toISOString(),
+        })
+        .eq('id', cardId);
+
+    if (error) {
+        if (readError) {
+            console.warn('SRS columns unavailable; falling back to status-only review');
+        }
+        return updateFlashcardStatus(cardId, status);
+    }
+
+    if (status === 'mastered' && card?.status !== 'mastered') {
+        await incrementStat('flashcards_mastered');
+    }
+    return { error: null };
 }

@@ -30,18 +30,23 @@ function CalendarSkeleton() {
 
 interface CalendarDayCellProps {
     day: CalendarDay;
+    selected: boolean;
+    onSelect: (day: CalendarDay) => void;
 }
 
-function CalendarDayCell({ day }: CalendarDayCellProps) {
+function CalendarDayCell({ day, selected, onSelect }: CalendarDayCellProps) {
     const [showTooltip, setShowTooltip] = useState(false);
     const isToday = day.isToday;
     const isCurrentMonth = day.isCurrentMonth;
     
     return (
-        <div
+        <button
+            type="button"
             className="relative flex items-center justify-center"
             onMouseEnter={() => setShowTooltip(true)}
             onMouseLeave={() => setShowTooltip(false)}
+            onClick={() => onSelect(day)}
+            disabled={!isCurrentMonth}
         >
             <div
                 className={`
@@ -49,7 +54,8 @@ function CalendarDayCell({ day }: CalendarDayCellProps) {
                     border-b border-r border-border
                     transition-colors cursor-default
                     ${LEVEL_COLORS[day.level]}
-                    ${isToday ? "ring-2 ring-[#c4875a] ring-inset" : ""}
+                    ${selected ? "ring-2 ring-primary ring-inset" : ""}
+                    ${isToday && !selected ? "ring-2 ring-[#c4875a] ring-inset" : ""}
                     ${isCurrentMonth ? "text-foreground" : "text-muted-foreground"}
                     hover:bg-accent
                 `}
@@ -62,7 +68,7 @@ function CalendarDayCell({ day }: CalendarDayCellProps) {
                     <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-[var(--ink)]" />
                 </div>
             )}
-        </div>
+        </button>
     );
 }
 
@@ -71,6 +77,7 @@ export default function StudyCalendar() {
     const today = new Date();
     const [currentYear, setCurrentYear] = useState(today.getFullYear());
     const [currentMonth, setCurrentMonth] = useState(today.getMonth());
+    const [selectedDay, setSelectedDay] = useState<CalendarDay | null>(null);
 
     const grid = generateMonthGrid(currentYear, currentMonth, activity);
 
@@ -142,9 +149,20 @@ export default function StudyCalendar() {
                     {/* Calendar grid */}
                     <div className="grid grid-cols-7 flex-1">
                         {grid.flat().map((day, index) => (
-                            <CalendarDayCell key={index} day={day} />
+                            <CalendarDayCell
+                                key={index}
+                                day={day}
+                                selected={selectedDay?.date.getTime() === day.date.getTime()}
+                                onSelect={setSelectedDay}
+                            />
                         ))}
                     </div>
+
+                    {selectedDay && selectedDay.isCurrentMonth && (
+                        <p className="px-3 py-2 text-xs text-muted-foreground border-t border-border">
+                            {selectedDay.date.toLocaleDateString()}: {selectedDay.minutesStudied} min studied
+                        </p>
+                    )}
 
                     {/* Legend */}
                     <div className="flex justify-center items-center gap-2 py-2 border-t border-border">

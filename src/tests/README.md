@@ -16,8 +16,12 @@ Our tests adhere to the FIRST principles:
 
 ```
 src/tests/
-├── setup.ts                    # Common mocks, utilities, and test helpers
-├── README.md                   # This file
+├── setup.ts
+├── api/            # generate-cards, generate-reviewer, share
+├── services/       # Gemini keys, rate limits, Turnstile
+├── utils/          # practice questions, SM-2, shuffle, generate input
+└── stores/         # Zustand stores
+```
 ├── api/                        # API route tests
 │   ├── generate-cards.test.ts          # Unit tests for card generation
 │   └── generate-cards.integration.test.ts  # Integration tests

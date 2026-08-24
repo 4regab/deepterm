@@ -45,6 +45,16 @@ export async function POST(request: NextRequest) {
 
   const { shareCode } = parsedBody.data
 
+  const { data: copied, error: copyRpcError } = await supabase.rpc('copy_shared_material', {
+    p_share_code: shareCode,
+  })
+  if (!copyRpcError && copied) {
+    return NextResponse.json({
+      success: true,
+      ...copied,
+    })
+  }
+
   // Get shared material data using the RPC function
   const identityHash = hashRequestIdentity(request.headers)
   const { data: sharedData, error: fetchError } = await supabase

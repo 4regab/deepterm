@@ -2,6 +2,8 @@ import { Suspense, cache } from "react";
 import { createServerSupabaseClient } from "@/config/supabase/server";
 import MaterialsClient from "./MaterialsClient";
 import type { MaterialItem } from "@/lib/schemas/materials";
+import { asQueryData, selectWithOptionalColumn } from "@/utils/optionalColumn";
+import { sanitizeFolder } from "@/utils/materialFolder";
 
 function formatTimeAgo(date: Date): string {
     const now = new Date();
@@ -27,36 +29,59 @@ interface ReviewerCategory {
     reviewer_terms?: { count: number }[];
 }
 
+interface FlashcardSetRow {
+    id: string;
+    title: string;
+    created_at: string;
+    updated_at: string | null;
+    folder?: string | null;
+    flashcards?: FlashcardCount[];
+}
+
+interface ReviewerRow {
+    id: string;
+    title: string;
+    created_at: string;
+    updated_at: string | null;
+    folder?: string | null;
+    reviewer_categories?: ReviewerCategory[];
+}
+
 // Cached server-side data fetch for materials
 // React's cache() deduplicates calls within the same request lifecycle
 const getMaterials = cache(async (): Promise<MaterialItem[]> => {
     const supabase = await createServerSupabaseClient();
 
-    // Parallel fetch - efficient server-side data loading
     const [flashcardSetsResult, reviewersResult] = await Promise.all([
-        supabase
-            .from("flashcard_sets")
-            // Optimized: only select needed columns + counts
-            .select(`id, title, created_at, updated_at, flashcards(count)`)
-            .order("updated_at", { ascending: false }),
-        supabase
-            .from("reviewers")
-            // Optimized: only select needed columns + nested counts
-            .select(`id, title, created_at, updated_at, reviewer_categories(reviewer_terms(count))`)
-            .order("updated_at", { ascending: false })
+        selectWithOptionalColumn<FlashcardSetRow[]>(
+            async () => asQueryData(await supabase
+                .from("flashcard_sets")
+                .select(`id, title, created_at, updated_at, folder, flashcards(count)`)
+                .order("updated_at", { ascending: false })),
+            async () => asQueryData(await supabase
+                .from("flashcard_sets")
+                .select(`id, title, created_at, updated_at, flashcards(count)`)
+                .order("updated_at", { ascending: false })),
+            "folder",
+        ),
+        selectWithOptionalColumn<ReviewerRow[]>(
+            async () => asQueryData(await supabase
+                .from("reviewers")
+                .select(`id, title, created_at, updated_at, folder, reviewer_categories(reviewer_terms(count))`)
+                .order("updated_at", { ascending: false })),
+            async () => asQueryData(await supabase
+                .from("reviewers")
+                .select(`id, title, created_at, updated_at, reviewer_categories(reviewer_terms(count))`)
+                .order("updated_at", { ascending: false })),
+            "folder",
+        ),
     ]);
 
     const materials: MaterialItem[] = [];
 
     // Add flashcard sets
     if (flashcardSetsResult.data) {
-        flashcardSetsResult.data.forEach((set: {
-            id: string;
-            title: string;
-            created_at: string;
-            updated_at: string | null;
-            flashcards?: FlashcardCount[];
-        }) => {
+        flashcardSetsResult.data.forEach((set) => {
             const dateStr = set.updated_at || set.created_at;
             materials.push({
                 id: set.id,
@@ -65,19 +90,14 @@ const getMaterials = cache(async (): Promise<MaterialItem[]> => {
                 itemsCount: set.flashcards?.[0]?.count || 0,
                 lastAccessed: formatTimeAgo(new Date(dateStr)),
                 sortDate: dateStr,
+                folder: sanitizeFolder(set.folder),
             });
         });
     }
 
     // Add reviewers
     if (reviewersResult.data) {
-        reviewersResult.data.forEach((reviewer: {
-            id: string;
-            title: string;
-            created_at: string;
-            updated_at: string | null;
-            reviewer_categories?: ReviewerCategory[];
-        }) => {
+        reviewersResult.data.forEach((reviewer) => {
             const totalTerms = reviewer.reviewer_categories?.reduce((acc: number, cat: ReviewerCategory) => {
                 return acc + (cat.reviewer_terms?.[0]?.count || 0);
             }, 0) || 0;
@@ -90,6 +110,7 @@ const getMaterials = cache(async (): Promise<MaterialItem[]> => {
                 itemsCount: totalTerms,
                 lastAccessed: formatTimeAgo(new Date(dateStr)),
                 sortDate: dateStr,
+                folder: sanitizeFolder(reviewer.folder),
             });
         });
     }

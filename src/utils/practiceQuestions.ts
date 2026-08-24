@@ -1,3 +1,5 @@
+import { fisherYatesShuffle } from '@/utils/shuffle'
+
 export type QuestionType = 'multipleChoice' | 'trueFalse' | 'fillBlank'
 
 export interface PracticeCard {
@@ -19,7 +21,9 @@ export interface PracticeQuestion {
 }
 
 export function buildFillBlankPrompt(definition: string): string {
-  return definition.trim()
+  const trimmed = definition.trim()
+  if (!trimmed) return '_____'
+  return `_____ \n\n${trimmed}`
 }
 
 export function gradePracticeAnswer(
@@ -39,19 +43,20 @@ export function generateQuestionsFromCards(
   random: () => number = Math.random,
 ): PracticeQuestion[] {
   const questions: PracticeQuestion[] = []
-  const shuffled = [...cards].sort(() => random() - 0.5)
-  const selectedCards = shuffled.slice(0, cardCount)
-  const enabledTypes = types.length > 0 ? types : ['multipleChoice']
+  const shuffled = fisherYatesShuffle(cards, random)
+  const selectedCards = shuffled.slice(0, Math.max(0, cardCount))
+  const enabledTypes: QuestionType[] = types.length > 0 ? types : ['multipleChoice']
 
   selectedCards.forEach((card, idx) => {
     const type = enabledTypes[idx % enabledTypes.length]
 
     if (type === 'trueFalse') {
-      const isCorrectPairing = random() > 0.5
       const others = cards.filter((c) => c.id !== card.id)
-      const displayedTerm = isCorrectPairing || others.length === 0
+      const canSpoof = others.length > 0
+      const isCorrectPairing = canSpoof ? random() > 0.5 : true
+      const displayedTerm = isCorrectPairing
         ? card.term
-        : others[Math.floor(random() * others.length)].term
+        : others[Math.floor(random() * others.length)]!.term
 
       questions.push({
         id: card.id,
@@ -75,13 +80,13 @@ export function generateQuestionsFromCards(
     }
 
     const others = cards.filter((c) => c.id !== card.id).map((c) => c.term)
-    const wrongOptions = others.sort(() => random() - 0.5).slice(0, 3)
+    const wrongOptions = fisherYatesShuffle(others, random).slice(0, 3)
     questions.push({
       id: card.id,
       type: 'multipleChoice',
       question: card.definition,
       correctAnswer: card.term,
-      options: [...wrongOptions, card.term].sort(() => random() - 0.5),
+      options: fisherYatesShuffle([...wrongOptions, card.term], random),
     })
   })
 

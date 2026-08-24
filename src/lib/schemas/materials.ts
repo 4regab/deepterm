@@ -10,6 +10,7 @@ export const MaterialItemSchema = z.object({
   itemsCount: z.number().int().nonnegative(),
   lastAccessed: z.string(),
   sortDate: z.string().optional(),
+  folder: z.string().nullable().optional(),
 })
 
 export type MaterialItem = z.infer<typeof MaterialItemSchema>
@@ -31,6 +32,7 @@ export const FlashcardSetSchema = z.object({
   title: z.string().min(1, 'Title is required'),
   created_at: z.string().datetime(),
   updated_at: z.string().datetime().nullable(),
+  folder: z.string().nullable().optional(),
   flashcards: z.array(FlashcardSchema).optional(),
 })
 
