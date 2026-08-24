@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect, useRef } from "react";
+import { useState, useCallback, useRef } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Loader2 } from "lucide-react";
@@ -85,9 +85,7 @@ export default function PracticePage() {
         }
     }, [params.id]);
 
-    useEffect(() => {
-        void fetchCards();
-    }, [fetchCards]);
+    useState(() => { fetchCards(); });
     const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
     const [showAnswer, setShowAnswer] = useState(false);
     const [streak, setStreak] = useState(0);

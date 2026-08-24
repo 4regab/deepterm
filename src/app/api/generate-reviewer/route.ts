@@ -156,7 +156,7 @@ export async function POST(request: NextRequest) {
             mimeType = resolvedMimeType;
 
             const arrayBuffer = await file.arrayBuffer();
-            const blob = new Blob([arrayBuffer], { type: mimeType });
+            const blob = new Blob([arrayBuffer], { type: mimeType ?? undefined });
 
             const { uploadedFile, ai, keyIndex } = await uploadFileWithRotation({
                 file: blob,

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect, useSyncExternalStore } from "react";
+import { useState, useCallback, useSyncExternalStore } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter, useParams } from "next/navigation";
 import {
@@ -119,9 +119,7 @@ export default function LearnPage() {
         setIsLoading(false);
     }, [params.id]);
 
-    useEffect(() => {
-        void fetchCards();
-    }, [fetchCards]);
+    useState(() => { fetchCards(); });
     const [currentIndex, setCurrentIndex] = useState(0);
     const [isFlipped, setIsFlipped] = useState(false);
     const [writtenAnswer, setWrittenAnswer] = useState("");

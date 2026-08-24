@@ -20,6 +20,7 @@ const mockCheckAndIncrementAIUsage = mock(() => Promise.resolve({
   resetAt: new Date(),
   userId: 'test-user-id',
   authenticated: true,
+  unavailable: false,
 }))
 
 const mockGenerateContentWithRotation = mock(() => Promise.resolve({
@@ -99,6 +100,7 @@ describe('POST /api/generate-cards', () => {
       resetAt: new Date(),
       userId: 'test-user-id',
       authenticated: true,
+      unavailable: false,
     })
     mockGenerateContentWithRotation.mockResolvedValue({
       text: mockGeminiResponse.text
@@ -132,6 +134,7 @@ describe('POST /api/generate-cards', () => {
         resetAt: resetTime,
         userId: 'test-user-id',
         authenticated: true,
+        unavailable: false,
       })
 
       const request = createFormDataRequest({ textContent: 'Test content' })
@@ -169,6 +172,7 @@ describe('POST /api/generate-cards', () => {
         resetAt: new Date(),
         userId: 'test-user-id',
         authenticated: true,
+        unavailable: false,
       })
 
       const request = createFormDataRequest({ textContent: 'Test content' })
