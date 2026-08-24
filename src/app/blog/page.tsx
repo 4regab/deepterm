@@ -1,18 +1,12 @@
 import { Metadata } from 'next'
 import { Suspense } from 'react'
 import Link from 'next/link'
+import { permanentRedirect } from 'next/navigation'
 import Header from '@/components/Header'
 import Footer from '@/components/Footer'
 import { getPublishedPosts, getCategoriesWithCounts } from '@/lib/blog'
 import { createMetadata } from '@/lib/seo'
 import CategoryFilter from './components/CategoryFilter'
-
-export const metadata: Metadata = createMetadata({
-  title: 'Blog - Study Tips, AI Tools & Learning Science',
-  description:
-    'Discover research-backed study techniques, AI learning tools, and productivity tips. Free guides to help you study smarter, not harder.',
-  path: '/blog',
-})
 
 interface PageProps {
   searchParams: Promise<{ category?: string; page?: string }>
@@ -20,10 +14,56 @@ interface PageProps {
 
 const POSTS_PER_PAGE = 20
 
+function normalizePage(pageParam?: string): number {
+  const page = Number.parseInt(pageParam || '1', 10)
+  return Number.isFinite(page) && page > 1 ? page : 1
+}
+
+function buildBlogCanonical(page: number): string {
+  return page > 1 ? `/blog?page=${page}` : '/blog'
+}
+
+export async function generateMetadata({ searchParams }: PageProps): Promise<Metadata> {
+  const params = await searchParams
+  const page = normalizePage(params.page)
+
+  if (params.category) {
+    const redirectPath = page > 1
+      ? `/blog/category/${params.category}?page=${page}`
+      : `/blog/category/${params.category}`
+
+    return {
+      alternates: {
+        canonical: redirectPath,
+      },
+    }
+  }
+
+  const isPaginated = page > 1
+
+  return createMetadata({
+    title: isPaginated
+      ? `Blog - Page ${page} - Study Tips, AI Tools & Learning Science`
+      : 'Blog - Study Tips, AI Tools & Learning Science',
+    description:
+      'Discover research-backed study techniques, AI learning tools, and productivity tips. Free guides to help you study smarter, not harder.',
+    path: buildBlogCanonical(page),
+  })
+}
+
 export default async function BlogPage({ searchParams }: PageProps) {
   const params = await searchParams
   const categorySlug = params.category
-  const page = parseInt(params.page || '1', 10)
+  const page = normalizePage(params.page)
+
+  if (categorySlug) {
+    permanentRedirect(page > 1 ? `/blog/category/${categorySlug}?page=${page}` : `/blog/category/${categorySlug}`)
+  }
+
+  if (params.page && page === 1) {
+    permanentRedirect('/blog')
+  }
+
   const offset = (page - 1) * POSTS_PER_PAGE
 
   const [posts, categories] = await Promise.all([

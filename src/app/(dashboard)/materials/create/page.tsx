@@ -25,6 +25,7 @@ import {
 import { Confetti } from "@/components/EmotionalAssets";
 import { createClient } from "@/config/supabase/client";
 import CaptchaModal from "@/components/CaptchaModal";
+import { buildReviewerInsertPayloads } from "@/utils/reviewerBatch";
 
 type CreateType = "material" | "reviewer";
 type InputMode = "manual" | "bulk" | "ai";
@@ -189,9 +190,21 @@ export default function CreatePage() {
         setIsGenerating(true);
         setError(null);
         try {
+            // Verify authentication before making API call
+            const supabase = createClient();
+            const { data: { user }, error: authError } = await supabase.auth.getUser();
+            
+            if (authError || !user) {
+                throw new Error("You must be logged in to generate flashcards. Please sign in and try again.");
+            }
+            
             const formData = new FormData();
             formData.append("file", selectedFile);
-            const response = await fetch("/api/generate-cards", { method: "POST", body: formData });
+            const response = await fetch("/api/generate-cards", { 
+                method: "POST", 
+                body: formData,
+                credentials: 'same-origin'
+            });
             if (!response.ok) {
                 const data = await response.json();
                 throw new Error(data.error || "Failed to generate cards");
@@ -223,6 +236,14 @@ export default function CreatePage() {
         setError(null);
 
         try {
+            // Verify authentication before making API call
+            const supabase = createClient();
+            const { data: { user }, error: authError } = await supabase.auth.getUser();
+            
+            if (authError || !user) {
+                throw new Error("You must be logged in to generate a reviewer. Please sign in and try again.");
+            }
+            
             const formData = new FormData();
             formData.append("file", selectedFile);
             formData.append("extractionMode", extractionMode);
@@ -234,6 +255,7 @@ export default function CreatePage() {
                 method: "POST",
                 body: formData,
                 signal: controller.signal,
+                credentials: 'same-origin'
             });
 
             clearTimeout(timeoutId);
@@ -305,12 +327,13 @@ export default function CreatePage() {
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) throw new Error("Not authenticated");
 
-            // Create flashcard set
+            // Create flashcard set — strip HTML tags to prevent stored XSS
+            const sanitizedTitle = title.replace(/<[^>]*>/g, '').trim();
             const { data: flashcardSet, error: setError } = await supabase
                 .from("flashcard_sets")
                 .insert({
                     user_id: user.id,
-                    title: title.trim(),
+                    title: sanitizedTitle,
                     color: '#E0F2FE'
                 })
                 .select()
@@ -356,12 +379,13 @@ export default function CreatePage() {
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) throw new Error("Not authenticated");
 
-            // Create reviewer
+            // Create reviewer — strip HTML tags to prevent stored XSS
+            const sanitizedReviewerTitle = title.replace(/<[^>]*>/g, '').trim();
             const { data: reviewer, error: reviewerError } = await supabase
                 .from("reviewers")
                 .insert({
                     user_id: user.id,
-                    title: title.trim(),
+                    title: sanitizedReviewerTitle,
                     source_content: selectedFile?.name || '',
                     extraction_mode: extractionMode,
                 })
@@ -370,36 +394,31 @@ export default function CreatePage() {
 
             if (reviewerError) throw reviewerError;
 
-            // Create categories and terms
-            for (const category of reviewerResults) {
-                const { data: cat, error: catError } = await supabase
+            const { categoryRows, termRows } = buildReviewerInsertPayloads({
+                reviewerId: reviewer.id,
+                userId: user.id,
+                categories: reviewerResults,
+            });
+
+            if (categoryRows.length > 0) {
+                const { error: categoriesError } = await supabase
                     .from("reviewer_categories")
-                    .insert({
-                        reviewer_id: reviewer.id,
-                        user_id: user.id,
-                        name: category.name,
-                        color: category.color,
-                    })
-                    .select()
-                    .single();
+                    .insert(categoryRows);
 
-                if (catError) throw catError;
+                if (categoriesError) {
+                    await supabase.from("reviewers").delete().eq("id", reviewer.id);
+                    throw categoriesError;
+                }
+            }
 
-                if (category.terms.length > 0) {
-                    const termsToInsert = category.terms.map(term => ({
-                        category_id: cat.id,
-                        user_id: user.id,
-                        term: term.term,
-                        definition: term.definition,
-                        examples: term.examples || [],
-                        keywords: term.keywords || [],
-                    }));
+            if (termRows.length > 0) {
+                const { error: termsError } = await supabase
+                    .from("reviewer_terms")
+                    .insert(termRows);
 
-                    const { error: termsError } = await supabase
-                        .from("reviewer_terms")
-                        .insert(termsToInsert);
-
-                    if (termsError) throw termsError;
+                if (termsError) {
+                    await supabase.from("reviewers").delete().eq("id", reviewer.id);
+                    throw termsError;
                 }
             }
 

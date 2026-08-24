@@ -43,6 +43,15 @@ export async function POST(request: NextRequest) {
 
   // Atomic rate limit check and increment
   const rateLimit = await checkAndIncrementAIUsage();
+  
+  // Check authentication first
+  if (!rateLimit.authenticated) {
+    return NextResponse.json({
+      error: "Not authenticated"
+    }, { status: 401 });
+  }
+  
+  // Then check rate limit
   if (!rateLimit.allowed) {
     return NextResponse.json({
       error: "Daily AI generation limit reached (10/day)",

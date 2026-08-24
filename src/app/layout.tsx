@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { headers } from "next/headers";
 import { Space_Grotesk, Sora, Source_Serif_4 } from "next/font/google";
 import Script from "next/script";
 import "@/styles/globals.css";
@@ -32,11 +33,12 @@ const sourceSerif4 = Source_Serif_4({
 
 export const metadata: Metadata = defaultMetadata;
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const nonce = (await headers()).get('x-nonce') ?? '';
   const websiteJsonLd = generateWebsiteJsonLd();
   const organizationJsonLd = generateOrganizationJsonLd();
   const softwareAppJsonLd = generateSoftwareAppJsonLd();
@@ -50,14 +52,17 @@ export default function RootLayout({
 
         {/* JSON-LD Structured Data */}
         <script
+          nonce={nonce}
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd) }}
         />
         <script
+          nonce={nonce}
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd) }}
         />
         <script
+          nonce={nonce}
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(softwareAppJsonLd) }}
         />
@@ -66,10 +71,11 @@ export default function RootLayout({
         <PostHogProvider>
           {/* Google Analytics */}
           <Script
+            nonce={nonce}
             src="https://www.googletagmanager.com/gtag/js?id=G-W6BMP2LP3T"
             strategy="afterInteractive"
           />
-          <Script id="google-analytics" strategy="afterInteractive">
+          <Script nonce={nonce} id="google-analytics" strategy="afterInteractive">
             {`
               window.dataLayer = window.dataLayer || [];
               function gtag(){dataLayer.push(arguments);}

@@ -7,6 +7,7 @@ interface RateLimitResult {
   remaining: number
   resetAt: Date
   userId?: string
+  authenticated: boolean
 }
 
 /**
@@ -19,7 +20,7 @@ export async function checkAndIncrementAIUsage(): Promise<RateLimitResult> {
   const { data: { user } } = await supabase.auth.getUser()
   
   if (!user) {
-    return { allowed: false, remaining: 0, resetAt: new Date() }
+    return { allowed: false, remaining: 0, resetAt: new Date(), authenticated: false }
   }
 
   const today = new Date().toISOString().split('T')[0]
@@ -42,21 +43,21 @@ export async function checkAndIncrementAIUsage(): Promise<RateLimitResult> {
       allowed: true,
       remaining: 999,
       resetAt,
-      userId: user.id
+      userId: user.id,
+      authenticated: true
     }
   }
 
   // Atomic check-and-increment using RPC
   // This function should return { allowed, new_count } and handle upsert internally
   const { data, error } = await supabase.rpc('check_and_increment_ai_usage', {
-    p_user_id: user.id,
     p_date: today,
     p_limit: DAILY_AI_LIMIT
   })
 
   if (error) {
     console.error('Rate limit check error:', error)
-    return { allowed: false, remaining: 0, resetAt, userId: user.id }
+    return { allowed: false, remaining: 0, resetAt, userId: user.id, authenticated: true }
   }
 
   const result = data?.[0] || data
@@ -68,7 +69,8 @@ export async function checkAndIncrementAIUsage(): Promise<RateLimitResult> {
     allowed,
     remaining,
     resetAt,
-    userId: user.id
+    userId: user.id,
+    authenticated: true
   }
 }
 
@@ -82,7 +84,7 @@ export async function checkAIRateLimit(): Promise<RateLimitResult> {
   const { data: { user } } = await supabase.auth.getUser()
   
   if (!user) {
-    return { allowed: false, remaining: 0, resetAt: new Date() }
+    return { allowed: false, remaining: 0, resetAt: new Date(), authenticated: false }
   }
 
   const today = new Date().toISOString().split('T')[0]
@@ -95,7 +97,7 @@ export async function checkAIRateLimit(): Promise<RateLimitResult> {
 
   if (error && error.code !== 'PGRST116') {
     console.error('Rate limit check error:', error)
-    return { allowed: false, remaining: 0, resetAt: new Date() }
+    return { allowed: false, remaining: 0, resetAt: new Date(), authenticated: true }
   }
 
   const resetAt = new Date(today)
@@ -103,14 +105,15 @@ export async function checkAIRateLimit(): Promise<RateLimitResult> {
   resetAt.setUTCHours(0, 0, 0, 0)
 
   if (!usage || usage.reset_date !== today) {
-    return { allowed: true, remaining: DAILY_AI_LIMIT, resetAt }
+    return { allowed: true, remaining: DAILY_AI_LIMIT, resetAt, authenticated: true }
   }
 
   const remaining = Math.max(0, DAILY_AI_LIMIT - usage.generation_count)
   return { 
     allowed: usage.generation_count < DAILY_AI_LIMIT, 
     remaining,
-    resetAt 
+    resetAt,
+    authenticated: true
   }
 }
 
@@ -125,5 +128,5 @@ export async function incrementAIUsage(): Promise<void> {
 
   const today = new Date().toISOString().split('T')[0]
 
-  await supabase.rpc('increment_ai_usage', { p_user_id: user.id, p_date: today })
+  await supabase.rpc('increment_ai_usage', { p_date: today })
 }

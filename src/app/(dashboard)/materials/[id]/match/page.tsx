@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useRef, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { Timer, Loader2, X } from "lucide-react";
@@ -54,45 +54,49 @@ export default function MatchPage() {
     const [showExitPopup, setShowExitPopup] = useState(false);
     const timerRef = useRef<NodeJS.Timeout | null>(null);
 
-    // Initialize and cleanup via useSyncExternalStore
-    useSyncExternalStore(
-        useCallback(() => {
-            let initialized = false;
-            const init = async () => {
-                if (initialized) return;
-                initialized = true;
+    useEffect(() => {
+        let mounted = true;
 
-                // Fetch XP stats for display
-                useXPStore.getState().fetchXPStats();
+        const init = async () => {
+            useXPStore.getState().fetchXPStats();
 
-                const supabase = createClient();
-                const { data } = await supabase
-                    .from("flashcards")
-                    .select("id, front, back, status")
-                    .eq("set_id", params.id)
-                    .order("created_at");
+            const supabase = createClient();
+            const { data } = await supabase
+                .from("flashcards")
+                .select("id, front, back, status")
+                .eq("set_id", params.id)
+                .order("created_at");
 
-                if (data && data.length > 0) {
-                    const fcData: FlashcardData[] = data.map(c => ({ id: c.id, term: c.front, definition: c.back, status: (c.status || 'new') as CardStatus }));
-                    setFlashcardData(fcData);
-                    setCards(createGameCards(fcData));
-                    setStage("playing");
-                    timerRef.current = setInterval(() => setTimeElapsed(prev => prev + 0.1), 100);
-                } else {
-                    setStage("playing");
-                }
-            };
-            init();
-            return () => {
-                if (timerRef.current) {
-                    clearInterval(timerRef.current);
-                    timerRef.current = null;
-                }
-            };
-        }, [params.id]),
-        () => null,
-        () => null
-    );
+            if (!mounted) return;
+
+            if (data && data.length > 0) {
+                const fcData: FlashcardData[] = data.map(c => ({
+                    id: c.id,
+                    term: c.front,
+                    definition: c.back,
+                    status: (c.status || 'new') as CardStatus,
+                }));
+
+                setFlashcardData(fcData);
+                setCards(createGameCards(fcData));
+                setStage("playing");
+                timerRef.current = setInterval(() => setTimeElapsed(prev => prev + 0.1), 100);
+            } else {
+                setStage("playing");
+            }
+        };
+
+        void init();
+
+        return () => {
+            mounted = false;
+
+            if (timerRef.current) {
+                clearInterval(timerRef.current);
+                timerRef.current = null;
+            }
+        };
+    }, [params.id]);
 
     const stopTimer = useCallback(() => {
         if (timerRef.current) {

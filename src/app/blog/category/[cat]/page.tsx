@@ -1,5 +1,5 @@
 import { Metadata } from 'next'
-import { notFound } from 'next/navigation'
+import { notFound, permanentRedirect } from 'next/navigation'
 import Link from 'next/link'
 import Header from '@/components/Header'
 import Footer from '@/components/Footer'
@@ -12,18 +12,26 @@ interface PageProps {
   searchParams: Promise<{ page?: string }>
 }
 
-export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+function normalizePage(pageParam?: string): number {
+  const page = Number.parseInt(pageParam || '1', 10)
+  return Number.isFinite(page) && page > 1 ? page : 1
+}
+
+export async function generateMetadata({ params, searchParams }: PageProps): Promise<Metadata> {
   const { cat } = await params
+  const { page: pageParam } = await searchParams
   const category = await getCategoryBySlug(cat)
 
   if (!category) {
     return { title: 'Category Not Found' }
   }
 
+  const page = normalizePage(pageParam)
+
   return createMetadata({
-    title: `${category.name} - Blog`,
+    title: page > 1 ? `${category.name} - Blog - Page ${page}` : `${category.name} - Blog`,
     description: category.description || `Browse ${category.name} articles on DeepTerm. Study tips, guides, and resources.`,
-    path: `/blog/category/${cat}`,
+    path: page > 1 ? `/blog/category/${cat}?page=${page}` : `/blog/category/${cat}`,
   })
 }
 
@@ -39,7 +47,12 @@ export default async function CategoryPage({ params, searchParams }: PageProps) 
     notFound()
   }
 
-  const page = parseInt(pageParam || '1', 10)
+  const page = normalizePage(pageParam)
+
+  if (pageParam && page === 1) {
+    permanentRedirect(`/blog/category/${cat}`)
+  }
+
   const offset = (page - 1) * POSTS_PER_PAGE
 
   const [posts, categories] = await Promise.all([

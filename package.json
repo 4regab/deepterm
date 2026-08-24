@@ -37,6 +37,9 @@
     "zod": "^4.1.13",
     "zustand": "^5.0.8"
   },
+  "overrides": {
+    "postcss": "^8.5.12"
+  },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
     "@tailwindcss/typography": "^0.5.19",

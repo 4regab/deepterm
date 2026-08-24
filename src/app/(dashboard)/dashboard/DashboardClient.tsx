@@ -118,7 +118,7 @@ export function DashboardHeader({ initialData }: DashboardHeaderProps) {
     // Fetch fresh activity data on mount to ensure the store is populated
     // with the latest data (e.g., after completing a Pomodoro session)
     useEffect(() => {
-        fetchActivity(true);
+        fetchActivity();
     }, [fetchActivity]);
 
     // Compute today's minutes from client-side activity store (timezone-correct)
@@ -231,6 +231,5 @@ export function DashboardHeader({ initialData }: DashboardHeaderProps) {
         </motion.header>
     );
 }
-
 
 

@@ -8,14 +8,12 @@ interface BlogPostClientProps {
   content: string
   formattedDate: string | null
   readTimeMinutes: number | null
-  views: number
 }
 
 export default function BlogPostClient({ 
   content, 
   formattedDate, 
-  readTimeMinutes, 
-  views 
+  readTimeMinutes
 }: BlogPostClientProps) {
   const plainText = extractPlainText(content)
   
@@ -36,12 +34,6 @@ export default function BlogPostClient({
           <>
             <span className="w-1 h-1 rounded-full bg-[#171d2b]/30" />
             <span>{readTimeMinutes} min read</span>
-          </>
-        )}
-        {views > 0 && (
-          <>
-            <span className="w-1 h-1 rounded-full bg-[#171d2b]/30" />
-            <span>{views.toLocaleString()} views</span>
           </>
         )}
         

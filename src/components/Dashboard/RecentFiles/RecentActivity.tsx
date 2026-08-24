@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { Clock, Trophy, Zap, BrainCircuit, Star, Flame, Timer, BookOpen, FileText, Upload } from "lucide-react";
 import { createClient } from "@/config/supabase/client";
-import { useState, useCallback, useSyncExternalStore, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useAchievementsStore } from "@/lib/stores";
 import type { Achievement, AchievementIcon } from "@/lib/schemas/achievements";
 
@@ -95,7 +95,7 @@ function AchievementRow({ item }: { item: RecentActivityItem }) {
 }
 
 export default function RecentActivity() {
-    const [recentItems, setRecentItems] = useState<RecentActivityItem[]>([]);
+    const [recentFileItems, setRecentFileItems] = useState<RecentActivityItem[]>([]);
     const [loading, setLoading] = useState(true);
     const achievements = useAchievementsStore((state) => state.achievements);
 
@@ -104,87 +104,87 @@ export default function RecentActivity() {
         useAchievementsStore.getState().fetchAchievements();
     }, []);
 
-    // Fetch recent files once on mount
-    useSyncExternalStore(
-        useCallback(() => {
-            let mounted = true;
-            const fetchRecent = async () => {
-                const supabase = createClient();
+    useEffect(() => {
+        let mounted = true;
 
-                // Fetch recent flashcard sets
-                const { data: flashcardSets } = await supabase
+        const fetchRecent = async () => {
+            const supabase = createClient();
+            const [flashcardSetsResult, reviewersResult] = await Promise.all([
+                supabase
                     .from("flashcard_sets")
                     .select("id, title, updated_at, last_studied")
                     .order("updated_at", { ascending: false })
-                    .limit(4);
-
-                // Fetch recent reviewers
-                const { data: reviewers } = await supabase
+                    .limit(4),
+                supabase
                     .from("reviewers")
                     .select("id, title, updated_at")
                     .order("updated_at", { ascending: false })
-                    .limit(4);
+                    .limit(4),
+            ]);
 
-                if (!mounted) return;
+            if (!mounted) return;
 
-                const items: RecentActivityItem[] = [];
+            const items: RecentActivityItem[] = [];
 
-                if (flashcardSets) {
-                    flashcardSets.forEach(set => {
-                        const timestamp = new Date(set.last_studied || set.updated_at).getTime();
-                        items.push({
-                            id: set.id,
-                            title: set.title,
-                            type: "flashcards",
-                            date: formatTimeAgo(new Date(set.last_studied || set.updated_at)),
-                            timestamp,
-                            color: TYPE_COLORS.flashcards,
-                        });
-                    });
-                }
-
-                if (reviewers) {
-                    reviewers.forEach(rev => {
-                        const timestamp = new Date(rev.updated_at).getTime();
-                        items.push({
-                            id: rev.id,
-                            title: rev.title,
-                            type: "reviewer",
-                            date: formatTimeAgo(new Date(rev.updated_at)),
-                            timestamp,
-                            color: TYPE_COLORS.reviewer,
-                        });
-                    });
-                }
-
-                // Add recently unlocked achievements
-                const unlockedAchievements = achievements.filter((a: Achievement) => a.unlocked && a.unlocked_at);
-                unlockedAchievements.slice(-2).forEach((achievement: Achievement) => {
-                    const unlockedDate = new Date(achievement.unlocked_at as string);
+            if (flashcardSetsResult.data) {
+                flashcardSetsResult.data.forEach(set => {
+                    const timestamp = new Date(set.last_studied || set.updated_at).getTime();
                     items.push({
-                        id: achievement.id,
-                        title: achievement.title,
-                        type: "achievement",
-                        date: formatTimeAgo(unlockedDate),
-                        timestamp: unlockedDate.getTime(),
-                        color: TYPE_COLORS.achievement,
-                        icon: achievement.icon,
+                        id: set.id,
+                        title: set.title,
+                        type: "flashcards",
+                        date: formatTimeAgo(new Date(set.last_studied || set.updated_at)),
+                        timestamp,
+                        color: TYPE_COLORS.flashcards,
                     });
                 });
+            }
 
-                // Sort by most recent timestamp
-                items.sort((a, b) => b.timestamp - a.timestamp);
+            if (reviewersResult.data) {
+                reviewersResult.data.forEach(reviewer => {
+                    const timestamp = new Date(reviewer.updated_at).getTime();
+                    items.push({
+                        id: reviewer.id,
+                        title: reviewer.title,
+                        type: "reviewer",
+                        date: formatTimeAgo(new Date(reviewer.updated_at)),
+                        timestamp,
+                        color: TYPE_COLORS.reviewer,
+                    });
+                });
+            }
 
-                setRecentItems(items.slice(0, 5));
-                setLoading(false);
-            };
+            setRecentFileItems(items);
+            setLoading(false);
+        };
 
-            fetchRecent();
-            return () => { mounted = false; };
-        }, [achievements]),
-        () => null,
-        () => null
-    );
+        void fetchRecent();
+
+        return () => {
+            mounted = false;
+        };
+    }, []);
+
+    const recentItems = [
+        ...recentFileItems,
+        ...achievements
+            .filter((achievement: Achievement) => achievement.unlocked && achievement.unlocked_at)
+            .slice(-2)
+            .map((achievement: Achievement) => {
+                const unlockedDate = new Date(achievement.unlocked_at as string);
+                return {
+                    id: achievement.id,
+                    title: achievement.title,
+                    type: "achievement" as const,
+                    date: formatTimeAgo(unlockedDate),
+                    timestamp: unlockedDate.getTime(),
+                    color: TYPE_COLORS.achievement,
+                    icon: achievement.icon,
+                };
+            }),
+    ]
+        .sort((a, b) => b.timestamp - a.timestamp)
+        .slice(0, 5);
 
     return (
         <div className="bg-white rounded-xl border border-[#171d2b]/5 shadow-sm overflow-hidden h-full flex flex-col">

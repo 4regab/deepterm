@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { Clock } from "lucide-react";
 import { createClient } from "@/config/supabase/client";
-import { useState, useCallback, useSyncExternalStore } from "react";
+import { useEffect, useState } from "react";
 
 interface RecentFile {
     id: string;
@@ -82,72 +82,68 @@ export default function RecentFiles() {
     const [recentFiles, setRecentFiles] = useState<RecentFile[]>([]);
     const [loading, setLoading] = useState(true);
 
-    // Fetch recent files once on mount
-    useSyncExternalStore(
-        useCallback(() => {
-            let mounted = true;
-            const fetchRecent = async () => {
-                const supabase = createClient();
+    useEffect(() => {
+        let mounted = true;
 
-                // Fetch recent flashcard sets
-                const { data: flashcardSets } = await supabase
+        const fetchRecent = async () => {
+            const supabase = createClient();
+            const [flashcardSetsResult, reviewersResult] = await Promise.all([
+                supabase
                     .from("flashcard_sets")
                     .select("id, title, updated_at, last_studied")
                     .order("updated_at", { ascending: false })
-                    .limit(3);
-
-                // Fetch recent reviewers
-                const { data: reviewers } = await supabase
+                    .limit(3),
+                supabase
                     .from("reviewers")
                     .select("id, title, updated_at")
                     .order("updated_at", { ascending: false })
-                    .limit(3);
+                    .limit(3),
+            ]);
 
-                if (!mounted) return;
+            if (!mounted) return;
 
-                const files: RecentFile[] = [];
+            const files: RecentFile[] = [];
 
-                if (flashcardSets) {
-                    flashcardSets.forEach(set => {
-                        files.push({
-                            id: set.id,
-                            title: set.title,
-                            type: "Flashcards",
-                            date: formatTimeAgo(new Date(set.last_studied || set.updated_at)),
-                            color: TYPE_COLORS.flashcards,
-                        });
+            if (flashcardSetsResult.data) {
+                flashcardSetsResult.data.forEach(set => {
+                    files.push({
+                        id: set.id,
+                        title: set.title,
+                        type: "Flashcards",
+                        date: formatTimeAgo(new Date(set.last_studied || set.updated_at)),
+                        color: TYPE_COLORS.flashcards,
                     });
-                }
-
-                if (reviewers) {
-                    reviewers.forEach(rev => {
-                        files.push({
-                            id: rev.id,
-                            title: rev.title,
-                            type: "Reviewer",
-                            date: formatTimeAgo(new Date(rev.updated_at)),
-                            color: TYPE_COLORS.reviewer,
-                        });
-                    });
-                }
-
-                // Sort by most recent and take top 3
-                files.sort((a, b) => {
-                    const aTime = a.date.includes("Just") ? 0 : parseInt(a.date) || 999;
-                    const bTime = b.date.includes("Just") ? 0 : parseInt(b.date) || 999;
-                    return aTime - bTime;
                 });
+            }
 
-                setRecentFiles(files.slice(0, 3));
-                setLoading(false);
-            };
+            if (reviewersResult.data) {
+                reviewersResult.data.forEach(reviewer => {
+                    files.push({
+                        id: reviewer.id,
+                        title: reviewer.title,
+                        type: "Reviewer",
+                        date: formatTimeAgo(new Date(reviewer.updated_at)),
+                        color: TYPE_COLORS.reviewer,
+                    });
+                });
+            }
 
-            fetchRecent();
-            return () => { mounted = false; };
-        }, []),
-        () => null,
-        () => null
-    );
+            files.sort((a, b) => {
+                const aTime = a.date.includes("Just") ? 0 : parseInt(a.date) || 999;
+                const bTime = b.date.includes("Just") ? 0 : parseInt(b.date) || 999;
+                return aTime - bTime;
+            });
+
+            setRecentFiles(files.slice(0, 3));
+            setLoading(false);
+        };
+
+        void fetchRecent();
+
+        return () => {
+            mounted = false;
+        };
+    }, []);
 
     return (
         <div className="mb-8">
