@@ -8,6 +8,7 @@ interface RateLimitResult {
   resetAt: Date
   userId?: string
   authenticated: boolean
+  unavailable?: boolean
 }
 
 /**
@@ -62,7 +63,14 @@ export async function checkAndIncrementAIUsage(): Promise<RateLimitResult> {
 
   if (error) {
     console.error('Rate limit check error:', error)
-    return { allowed: false, remaining: 0, resetAt, userId: user.id, authenticated: true }
+    return {
+      allowed: false,
+      remaining: 0,
+      resetAt,
+      userId: user.id,
+      authenticated: true,
+      unavailable: true,
+    }
   }
 
   const result = data?.[0] || data

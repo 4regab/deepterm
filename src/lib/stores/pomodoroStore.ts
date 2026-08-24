@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import type { TimerPhase, Task, PomodoroSettings } from '../schemas/pomodoro'
 import { logPomodoroSession, XP_REWARDS } from '@/services/activity'
+import { shouldLogPomodoroSession } from '@/utils/reviewerTerms'
 import { useXPStore } from './xpStore'
 import { useActivityStore } from './activityStore'
 
@@ -327,7 +328,7 @@ export const usePomodoroStore = create<PomodoroStore>()((set, get) => ({
     set({ isRunning: false });
 
     // Log session
-    if (sessionStartTime) {
+    if (sessionStartTime && shouldLogPomodoroSession(phase)) {
       const duration = phase === 'work' ? settings.workDuration
         : phase === 'shortBreak' ? settings.shortBreakDuration
           : settings.longBreakDuration;
@@ -343,8 +344,8 @@ export const usePomodoroStore = create<PomodoroStore>()((set, get) => ({
       } catch (error) {
         console.error('Failed to log session:', error);
       }
-      sessionStartTime = null;
     }
+    sessionStartTime = null;
 
     // Determine next phase and show prompt
     let nextPhase: TimerPhase;

@@ -15,6 +15,7 @@ import {
 import { useRouter } from "next/navigation";
 import { useMaterialsStore } from "@/lib/stores";
 import type { MaterialItem, MaterialFilter } from "@/lib/schemas/materials";
+import { matchesMaterialFilter, selectMaterialSourceItems } from "@/utils/materialFilter";
 
 interface MaterialsClientProps {
     initialItems: MaterialItem[];
@@ -66,21 +67,16 @@ export default function MaterialsClient({ initialItems }: MaterialsClientProps) 
         removeItem
     } = useMaterialsStore();
 
-    // Initialize store with server data (one-time, synchronously during render)
-    if (!initialized && initialItems.length > 0) {
+    if (!initialized) {
         setItems(initialItems);
         setInitialized(true);
     }
 
-    // Use initialItems for first render to avoid hydration mismatch
-    const sourceItems = items.length > 0 ? items : initialItems;
+    const sourceItems = selectMaterialSourceItems(initialized, items, initialItems);
 
-    // Apply filters locally
     const filteredItems = sourceItems.filter((item: MaterialItem) => {
         const matchesSearch = item.title.toLowerCase().includes(searchQuery.toLowerCase());
-        const matchesFilter = activeFilter === 'All' ||
-            (activeFilter === 'Cards' && item.type === 'Flashcards') ||
-            item.type === activeFilter;
+        const matchesFilter = matchesMaterialFilter(item.type, activeFilter);
         return matchesSearch && matchesFilter;
     });
 
@@ -89,8 +85,10 @@ export default function MaterialsClient({ initialItems }: MaterialsClientProps) 
     const handleDelete = async (item: MaterialItem) => {
         const supabase = createClient();
         const table = item.type === "Flashcards" ? "flashcard_sets" : "reviewers";
-        await supabase.from(table).delete().eq("id", item.id);
-        removeItem(item.id);
+        const { error } = await supabase.from(table).delete().eq("id", item.id);
+        if (!error) {
+            removeItem(item.id);
+        }
     };
 
     return (

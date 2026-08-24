@@ -1,5 +1,6 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import type { Schema } from "@google/genai";
+import { rotationOrder } from "@/utils/geminiRotation";
 
 // Re-export Type for use in API routes
 export { Type };
@@ -53,6 +54,7 @@ export interface GeminiRequestOptions {
     responseMimeType?: string;
     responseSchema?: Schema;
   };
+  preferredKeyIndex?: number;
 }
 
 export interface GeminiFileUploadOptions {
@@ -68,13 +70,16 @@ export async function generateContentWithRotation(
   }
 
   let lastError: Error | null = null;
+  const { preferredKeyIndex, ...generateOptions } = options;
+  const keyOrder = rotationOrder(API_KEYS.length, preferredKeyIndex ?? 0);
 
-  // First pass: try all keys
-  for (let i = 0; i < API_KEYS.length; i++) {
+  // First pass: try all keys, starting at the preferred index so file
+  // uploads and generation share the same Gemini API key.
+  for (const i of keyOrder) {
     try {
       console.log(`[GeminiClient] Attempting request with key ${i + 1}/${API_KEYS.length}`);
       const ai = new GoogleGenAI({ apiKey: API_KEYS[i] });
-      const response = await ai.models.generateContent(options);
+      const response = await ai.models.generateContent(generateOptions);
       console.log(`[GeminiClient] Success with key ${i + 1}`);
       return { text: response.text || "", keyIndex: i };
     } catch (error) {
@@ -89,16 +94,16 @@ export async function generateContentWithRotation(
     }
   }
 
-  // All keys exhausted, wait and retry from first key
+  // All keys exhausted, wait and retry from the preferred key
   console.log(`[GeminiClient] All keys exhausted. Waiting ${RETRY_DELAY_MS}ms before retry...`);
   await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY_MS));
 
   // Second pass: retry all keys once more
-  for (let i = 0; i < API_KEYS.length; i++) {
+  for (const i of keyOrder) {
     try {
       console.log(`[GeminiClient] Retry attempt with key ${i + 1}/${API_KEYS.length}`);
       const ai = new GoogleGenAI({ apiKey: API_KEYS[i] });
-      const response = await ai.models.generateContent(options);
+      const response = await ai.models.generateContent(generateOptions);
       console.log(`[GeminiClient] Retry success with key ${i + 1}`);
       return { text: response.text || "", keyIndex: i };
     } catch (error) {

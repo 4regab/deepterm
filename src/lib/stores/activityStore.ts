@@ -66,6 +66,15 @@ export const useActivityStore = create<ActivityStore>()((set, get) => ({
 
       if (calendarResult.error) throw calendarResult.error
 
+      if (statsResult.error) {
+        set({
+          activity: calendarResult.data || [],
+          loading: false,
+          lastFetched: Date.now(),
+        })
+        return
+      }
+
       set({
         activity: calendarResult.data || [],
         stats: statsResult.data,

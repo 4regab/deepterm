@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import type { MaterialItem, MaterialFilter } from '../schemas/materials'
+import { matchesMaterialFilter } from '@/utils/materialFilter'
 
 interface MaterialsState {
   items: MaterialItem[]
@@ -44,7 +45,7 @@ export const useMaterialsStore = create<MaterialsStore>()((set, get) => ({
     const { items, searchQuery, activeFilter } = get()
     return items.filter(item => {
       const matchesSearch = item.title.toLowerCase().includes(searchQuery.toLowerCase())
-      const matchesFilter = activeFilter === 'All' || item.type === activeFilter
+      const matchesFilter = matchesMaterialFilter(item.type, activeFilter)
       return matchesSearch && matchesFilter
     })
   },
