@@ -111,7 +111,7 @@ export default function Sidebar() {
 
             <aside
                 className={cn(
-                    "fixed left-0 top-0 h-screen bg-white border-r border-border flex flex-col z-50 overflow-hidden",
+                    "fixed left-0 top-0 h-screen bg-background border-r border-border flex flex-col z-50 overflow-hidden",
                     "transition-[width,transform,box-shadow] duration-200 ease-[cubic-bezier(0.23,1,0.32,1)]",
                     sidebarMobileOpen ? "w-[220px] translate-x-0" : "-translate-x-full w-[220px]",
                     sidebarPinned

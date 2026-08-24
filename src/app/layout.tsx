@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { headers } from "next/headers";
-import { Inter_Tight, Geist_Mono, Source_Serif_4, Space_Grotesk, Sora } from "next/font/google";
+import { Space_Grotesk, Sora, Source_Serif_4 } from "next/font/google";
 import Script from "next/script";
 import "@/styles/globals.css";
 import {
@@ -12,17 +12,15 @@ import {
 import { PostHogProvider } from "@/components/PostHogProvider";
 import { SkipLink } from "@/components/ui";
 
-const interTight = Inter_Tight({
+const spaceGrotesk = Space_Grotesk({
   subsets: ["latin"],
-  variable: "--font-inter-tight",
-  weight: ["300", "400", "500"],
+  variable: "--font-space-grotesk",
   display: "swap",
 });
 
-const geistMono = Geist_Mono({
+const sora = Sora({
   subsets: ["latin"],
-  variable: "--font-geist-mono",
-  weight: ["400", "500"],
+  variable: "--font-sora",
   display: "swap",
 });
 
@@ -33,18 +31,6 @@ const sourceSerif4 = Source_Serif_4({
   style: ["normal", "italic"],
 });
 
-const spaceGrotesk = Space_Grotesk({
-  subsets: ["latin"],
-  variable: "--font-space-grotesk",
-  display: "swap",
-});
-
-const sora = Sora({
-  subsets: ["latin"],
-  variable: "--font-sora-face",
-  display: "swap",
-});
-
 export const metadata: Metadata = defaultMetadata;
 
 export default async function RootLayout({
@@ -52,7 +38,7 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const nonce = (await headers()).get("x-nonce") ?? "";
+  const nonce = (await headers()).get('x-nonce') ?? '';
   const websiteJsonLd = generateWebsiteJsonLd();
   const organizationJsonLd = generateOrganizationJsonLd();
   const softwareAppJsonLd = generateSoftwareAppJsonLd();
@@ -60,10 +46,11 @@ export default async function RootLayout({
   return (
     <html
       lang="en"
-      className={`${interTight.variable} ${geistMono.variable} ${sourceSerif4.variable} ${spaceGrotesk.variable} ${sora.variable}`}
+      className={`${spaceGrotesk.variable} ${sora.variable} ${sourceSerif4.variable}`}
       suppressHydrationWarning
     >
       <head>
+        {/* JSON-LD Structured Data */}
         <script
           nonce={nonce}
           type="application/ld+json"
@@ -80,9 +67,10 @@ export default async function RootLayout({
           dangerouslySetInnerHTML={{ __html: JSON.stringify(softwareAppJsonLd) }}
         />
       </head>
-      <body className="font-sans" suppressHydrationWarning>
+      <body suppressHydrationWarning>
         <SkipLink />
         <PostHogProvider>
+          {/* Google Analytics */}
           <Script
             nonce={nonce}
             src="https://www.googletagmanager.com/gtag/js?id=G-W6BMP2LP3T"

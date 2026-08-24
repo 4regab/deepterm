@@ -16,7 +16,7 @@ export default async function Image() {
           flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
-          backgroundColor: '#f6f6f6',
+          backgroundColor: '#f0f0ea',
           padding: '60px 80px',
         }}
       >
@@ -34,7 +34,7 @@ export default async function Image() {
               width: '64px',
               height: '64px',
               borderRadius: '16px',
-              backgroundColor: '#292929',
+              backgroundColor: '#171d2b',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -45,7 +45,7 @@ export default async function Image() {
           >
             D
           </div>
-          <span style={{ fontSize: '48px', color: '#292929', fontWeight: 600 }}>
+          <span style={{ fontSize: '48px', color: '#171d2b', fontWeight: 600 }}>
             DeepTerm
           </span>
         </div>
@@ -55,7 +55,7 @@ export default async function Image() {
           style={{
             fontSize: '72px',
             fontWeight: 700,
-            color: '#292929',
+            color: '#171d2b',
             textAlign: 'center',
             lineHeight: 1.1,
             margin: 0,
@@ -71,7 +71,7 @@ export default async function Image() {
         <p
           style={{
             fontSize: '28px',
-            color: '#292929',
+            color: '#171d2b',
             opacity: 0.7,
             textAlign: 'center',
             margin: 0,
@@ -88,7 +88,7 @@ export default async function Image() {
             <div
               key={text}
               style={{
-                backgroundColor: '#292929',
+                backgroundColor: '#171d2b',
                 color: 'white',
                 padding: '12px 24px',
                 borderRadius: '100px',
@@ -105,7 +105,7 @@ export default async function Image() {
           style={{
             position: 'absolute',
             bottom: '40px',
-            color: '#292929',
+            color: '#171d2b',
             opacity: 0.5,
             fontSize: '20px',
           }}

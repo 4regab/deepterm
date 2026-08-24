@@ -20,7 +20,7 @@ export async function GET(request: NextRequest) {
           flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
-          backgroundColor: '#f6f6f6',
+          backgroundColor: '#f0f0ea',
           padding: '40px 80px',
         }}
       >
@@ -38,7 +38,7 @@ export async function GET(request: NextRequest) {
               width: '48px',
               height: '48px',
               borderRadius: '12px',
-              backgroundColor: '#292929',
+              backgroundColor: '#171d2b',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -49,7 +49,7 @@ export async function GET(request: NextRequest) {
           >
             D
           </div>
-          <span style={{ fontSize: '32px', color: '#292929', fontWeight: 600 }}>
+          <span style={{ fontSize: '32px', color: '#171d2b', fontWeight: 600 }}>
             DeepTerm
           </span>
         </div>
@@ -70,7 +70,7 @@ export async function GET(request: NextRequest) {
               display: 'flex',
               alignItems: 'center',
               gap: '8px',
-              backgroundColor: '#292929',
+              backgroundColor: '#171d2b',
               color: 'white',
               padding: '8px 20px',
               borderRadius: '100px',
@@ -86,7 +86,7 @@ export async function GET(request: NextRequest) {
             style={{
               fontSize: '56px',
               fontWeight: 700,
-              color: '#292929',
+              color: '#171d2b',
               lineHeight: 1.2,
               margin: 0,
               marginBottom: '24px',
@@ -99,7 +99,7 @@ export async function GET(request: NextRequest) {
           <p
             style={{
               fontSize: '24px',
-              color: '#292929',
+              color: '#171d2b',
               opacity: 0.7,
               margin: 0,
             }}
@@ -116,7 +116,7 @@ export async function GET(request: NextRequest) {
             display: 'flex',
             alignItems: 'center',
             gap: '8px',
-            color: '#292929',
+            color: '#171d2b',
             opacity: 0.5,
             fontSize: '18px',
           }}

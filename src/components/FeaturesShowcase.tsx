@@ -39,7 +39,6 @@ export default function FeaturesShowcase() {
 
   useGSAP(() => {
     if (isMobile) return;
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
 
     const scrollContainer = scrollContainerRef.current;
     const container = containerRef.current;
@@ -136,7 +135,6 @@ export default function FeaturesShowcase() {
 
   useGSAP(() => {
     if (!isMobile) return;
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     
     if (mobileHeaderRef.current) {
       gsap.fromTo(mobileHeaderRef.current, 
@@ -177,7 +175,6 @@ export default function FeaturesShowcase() {
 
   useGSAP(() => {
     if (isMobile || !desktopTitleRef.current) return;
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     
     gsap.fromTo(desktopTitleRef.current,
       { opacity: 0, x: -40 },
@@ -200,7 +197,6 @@ export default function FeaturesShowcase() {
 
   useGSAP(() => {
     if (!isMobile) return;
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
 
     const scrollContainer = mobileScrollContainerRef.current;
     const wrapper = mobileWrapperRef.current;
@@ -242,11 +238,11 @@ export default function FeaturesShowcase() {
       {/* Mobile/Tablet: Horizontal scroll layout */}
       <section ref={mobileSectionRef} className="lg:hidden relative">
         <div ref={mobileHeaderRef} className="text-center pt-4 pb-6 sm:pt-6 sm:pb-8 px-4 sm:px-6">
-          <h2 className="font-serif text-3xl sm:text-4xl md:text-5xl leading-[1.1] tracking-tight font-normal mb-4">
-            What you&apos;ll unlock
-            <span className="block font-serif italic text-muted-foreground">with DeepTerm</span>
+          <h2 className="font-serif text-3xl sm:text-4xl md:text-5xl leading-[1.1] mb-4 text-[#171d2b]">
+            What you&apos;ll unlock <br />
+            <span className="text-[#171d2b]" style={{ fontStyle: 'italic' }}>with Deepterm</span>
           </h2>
-          <p className="text-sm sm:text-base max-w-md mx-auto text-muted-foreground">
+          <p className="font-sans text-base sm:text-lg max-w-md mx-auto text-[#171d2b]/60">
             A complete ecosystem of tools designed to transform your study workflow from chaotic to structured.
           </p>
         </div>
@@ -256,11 +252,11 @@ export default function FeaturesShowcase() {
             {features.map((feature) => (
               <div key={feature.id} className="feature-card w-[88vw] sm:w-[75vw] md:w-[65vw] max-w-[520px] flex-shrink-0">
                 <div className="flex flex-col gap-3">
-                  <h3 className="font-sans font-medium text-lg sm:text-xl text-foreground">{feature.title}</h3>
-                  <div className="w-full aspect-[4/3] sm:aspect-[16/10] rounded-[18px] overflow-hidden border relative bg-muted border-border">
+                  <h3 className="font-sans font-bold text-lg sm:text-xl text-[#171d2b]">{feature.title}</h3>
+                  <div className="w-full aspect-[4/3] sm:aspect-[16/10] rounded-lg overflow-hidden border relative bg-gray-50 border-gray-200">
                     {feature.visual}
                   </div>
-                  <p className="font-sans text-sm leading-relaxed text-muted-foreground">{feature.description}</p>
+                  <p className="font-sans text-sm leading-relaxed text-gray-600">{feature.description}</p>
                 </div>
               </div>
             ))}
@@ -271,11 +267,11 @@ export default function FeaturesShowcase() {
       {/* Desktop: Horizontal scroll layout with GSAP */}
       <section ref={containerRef} className="hidden lg:flex relative min-h-[600px] h-[80vh] max-h-[900px] items-center overflow-hidden">
         <div ref={desktopTitleRef} className="w-[320px] xl:w-[380px] flex-shrink-0 pl-8 xl:pl-16 pr-4 z-10">
-          <h2 className="font-serif text-4xl xl:text-5xl leading-[1.1] tracking-tight font-normal mb-4">
-            What you&apos;ll unlock with
-            <span className="block font-serif italic text-muted-foreground">DeepTerm</span>
+          <h2 className="font-serif text-4xl xl:text-5xl leading-[1.1] mb-4 text-[#171d2b]">
+            What you&apos;ll unlock with<br />
+            <span className="text-[#171d2b]" style={{ fontStyle: 'italic' }}>Deepterm</span>
           </h2>
-          <p className="font-sans text-base xl:text-lg max-w-sm text-muted-foreground">
+          <p className="font-sans text-base xl:text-lg max-w-sm text-[#171d2b]/60">
             A complete ecosystem of tools designed to transform your study workflow from chaotic to structured.
           </p>
         </div>
@@ -286,12 +282,12 @@ export default function FeaturesShowcase() {
               <div key={feature.id} className="feature-card w-[700px] flex-shrink-0">
                 <div className="flex flex-col gap-4">
                   <div className="flex-shrink-0 py-2">
-                    <h3 className="font-sans font-medium text-2xl text-foreground">{feature.title}</h3>
+                    <h3 className="font-sans font-bold text-2xl text-[#171d2b]">{feature.title}</h3>
                   </div>
-                  <div className="w-full aspect-[16/10] rounded-[18px] overflow-hidden border relative bg-muted border-border">
+                  <div className="w-full aspect-[16/10] rounded-lg overflow-hidden border relative bg-gray-50 border-gray-200">
                     {feature.visual}
                   </div>
-                  <p className="font-sans text-base leading-relaxed max-w-2xl text-muted-foreground">{feature.description}</p>
+                  <p className="font-sans text-base leading-relaxed max-w-2xl text-gray-600">{feature.description}</p>
                 </div>
               </div>
             ))}
@@ -313,22 +309,22 @@ function MaterialsVisual() {
           { title: "History: World War II", type: "Reviewer", count: 8, date: "1d ago" },
           { title: "Physics Formulas", type: "Flashcards", count: 24, date: "2d ago" },
         ].map((item, i) => (
-          <div key={i} className="rounded-lg sm:rounded-xl p-2 sm:p-4 border transition-all cursor-pointer group relative bg-white border-border hover:border-border hover:shadow-lg">
+          <div key={i} className="rounded-lg sm:rounded-xl p-2 sm:p-4 border transition-all cursor-pointer group relative bg-white border-[#171d2b]/5 hover:border-[#171d2b]/20 hover:shadow-lg">
             <div className="flex justify-between items-start mb-1.5 sm:mb-3">
               <span className={`px-1.5 sm:px-2 py-0.5 rounded-md text-[8px] sm:text-[10px] font-medium uppercase tracking-wider flex items-center gap-0.5 sm:gap-1 ${
-                item.type === "Reviewer" ? "bg-primary text-white" : "bg-muted text-foreground"
+                item.type === "Reviewer" ? "bg-[#171d2b] text-white" : "bg-[#171d2b]/10 text-[#171d2b]"
               }`}>
                 {item.type === "Reviewer" ? <FileText size={8} className="sm:w-[10px] sm:h-[10px]" /> : <Copy size={8} className="sm:w-[10px] sm:h-[10px]" />}
                 <span className="hidden sm:inline">{item.type === "Flashcards" ? "Cards" : "Reviewer"} · </span>{item.count}
               </span>
-              <div className="p-0.5 sm:p-1 rounded-full text-muted-foreground">
+              <div className="p-0.5 sm:p-1 rounded-full text-[#171d2b]/30">
                 <GripVertical size={10} className="sm:w-[14px] sm:h-[14px]" />
               </div>
             </div>
             <div className="mb-1.5 sm:mb-3">
-              <h3 className="font-sans font-medium text-[10px] sm:text-sm line-clamp-2 text-foreground">{item.title}</h3>
+              <h3 className="font-sans font-semibold text-[10px] sm:text-sm line-clamp-2 text-[#171d2b]">{item.title}</h3>
             </div>
-            <div className="flex items-center text-[8px] sm:text-xs text-muted-foreground">
+            <div className="flex items-center text-[8px] sm:text-xs text-[#171d2b]/40">
               <div className="flex items-center gap-0.5 sm:gap-1">
                 <ScanLine size={8} className="sm:w-[12px] sm:h-[12px]" />
                 <span>{item.date}</span>
@@ -349,35 +345,35 @@ function ReviewerVisual() {
           { name: "Cell Biology", count: 12, color: "#22c55e", expanded: true },
           { name: "Genetics", count: 8, color: "#3b82f6", expanded: false },
         ].map((category, i) => (
-          <div key={i} className="rounded-xl border overflow-hidden shadow-sm bg-white border-border">
+          <div key={i} className="rounded-xl border overflow-hidden shadow-sm bg-white border-[#171d2b]/10">
             <div
               className="p-4 flex items-center justify-between cursor-pointer hover:bg-gray-50"
               style={{ borderLeft: `4px solid ${category.color}` }}
             >
               <div className="flex items-center gap-4">
-                <h3 className="font-sans font-medium text-foreground">{category.name}</h3>
-                <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-muted text-muted-foreground">
+                <h3 className="font-sora font-semibold text-[#171d2b]">{category.name}</h3>
+                <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-[#171d2b]/5 text-[#171d2b]/60">
                   {category.count} terms
                 </span>
               </div>
-              <div className="flex items-center gap-2 text-muted-foreground">
+              <div className="flex items-center gap-2 text-[#171d2b]/40">
                 <Plus size={16} />
                 <Trash2 size={16} />
               </div>
             </div>
             {category.expanded && (
-              <div className="border-t border-border">
+              <div className="border-t border-[#171d2b]/5">
                 <div className="p-4 grid gap-3">
                   {[
                     { term: "Mitosis", def: "Process of nuclear division in eukaryotic cells." },
                     { term: "Meiosis", def: "Type of cell division that reduces chromosome number." }
                   ].map((term, j) => (
-                    <div key={j} className="p-3 rounded-lg border flex justify-between items-start bg-muted border-border">
+                    <div key={j} className="p-3 rounded-lg border flex justify-between items-start bg-[#f8f9fa] border-[#171d2b]/5">
                       <div>
-                        <h4 className="font-medium text-sm mb-1 text-foreground">{term.term}</h4>
-                        <p className="text-xs text-muted-foreground">{term.def}</p>
+                        <h4 className="font-bold text-sm mb-1 text-[#171d2b]">{term.term}</h4>
+                        <p className="text-xs text-[#171d2b]/60">{term.def}</p>
                       </div>
-                      <div className="opacity-50 text-foreground">
+                      <div className="opacity-50 text-[#171d2b]">
                         <Edit2 size={12} />
                       </div>
                     </div>
@@ -398,20 +394,20 @@ function LearnVisual() {
       <div className="w-full max-w-2xl rounded-2xl sm:rounded-3xl border p-3 sm:p-6 lg:p-8 flex flex-col gap-3 sm:gap-6 bg-white border-gray-200">
         <div className="flex justify-between items-start">
           <span className="text-[10px] sm:text-sm font-medium text-gray-500">Definition</span>
-          <span className="px-2 sm:px-3 py-0.5 sm:py-1 text-[9px] sm:text-xs font-medium rounded-full flex items-center gap-1 bg-blue-100 text-blue-600">
+          <span className="px-2 sm:px-3 py-0.5 sm:py-1 text-[9px] sm:text-xs font-bold rounded-full flex items-center gap-1 bg-blue-100 text-blue-600">
             <div className="w-1.5 sm:w-2 h-1.5 sm:h-2 rounded-full border-2 border-blue-600" />
             New cards
           </span>
         </div>
 
-        <p className="text-xs sm:text-base lg:text-xl font-sans font-medium leading-relaxed text-foreground">
+        <p className="text-xs sm:text-base lg:text-xl font-sora font-medium leading-relaxed text-[#171d2b]">
           Process of nuclear division in eukaryotic cells that occurs when a parent cell divides to produce two identical daughter cells.
         </p>
 
         <div className="grid grid-cols-2 gap-2 sm:gap-4 mt-1 sm:mt-4">
           {["Meiosis", "Mitosis", "Cytokinesis", "Interphase"].map((opt, i) => (
-            <div key={i} className="p-2 sm:p-4 border rounded-xl sm:rounded-2xl flex items-center gap-2 sm:gap-4 bg-white border-gray-200 text-foreground">
-              <div className="w-5 h-5 sm:w-8 sm:h-8 rounded-full font-medium flex items-center justify-center text-[10px] sm:text-sm bg-blue-100 text-blue-600">
+            <div key={i} className="p-2 sm:p-4 border rounded-xl sm:rounded-2xl flex items-center gap-2 sm:gap-4 bg-white border-gray-200 text-[#171d2b]">
+              <div className="w-5 h-5 sm:w-8 sm:h-8 rounded-full font-bold flex items-center justify-center text-[10px] sm:text-sm bg-blue-100 text-blue-600">
                 {String.fromCharCode(65 + i)}
               </div>
               <span className="font-medium text-[10px] sm:text-sm">{opt}</span>
@@ -473,7 +469,7 @@ function TimerVisual() {
         </div>
 
         <div className="flex items-center gap-2 w-full justify-center">
-          <div className="h-8 px-4 rounded-full flex items-center justify-center font-medium text-xs shadow-lg cursor-pointer transition-transform hover:scale-105 bg-white text-foreground">
+          <div className="h-8 px-4 rounded-full flex items-center justify-center font-medium text-xs shadow-lg cursor-pointer transition-transform hover:scale-105 bg-white text-[#171d2b]">
             Pause
           </div>
           <div className="w-8 h-8 rounded-full bg-white/15 backdrop-blur-sm flex items-center justify-center cursor-pointer hover:bg-white/25">
@@ -483,10 +479,10 @@ function TimerVisual() {
       </div>
 
       {/* Tasks Panel */}
-      <div className="w-[40%] h-full rounded-[16px] p-3 flex flex-col overflow-hidden bg-white border border-border">
+      <div className="w-[40%] h-full rounded-[16px] p-3 flex flex-col overflow-hidden bg-white border border-[#171d2b]/10">
         <div className="flex items-center justify-between mb-2">
-          <h4 className="font-sans font-medium text-xs text-foreground">Tasks</h4>
-          <div className="w-5 h-5 rounded-full flex items-center justify-center cursor-pointer bg-muted text-foreground">
+          <h4 className="font-sans font-semibold text-xs text-[#171d2b]">Tasks</h4>
+          <div className="w-5 h-5 rounded-full flex items-center justify-center cursor-pointer bg-[#171d2b]/5 text-[#171d2b]">
             <Plus size={12} />
           </div>
         </div>
@@ -497,9 +493,9 @@ function TimerVisual() {
             { text: "Practice problems", completed: false, reminder: "14:30" },
             { text: "Write summary notes", completed: false, reminder: null },
           ].map((task, i) => (
-            <div key={i} className="flex items-start gap-2 p-2 rounded-lg transition-all bg-muted hover:bg-accent">
+            <div key={i} className="flex items-start gap-2 p-2 rounded-lg transition-all bg-[#171d2b]/[0.02] hover:bg-[#171d2b]/5">
               <div className={`w-4 h-4 rounded-full border-2 flex-shrink-0 flex items-center justify-center mt-0.5 ${
-                task.completed ? "bg-primary border-primary" : "border-input"
+                task.completed ? "bg-[#171d2b] border-[#171d2b]" : "border-[#171d2b]/30"
               }`}>
                 {task.completed && (
                   <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -509,12 +505,12 @@ function TimerVisual() {
               </div>
               <div className="flex-1 min-w-0">
                 <span className={`text-[10px] leading-tight block ${
-                  task.completed ? "text-muted-foreground line-through" : "text-foreground"
+                  task.completed ? "text-[#171d2b]/40 line-through" : "text-[#171d2b]"
                 }`}>
                   {task.text}
                 </span>
                 {task.reminder && (
-                  <span className="text-[8px] flex items-center gap-0.5 mt-0.5 text-muted-foreground">
+                  <span className="text-[8px] flex items-center gap-0.5 mt-0.5 text-[#171d2b]/40">
                     <Zap size={6} /> {task.reminder}
                   </span>
                 )}
@@ -539,8 +535,8 @@ function AchievementsVisual() {
     <div className="w-full h-full p-4 sm:p-6 flex items-center justify-center">
       <div className="w-full max-w-2xl">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="font-sans tracking-tight text-lg text-foreground">Achievements</h3>
-          <span className="text-muted-foreground text-sm font-sans">3/4 Unlocked</span>
+          <h3 className="font-serif text-lg text-[#171d2b]">Achievements</h3>
+          <span className="text-[#171d2b]/60 text-sm font-sans">3/4 Unlocked</span>
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -551,8 +547,8 @@ function AchievementsVisual() {
                 key={i}
                 className={`relative p-3 rounded-xl border transition-all ${
                   achievement.unlocked
-                    ? "bg-white border-border shadow-sm"
-                    : "bg-muted border-border opacity-70 grayscale-[0.3]"
+                    ? "bg-white border-[#171d2b]/10 shadow-sm"
+                    : "bg-[#f9f9f7] border-[#171d2b]/5 opacity-70 grayscale-[0.3]"
                 }`}
               >
                 <div className={`w-8 h-8 rounded-full ${achievement.bg} flex items-center justify-center mb-2`}>
@@ -578,15 +574,15 @@ function AchievementsVisual() {
                     </svg>
                   )}
                 </div>
-                <h4 className="font-sans font-medium text-foreground text-[12px] sm:text-[13px] mb-0.5">{achievement.title}</h4>
-                <p className="font-sans text-[10px] text-muted-foreground mb-2 leading-tight">{achievement.description}</p>
-                <div className="w-full h-1 bg-muted rounded-full overflow-hidden">
+                <h4 className="font-sans font-medium text-[#171d2b] text-[12px] sm:text-[13px] mb-0.5">{achievement.title}</h4>
+                <p className="font-sans text-[10px] text-[#171d2b]/60 mb-2 leading-tight">{achievement.description}</p>
+                <div className="w-full h-1 bg-[#171d2b]/5 rounded-full overflow-hidden">
                   <div
-                    className={`h-full rounded-full ${achievement.unlocked ? "bg-green-500" : "bg-primary/40"}`}
+                    className={`h-full rounded-full ${achievement.unlocked ? "bg-green-500" : "bg-[#171d2b]/40"}`}
                     style={{ width: `${progressPercent}%` }}
                   />
                 </div>
-                <p className="font-sans text-[9px] text-muted-foreground mt-0.5">
+                <p className="font-sans text-[9px] text-[#171d2b]/40 mt-0.5">
                   {achievement.progress}/{achievement.requirement}
                 </p>
               </div>
@@ -614,22 +610,22 @@ const CALENDAR_DATA = [
 function CalendarVisual() {
   return (
     <div className="w-full h-full p-3 sm:p-4 flex items-center justify-center">
-      <div className="w-full max-w-md bg-white rounded-xl border border-border shadow-sm overflow-hidden">
+      <div className="w-full max-w-md bg-white rounded-xl border border-[#171d2b]/5 shadow-sm overflow-hidden">
         {/* Header */}
-        <div className="bg-[#f5e6c8] px-3 py-2 border-b border-border">
+        <div className="bg-[#f5e6c8] px-3 py-2 border-b border-[#171d2b]/5">
           <div className="flex items-center gap-2">
-            <Calendar size={14} className="text-muted-foreground" />
-            <h2 className="font-sans tracking-tight text-sm text-foreground">Study History</h2>
+            <Calendar size={14} className="text-[#171d2b]/70" />
+            <h2 className="font-serif text-sm text-[#171d2b]">Study History</h2>
           </div>
         </div>
 
         {/* Month navigation */}
-        <div className="flex items-center justify-between px-3 py-1.5 border-b border-border bg-white">
-          <button className="w-6 h-6 flex items-center justify-center border border-border rounded hover:bg-accent">
+        <div className="flex items-center justify-between px-3 py-1.5 border-b border-[#171d2b]/10 bg-white">
+          <button className="w-6 h-6 flex items-center justify-center border border-[#171d2b]/20 rounded hover:bg-[#171d2b]/5">
             <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
           </button>
-          <span className="font-sans tracking-tight text-xs text-foreground font-medium">December 2025</span>
-          <button className="w-6 h-6 flex items-center justify-center border border-border rounded hover:bg-accent">
+          <span className="font-serif text-xs text-[#171d2b] font-semibold">December 2025</span>
+          <button className="w-6 h-6 flex items-center justify-center border border-[#171d2b]/20 rounded hover:bg-[#171d2b]/5">
             <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
           </button>
         </div>
@@ -637,7 +633,7 @@ function CalendarVisual() {
         {/* Day headers */}
         <div className="grid grid-cols-7 bg-[#f5f0e0]">
           {DAY_HEADERS.map((day) => (
-            <div key={day} className="py-1 text-center text-[9px] text-muted-foreground font-medium border-b border-r border-border last:border-r-0">
+            <div key={day} className="py-1 text-center text-[9px] text-[#171d2b]/70 font-semibold border-b border-r border-[#171d2b]/10 last:border-r-0">
               {day}
             </div>
           ))}
@@ -648,7 +644,7 @@ function CalendarVisual() {
           {CALENDAR_DATA.map((cell, i) => (
             <div
               key={i}
-              className={`h-8 sm:h-10 flex items-center justify-center text-[10px] font-medium border-b border-r border-border ${LEVEL_COLORS[cell.level]} ${cell.day === 8 ? "ring-2 ring-[#c4875a] ring-inset" : ""} ${cell.day === 0 ? "text-muted-foreground" : "text-foreground"}`}
+              className={`h-8 sm:h-10 flex items-center justify-center text-[10px] font-medium border-b border-r border-[#171d2b]/10 ${LEVEL_COLORS[cell.level]} ${cell.day === 8 ? "ring-2 ring-[#c4875a] ring-inset" : ""} ${cell.day === 0 ? "text-[#171d2b]/30" : "text-[#171d2b]"}`}
             >
               {cell.day > 0 ? cell.day : ""}
             </div>
@@ -656,14 +652,14 @@ function CalendarVisual() {
         </div>
 
         {/* Legend */}
-        <div className="flex justify-center items-center gap-2 py-2 border-t border-border">
-          <span className="text-[9px] text-muted-foreground">Less</span>
+        <div className="flex justify-center items-center gap-2 py-2 border-t border-[#171d2b]/10">
+          <span className="text-[9px] text-[#171d2b]/60">Less</span>
           <div className="flex gap-0.5">
             {LEVEL_COLORS.map((color, i) => (
-              <div key={i} className={`w-2.5 h-2.5 rounded-sm ${color} border border-border`} />
+              <div key={i} className={`w-2.5 h-2.5 rounded-sm ${color} border border-[#171d2b]/10`} />
             ))}
           </div>
-          <span className="text-[9px] text-muted-foreground">More</span>
+          <span className="text-[9px] text-[#171d2b]/60">More</span>
         </div>
       </div>
     </div>

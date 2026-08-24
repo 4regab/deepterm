@@ -35,19 +35,17 @@ describe("interface copy and quality floor", () => {
 
   it("derives neutrals from a single ink token", () => {
     const css = read("styles/globals.css");
-    expect(css).toContain("--ink: #292929");
+    expect(css).toContain("--ink: #171d2b");
     expect(css).toContain("color-mix(in srgb, var(--ink) 12%, transparent)");
-    expect(css).toContain("--primary: #305dde");
-    expect(css).toContain("--font-inter-tight");
-    expect(css).toContain("--font-source-serif");
-    expect(css).toContain(".landing");
+    expect(css).toContain("--primary: #171d2b");
+    expect(css).toContain("--background: #f0f0ea");
   });
 
   it("keeps Source Serif on the landing hero", () => {
     const home = read("app/HomeClient.tsx");
-    expect(home).toContain("landing");
     expect(home).toContain("font-serif");
-    expect(home).toContain("italic");
     expect(home).toContain("Study smarter");
+    expect(home).toContain("bg-[#f0f0ea]");
+    expect(home).toContain("bg-[#171d2b]");
   });
 });

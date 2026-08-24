@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useRef, useEffect } from "react";
+import { useState, useCallback, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { imgLogo } from "@/config/assets";
@@ -8,8 +8,6 @@ import { createClient } from "@/config/supabase/client";
 import { useUIStore } from "@/lib/stores";
 import { useScrolled } from "@/lib/hooks";
 import CaptchaModal from "@/components/CaptchaModal";
-import { Button, ButtonLink } from "@/components/ui";
-import { cn } from "@/lib/cn";
 import type { User } from "@supabase/supabase-js";
 
 async function handleGoogleLogin() {
@@ -28,93 +26,27 @@ async function handleGoogleLogin() {
 
 const LEARN_ITEMS = [
     { label: "Pomodoro", href: "/pomodoro" },
-    { label: "Practice test", href: "/materials" },
+    { label: "Practice Test", href: "/materials" },
     { label: "Flashcards", href: "/materials" },
     { label: "Reviewer", href: "/materials" },
 ] as const;
 
 const RESOURCES_ITEMS = [
     { label: "Blog", href: "/blog" },
-    { label: "Help center", href: "/help" },
+    { label: "Help Center", href: "/help" },
     { label: "Changelog", href: "/changelog" },
     { label: "About", href: "/about" },
 ] as const;
 
-function NavDropdown({
-    label,
-    items,
-}: {
-    label: string;
-    items: readonly { label: string; href: string }[];
-}) {
-    const [open, setOpen] = useState(false);
-    const rootRef = useRef<HTMLDivElement>(null);
+// Module-level style constants to avoid object recreation on every render (Rule 6.3)
+const GLASS_STYLES_SCROLLED = {
+    backgroundColor: "rgba(240, 240, 234, 0.8)",
+    borderColor: "rgba(23, 29, 43, 0.05)",
+    backdropFilter: "blur(12px)",
+    boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
+} as const;
 
-    useEffect(() => {
-        if (!open) return;
-        const onPointer = (event: PointerEvent) => {
-            if (!rootRef.current?.contains(event.target as Node)) setOpen(false);
-        };
-        const onKey = (event: KeyboardEvent) => {
-            if (event.key === "Escape") setOpen(false);
-        };
-        document.addEventListener("pointerdown", onPointer);
-        document.addEventListener("keydown", onKey);
-        return () => {
-            document.removeEventListener("pointerdown", onPointer);
-            document.removeEventListener("keydown", onKey);
-        };
-    }, [open]);
-
-    return (
-        <div className="relative" ref={rootRef}>
-            <button
-                type="button"
-                className="font-sans text-foreground text-sm hover:opacity-70 transition-opacity duration-150 flex items-center gap-1 rounded-full px-1 min-h-10"
-                aria-expanded={open}
-                aria-haspopup="menu"
-                onClick={() => setOpen((value) => !value)}
-            >
-                {label}
-                <svg
-                    className={cn(
-                        "w-4 h-4 transition-transform duration-150 ease-[cubic-bezier(0.23,1,0.32,1)]",
-                        open && "rotate-180"
-                    )}
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                    aria-hidden="true"
-                >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
-            </button>
-            <div
-                role="menu"
-                hidden={!open}
-                className={cn(
-                    "absolute top-full left-0 pt-2 origin-top-left",
-                    "transition-[opacity,transform] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)]",
-                    open ? "opacity-100 visible translate-y-0" : "opacity-0 invisible -translate-y-1 pointer-events-none"
-                )}
-            >
-                <div className="bg-card border border-border rounded-2xl py-1.5 min-w-[168px] shadow-[var(--shadow-floating)]">
-                    {items.map((item) => (
-                        <Link
-                            key={`${item.href}-${item.label}`}
-                            href={item.href}
-                            role="menuitem"
-                            className="block mx-1 rounded-lg px-3 py-2 font-sans text-foreground text-[15px] hover:bg-accent transition-colors duration-150"
-                            onClick={() => setOpen(false)}
-                        >
-                            {item.label}
-                        </Link>
-                    ))}
-                </div>
-            </div>
-        </div>
-    );
-}
+const GLASS_STYLES_DEFAULT = {} as const;
 
 function SessionAwareHeader({ user, isLoading, className }: { user: User | null; isLoading: boolean; className?: string }) {
     const isScrolled = useScrolled(20);
@@ -122,6 +54,7 @@ function SessionAwareHeader({ user, isLoading, className }: { user: User | null;
     const [showCaptcha, setShowCaptcha] = useState(false);
     const sitekey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
 
+    // Use selector pattern to subscribe only to needed values - prevents re-renders on unrelated store changes (Rule 5.4)
     const isMenuOpen = useUIStore((state) => state.sidebarMobileOpen);
     const isLearnOpen = useUIStore((state) => state.profileMenuOpen);
     const setIsMenuOpen = useUIStore((state) => state.setSidebarMobileOpen);
@@ -144,121 +77,185 @@ function SessionAwareHeader({ user, isLoading, className }: { user: User | null;
     const toggleLearn = () => setIsLearnOpen(!isLearnOpen);
     const toggleResources = () => setIsResourcesOpen(!isResourcesOpen);
 
+    // Use hoisted style constants instead of recreating objects (Rule 6.3)
+    const glassStyles = isScrolled ? GLASS_STYLES_SCROLLED : GLASS_STYLES_DEFAULT;
+
     return (
         <header
-            data-scrolled={isScrolled}
-            className={cn("header-pill", className)}
+            style={glassStyles}
+            className={`relative flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 transition-all duration-300 rounded-full mx-3 sm:mx-4 mt-3 border border-transparent bg-transparent ${className || ''}`}
         >
-            <Link href="/" className="flex items-center min-h-10 hover:opacity-70 transition-opacity duration-150">
-                <div className="w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center">
+            {/* Logo */}
+            <Link href="/" className="flex items-center hover:opacity-70 transition-opacity">
+                <div className="w-[40px] h-[40px] sm:w-[45px] sm:h-[45px] flex items-center justify-center">
                     <div className="rotate-[292deg]">
-                        <Image alt="DeepTerm" className="w-7 h-7 sm:w-8 sm:h-8" src={imgLogo} width={32} height={32} />
+                        <Image alt="Deepterm Logo" className="w-[32px] h-[32px] sm:w-[38px] sm:h-[38px]" src={imgLogo} width={38} height={38} />
                     </div>
                 </div>
-                <span className="font-sora text-foreground text-[17px] sm:text-[18px] font-medium tracking-tight">deepterm</span>
+                <span className="font-sora text-[#171d2b] text-[20px] sm:text-[24px]">deepterm</span>
             </Link>
 
-            <nav className="hidden md:flex items-center gap-4" aria-label="Primary">
+            {/* Desktop Navigation */}
+            <nav className="hidden md:flex items-center gap-6">
                 <div className="flex items-center gap-4">
-                    <NavDropdown label="Learn" items={LEARN_ITEMS} />
-                    <NavDropdown label="Resources" items={RESOURCES_ITEMS} />
+                    {/* Learn Dropdown */}
+                    <div className="relative group">
+                        <button className="font-sans text-[#171d2b] text-[18px] hover:opacity-70 transition-opacity flex items-center gap-1">
+                            Learn
+                            <svg className="w-4 h-4 transition-transform group-hover:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                            </svg>
+                        </button>
+                        <div className="absolute top-full left-0 pt-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all">
+                            <div className="bg-[#f0f0ea] border border-[#171d2b]/10 rounded-lg shadow-lg py-2 min-w-[160px]">
+                                {LEARN_ITEMS.map((item) => (
+                                    <a
+                                        key={`${item.href}-${item.label}`}
+                                        href={item.href}
+                                        className="block px-4 py-2 font-sans text-[#171d2b] text-[16px] hover:bg-[#171d2b]/5 transition-colors"
+                                    >
+                                        {item.label}
+                                    </a>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+
+                    <span className="w-[1px] h-[16px] bg-[#171d2b] opacity-50" />
+
+                    {/* Resources Dropdown */}
+                    <div className="relative group">
+                        <button className="font-sans text-[#171d2b] text-[18px] hover:opacity-70 transition-opacity flex items-center gap-1">
+                            Resources
+                            <svg className="w-4 h-4 transition-transform group-hover:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                            </svg>
+                        </button>
+                        <div className="absolute top-full left-0 pt-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all">
+                            <div className="bg-[#f0f0ea] border border-[#171d2b]/10 rounded-lg shadow-lg py-2 min-w-[160px]">
+                                {RESOURCES_ITEMS.map((item) => (
+                                    <a
+                                        key={`${item.href}-${item.label}`}
+                                        href={item.href}
+                                        className="block px-4 py-2 font-sans text-[#171d2b] text-[16px] hover:bg-[#171d2b]/5 transition-colors"
+                                    >
+                                        {item.label}
+                                    </a>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
                 </div>
                 {isLoading ? (
-                    <div className="h-10 w-[108px] rounded-full bg-muted" aria-hidden="true" />
+                    <div className="bg-[#171d2b]/10 h-[42px] rounded-[100px] px-6 w-[100px] animate-pulse" />
                 ) : user ? (
-                    <ButtonLink href="/dashboard" size="sm">
-                        Go to dashboard
-                    </ButtonLink>
+                    <Link
+                        href="/dashboard"
+                        className="bg-[#171d2b] h-[42px] rounded-[100px] px-6 text-[#fefeff] font-sora text-[16px] hover:bg-[#2a3347] transition-colors flex items-center justify-center"
+                    >
+                        Dashboard
+                    </Link>
                 ) : (
-                    <Button size="sm" onClick={handleLoginClick}>
+                    <button
+                        onClick={handleLoginClick}
+                        className="bg-[#171d2b] h-[42px] rounded-[100px] px-6 text-[#fefeff] font-sora text-[16px] hover:bg-[#2a3347] transition-colors flex items-center justify-center"
+                    >
                         Log in
-                    </Button>
+                    </button>
                 )}
             </nav>
 
+            {/* Mobile Menu Button */}
             <button
-                className="md:hidden flex flex-col justify-center items-center w-10 h-10 gap-1.5 pressable"
+                className="md:hidden flex flex-col justify-center items-center w-10 h-10 gap-1.5"
                 onClick={toggleMenu}
-                aria-label={isMenuOpen ? "Close menu" : "Open menu"}
-                aria-expanded={isMenuOpen}
+                aria-label="Toggle menu"
             >
-                <span className={cn("block w-6 h-0.5 bg-foreground transition-transform duration-150", isMenuOpen && "rotate-45 translate-y-2")} />
-                <span className={cn("block w-6 h-0.5 bg-foreground transition-opacity duration-150", isMenuOpen && "opacity-0")} />
-                <span className={cn("block w-6 h-0.5 bg-foreground transition-transform duration-150", isMenuOpen && "-rotate-45 -translate-y-2")} />
+                <span className={`block w-6 h-0.5 bg-[#171d2b] transition-transform ${isMenuOpen ? "rotate-45 translate-y-2" : ""}`} />
+                <span className={`block w-6 h-0.5 bg-[#171d2b] transition-opacity ${isMenuOpen ? "opacity-0" : ""}`} />
+                <span className={`block w-6 h-0.5 bg-[#171d2b] transition-transform ${isMenuOpen ? "-rotate-45 -translate-y-2" : ""}`} />
             </button>
 
+            {/* Mobile Menu */}
             {isMenuOpen && (
-                <div className="absolute top-full left-0 right-0 mt-2 bg-card border border-border md:hidden shadow-[var(--shadow-floating)] rounded-2xl">
-                    <nav className="flex flex-col p-3 gap-1" aria-label="Mobile">
+                <div className="absolute top-full left-0 right-0 bg-[#f0f0ea] border-t border-[#171d2b]/10 md:hidden shadow-lg rounded-b-2xl">
+                    <nav className="flex flex-col p-4 gap-2">
+                        {/* Mobile Learn Accordion */}
                         <div>
                             <button
                                 onClick={toggleLearn}
-                                className="w-full font-sans text-foreground text-[16px] py-2.5 px-2 hover:bg-accent rounded-lg transition-colors duration-150 flex items-center justify-between"
-                                aria-expanded={isLearnOpen}
+                                className="w-full font-sans text-[#171d2b] text-[18px] py-2 hover:opacity-70 transition-opacity flex items-center justify-between"
                             >
                                 Learn
-                                <svg className={cn("w-4 h-4 transition-transform duration-150", isLearnOpen && "rotate-180")} fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                <svg className={`w-4 h-4 transition-transform ${isLearnOpen ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                                 </svg>
                             </button>
                             {isLearnOpen && (
-                                <div className="pl-3 flex flex-col">
+                                <div className="pl-4 flex flex-col gap-1">
                                     {LEARN_ITEMS.map((item) => (
-                                        <Link
+                                        <a
                                             key={`mobile-${item.href}-${item.label}`}
                                             href={item.href}
-                                            className="font-sans text-foreground text-[15px] py-2.5 px-2 rounded-lg hover:bg-accent transition-colors duration-150"
+                                            className="font-sans text-[#171d2b] text-[16px] py-2 hover:opacity-70 transition-opacity"
                                         >
                                             {item.label}
-                                        </Link>
+                                        </a>
                                     ))}
                                 </div>
                             )}
                         </div>
 
+                        {/* Mobile Resources Accordion */}
                         <div>
                             <button
                                 onClick={toggleResources}
-                                className="w-full font-sans text-foreground text-[16px] py-2.5 px-2 hover:bg-accent rounded-lg transition-colors duration-150 flex items-center justify-between"
-                                aria-expanded={isResourcesOpen}
+                                className="w-full font-sans text-[#171d2b] text-[18px] py-2 hover:opacity-70 transition-opacity flex items-center justify-between"
                             >
                                 Resources
-                                <svg className={cn("w-4 h-4 transition-transform duration-150", isResourcesOpen && "rotate-180")} fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                <svg className={`w-4 h-4 transition-transform ${isResourcesOpen ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                                 </svg>
                             </button>
                             {isResourcesOpen && (
-                                <div className="pl-3 flex flex-col">
+                                <div className="pl-4 flex flex-col gap-1">
                                     {RESOURCES_ITEMS.map((item) => (
-                                        <Link
+                                        <a
                                             key={`mobile-${item.href}-${item.label}`}
                                             href={item.href}
-                                            className="font-sans text-foreground text-[15px] py-2.5 px-2 rounded-lg hover:bg-accent transition-colors duration-150"
+                                            className="font-sans text-[#171d2b] text-[16px] py-2 hover:opacity-70 transition-opacity"
                                         >
                                             {item.label}
-                                        </Link>
+                                        </a>
                                     ))}
                                 </div>
                             )}
                         </div>
 
-                        <div className="mt-2 px-1 pb-1">
+                        <div className="mt-2">
                             {isLoading ? (
-                                <div className="h-10 w-full rounded-full bg-muted" aria-hidden="true" />
+                                <div className="bg-[#171d2b]/10 h-[42px] rounded-[100px] px-6 w-full animate-pulse" />
                             ) : user ? (
-                                <ButtonLink href="/dashboard" size="sm" className="w-full">
-                                    Go to dashboard
-                                </ButtonLink>
+                                <Link
+                                    href="/dashboard"
+                                    className="bg-[#171d2b] h-[42px] rounded-[100px] px-6 text-[#fefeff] font-sora text-[16px] hover:bg-[#2a3347] transition-colors flex items-center justify-center w-full"
+                                >
+                                    Dashboard
+                                </Link>
                             ) : (
-                                <Button size="sm" className="w-full" onClick={handleLoginClick}>
+                                <button
+                                    onClick={handleLoginClick}
+                                    className="bg-[#171d2b] h-[42px] rounded-[100px] px-6 text-[#fefeff] font-sora text-[16px] hover:bg-[#2a3347] transition-colors flex items-center justify-center w-full"
+                                >
                                     Log in
-                                </Button>
+                                </button>
                             )}
                         </div>
                     </nav>
                 </div>
             )}
 
+            {/* Captcha Modal */}
             <CaptchaModal
                 isOpen={showCaptcha}
                 onClose={() => setShowCaptcha(false)}
@@ -298,8 +295,10 @@ export default function Header({ className }: { className?: string }) {
     }, [checkUser]);
 
     return (
-        <div ref={mountRef} className="sticky top-0 z-50 w-full h-16 sm:h-20">
-            <SessionAwareHeader user={user} isLoading={isLoading} className={className} />
+        <div ref={mountRef} className="sticky top-0 z-50 w-full pt-2 sm:pt-3 lg:pt-4">
+            <div className="max-w-[1440px] mx-auto">
+                <SessionAwareHeader user={user} isLoading={isLoading} className={className} />
+            </div>
         </div>
     );
 }
