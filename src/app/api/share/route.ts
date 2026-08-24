@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerSupabaseClient } from '@/config/supabase/server'
-import { ShareCodeCreateSchema, ShareMaterialTypeSchema } from '@/lib/schemas/sharing'
+import { ShareCodeCreateSchema, ShareMaterialTypeSchema, ShareGetQuerySchema, SharePatchSchema } from '@/lib/schemas/sharing'
 import { z } from 'zod'
 
 const SHARE_CODE_ALPHABET = 'abcdefghijklmnopqrstuvwxyz0123456789'
@@ -68,12 +68,16 @@ export async function GET(request: NextRequest) {
   }
 
   const { searchParams } = new URL(request.url)
-  const materialType = searchParams.get('materialType')
-  const materialId = searchParams.get('materialId')
+  const parsedQuery = ShareGetQuerySchema.safeParse({
+    materialType: searchParams.get('materialType'),
+    materialId: searchParams.get('materialId'),
+  })
 
-  if (!materialType || !materialId) {
-    return NextResponse.json({ error: 'Missing parameters' }, { status: 400 })
+  if (!parsedQuery.success) {
+    return NextResponse.json({ error: 'Missing or invalid parameters' }, { status: 400 })
   }
+
+  const { materialType, materialId } = parsedQuery.data
 
   // Optimized: only select needed columns
   const { data: share } = await supabase
@@ -125,7 +129,8 @@ export async function POST(request: NextRequest) {
     .select('id, share_code, is_active, created_at')
     .eq('material_type', materialType)
     .eq('material_id', materialId)
-    .single()
+    .eq('user_id', user.id)
+    .maybeSingle()
 
   if (existing) {
     // Reactivate if inactive
@@ -199,11 +204,13 @@ export async function PATCH(request: NextRequest) {
   }
 
   const body = await request.json()
-  const { shareId, isActive, newCode } = body
+  const parsed = SharePatchSchema.safeParse(body)
 
-  if (!shareId) {
-    return NextResponse.json({ error: 'Missing shareId' }, { status: 400 })
+  if (!parsed.success) {
+    return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 })
   }
+
+  const { shareId, isActive, newCode } = parsed.data
 
   const updates: Record<string, unknown> = { updated_at: new Date().toISOString() }
 

@@ -1,13 +1,6 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
-
-// Allowed origins for CORS (SECURITY FIX - CWE-942)
-const ALLOWED_ORIGINS = [
-  'https://deepterm.app',
-  'https://www.deepterm.app',
-  'https://deepterm.vercel.app',
-  // Development origins are handled separately below
-]
+import { isTrustedOrigin } from '@/lib/auth/trustedOrigins'
 
 // Only allow 'unsafe-eval' in development (needed for Next.js HMR/React DevTools)
 const IS_DEV = process.env.NODE_ENV === 'development'
@@ -73,8 +66,7 @@ export async function proxy(request: NextRequest) {
   // CORS: Only allow trusted origins (SECURITY FIX)
   if (origin) {
     const isDev = process.env.NODE_ENV === 'development'
-    const isAllowed = ALLOWED_ORIGINS.includes(origin) ||
-      (isDev && origin.startsWith('http://localhost'))
+    const isAllowed = isTrustedOrigin(origin, isDev)
 
     if (isAllowed) {
       response.headers.set('Access-Control-Allow-Origin', origin)

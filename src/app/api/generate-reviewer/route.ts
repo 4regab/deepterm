@@ -3,10 +3,11 @@ import { FileState } from "@google/genai";
 import { checkAndIncrementAIUsage } from "@/services/rateLimit";
 import { generateContentWithRotation, uploadFileWithRotation, getApiKeyCount, Type } from "@/services/geminiClient";
 import { verifyTurnstileToken } from "@/services/turnstile";
+import { MAX_GENERATE_TEXT_LENGTH, MAX_REVIEWER_FILE_SIZE, resolveGenerateMimeType } from "@/utils/generateInput";
 
 // File size limits (in bytes)
-const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB - reduced for faster processing
-const MAX_TEXT_LENGTH = 100000; // 100k characters
+const MAX_FILE_SIZE = MAX_REVIEWER_FILE_SIZE;
+const MAX_TEXT_LENGTH = MAX_GENERATE_TEXT_LENGTH;
 
 // Valid extraction modes
 const VALID_EXTRACTION_MODES = ['full', 'sentence', 'keywords'] as const;
@@ -91,25 +92,6 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: captcha.error }, { status: captcha.status });
     }
 
-    // Atomic rate limit check and increment
-    const rateLimit = await checkAndIncrementAIUsage();
-    
-    // Check authentication first
-    if (!rateLimit.authenticated) {
-        return NextResponse.json({
-            error: "Not authenticated"
-        }, { status: 401 });
-    }
-    
-    // Then check rate limit
-    if (!rateLimit.allowed) {
-        return NextResponse.json({ 
-            error: "Daily AI generation limit reached (10/day)", 
-            remaining: rateLimit.remaining,
-            resetAt: rateLimit.resetAt.toISOString()
-        }, { status: 429 });
-    }
-
     try {
         const file = formData.get("file") as File | null;
         const textContent = formData.get("textContent") as string | null;
@@ -138,23 +120,49 @@ export async function POST(request: NextRequest) {
             }, { status: 400 });
         }
 
+        const resolvedMimeType = file ? resolveGenerateMimeType(file) : null;
+        if (file && !resolvedMimeType) {
+            return NextResponse.json({ error: "Unsupported file type. Only PDF files are allowed." }, { status: 400 });
+        }
+
+        const rateLimit = await checkAndIncrementAIUsage();
+
+        if (!rateLimit.authenticated) {
+            return NextResponse.json({
+                error: "Not authenticated"
+            }, { status: 401 });
+        }
+
+        if (rateLimit.unavailable) {
+            return NextResponse.json({
+                error: "Rate limit service unavailable. Please try again."
+            }, { status: 503 });
+        }
+
+        if (!rateLimit.allowed) {
+            return NextResponse.json({ 
+                error: "Daily AI generation limit reached (10/day)", 
+                remaining: rateLimit.remaining,
+                resetAt: rateLimit.resetAt.toISOString()
+            }, { status: 429 });
+        }
+
         let fileUri: string | null = null;
         let mimeType: string | null = null;
+        let uploadKeyIndex = 0;
 
         // Handle file upload to Gemini Files API
         if (file) {
-            mimeType = file.type || getMimeTypeFromName(file.name);
-            if (!mimeType) {
-                return NextResponse.json({ error: "Unsupported file type. Only PDF files are allowed." }, { status: 400 });
-            }
+            mimeType = resolvedMimeType;
 
             const arrayBuffer = await file.arrayBuffer();
             const blob = new Blob([arrayBuffer], { type: mimeType });
 
-            const { uploadedFile, ai } = await uploadFileWithRotation({
+            const { uploadedFile, ai, keyIndex } = await uploadFileWithRotation({
                 file: blob,
-                config: { mimeType, displayName: file.name },
+                config: { mimeType: mimeType!, displayName: file.name },
             });
+            uploadKeyIndex = keyIndex;
 
             // Wait for file processing
             let geminiFile = await ai.files.get({ name: uploadedFile.name! });
@@ -241,6 +249,7 @@ COLOR OPTIONS for categories: #E0F2FE, #DCFCE7, #FEF3C7, #FCE7F3, #E0E7FF, #F3E8
         const { text: responseText } = await generateContentWithRotation({
             model: "gemini-2.5-flash-lite",
             contents,
+            preferredKeyIndex: uploadKeyIndex,
             config: {
                 systemInstruction: systemPrompt,
                 temperature: 0.5,
@@ -341,10 +350,3 @@ COLOR OPTIONS for categories: #E0F2FE, #DCFCE7, #FEF3C7, #FCE7F3, #E0E7FF, #F3E8
     }
 }
 
-function getMimeTypeFromName(filename: string): string | null {
-    const ext = filename.toLowerCase().split(".").pop();
-    switch (ext) {
-        case "pdf": return "application/pdf";
-        default: return null;
-    }
-}

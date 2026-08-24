@@ -30,6 +30,7 @@ import {
 import StudyingProgress from "@/components/StudyingProgress";
 import ShareModal from "@/components/ShareModal";
 import { createClient } from "@/config/supabase/client";
+import { buildReviewerTermInsert } from "@/utils/reviewerTerms";
 
 type LearnStage = 'new' | 'learning' | 'review' | 'mastered';
 
@@ -492,9 +493,11 @@ export default function MaterialDetailClient(props: Props) {
 
     const handleAddReviewerTerm = useCallback(async (categoryId: string, term: string, definition: string) => {
         const supabase = createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
         const { data: newTerm } = await supabase
             .from("reviewer_terms")
-            .insert({ category_id: categoryId, term, definition })
+            .insert(buildReviewerTermInsert(user.id, categoryId, term, definition))
             .select()
             .single();
         if (newTerm) {

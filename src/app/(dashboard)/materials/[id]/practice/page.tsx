@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Loader2 } from "lucide-react";
@@ -11,8 +11,7 @@ import PracticeSettingsModal, { PracticeSettings } from "@/components/PracticeSe
 import { createClient } from "@/config/supabase/client";
 import { useXPStore } from "@/lib/stores";
 import { addXP, recordStudyActivity, batchUpdateFlashcardStatuses, XP_REWARDS, type FlashcardStatusUpdate } from "@/services/activity";
-
-type QuestionType = "multipleChoice" | "trueFalse" | "fillBlank";
+import { generateQuestionsFromCards, gradePracticeAnswer, type QuestionType } from "@/utils/practiceQuestions";
 
 type CardStatus = 'new' | 'learning' | 'review' | 'mastered';
 
@@ -54,60 +53,6 @@ const DEFAULT_PRACTICE_SETTINGS: PracticeSettings = {
     answerFeedback: false,
 };
 
-function generateQuestionsFromCards(cards: FlashcardData[], types: QuestionType[], cardCount: number): Question[] {
-    const questions: Question[] = [];
-    const shuffled = [...cards].sort(() => Math.random() - 0.5);
-    const selectedCards = shuffled.slice(0, cardCount);
-
-    selectedCards.forEach((card, idx) => {
-        const type = types[idx % types.length];
-
-        if (type === 'trueFalse') {
-            // True/False: Show definition, display a term, ask if it's correct
-            const isCorrectPairing = Math.random() > 0.5;
-            let displayedTerm: string;
-
-            if (isCorrectPairing) {
-                displayedTerm = card.term;
-            } else {
-                const others = cards.filter(c => c.id !== card.id);
-                displayedTerm = others.length > 0
-                    ? others[Math.floor(Math.random() * others.length)].term
-                    : card.term;
-            }
-
-            questions.push({
-                id: card.id,
-                type,
-                question: card.definition,
-                correctAnswer: isCorrectPairing ? 'true' : 'false',
-                tfDisplayedTerm: displayedTerm,
-                tfIsCorrectPairing: isCorrectPairing,
-            });
-        } else if (type === 'fillBlank') {
-            questions.push({
-                id: card.id,
-                type,
-                question: `${card.definition.split(' ').slice(0, 3).join(' ')} _____ ${card.definition.split(' ').slice(-2).join(' ')}`,
-                correctAnswer: card.term.toLowerCase(),
-            });
-        } else {
-            // Multiple choice - show definition, ask for term (like learn mode)
-            const others = cards.filter(c => c.id !== card.id).map(c => c.term);
-            const wrongOptions = others.sort(() => Math.random() - 0.5).slice(0, 3);
-            questions.push({
-                id: card.id,
-                type,
-                question: card.definition,
-                correctAnswer: card.term,
-                options: [...wrongOptions, card.term].sort(() => Math.random() - 0.5),
-            });
-        }
-    });
-
-    return questions;
-}
-
 export default function PracticePage() {
     const router = useRouter();
     const params = useParams();
@@ -140,7 +85,9 @@ export default function PracticePage() {
         }
     }, [params.id]);
 
-    useState(() => { fetchCards(); });
+    useEffect(() => {
+        void fetchCards();
+    }, [fetchCards]);
     const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
     const [showAnswer, setShowAnswer] = useState(false);
     const [streak, setStreak] = useState(0);
@@ -210,9 +157,7 @@ export default function PracticePage() {
         const updated = [...questions];
         updated[currentQuestionIndex].userAnswer = answer;
         const current = updated[currentQuestionIndex];
-        const isCorrect = current.type === "fillBlank"
-            ? answer.toLowerCase().trim().includes(current.correctAnswer.toLowerCase().trim().split(" ")[0])
-            : answer.toLowerCase() === current.correctAnswer.toLowerCase();
+        const isCorrect = gradePracticeAnswer(current.type, answer, current.correctAnswer);
         updated[currentQuestionIndex].isCorrect = isCorrect;
         setQuestions(updated);
 

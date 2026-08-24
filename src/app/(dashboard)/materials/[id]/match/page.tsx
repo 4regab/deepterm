@@ -9,6 +9,7 @@ import ExitPopup from "@/components/ExitPopup";
 import { createClient } from "@/config/supabase/client";
 import { useXPStore } from "@/lib/stores";
 import { addXP, recordStudyActivity, updateFlashcardStatus, XP_REWARDS } from "@/services/activity";
+import { createGameCards } from "@/utils/matchGame";
 
 type CardStatus = 'new' | 'learning' | 'review' | 'mastered';
 
@@ -29,16 +30,6 @@ interface MatchCard {
 
 type Stage = "loading" | "playing" | "results";
 
-function createGameCards(data: FlashcardData[]): MatchCard[] {
-    const gameCards: MatchCard[] = [];
-    const selected = data.slice(0, 6);
-    selected.forEach(item => {
-        gameCards.push({ id: `term-${item.id}`, content: item.term, type: 'term', pairId: item.id, isMatched: false });
-        gameCards.push({ id: `def-${item.id}`, content: item.definition, type: 'definition', pairId: item.id, isMatched: false });
-    });
-    return gameCards.sort(() => Math.random() - 0.5);
-}
-
 export default function MatchPage() {
     const router = useRouter();
     const params = useParams();
@@ -53,6 +44,7 @@ export default function MatchPage() {
     const [finalTime, setFinalTime] = useState(0);
     const [showExitPopup, setShowExitPopup] = useState(false);
     const timerRef = useRef<NodeJS.Timeout | null>(null);
+    const timeElapsedRef = useRef(0);
 
     useEffect(() => {
         let mounted = true;
@@ -80,7 +72,11 @@ export default function MatchPage() {
                 setFlashcardData(fcData);
                 setCards(createGameCards(fcData));
                 setStage("playing");
-                timerRef.current = setInterval(() => setTimeElapsed(prev => prev + 0.1), 100);
+                timeElapsedRef.current = 0;
+                timerRef.current = setInterval(() => {
+                    timeElapsedRef.current += 0.1;
+                    setTimeElapsed(timeElapsedRef.current);
+                }, 100);
             } else {
                 setStage("playing");
             }
@@ -115,7 +111,11 @@ export default function MatchPage() {
         setFinalXpEarned(0);
         setFinalTime(0);
         setStage("playing");
-        timerRef.current = setInterval(() => setTimeElapsed(prev => prev + 0.1), 100);
+        timeElapsedRef.current = 0;
+        timerRef.current = setInterval(() => {
+            timeElapsedRef.current += 0.1;
+            setTimeElapsed(timeElapsedRef.current);
+        }, 100);
     }, [stopTimer, flashcardData]);
 
     const handleCardClick = (card: MatchCard) => {
@@ -146,11 +146,10 @@ export default function MatchPage() {
                     setSelectedCards([]);
 
                     if (allMatched) {
-                        // Stop timer and capture final time in state
                         stopTimer();
-                        setFinalTime(timeElapsed);
+                        const completedTime = timeElapsedRef.current;
+                        setFinalTime(completedTime);
 
-                        // Persist XP at moment of completion (not during render)
                         const newMatchCount = matchCount + 1;
                         const xpEarned = newMatchCount * XP_REWARDS.FLASHCARD_CORRECT;
                         setFinalXpEarned(xpEarned);
@@ -160,7 +159,7 @@ export default function MatchPage() {
                                 await addXP(xpEarned);
                                 useXPStore.getState().fetchXPStats();
                             }
-                            const minutesStudied = Math.max(1, Math.round(timeElapsed / 60));
+                            const minutesStudied = Math.max(1, Math.round(completedTime / 60));
                             await recordStudyActivity({ flashcards: newMatchCount, minutes: minutesStudied });
                         };
                         persistResults();
@@ -195,7 +194,7 @@ export default function MatchPage() {
             id: item.id,
             term: item.term,
             definition: item.definition,
-            status: 'new' as 'new' | 'learning' | 'almost_done' | 'mastered'
+            status: (item.status === 'review' ? 'almost_done' : item.status) as 'new' | 'learning' | 'almost_done' | 'mastered'
         }));
 
         return (

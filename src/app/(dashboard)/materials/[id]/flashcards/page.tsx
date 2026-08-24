@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useRouter, useParams } from "next/navigation";
 import { RotateCcw, Check, X, Settings, Loader2 } from "lucide-react";
@@ -69,7 +69,9 @@ export default function FlashcardsPage() {
         setIsLoading(false);
     }, [params.id]);
 
-    useState(() => { fetchCards(); });
+    useEffect(() => {
+        void fetchCards();
+    }, [fetchCards]);
 
     // Get XP stats from store - must be called before any early returns
     const xpStats = useXPStore((state) => state.stats);

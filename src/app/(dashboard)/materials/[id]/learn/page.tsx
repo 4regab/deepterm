@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useSyncExternalStore } from "react";
+import { useState, useCallback, useEffect, useSyncExternalStore } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter, useParams } from "next/navigation";
 import {
@@ -14,6 +14,7 @@ import { getStudySettings, getQuestionTypeForStage, StudySettings, QuestionType 
 import { createClient } from "@/config/supabase/client";
 import { useXPStore } from "@/lib/stores";
 import { addXP, recordStudyActivity, batchUpdateFlashcardStatuses, XP_REWARDS, type FlashcardStatusUpdate } from "@/services/activity";
+import { expectedWrittenAnswer, promptLabelForFrontSide } from "@/utils/reviewerTerms";
 
 type LearnStage = 'new' | 'learning' | 'almost_done' | 'mastered';
 
@@ -78,6 +79,7 @@ export default function LearnPage() {
     const router = useRouter();
     const params = useParams();
     const [isLoading, setIsLoading] = useState(true);
+    const [materialTitle, setMaterialTitle] = useState("Learn");
     const [settings, setSettings] = useState<StudySettings>(() => getStudySettings());
     const [cards, setCards] = useState<LearnCard[]>([]);
     const [sessionQueue, setSessionQueue] = useState<SessionCard[]>([]);
@@ -87,11 +89,22 @@ export default function LearnPage() {
         useXPStore.getState().fetchXPStats();
 
         const supabase = createClient();
-        const { data } = await supabase
-            .from("flashcards")
-            .select("id, front, back, status")
-            .eq("set_id", params.id)
-            .order("created_at");
+        const [{ data }, { data: setRow }] = await Promise.all([
+            supabase
+                .from("flashcards")
+                .select("id, front, back, status")
+                .eq("set_id", params.id)
+                .order("created_at"),
+            supabase
+                .from("flashcard_sets")
+                .select("title")
+                .eq("id", params.id)
+                .maybeSingle(),
+        ]);
+
+        if (setRow?.title) {
+            setMaterialTitle(setRow.title);
+        }
 
         if (data && data.length > 0) {
             const loadedCards: LearnCard[] = data.map(c => ({
@@ -106,7 +119,9 @@ export default function LearnPage() {
         setIsLoading(false);
     }, [params.id]);
 
-    useState(() => { fetchCards(); });
+    useEffect(() => {
+        void fetchCards();
+    }, [fetchCards]);
     const [currentIndex, setCurrentIndex] = useState(0);
     const [isFlipped, setIsFlipped] = useState(false);
     const [writtenAnswer, setWrittenAnswer] = useState("");
@@ -285,7 +300,8 @@ export default function LearnPage() {
 
     const handleWrittenSubmit = () => {
         const currentCard = sessionQueue[currentIndex];
-        const correct = writtenAnswer.trim().toLowerCase() === currentCard.term.toLowerCase();
+        const expected = expectedWrittenAnswer(settings.frontSide, currentCard);
+        const correct = writtenAnswer.trim().toLowerCase() === expected.toLowerCase();
         setWrittenCorrect(correct);
         setWrittenSubmitted(true);
         setJustSubmittedWritten(true);
@@ -483,7 +499,7 @@ export default function LearnPage() {
                 </div>
 
                 <h1 className="font-sora font-bold text-[#171d2b] text-base sm:text-lg absolute left-1/2 transform -translate-x-1/2 truncate max-w-[40%]">
-                    DSA MIDTERMS
+                    {materialTitle}
                 </h1>
 
                 <div className="flex items-center gap-2 sm:gap-3">
@@ -512,7 +528,7 @@ export default function LearnPage() {
                 {/* Question Card */}
                 <div className="w-full max-w-3xl bg-white rounded-2xl sm:rounded-3xl shadow-sm border border-gray-100 p-4 sm:p-8 min-h-[200px] sm:min-h-[300px] flex flex-col relative mb-4 sm:mb-8">
                     <div className="flex justify-between items-start mb-4 sm:mb-6">
-                        <span className="text-xs sm:text-sm font-medium text-gray-500">Definition</span>
+                        <span className="text-xs sm:text-sm font-medium text-gray-500">{promptLabelForFrontSide(settings.frontSide)}</span>
                         <div className="flex items-center gap-2">
                             {currentCard.stage === 'new' && (
                                 <span className="px-2 sm:px-3 py-1 bg-pink-100 text-pink-600 text-xs font-bold rounded-full flex items-center gap-1">

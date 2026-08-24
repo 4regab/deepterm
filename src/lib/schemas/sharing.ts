@@ -11,6 +11,17 @@ export const ShareCodeCreateSchema = ShareCodeBaseSchema.min(8, 'Share code must
 export const ShareMaterialTypeSchema = z.enum(['flashcard_set', 'reviewer'])
 export type ShareMaterialType = z.infer<typeof ShareMaterialTypeSchema>
 
+export const ShareGetQuerySchema = z.object({
+  materialType: ShareMaterialTypeSchema,
+  materialId: z.string().uuid(),
+})
+
+export const SharePatchSchema = z.object({
+  shareId: z.string().uuid(),
+  isActive: z.boolean().optional(),
+  newCode: ShareCodeCreateSchema.optional(),
+})
+
 export const MaterialShareSchema = z.object({
   id: z.string().uuid(),
   share_code: z.string(),
