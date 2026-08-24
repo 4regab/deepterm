@@ -465,8 +465,8 @@ export default function CreatePage() {
             <div>
                 {/* Header */}
                 <div className="mb-8">
-                    <h1 className="text-4xl font-sora font-bold text-[#171d2b] mb-2">Create Materials</h1>
-                    <p className="text-[#171d2b]/60 font-sans text-lg">Choose what you want to create</p>
+                    <h1 className="text-4xl font-sans font-medium text-foreground mb-2">Create Materials</h1>
+                    <p className="text-muted-foreground font-sans text-lg">Choose what you want to create</p>
                 </div>
 
                 {/* Type Selection */}
@@ -474,20 +474,20 @@ export default function CreatePage() {
                     <button
                         onClick={() => setCreateType("material")}
                         className={`p-4 sm:p-5 rounded-xl border-2 text-left transition-all ${createType === "material"
-                            ? "border-[#171d2b] bg-[#171d2b]/5"
-                            : "border-[#171d2b]/10 hover:border-[#171d2b]/30 bg-white"
+                            ? "border-primary bg-muted"
+                            : "border-border hover:border-input bg-white"
                             }`}
                     >
                         <div className="flex items-center justify-between mb-2">
                             <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 rounded-lg bg-[#171d2b] flex items-center justify-center">
+                                <div className="w-10 h-10 rounded-lg bg-primary flex items-center justify-center">
                                     <Layers size={20} className="text-white" />
                                 </div>
-                                <span className="font-sora font-semibold text-[#171d2b]">Cards</span>
+                                <span className="font-sans font-medium text-foreground">Cards</span>
                             </div>
-                            {createType === "material" && <Check size={18} className="text-[#171d2b]" />}
+                            {createType === "material" && <Check size={18} className="text-foreground" />}
                         </div>
-                        <p className="text-sm text-[#171d2b]/60">Create cards for memorization</p>
+                        <p className="text-sm text-muted-foreground">Create cards for memorization</p>
                     </button>
 
                     <button
@@ -496,27 +496,27 @@ export default function CreatePage() {
                             setReviewerStep("input");
                         }}
                         className={`p-4 sm:p-5 rounded-xl border-2 text-left transition-all ${createType === "reviewer"
-                            ? "border-[#171d2b] bg-[#171d2b]/5"
-                            : "border-[#171d2b]/10 hover:border-[#171d2b]/30 bg-white"
+                            ? "border-primary bg-muted"
+                            : "border-border hover:border-input bg-white"
                             }`}
                     >
                         <div className="flex items-center justify-between mb-2">
                             <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 rounded-lg bg-white border border-[#171d2b]/10 flex items-center justify-center">
-                                    <BookOpen size={20} className="text-[#171d2b]" />
+                                <div className="w-10 h-10 rounded-lg bg-white border border-border flex items-center justify-center">
+                                    <BookOpen size={20} className="text-foreground" />
                                 </div>
-                                <span className="font-sora font-semibold text-[#171d2b]">Reviewer</span>
+                                <span className="font-sans font-medium text-foreground">Reviewer</span>
                             </div>
-                            {createType === "reviewer" && <Check size={18} className="text-[#171d2b]" />}
+                            {createType === "reviewer" && <Check size={18} className="text-foreground" />}
                         </div>
-                        <p className="text-sm text-[#171d2b]/60">Extract organized notes from documents</p>
+                        <p className="text-sm text-muted-foreground">Extract organized notes from documents</p>
                     </button>
                 </div>
 
                 {/* Extraction Mode Selection - Only for reviewer type */}
                 {createType === "reviewer" && reviewerStep === "input" && (
                     <div className="mb-6">
-                        <label className="block text-sm font-medium text-[#171d2b]/60 mb-3 text-left">
+                        <label className="block text-sm font-medium text-muted-foreground mb-3 text-left">
                             Extraction Mode
                         </label>
                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -529,15 +529,15 @@ export default function CreatePage() {
                                     key={mode.id}
                                     onClick={() => setExtractionMode(mode.id as ExtractionMode)}
                                     className={`p-3 rounded-xl border text-left transition-all ${extractionMode === mode.id
-                                        ? "border-[#171d2b] bg-[#171d2b]/5"
-                                        : "border-[#171d2b]/10 hover:border-[#171d2b]/30 bg-white"
+                                        ? "border-primary bg-muted"
+                                        : "border-border hover:border-input bg-white"
                                         }`}
                                 >
                                     <div className="flex items-center justify-between mb-1">
-                                        <span className="font-sora font-semibold text-[#171d2b] text-sm">{mode.label}</span>
-                                        {extractionMode === mode.id && <Check size={14} className="text-[#171d2b]" />}
+                                        <span className="font-sans font-medium text-foreground text-sm">{mode.label}</span>
+                                        {extractionMode === mode.id && <Check size={14} className="text-foreground" />}
                                     </div>
-                                    <p className="text-xs text-[#171d2b]/60">{mode.desc}</p>
+                                    <p className="text-xs text-muted-foreground">{mode.desc}</p>
                                 </button>
                             ))}
                         </div>
@@ -545,8 +545,8 @@ export default function CreatePage() {
                 )}
 
                 {/* Title Input */}
-                <div className="bg-white rounded-xl border border-[#171d2b]/10 p-4 sm:p-5 mb-6">
-                    <label className="block text-sm font-medium text-[#171d2b]/60 mb-2 text-left">
+                <div className="bg-white rounded-xl border border-border p-4 sm:p-5 mb-6">
+                    <label className="block text-sm font-medium text-muted-foreground mb-2 text-left">
                         Material Title
                     </label>
                     <input
@@ -554,19 +554,19 @@ export default function CreatePage() {
                         value={title}
                         onChange={(e) => setTitle(e.target.value)}
                         placeholder="e.g., Biology Chapter 1"
-                        className="w-full px-4 py-3 rounded-lg border border-[#171d2b]/10 focus:border-[#171d2b]/30 focus:outline-none text-[#171d2b] placeholder:text-[#171d2b]/30 text-left"
+                        className="w-full px-4 py-3 rounded-lg border border-border focus:border-primary/30 focus:outline-none text-foreground placeholder:text-muted-foreground text-left"
                     />
                 </div>
 
                 {/* Input Mode Tabs - Only show for material type */}
                 {createType === "material" && (
                     <div className="mb-6">
-                        <div className="inline-flex bg-[#171d2b]/5 rounded-full p-1">
+                        <div className="inline-flex bg-muted rounded-full p-1">
                             <button
                                 onClick={() => setInputMode("manual")}
                                 className={`px-4 sm:px-6 py-2 rounded-full text-sm font-medium transition-all ${inputMode === "manual"
-                                    ? "bg-[#171d2b] text-white"
-                                    : "text-[#171d2b]/60 hover:text-[#171d2b]"
+                                    ? "bg-primary text-white"
+                                    : "text-muted-foreground hover:text-foreground"
                                     }`}
                             >
                                 Manual Entry
@@ -574,8 +574,8 @@ export default function CreatePage() {
                             <button
                                 onClick={() => setInputMode("bulk")}
                                 className={`px-4 sm:px-6 py-2 rounded-full text-sm font-medium transition-all ${inputMode === "bulk"
-                                    ? "bg-[#171d2b] text-white"
-                                    : "text-[#171d2b]/60 hover:text-[#171d2b]"
+                                    ? "bg-primary text-white"
+                                    : "text-muted-foreground hover:text-foreground"
                                     }`}
                             >
                                 Bulk Add
@@ -583,8 +583,8 @@ export default function CreatePage() {
                             <button
                                 onClick={() => setInputMode("ai")}
                                 className={`px-4 sm:px-6 py-2 rounded-full text-sm font-medium transition-all ${inputMode === "ai"
-                                    ? "bg-[#171d2b] text-white"
-                                    : "text-[#171d2b]/60 hover:text-[#171d2b]"
+                                    ? "bg-primary text-white"
+                                    : "text-muted-foreground hover:text-foreground"
                                     }`}
                             >
                                 AI Generate
@@ -615,10 +615,10 @@ export default function CreatePage() {
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, y: -20 }}
-                            className="bg-white rounded-xl border border-[#171d2b]/10 p-4 sm:p-6"
+                            className="bg-white rounded-xl border border-border p-4 sm:p-6"
                         >
                             <div className="flex items-center justify-between mb-4">
-                                <h2 className="font-sora font-semibold text-[#171d2b] text-left">
+                                <h2 className="font-sans font-medium text-foreground text-left">
                                     Cards ({cards.filter(c => (c.term || "").trim() && (c.definition || "").trim()).length})
                                 </h2>
                             </div>
@@ -627,14 +627,14 @@ export default function CreatePage() {
                                 {cards.map((card, index) => (
                                     <div
                                         key={card.id}
-                                        className="p-4 rounded-xl bg-[#f8f9fa] border border-[#171d2b]/5"
+                                        className="p-4 rounded-xl bg-muted border border-border"
                                     >
                                         <div className="flex items-center justify-between mb-3">
-                                            <span className="text-sm font-medium text-[#171d2b]/40">{index + 1}</span>
+                                            <span className="text-sm font-medium text-muted-foreground">{index + 1}</span>
                                             {cards.length > 1 && (
                                                 <button
                                                     onClick={() => removeCard(card.id)}
-                                                    className="p-1.5 hover:bg-red-50 rounded-lg text-[#171d2b]/40 hover:text-red-500 transition-colors"
+                                                    className="p-1.5 hover:bg-red-50 rounded-lg text-muted-foreground hover:text-red-500 transition-colors"
                                                 >
                                                     <Trash2 size={16} />
                                                 </button>
@@ -642,7 +642,7 @@ export default function CreatePage() {
                                         </div>
                                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                                             <div>
-                                                <label className="block text-xs font-medium text-[#171d2b]/40 mb-1.5 uppercase tracking-wider text-left">
+                                                <label className="block text-xs font-medium text-muted-foreground mb-1.5 uppercase tracking-wider text-left">
                                                     Term
                                                 </label>
                                                 <input
@@ -650,11 +650,11 @@ export default function CreatePage() {
                                                     value={card.term}
                                                     onChange={(e) => updateCard(card.id, "term", e.target.value)}
                                                     placeholder="Enter term"
-                                                    className="w-full px-3 py-2.5 rounded-lg border border-[#171d2b]/10 focus:border-[#171d2b]/30 focus:outline-none text-[#171d2b] placeholder:text-[#171d2b]/30 text-sm text-left"
+                                                    className="w-full px-3 py-2.5 rounded-lg border border-border focus:border-primary/30 focus:outline-none text-foreground placeholder:text-muted-foreground text-sm text-left"
                                                 />
                                             </div>
                                             <div>
-                                                <label className="block text-xs font-medium text-[#171d2b]/40 mb-1.5 uppercase tracking-wider text-left">
+                                                <label className="block text-xs font-medium text-muted-foreground mb-1.5 uppercase tracking-wider text-left">
                                                     Definition
                                                 </label>
                                                 <input
@@ -662,7 +662,7 @@ export default function CreatePage() {
                                                     value={card.definition}
                                                     onChange={(e) => updateCard(card.id, "definition", e.target.value)}
                                                     placeholder="Enter definition"
-                                                    className="w-full px-3 py-2.5 rounded-lg border border-[#171d2b]/10 focus:border-[#171d2b]/30 focus:outline-none text-[#171d2b] placeholder:text-[#171d2b]/30 text-sm text-left"
+                                                    className="w-full px-3 py-2.5 rounded-lg border border-border focus:border-primary/30 focus:outline-none text-foreground placeholder:text-muted-foreground text-sm text-left"
                                                 />
                                             </div>
                                         </div>
@@ -672,7 +672,7 @@ export default function CreatePage() {
 
                             <button
                                 onClick={addCard}
-                                className="mt-4 w-full py-3 border-2 border-dashed border-[#171d2b]/20 rounded-xl text-[#171d2b]/60 hover:border-[#171d2b]/40 hover:text-[#171d2b] transition-colors flex items-center justify-center gap-2"
+                                className="mt-4 w-full py-3 border-2 border-dashed border-border rounded-xl text-muted-foreground hover:border-primary/40 hover:text-foreground transition-colors flex items-center justify-center gap-2"
                             >
                                 <Plus size={18} />
                                 <span className="text-sm font-medium">Add Card</span>
@@ -687,16 +687,16 @@ export default function CreatePage() {
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, y: -20 }}
-                            className="bg-white rounded-xl border border-[#171d2b]/10 p-4 sm:p-6"
+                            className="bg-white rounded-xl border border-border p-4 sm:p-6"
                         >
                             <div className="text-left mb-4">
                                 <div className="flex items-center gap-2">
-                                    <h2 className="font-sora font-semibold text-[#171d2b]">Bulk Add</h2>
+                                    <h2 className="font-sans font-medium text-foreground">Bulk Add</h2>
                                     <div className="relative group">
-                                        <button className="p-1 rounded-full hover:bg-[#171d2b]/10 transition-colors">
-                                            <Info size={14} className="text-[#171d2b]/40" />
+                                        <button className="p-1 rounded-full hover:bg-accent transition-colors">
+                                            <Info size={14} className="text-muted-foreground" />
                                         </button>
-                                        <div className="absolute left-0 top-full mt-1 w-48 p-3 bg-[#171d2b] text-white text-xs rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-10 shadow-lg">
+                                        <div className="absolute left-0 top-full mt-1 w-48 p-3 bg-primary text-white text-xs rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-10 shadow-lg">
                                             <p className="font-medium mb-1.5">Supported formats:</p>
                                             <ul className="space-y-0.5 text-white/80">
                                                 <li>term - definition</li>
@@ -707,14 +707,14 @@ export default function CreatePage() {
                                         </div>
                                     </div>
                                 </div>
-                                <p className="text-sm text-[#171d2b]/60 mt-1">Paste your term-definition pairs below</p>
+                                <p className="text-sm text-muted-foreground mt-1">Paste your term-definition pairs below</p>
                             </div>
 
                             <textarea
                                 value={bulkText}
                                 onChange={(e) => setBulkText(e.target.value)}
                                 placeholder={`Example format:\nApple - A round fruit with red or green skin\nCapital : The city where a country's government is located\nH2O ; The chemical formula for water`}
-                                className="w-full h-48 sm:h-64 px-4 py-3 rounded-xl border border-[#171d2b]/10 focus:border-[#171d2b]/30 focus:outline-none text-[#171d2b] placeholder:text-[#171d2b]/30 text-sm resize-none text-left"
+                                className="w-full h-48 sm:h-64 px-4 py-3 rounded-xl border border-border focus:border-primary/30 focus:outline-none text-foreground placeholder:text-muted-foreground text-sm resize-none text-left"
                             />
 
                             <div className="flex flex-col sm:flex-row gap-3 mt-4">
@@ -723,14 +723,14 @@ export default function CreatePage() {
                                         setBulkText("");
                                         setInputMode("manual");
                                     }}
-                                    className="flex-1 py-3 rounded-xl border border-[#171d2b]/10 text-[#171d2b]/60 hover:bg-[#171d2b]/5 transition-colors text-sm font-medium"
+                                    className="flex-1 py-3 rounded-xl border border-border text-muted-foreground hover:bg-accent transition-colors text-sm font-medium"
                                 >
                                     Cancel
                                 </button>
                                 <button
                                     onClick={handleImportFromBulk}
                                     disabled={!bulkText.trim()}
-                                    className="flex-1 py-3 rounded-xl bg-[#171d2b] text-white hover:bg-[#171d2b]/90 transition-colors text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                                    className="flex-1 py-3 rounded-xl bg-primary text-white hover:bg-primary/90 transition-colors text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
                                     Import Cards
                                 </button>
@@ -745,11 +745,11 @@ export default function CreatePage() {
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, y: -20 }}
-                            className="bg-white rounded-xl border border-[#171d2b]/10 p-4 sm:p-6"
+                            className="bg-white rounded-xl border border-border p-4 sm:p-6"
                         >
                             <div className="text-left mb-4">
-                                <h2 className="font-sora font-semibold text-[#171d2b] mb-1">AI Generate</h2>
-                                <p className="text-sm text-[#171d2b]/60">
+                                <h2 className="font-sans font-medium text-foreground mb-1">AI Generate</h2>
+                                <p className="text-sm text-muted-foreground">
                                     Upload a document and let AI extract terms automatically
                                 </p>
                             </div>
@@ -765,30 +765,30 @@ export default function CreatePage() {
                             {!selectedFile ? (
                                 <button
                                     onClick={() => fileInputRef.current?.click()}
-                                    className="w-full py-12 border-2 border-dashed border-[#171d2b]/20 rounded-xl text-[#171d2b]/60 hover:border-[#171d2b]/40 hover:text-[#171d2b] transition-colors flex flex-col items-center justify-center gap-3"
+                                    className="w-full py-12 border-2 border-dashed border-border rounded-xl text-muted-foreground hover:border-primary/40 hover:text-foreground transition-colors flex flex-col items-center justify-center gap-3"
                                 >
                                     <FileText size={32} />
                                     <div className="text-center">
                                         <p className="text-sm font-medium">Click to upload PDF</p>
-                                        <p className="text-xs text-[#171d2b]/40 mt-1">PDF only (max 20MB)</p>
-                                        <p className="text-xs text-[#171d2b]/30 mt-0.5">Convert PPTX/DOCX to PDF first</p>
+                                        <p className="text-xs text-muted-foreground mt-1">PDF only (max 20MB)</p>
+                                        <p className="text-xs text-muted-foreground mt-0.5">Convert PPTX/DOCX to PDF first</p>
                                     </div>
                                 </button>
                             ) : (
-                                <div className="p-4 rounded-xl bg-[#f8f9fa] border border-[#171d2b]/10">
+                                <div className="p-4 rounded-xl bg-muted border border-border">
                                     <div className="flex items-center justify-between">
                                         <div className="flex items-center gap-3">
-                                            <FileText size={20} className="text-[#171d2b]/60" />
+                                            <FileText size={20} className="text-muted-foreground" />
                                             <div className="text-left">
-                                                <p className="text-sm font-medium text-[#171d2b]">{selectedFile.name}</p>
-                                                <p className="text-xs text-[#171d2b]/40">
+                                                <p className="text-sm font-medium text-foreground">{selectedFile.name}</p>
+                                                <p className="text-xs text-muted-foreground">
                                                     {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
                                                 </p>
                                             </div>
                                         </div>
                                         <button
                                             onClick={() => setSelectedFile(null)}
-                                            className="p-1.5 hover:bg-[#171d2b]/10 rounded-lg text-[#171d2b]/40 hover:text-[#171d2b] transition-colors"
+                                            className="p-1.5 hover:bg-accent rounded-lg text-muted-foreground hover:text-foreground transition-colors"
                                         >
                                             <X size={16} />
                                         </button>
@@ -800,10 +800,10 @@ export default function CreatePage() {
                             {selectedFile && sitekey && !captchaVerified && (
                                 <button
                                     onClick={() => setShowCaptchaModal(true)}
-                                    className="mt-4 w-full py-3 px-4 rounded-xl bg-[#f8f9fa] border border-[#171d2b]/10 hover:border-[#171d2b]/30 transition-colors flex items-center justify-center gap-2"
+                                    className="mt-4 w-full py-3 px-4 rounded-xl bg-muted border border-border hover:border-input transition-colors flex items-center justify-center gap-2"
                                 >
-                                    <ShieldCheck size={18} className="text-[#171d2b]/60" />
-                                    <span className="text-sm font-medium text-[#171d2b]">Complete Captcha to Continue</span>
+                                    <ShieldCheck size={18} className="text-muted-foreground" />
+                                    <span className="text-sm font-medium text-foreground">Complete Captcha to Continue</span>
                                 </button>
                             )}
 
@@ -822,14 +822,14 @@ export default function CreatePage() {
                                         setInputMode("manual");
                                         resetCaptcha();
                                     }}
-                                    className="flex-1 py-3 rounded-xl border border-[#171d2b]/10 text-[#171d2b]/60 hover:bg-[#171d2b]/5 transition-colors text-sm font-medium"
+                                    className="flex-1 py-3 rounded-xl border border-border text-muted-foreground hover:bg-accent transition-colors text-sm font-medium"
                                 >
                                     Cancel
                                 </button>
                                 <button
                                     onClick={createType === "reviewer" ? handleGenerateReviewer : handleGenerateCards}
                                     disabled={!selectedFile || isGenerating || (!!sitekey && !captchaVerified)}
-                                    className="flex-1 py-3 rounded-xl bg-[#171d2b] text-white hover:bg-[#171d2b]/90 transition-colors text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                                    className="flex-1 py-3 rounded-xl bg-primary text-white hover:bg-primary/90 transition-colors text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                                 >
                                     {isGenerating ? (
                                         <>
@@ -861,8 +861,8 @@ export default function CreatePage() {
 
                             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                                 <div>
-                                    <h2 className="text-xl font-sora font-bold text-[#171d2b]">Extraction Complete</h2>
-                                    <p className="text-[#171d2b]/60 text-sm">
+                                    <h2 className="text-xl font-sans font-medium text-foreground">Extraction Complete</h2>
+                                    <p className="text-muted-foreground text-sm">
                                         Found {totalReviewerTerms} key terms across {reviewerResults.length} categories.
                                     </p>
                                 </div>
@@ -873,7 +873,7 @@ export default function CreatePage() {
                                             setReviewerResults([]);
                                             setTitle("");
                                         }}
-                                        className="flex-1 sm:flex-none py-2.5 px-4 rounded-xl border border-[#171d2b]/10 text-[#171d2b]/60 hover:bg-[#171d2b]/5 transition-colors text-sm font-medium flex items-center justify-center gap-2"
+                                        className="flex-1 sm:flex-none py-2.5 px-4 rounded-xl border border-border text-muted-foreground hover:bg-accent transition-colors text-sm font-medium flex items-center justify-center gap-2"
                                     >
                                         <RefreshCw size={16} />
                                         Extract Again
@@ -881,7 +881,7 @@ export default function CreatePage() {
                                     <button
                                         onClick={handleSaveReviewer}
                                         disabled={isSaving || !title.trim()}
-                                        className="flex-1 sm:flex-none py-2.5 px-6 rounded-xl bg-[#171d2b] text-white hover:bg-[#171d2b]/90 transition-colors text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                                        className="flex-1 sm:flex-none py-2.5 px-6 rounded-xl bg-primary text-white hover:bg-primary/90 transition-colors text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                                     >
                                         {isSaving ? (
                                             <>
@@ -900,13 +900,13 @@ export default function CreatePage() {
 
                             {/* Search Filter */}
                             <div className="relative">
-                                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[#171d2b]/40" size={18} />
+                                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
                                 <input
                                     type="text"
                                     value={filterText}
                                     onChange={(e) => setFilterText(e.target.value)}
                                     placeholder="Filter terms..."
-                                    className="w-full pl-12 pr-4 py-3 rounded-xl border border-[#171d2b]/10 focus:border-[#171d2b] outline-none bg-white transition-all focus:shadow-sm text-sm"
+                                    className="w-full pl-12 pr-4 py-3 rounded-xl border border-border focus:border-primary outline-none bg-white transition-all focus:shadow-sm text-sm"
                                 />
                             </div>
 
@@ -917,7 +917,7 @@ export default function CreatePage() {
                                         key={category.id}
                                         initial={{ opacity: 0, y: 20 }}
                                         animate={{ opacity: 1, y: 0 }}
-                                        className="bg-white rounded-xl border border-[#171d2b]/10 overflow-hidden shadow-sm hover:shadow-md transition-shadow"
+                                        className="bg-white rounded-xl border border-border overflow-hidden shadow-sm hover:shadow-md transition-shadow"
                                     >
                                         <div
                                             onClick={() => toggleCategory(category.id)}
@@ -925,8 +925,8 @@ export default function CreatePage() {
                                             style={{ borderLeft: `4px solid ${category.color}` }}
                                         >
                                             <div className="flex items-center gap-4">
-                                                <h3 className="font-sora font-semibold text-[#171d2b]">{category.name}</h3>
-                                                <span className="px-2 py-0.5 rounded-full bg-[#171d2b]/5 text-xs font-medium text-[#171d2b]/60">
+                                                <h3 className="font-sans font-medium text-foreground">{category.name}</h3>
+                                                <span className="px-2 py-0.5 rounded-full bg-muted text-xs font-medium text-muted-foreground">
                                                     {category.terms.length} terms
                                                 </span>
                                             </div>
@@ -938,31 +938,31 @@ export default function CreatePage() {
                                                     initial={{ height: 0, opacity: 0 }}
                                                     animate={{ height: "auto", opacity: 1 }}
                                                     exit={{ height: 0, opacity: 0 }}
-                                                    className="border-t border-[#171d2b]/5"
+                                                    className="border-t border-border"
                                                 >
                                                     <div className="p-4 grid gap-4 grid-cols-1 lg:grid-cols-2">
                                                         {category.terms.map(term => (
-                                                            <div key={term.id} className="p-4 rounded-xl bg-[#f8f9fa] border border-[#171d2b]/5 hover:border-[#171d2b]/20 transition-colors group relative">
+                                                            <div key={term.id} className="p-4 rounded-xl bg-muted border border-border hover:border-border transition-colors group relative">
                                                                 <div className="flex justify-between items-start mb-2">
-                                                                    <h4 className="font-bold text-[#171d2b] pr-8">{term.term}</h4>
+                                                                    <h4 className="font-medium text-foreground pr-8">{term.term}</h4>
                                                                     <button
                                                                         onClick={(e) => {
                                                                             e.stopPropagation();
                                                                             navigator.clipboard.writeText(`${term.term}: ${term.definition}`);
                                                                         }}
-                                                                        className="absolute top-4 right-4 p-1.5 hover:bg-[#171d2b]/10 rounded-lg text-[#171d2b]/40 opacity-0 group-hover:opacity-100 transition-all"
+                                                                        className="absolute top-4 right-4 p-1.5 hover:bg-accent rounded-lg text-muted-foreground opacity-0 group-hover:opacity-100 transition-all"
                                                                         title="Copy"
                                                                     >
                                                                         <Copy size={14} />
                                                                     </button>
                                                                 </div>
-                                                                <p className="text-[#171d2b]/80 text-sm leading-relaxed mb-3">{term.definition}</p>
+                                                                <p className="text-foreground/80 text-sm leading-relaxed mb-3">{term.definition}</p>
 
                                                                 {term.examples && term.examples.length > 0 && (
                                                                     <div className="flex flex-wrap gap-2">
-                                                                        <span className="text-[10px] font-semibold text-[#171d2b]/40 uppercase tracking-wider py-1">Examples:</span>
+                                                                        <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider py-1">Examples:</span>
                                                                         {term.examples.map((ex, i) => (
-                                                                            <span key={i} className="px-2 py-0.5 rounded-md bg-white border border-[#171d2b]/10 text-xs text-[#171d2b]/70">
+                                                                            <span key={i} className="px-2 py-0.5 rounded-md bg-white border border-border text-xs text-muted-foreground">
                                                                                 {ex}
                                                                             </span>
                                                                         ))}
@@ -971,12 +971,12 @@ export default function CreatePage() {
 
                                                                 {term.subcategories && term.subcategories.length > 0 && (
                                                                     <div className="mt-2">
-                                                                        <span className="text-[10px] font-semibold text-[#171d2b]/40 uppercase tracking-wider">
+                                                                        <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
                                                                             {term.subcategoryTitle || 'Subcategories'}:
                                                                         </span>
                                                                         <ul className="mt-1 space-y-1">
                                                                             {term.subcategories.map((sub, i) => (
-                                                                                <li key={i} className="text-xs text-[#171d2b]/70 pl-3 border-l-2 border-[#171d2b]/10">
+                                                                                <li key={i} className="text-xs text-muted-foreground pl-3 border-l-2 border-border">
                                                                                     {sub}
                                                                                 </li>
                                                                             ))}
@@ -1001,14 +1001,14 @@ export default function CreatePage() {
                     <div className="flex flex-col sm:flex-row gap-3 mt-6">
                         <button
                             onClick={() => router.back()}
-                            className="flex-1 py-3 rounded-xl border border-[#171d2b]/10 text-[#171d2b]/60 hover:bg-[#171d2b]/5 transition-colors text-sm font-medium"
+                            className="flex-1 py-3 rounded-xl border border-border text-muted-foreground hover:bg-accent transition-colors text-sm font-medium"
                         >
                             Cancel
                         </button>
                         <button
                             onClick={handleSave}
                             disabled={isSaving || !title.trim()}
-                            className="flex-1 py-3 rounded-xl bg-[#171d2b] text-white hover:bg-[#171d2b]/90 transition-colors text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                            className="flex-1 py-3 rounded-xl bg-primary text-white hover:bg-primary/90 transition-colors text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                         >
                             {isSaving ? (
                                 <>
@@ -1043,8 +1043,8 @@ export default function CreatePage() {
                                 <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-4">
                                     <Check size={32} className="text-green-600" />
                                 </div>
-                                <h3 className="text-xl font-sora font-bold text-[#171d2b] mb-2">Material Saved!</h3>
-                                <p className="text-[#171d2b]/60 text-sm">Redirecting to your materials...</p>
+                                <h3 className="text-xl font-sans font-medium text-foreground mb-2">Material Saved!</h3>
+                                <p className="text-muted-foreground text-sm">Redirecting to your materials...</p>
                             </motion.div>
                         </motion.div>
                     )}

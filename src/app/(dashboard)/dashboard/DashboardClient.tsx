@@ -18,12 +18,12 @@ const DynamicStudyCalendar = dynamic(
 
 function StudyCalendarSkeleton() {
     return (
-        <div className="bg-white rounded-2xl p-6 border border-[#171d2b]/5 shadow-sm">
+        <div className="plate p-6">
             <div className="animate-pulse">
-                <div className="h-6 bg-[#171d2b]/10 rounded w-32 mb-4" />
+                <div className="h-6 bg-muted rounded w-32 mb-4" />
                 <div className="grid grid-cols-7 gap-2">
                     {Array.from({ length: 42 }).map((_, i) => (
-                        <div key={i} className="h-8 bg-[#171d2b]/5 rounded" />
+                        <div key={i} className="h-8 bg-muted rounded" />
                     ))}
                 </div>
             </div>
@@ -80,24 +80,24 @@ function HeaderSkeleton() {
         <header className="mb-6">
             <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-4">
                 <div>
-                    <div className="h-10 w-64 bg-[#171d2b]/10 rounded-lg animate-pulse mb-2" />
-                    <div className="h-5 w-48 bg-[#171d2b]/5 rounded animate-pulse" />
+                    <div className="h-10 w-64 bg-muted rounded-lg animate-pulse mb-2" />
+                    <div className="h-5 w-48 bg-muted rounded animate-pulse" />
                 </div>
             </div>
-            <div className="bg-white rounded-xl p-4 border border-[#171d2b]/5 shadow-sm">
+            <div className="plate p-4">
                 <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-3">
-                        <div className="h-7 w-20 bg-[#171d2b]/10 rounded-md animate-pulse" />
-                        <div className="h-5 w-24 bg-[#171d2b]/5 rounded animate-pulse" />
+                        <div className="h-7 w-20 bg-muted rounded-md animate-pulse" />
+                        <div className="h-5 w-24 bg-muted rounded animate-pulse" />
                     </div>
-                    <div className="h-5 w-20 bg-[#171d2b]/5 rounded animate-pulse" />
+                    <div className="h-5 w-20 bg-muted rounded animate-pulse" />
                 </div>
-                <div className="h-3 bg-[#171d2b]/5 rounded-full mb-4" />
+                <div className="h-3 bg-muted rounded-full mb-4" />
                 <div className="grid grid-cols-3 gap-3">
                     {[1, 2, 3].map(i => (
                         <div key={i} className="bg-[#f5f0e0] rounded-lg p-3 animate-pulse">
-                            <div className="h-3 bg-[#171d2b]/10 rounded w-16 mb-2" />
-                            <div className="h-5 bg-[#171d2b]/10 rounded w-12" />
+                            <div className="h-3 bg-muted rounded w-16 mb-2" />
+                            <div className="h-5 bg-muted rounded w-12" />
                         </div>
                     ))}
                 </div>
@@ -147,81 +147,74 @@ export function DashboardHeader({ initialData }: DashboardHeaderProps) {
 
     return (
         <motion.header
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.16, ease: "easeOut" }}
             className="mb-6"
         >
-            {/* Greeting */}
             <div className="mb-4">
-                <h1 className="font-serif text-[32px] sm:text-[40px] text-[#171d2b] mb-1">
-                    {`${greeting}, ${firstName}!`}
+                <h1 className="font-sans tracking-tight text-[32px] sm:text-[40px] text-foreground mb-1">
+                    {`${greeting}, ${firstName}`}
                 </h1>
-                <p className="font-sans text-[16px] text-[#171d2b]/60">
-                    Ready to continue your learning journey?
+                <p className="font-sans text-base text-muted-foreground">
+                    Pick up where you left off.
                 </p>
             </div>
 
-            {/* Level Progress Bar Component with Stats */}
-            <div className="bg-white rounded-xl p-4 border border-[#171d2b]/5 shadow-sm">
+            <div className="plate p-4">
                 <div className="flex items-center justify-between mb-3">
-                    {/* Left: Level badge + Rank */}
                     <div className="flex items-center gap-3">
-                        <div className="bg-[#171d2b] text-white px-3 py-1 rounded-md font-sans font-semibold text-sm">
-                            LEVEL {level}
+                        <div className="bg-primary text-primary-foreground px-3 py-1 rounded-full font-sans font-medium text-sm tabular">
+                            Level {level}
                         </div>
-                        <span className="font-sans text-[#171d2b]/60 text-sm font-medium">
+                        <span className="font-sans text-muted-foreground text-sm font-medium">
                             {rankTitle}
                         </span>
                     </div>
-
-                    {/* Right: Progress text */}
-                    <span className="font-sans text-sm text-[#171d2b]/60">
+                    <span className="font-sans text-sm text-muted-foreground tabular">
                         {xpInLevel}/{xpForNext} XP
                     </span>
                 </div>
 
-                {/* Progress bar */}
-                <div className="h-3 bg-[#171d2b]/5 rounded-full overflow-hidden mb-4">
+                <div className="h-2.5 bg-muted rounded-full overflow-hidden mb-4">
                     <motion.div
-                        className="h-full bg-gradient-to-r from-[#c4a574] to-[#c4875a] rounded-full"
+                        className="h-full bg-primary rounded-full"
                         initial={{ width: 0 }}
                         animate={{ width: `${progressPercent}%` }}
-                        transition={{ duration: 0.5, ease: "easeOut" }}
+                        transition={{ duration: 0.4, ease: [0.23, 1, 0.32, 1] }}
                     />
                 </div>
 
-                {/* Stats Row */}
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                    <div className="bg-[#f5f0e0] rounded-lg p-3 flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center">
-                            <Clock size={16} className="text-[#171d2b]/70" />
+                    <div className="bg-background rounded-[14px] p-3 flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-full bg-card flex items-center justify-center">
+                            <Clock size={16} className="text-muted-foreground" aria-hidden="true" />
                         </div>
                         <div>
-                            <p className="font-sans text-[11px] text-[#171d2b]/60">Today&apos;s Study</p>
-                            <p className="font-sans font-semibold text-[16px] text-[#171d2b]">
+                            <p className="font-sans text-[11px] text-muted-foreground">Today&apos;s study</p>
+                            <p className="font-sans font-medium text-base text-foreground tabular">
                                 {todayMinutes} min
                             </p>
                         </div>
                     </div>
-                    <div className="bg-[#e8e4d8] rounded-lg p-3 flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center">
-                            <Flame size={16} className="text-[#171d2b]/70" />
+                    <div className="bg-background rounded-[14px] p-3 flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-full bg-card flex items-center justify-center">
+                            <Flame size={16} className="text-muted-foreground" aria-hidden="true" />
                         </div>
                         <div>
-                            <p className="font-sans text-[11px] text-[#171d2b]/60">Current Streak</p>
-                            <p className="font-sans font-semibold text-[16px] text-[#171d2b]">
+                            <p className="font-sans text-[11px] text-muted-foreground">Current streak</p>
+                            <p className="font-sans font-medium text-base text-foreground tabular">
                                 {currentStreak} days
                             </p>
                         </div>
                     </div>
-                    <div className="bg-[#e0dcd0] rounded-lg p-3 flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center">
-                            <Trophy size={16} className="text-[#171d2b]/70" />
+                    <div className="bg-background rounded-[14px] p-3 flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-full bg-card flex items-center justify-center">
+                            <Trophy size={16} className="text-muted-foreground" aria-hidden="true" />
                         </div>
                         <div>
-                            <p className="font-sans text-[11px] text-[#171d2b]/60">Best Streak</p>
-                            <p className="font-sans font-semibold text-[16px] text-[#171d2b]">
+                            <p className="font-sans text-[11px] text-muted-foreground">Best streak</p>
+                            <p className="font-sans font-medium text-base text-foreground tabular">
                                 {bestStreak} days
                             </p>
                         </div>

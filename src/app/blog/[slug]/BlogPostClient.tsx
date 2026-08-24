@@ -28,17 +28,17 @@ export default function BlogPostClient({
   return (
     <>
       {/* Article Metadata with Reader Controls */}
-      <div className="flex flex-wrap items-center gap-3 sm:gap-4 text-[#171d2b]/50 font-sans text-[13px] sm:text-[14px] mb-8 sm:mb-10">
+      <div className="flex flex-wrap items-center gap-3 sm:gap-4 text-muted-foreground font-sans text-[13px] sm:text-[14px] mb-8 sm:mb-10">
         {formattedDate && <span>{formattedDate}</span>}
         {readTimeMinutes && (
           <>
-            <span className="w-1 h-1 rounded-full bg-[#171d2b]/30" />
+            <span className="w-1 h-1 rounded-full bg-primary/30" />
             <span>{readTimeMinutes} min read</span>
           </>
         )}
         
         {/* Separator before Listen button */}
-        <span className="w-1 h-1 rounded-full bg-[#171d2b]/30" />
+        <span className="w-1 h-1 rounded-full bg-primary/30" />
         
         {/* Reader Controls */}
         <ArticleReader 

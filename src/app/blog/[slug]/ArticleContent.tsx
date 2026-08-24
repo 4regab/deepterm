@@ -266,7 +266,7 @@ export default function ArticleContent({ content }: ArticleContentProps) {
 
   return (
     <article
-      className="prose prose-lg max-w-none prose-headings:font-serif prose-headings:text-[#171d2b] prose-h2:text-[26px] prose-h2:mt-10 prose-h2:mb-4 prose-h3:text-[22px] prose-h3:mt-8 prose-h3:mb-3 prose-p:text-[#171d2b]/80 prose-p:leading-relaxed prose-a:text-[#171d2b] prose-a:underline prose-strong:text-[#171d2b] prose-ul:my-4 prose-li:text-[#171d2b]/80 prose-blockquote:border-l-[#171d2b]/20 prose-blockquote:text-[#171d2b]/70 prose-code:bg-[#171d2b]/5 prose-code:px-1 prose-code:rounded prose-pre:bg-[#171d2b] prose-pre:text-white"
+      className="prose prose-lg max-w-none prose-headings:font-sans tracking-tight prose-headings:text-foreground prose-h2:text-[26px] prose-h2:mt-10 prose-h2:mb-4 prose-h3:text-[22px] prose-h3:mt-8 prose-h3:mb-3 prose-p:text-foreground/80 prose-p:leading-relaxed prose-a:text-foreground prose-a:underline prose-strong:text-foreground prose-ul:my-4 prose-li:text-foreground/80 prose-blockquote:border-l-border prose-blockquote:text-muted-foreground prose-code:bg-muted prose-code:px-1 prose-code:rounded prose-pre:bg-foreground prose-pre:text-white"
       dangerouslySetInnerHTML={{ __html: htmlContent }}
     />
   )

@@ -302,7 +302,7 @@ export default function ArticleReader({ text, onSentenceChange, onStop }: Articl
       {isPlaying ? (
         <button
           onClick={handlePause}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#171d2b]/10 hover:bg-[#171d2b]/15 transition-colors text-[#171d2b] text-[13px] font-sans"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-muted hover:bg-primary/15 transition-colors text-foreground text-[13px] font-sans"
           aria-label="Pause"
         >
           <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
@@ -313,7 +313,7 @@ export default function ArticleReader({ text, onSentenceChange, onStop }: Articl
       ) : (
         <button
           onClick={handlePlay}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#171d2b]/10 hover:bg-[#171d2b]/15 transition-colors text-[#171d2b] text-[13px] font-sans"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-muted hover:bg-primary/15 transition-colors text-foreground text-[13px] font-sans"
           aria-label={isPaused ? 'Resume' : 'Listen'}
         >
           <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
@@ -327,7 +327,7 @@ export default function ArticleReader({ text, onSentenceChange, onStop }: Articl
       {(isPlaying || isPaused) && (
         <button
           onClick={handleStop}
-          className="flex items-center justify-center w-8 h-8 rounded-full bg-[#171d2b]/10 hover:bg-[#171d2b]/15 transition-colors text-[#171d2b]"
+          className="flex items-center justify-center w-8 h-8 rounded-full bg-muted hover:bg-primary/15 transition-colors text-foreground"
           aria-label="Stop"
         >
           <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
@@ -341,7 +341,7 @@ export default function ArticleReader({ text, onSentenceChange, onStop }: Articl
         <div className="relative" ref={speedMenuRef}>
           <button
             onClick={() => setShowSpeedMenu(!showSpeedMenu)}
-            className="flex items-center gap-1 px-2 py-1.5 rounded-full bg-[#171d2b]/10 hover:bg-[#171d2b]/15 transition-colors text-[#171d2b] text-[12px] font-sans"
+            className="flex items-center gap-1 px-2 py-1.5 rounded-full bg-muted hover:bg-primary/15 transition-colors text-foreground text-[12px] font-sans"
             aria-label="Playback speed"
           >
             {speed}x
@@ -351,13 +351,13 @@ export default function ArticleReader({ text, onSentenceChange, onStop }: Articl
           </button>
           
           {showSpeedMenu && (
-            <div className="absolute top-full left-0 mt-1 bg-white rounded-lg shadow-lg border border-[#171d2b]/10 py-1 z-50 min-w-[70px]">
+            <div className="absolute top-full left-0 mt-1 bg-white rounded-lg shadow-lg border border-border py-1 z-50 min-w-[70px]">
               {SPEED_OPTIONS.map((option) => (
                 <button
                   key={option.value}
                   onClick={() => handleSpeedChange(option.value)}
-                  className={`w-full px-3 py-1.5 text-left text-[12px] font-sans hover:bg-[#171d2b]/5 transition-colors ${
-                    speed === option.value ? 'text-[#171d2b] font-medium bg-[#171d2b]/5' : 'text-[#171d2b]/70'
+                  className={`w-full px-3 py-1.5 text-left text-[12px] font-sans hover:bg-accent transition-colors ${
+                    speed === option.value ? 'text-foreground font-medium bg-muted' : 'text-muted-foreground'
                   }`}
                 >
                   {option.label}

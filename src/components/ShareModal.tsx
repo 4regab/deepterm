@@ -145,8 +145,8 @@ export default function ShareModal({ isOpen, onClose, materialId, materialType, 
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden">
         {/* Header */}
-        <div className="px-6 py-4 border-b border-[#171d2b]/10 flex items-center justify-between">
-          <h2 className="font-sora font-bold text-lg text-[#171d2b]">Share Material</h2>
+        <div className="px-6 py-4 border-b border-border flex items-center justify-between">
+          <h2 className="font-sans font-medium text-lg text-foreground">Share Material</h2>
           <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
             <X size={20} />
           </button>
@@ -154,28 +154,28 @@ export default function ShareModal({ isOpen, onClose, materialId, materialType, 
 
         {/* Content */}
         <div className="p-6">
-          <p className="text-sm text-[#171d2b]/60 mb-4">
+          <p className="text-sm text-muted-foreground mb-4">
             Share &quot;{materialTitle}&quot; with others
           </p>
 
           {loading && !share ? (
             <div className="flex items-center justify-center py-8">
-              <Loader2 size={24} className="animate-spin text-[#171d2b]/40" />
+              <Loader2 size={24} className="animate-spin text-muted-foreground" />
             </div>
           ) : share ? (
             <div className="space-y-4">
               {/* Share Link */}
               <div>
-                <label className="block text-sm font-medium text-[#171d2b]/70 mb-2">
+                <label className="block text-sm font-medium text-muted-foreground mb-2">
                   Share Link
                 </label>
                 <div className="flex gap-2">
-                  <div className="flex-1 px-3 py-2 bg-[#f0f0ea] rounded-lg text-sm text-[#171d2b] truncate">
+                  <div className="flex-1 px-3 py-2 bg-background rounded-lg text-sm text-foreground truncate">
                     {shareUrl}
                   </div>
                   <button
                     onClick={copyLink}
-                    className="px-3 py-2 bg-[#171d2b] text-white rounded-lg hover:bg-[#2a3347] transition-colors"
+                    className="px-3 py-2 bg-primary text-white rounded-lg hover:bg-[#2a3347] transition-colors"
                   >
                     {copied ? <Check size={18} /> : <Copy size={18} />}
                   </button>
@@ -185,7 +185,7 @@ export default function ShareModal({ isOpen, onClose, materialId, materialType, 
               {/* Edit Code */}
               {isEditing ? (
                 <div>
-                  <label className="block text-sm font-medium text-[#171d2b]/70 mb-2">
+                  <label className="block text-sm font-medium text-muted-foreground mb-2">
                     Custom Code
                   </label>
                   <div className="flex gap-2">
@@ -197,31 +197,31 @@ export default function ShareModal({ isOpen, onClose, materialId, materialType, 
                         setCodeError("")
                       }}
                       placeholder="my-custom-code"
-                      className="flex-1 px-3 py-2 border border-[#171d2b]/10 rounded-lg text-sm focus:outline-none focus:border-[#171d2b]"
+                      className="flex-1 px-3 py-2 border border-border rounded-lg text-sm focus:outline-none focus:border-primary"
                     />
                     <button
                       onClick={updateCode}
                       disabled={loading || !customCode.trim()}
-                      className="px-4 py-2 bg-[#171d2b] text-white rounded-lg hover:bg-[#2a3347] transition-colors disabled:opacity-50 text-sm"
+                      className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-[#2a3347] transition-colors disabled:opacity-50 text-sm"
                     >
                       Save
                     </button>
                     <button
                       onClick={() => { setIsEditing(false); setCustomCode(""); setCodeError("") }}
-                      className="px-3 py-2 border border-[#171d2b]/10 rounded-lg hover:bg-gray-50 transition-colors"
+                      className="px-3 py-2 border border-border rounded-lg hover:bg-gray-50 transition-colors"
                     >
                       <X size={18} />
                     </button>
                   </div>
                   {codeError && <p className="text-red-500 text-xs mt-1">{codeError}</p>}
-                  <p className="text-xs text-[#171d2b]/50 mt-1">
+                  <p className="text-xs text-muted-foreground mt-1">
                     8-64 characters, lowercase letters, numbers, and hyphens only
                   </p>
                 </div>
               ) : (
                 <button
                   onClick={() => setIsEditing(true)}
-                  className="text-sm text-[#171d2b]/60 hover:text-[#171d2b] flex items-center gap-1"
+                  className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1"
                 >
                   <RefreshCw size={14} />
                   Customize link code
@@ -229,10 +229,10 @@ export default function ShareModal({ isOpen, onClose, materialId, materialType, 
               )}
 
               {/* Toggle Active */}
-              <div className="flex items-center justify-between pt-4 border-t border-[#171d2b]/10">
+              <div className="flex items-center justify-between pt-4 border-t border-border">
                 <div>
-                  <p className="text-sm font-medium text-[#171d2b]">Link Active</p>
-                  <p className="text-xs text-[#171d2b]/50">
+                  <p className="text-sm font-medium text-foreground">Link Active</p>
+                  <p className="text-xs text-muted-foreground">
                     {share.is_active ? 'Anyone with the link can view' : 'Link is disabled'}
                   </p>
                 </div>
@@ -255,7 +255,7 @@ export default function ShareModal({ isOpen, onClose, materialId, materialType, 
             <div className="space-y-4">
               {/* Create Share */}
               <div>
-                <label className="block text-sm font-medium text-[#171d2b]/70 mb-2">
+                <label className="block text-sm font-medium text-muted-foreground mb-2">
                   Custom Code (optional)
                 </label>
                 <input
@@ -266,10 +266,10 @@ export default function ShareModal({ isOpen, onClose, materialId, materialType, 
                     setCodeError("")
                   }}
                   placeholder="Leave empty for auto-generated code"
-                  className="w-full px-3 py-2 border border-[#171d2b]/10 rounded-lg text-sm focus:outline-none focus:border-[#171d2b]"
+                  className="w-full px-3 py-2 border border-border rounded-lg text-sm focus:outline-none focus:border-primary"
                 />
                 {codeError && <p className="text-red-500 text-xs mt-1">{codeError}</p>}
-                <p className="text-xs text-[#171d2b]/50 mt-1">
+                <p className="text-xs text-muted-foreground mt-1">
                   8-64 characters, lowercase letters, numbers, and hyphens only
                 </p>
               </div>
@@ -277,7 +277,7 @@ export default function ShareModal({ isOpen, onClose, materialId, materialType, 
               <button
                 onClick={createShare}
                 disabled={loading}
-                className="w-full py-3 bg-[#171d2b] text-white rounded-xl font-medium hover:bg-[#2a3347] transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                className="w-full py-3 bg-primary text-white rounded-xl font-medium hover:bg-[#2a3347] transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
               >
                 {loading ? (
                   <Loader2 size={18} className="animate-spin" />

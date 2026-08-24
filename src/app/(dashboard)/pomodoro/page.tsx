@@ -58,14 +58,14 @@ function FullscreenNotifications() {
             exit={{ opacity: 0, y: -20, scale: 0.95 }}
             className="absolute top-16 left-1/2 -translate-x-1/2 z-[60] w-[90%] max-w-md"
           >
-            <div className="rounded-2xl shadow-2xl overflow-hidden bg-[#171d2b] text-white">
+            <div className="rounded-2xl shadow-2xl overflow-hidden bg-primary text-white">
               <div className="p-4">
                 <div className="flex items-start gap-3">
                   <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 bg-white/10">
                     <Timer size={20} />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <h3 className="font-sora font-semibold text-base mb-1">
+                    <h3 className="font-sans font-medium text-base mb-1">
                       {PHASE_LABELS[currentPhase]} Complete!
                     </h3>
                     <p className="text-white/70 text-sm">
@@ -110,14 +110,14 @@ function FullscreenNotifications() {
             exit={{ opacity: 0, y: -20, scale: 0.95 }}
             className="absolute top-16 left-1/2 -translate-x-1/2 z-[60] w-[90%] max-w-md"
           >
-            <div className="rounded-2xl shadow-2xl overflow-hidden bg-[#171d2b] text-white">
+            <div className="rounded-2xl shadow-2xl overflow-hidden bg-primary text-white">
               <div className="p-4">
                 <div className="flex items-start gap-3">
                   <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 bg-white/10">
                     <Bell size={20} className="text-white" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <h3 className="font-sora font-semibold text-base mb-1 text-white">
+                    <h3 className="font-sans font-medium text-base mb-1 text-white">
                       Task Reminder
                     </h3>
                     <p className="text-sm text-white/70">
@@ -366,7 +366,7 @@ export default function PomodoroPage() {
 
   const getPhaseColor = () => {
     switch (phase) {
-      case "work": return "bg-[#171d2b]";
+      case "work": return "bg-primary";
       case "shortBreak": return "bg-[#2d4a3e]";
       case "longBreak": return "bg-[#3d3a4a]";
     }
@@ -411,15 +411,15 @@ export default function PomodoroPage() {
 
 
   return (
-    <div className="bg-[#f0f0ea] min-h-screen">
+    <div className="bg-background min-h-screen">
       <EncouragementToast message={toastMessage} isVisible={showToast} onClose={() => setShowToast(false)} />
       <Confetti isActive={showConfetti} />
 
       <main className="px-4 py-8">
         <div className="flex justify-between items-center mb-12">
           <div>
-            <h1 className="text-4xl font-sora font-bold text-[#171d2b] mb-2">Pomodoro Timer</h1>
-            <p className="text-[#171d2b]/60 font-sans text-lg">
+            <h1 className="text-4xl font-sans font-medium text-foreground mb-2">Pomodoro Timer</h1>
+            <p className="text-muted-foreground font-sans text-lg">
               Boost productivity with focused work sessions
             </p>
           </div>
@@ -467,7 +467,7 @@ export default function PomodoroPage() {
                 {isFullscreen && (
                   <button
                     onClick={() => setShowFullscreenTasks(!showFullscreenTasks)}
-                    className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center transition-all ${showFullscreenTasks ? "bg-white text-[#171d2b]" : "bg-white/10 hover:bg-white/20"}`}
+                    className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center transition-all ${showFullscreenTasks ? "bg-white text-foreground" : "bg-white/10 hover:bg-white/20"}`}
                     title="Tasks"
                   >
                     <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" /></svg>
@@ -528,7 +528,7 @@ export default function PomodoroPage() {
                   className={`px-6 h-[48px] rounded-full font-sans font-medium text-[14px] transition-all hover:scale-105 active:scale-95 ${
                     isRunning
                       ? "bg-white/20 text-white hover:bg-white/30"
-                      : "bg-white text-[#171d2b] hover:bg-white/90 shadow-lg"
+                      : "bg-white text-foreground hover:bg-white/90 shadow-lg"
                   }`}
                 >
                   {isRunning ? "Pause" : "Start"}
@@ -542,7 +542,7 @@ export default function PomodoroPage() {
                 </button>
                 <button
                   onClick={() => setShowSettings(!showSettings)}
-                  className={`w-[48px] h-[48px] rounded-full flex items-center justify-center transition-all active:scale-95 ${showSettings ? "bg-white text-[#171d2b]" : "bg-white/10 hover:bg-white/20"}`}
+                  className={`w-[48px] h-[48px] rounded-full flex items-center justify-center transition-all active:scale-95 ${showSettings ? "bg-white text-foreground" : "bg-white/10 hover:bg-white/20"}`}
                   title="Settings"
                 >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
@@ -643,7 +643,7 @@ export default function PomodoroPage() {
                           title="Set reminder"
                           className={`w-[36px] h-[36px] rounded-full flex items-center justify-center transition-colors ${
                             showReminderInput || newTaskReminder
-                              ? "bg-[#171d2b] text-white"
+                              ? "bg-primary text-white"
                               : "bg-white/5 text-white/70 hover:bg-white/10"
                           }`}
                         >
@@ -696,7 +696,7 @@ export default function PomodoroPage() {
                       <AnimatePresence initial={false}>
                         {tasks.length === 0 ? (
                           <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="font-sans text-[12px] text-center py-6 text-white/40">
-                            No tasks yet.
+                            No tasks yet. Add one to keep this session on track.
                           </motion.p>
                         ) : (
                           tasks.map((task) => (
@@ -710,7 +710,7 @@ export default function PomodoroPage() {
                               <button
                                 onClick={() => toggleTask(task.id)}
                                 className={`w-4 h-4 rounded border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
-                                  task.completed ? "bg-[#171d2b] border-[#171d2b]" : "border-white/30 hover:border-white"
+                                  task.completed ? "bg-primary border-primary" : "border-white/30 hover:border-white"
                                 }`}
                               >
                                 {task.completed && <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}
@@ -760,31 +760,31 @@ export default function PomodoroPage() {
                   exit={{ opacity: 0, height: 0, y: -10 }}
                   className="mt-6 bg-[rgba(210,210,200,0.55)] rounded-[20px] p-5 overflow-hidden shadow-sm"
                 >
-                  <h3 className="font-sans font-medium text-[16px] text-[#171d2b] mb-4">Timer Settings</h3>
+                  <h3 className="font-sans font-medium text-[16px] text-foreground mb-4">Timer Settings</h3>
                   <div className="space-y-4">
                     <div>
-                      <label className="font-sans text-[13px] text-[#171d2b]/70 block mb-2">Focus Duration: {settings.workDuration} min</label>
-                      <input type="range" min="1" max="60" value={settings.workDuration} onChange={(e) => setSettings({ workDuration: Number(e.target.value) })} className="w-full accent-[#171d2b]" />
+                      <label className="font-sans text-[13px] text-muted-foreground block mb-2">Focus Duration: {settings.workDuration} min</label>
+                      <input type="range" min="1" max="60" value={settings.workDuration} onChange={(e) => setSettings({ workDuration: Number(e.target.value) })} className="w-full accent-[var(--ink)]" />
                     </div>
                     <div>
-                      <label className="font-sans text-[13px] text-[#171d2b]/70 block mb-2">Short Break: {settings.shortBreakDuration} min</label>
-                      <input type="range" min="1" max="30" value={settings.shortBreakDuration} onChange={(e) => setSettings({ shortBreakDuration: Number(e.target.value) })} className="w-full accent-[#171d2b]" />
+                      <label className="font-sans text-[13px] text-muted-foreground block mb-2">Short Break: {settings.shortBreakDuration} min</label>
+                      <input type="range" min="1" max="30" value={settings.shortBreakDuration} onChange={(e) => setSettings({ shortBreakDuration: Number(e.target.value) })} className="w-full accent-[var(--ink)]" />
                     </div>
                     <div>
-                      <label className="font-sans text-[13px] text-[#171d2b]/70 block mb-2">Long Break: {settings.longBreakDuration} min</label>
-                      <input type="range" min="1" max="60" value={settings.longBreakDuration} onChange={(e) => setSettings({ longBreakDuration: Number(e.target.value) })} className="w-full accent-[#171d2b]" />
+                      <label className="font-sans text-[13px] text-muted-foreground block mb-2">Long Break: {settings.longBreakDuration} min</label>
+                      <input type="range" min="1" max="60" value={settings.longBreakDuration} onChange={(e) => setSettings({ longBreakDuration: Number(e.target.value) })} className="w-full accent-[var(--ink)]" />
                     </div>
                   </div>
 
                   {/* Sound Settings */}
-                  <h3 className="font-sans font-medium text-[16px] text-[#171d2b] mb-4 mt-6 pt-4 border-t border-[#171d2b]/10">Sound Settings</h3>
+                  <h3 className="font-sans font-medium text-[16px] text-foreground mb-4 mt-6 pt-4 border-t border-border">Sound Settings</h3>
                   <div className="space-y-4">
                     <div>
-                      <label className="font-sans text-[13px] text-[#171d2b]/70 block mb-2">Background Sound</label>
+                      <label className="font-sans text-[13px] text-muted-foreground block mb-2">Background Sound</label>
                       <select
                         value={selectedSound}
                         onChange={(e) => handleSoundChange(e.target.value as BackgroundSoundId)}
-                        className="w-full h-[40px] px-3 rounded-lg border border-[#171d2b]/20 bg-white font-sans text-[13px] text-[#171d2b] focus:outline-none focus:border-[#171d2b]/40"
+                        className="w-full h-[40px] px-3 rounded-lg border border-border bg-white font-sans text-[13px] text-foreground focus:outline-none focus:border-primary/40"
                       >
                         {BACKGROUND_SOUNDS.map((sound) => (
                           <option key={sound.id} value={sound.id}>{sound.name}</option>
@@ -792,12 +792,12 @@ export default function PomodoroPage() {
                       </select>
                     </div>
                     <div>
-                      <label className="font-sans text-[13px] text-[#171d2b]/70 block mb-2">Background Volume: {Math.round(backgroundVolume * 100)}%</label>
-                      <input type="range" min="0" max="1" step="0.1" value={backgroundVolume} onChange={(e) => handleBackgroundVolumeChange(Number(e.target.value))} className="w-full accent-[#171d2b]" disabled={selectedSound === "none"} />
+                      <label className="font-sans text-[13px] text-muted-foreground block mb-2">Background Volume: {Math.round(backgroundVolume * 100)}%</label>
+                      <input type="range" min="0" max="1" step="0.1" value={backgroundVolume} onChange={(e) => handleBackgroundVolumeChange(Number(e.target.value))} className="w-full accent-[var(--ink)]" disabled={selectedSound === "none"} />
                     </div>
                     <div>
-                      <label className="font-sans text-[13px] text-[#171d2b]/70 block mb-2">Notification Volume: {Math.round(notificationVolume * 100)}%</label>
-                      <input type="range" min="0" max="1" step="0.1" value={notificationVolume} onChange={(e) => handleNotificationVolumeChange(Number(e.target.value))} className="w-full accent-[#171d2b]" />
+                      <label className="font-sans text-[13px] text-muted-foreground block mb-2">Notification Volume: {Math.round(notificationVolume * 100)}%</label>
+                      <input type="range" min="0" max="1" step="0.1" value={notificationVolume} onChange={(e) => handleNotificationVolumeChange(Number(e.target.value))} className="w-full accent-[var(--ink)]" />
                     </div>
                   </div>
                 </motion.div>
@@ -808,14 +808,14 @@ export default function PomodoroPage() {
             <div className="mt-6 bg-[rgba(210,210,200,0.55)] rounded-[20px] p-5 shadow-sm">
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 bg-[#171d2b] rounded-lg flex items-center justify-center">
+                  <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
                     <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                   </div>
-                  <h3 className="font-sans font-semibold text-[16px] text-[#171d2b]">Today&apos;s Progress</h3>
+                  <h3 className="font-sans font-medium text-[16px] text-foreground">Today&apos;s Progress</h3>
                 </div>
-                <span className="px-3 py-1 rounded-full border border-[#171d2b] text-[13px] font-medium text-[#171d2b]">
+                <span className="px-3 py-1 rounded-full border border-primary text-[13px] font-medium text-foreground">
                   {sessionCount} completed
                 </span>
               </div>
@@ -831,10 +831,10 @@ export default function PomodoroPage() {
                     <div
                       key={i}
                       className={`h-12 rounded-xl border-2 transition-all duration-300 ${isCompleted
-                        ? "bg-[#171d2b] border-[#171d2b]"
+                        ? "bg-primary border-primary"
                         : isActive
-                          ? "border-[#171d2b] bg-[#171d2b]/10"
-                          : "border-[#171d2b]/20 bg-white"
+                          ? "border-primary bg-muted"
+                          : "border-border bg-white"
                         }`}
                     />
                   );
@@ -842,8 +842,8 @@ export default function PomodoroPage() {
               </div>
 
               {/* Cycle Counter */}
-              <div className="inline-block px-3 py-1.5 bg-[#171d2b]/10 rounded-lg">
-                <span className="font-sans text-[13px] text-[#171d2b]">
+              <div className="inline-block px-3 py-1.5 bg-muted rounded-lg">
+                <span className="font-sans text-[13px] text-foreground">
                   Cycle: {Math.floor(sessionCount / 4) + 1}
                 </span>
               </div>
@@ -853,7 +853,7 @@ export default function PomodoroPage() {
           {/* Tasks Section */}
           <div className="lg:col-span-1">
             <div className="bg-[rgba(210,210,200,0.55)] rounded-[20px] p-5 h-full flex flex-col shadow-sm">
-              <h3 className="font-sans font-medium text-[16px] text-[#171d2b] mb-4">Tasks</h3>
+              <h3 className="font-sans font-medium text-[16px] text-foreground mb-4">Tasks</h3>
 
               {/* Add Task */}
               <div className="mb-4 space-y-2">
@@ -864,7 +864,7 @@ export default function PomodoroPage() {
                     onChange={(e) => setNewTaskInput(e.target.value)}
                     onKeyDown={(e) => e.key === "Enter" && !showReminderInput && handleAddTask()}
                     placeholder="Add a task..."
-                    className="flex-1 h-[40px] px-3 rounded-lg border border-[#171d2b]/20 bg-white font-sans text-[13px] text-[#171d2b] placeholder:text-[#171d2b]/40 focus:outline-none focus:border-[#171d2b]/40 transition-shadow focus:shadow-sm"
+                    className="flex-1 h-[40px] px-3 rounded-lg border border-border bg-white font-sans text-[13px] text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary/40 transition-shadow focus:shadow-sm"
                   />
                   <button 
                     onClick={() => {
@@ -879,13 +879,13 @@ export default function PomodoroPage() {
                     title="Set reminder"
                     className={`w-[40px] h-[40px] rounded-lg flex items-center justify-center transition-colors ${
                       showReminderInput || newTaskReminder
-                        ? "bg-[#171d2b] text-white"
-                        : "bg-[#171d2b]/10 text-[#171d2b] hover:bg-[#171d2b]/20"
+                        ? "bg-primary text-white"
+                        : "bg-muted text-foreground hover:bg-primary/20"
                     }`}
                   >
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>
                   </button>
-                  <button onClick={handleAddTask} className="w-[40px] h-[40px] bg-[#171d2b] text-white rounded-lg flex items-center justify-center hover:bg-[#2a3347] transition-colors shadow-md hover:scale-105 active:scale-95">
+                  <button onClick={handleAddTask} className="w-[40px] h-[40px] bg-primary text-white rounded-lg flex items-center justify-center hover:bg-[#2a3347] transition-colors shadow-md hover:scale-105 active:scale-95">
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
                   </button>
                 </div>
@@ -899,10 +899,10 @@ export default function PomodoroPage() {
                       exit={{ opacity: 0, height: 0 }}
                       className="overflow-hidden"
                     >
-                      <div className="flex flex-col gap-2 p-3 rounded-lg bg-[#171d2b]/5">
+                      <div className="flex flex-col gap-2 p-3 rounded-lg bg-muted">
                         <div className="flex items-center gap-2">
-                          <svg className="w-4 h-4 text-[#171d2b]/60" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
-                          <span className="text-xs font-medium text-[#171d2b]/70">Remind me at:</span>
+                          <svg className="w-4 h-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                          <span className="text-xs font-medium text-muted-foreground">Remind me at:</span>
                         </div>
                         <div className="flex items-center gap-2">
                           <input
@@ -910,12 +910,12 @@ export default function PomodoroPage() {
                             value={newTaskReminder || ""}
                             onChange={(e) => setNewTaskReminder(e.target.value || null)}
                             min={new Date().toISOString().slice(0, 16)}
-                            className="flex-1 h-[36px] px-2 rounded border border-[#171d2b]/20 bg-white text-[#171d2b] font-sans text-[12px] focus:outline-none focus:border-[#171d2b]/40"
+                            className="flex-1 h-[36px] px-2 rounded border border-border bg-white text-foreground font-sans text-[12px] focus:outline-none focus:border-primary/40"
                           />
                           {newTaskReminder && (
                             <button 
                               onClick={() => setNewTaskReminder(null)}
-                              className="p-1.5 rounded text-[#171d2b]/50 hover:text-[#171d2b] hover:bg-[#171d2b]/10"
+                              className="p-1.5 rounded text-muted-foreground hover:text-foreground hover:bg-accent"
                             >
                               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
                             </button>
@@ -934,9 +934,9 @@ export default function PomodoroPage() {
                     <motion.p
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
-                      className="font-sans text-[13px] text-[#171d2b]/50 text-center py-8"
+                      className="font-sans text-[13px] text-muted-foreground text-center py-8"
                     >
-                      No tasks yet. Add one above!
+                      No tasks yet. Add one above.
                     </motion.p>
                   ) : (
                     tasks.map((task) => (
@@ -949,20 +949,20 @@ export default function PomodoroPage() {
                       >
                         <button
                           onClick={() => toggleTask(task.id)}
-                          className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 transition-colors ${task.completed ? "bg-[#171d2b] border-[#171d2b]" : "border-[#171d2b]/30 hover:border-[#171d2b]"}`}
+                          className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 transition-colors ${task.completed ? "bg-primary border-primary" : "border-input hover:border-primary"}`}
                         >
                           {task.completed && <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}
                         </button>
                         <div className="flex-1 min-w-0">
-                          <span className={`font-sans text-[13px] transition-all block ${task.completed ? "line-through text-[#171d2b]/50" : "text-[#171d2b]"}`}>{task.text}</span>
+                          <span className={`font-sans text-[13px] transition-all block ${task.completed ? "line-through text-muted-foreground" : "text-foreground"}`}>{task.text}</span>
                           {task.reminder?.enabled && task.reminder.time && !task.completed && (
-                            <span className={`flex items-center gap-1 text-[10px] mt-0.5 ${task.reminder.notified ? "text-green-600/70" : "text-[#171d2b]/50"}`}>
+                            <span className={`flex items-center gap-1 text-[10px] mt-0.5 ${task.reminder.notified ? "text-green-600/70" : "text-muted-foreground"}`}>
                               <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>
                               {task.reminder.notified ? "Notified" : new Date(task.reminder.time).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                             </span>
                           )}
                         </div>
-                        <button onClick={() => removeTask(task.id)} className="w-6 h-6 text-[#171d2b]/40 hover:text-[#ef4444] transition-colors flex-shrink-0">
+                        <button onClick={() => removeTask(task.id)} className="w-6 h-6 text-muted-foreground hover:text-[#ef4444] transition-colors flex-shrink-0">
                           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
                         </button>
                       </motion.div>
@@ -973,14 +973,14 @@ export default function PomodoroPage() {
 
               {/* Stats */}
               {tasks.length > 0 && (
-                <div className="mt-4 pt-4 border-t border-[#171d2b]/10">
-                  <p className="font-sans text-[12px] text-[#171d2b]/60 flex justify-between">
+                <div className="mt-4 pt-4 border-t border-border">
+                  <p className="font-sans text-[12px] text-muted-foreground flex justify-between">
                     <span>Progress</span>
                     <span>{Math.round((tasks.filter((t) => t.completed).length / tasks.length) * 100)}%</span>
                   </p>
-                  <div className="w-full h-1.5 bg-[#171d2b]/10 rounded-full mt-2 overflow-hidden">
+                  <div className="w-full h-1.5 bg-muted rounded-full mt-2 overflow-hidden">
                     <motion.div
-                      className="h-full bg-[#171d2b]"
+                      className="h-full bg-primary"
                       initial={{ width: 0 }}
                       animate={{ width: `${(tasks.filter((t) => t.completed).length / tasks.length) * 100}%` }}
                     />

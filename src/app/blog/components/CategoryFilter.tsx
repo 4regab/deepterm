@@ -10,13 +10,13 @@ interface CategoryFilterProps {
 
 export default function CategoryFilter({ categories, activeCategory }: CategoryFilterProps) {
   return (
-    <div className="flex flex-wrap items-center gap-x-6 gap-y-2 mb-8 sm:mb-10 pb-6 border-b border-[#171d2b]/10">
+    <div className="flex flex-wrap items-center gap-x-6 gap-y-2 mb-8 sm:mb-10 pb-6 border-b border-border">
       <Link
         href="/blog"
         className={`font-sans text-[13px] sm:text-[14px] transition-colors ${
           !activeCategory
-            ? 'text-[#171d2b] font-medium'
-            : 'text-[#171d2b]/50 hover:text-[#171d2b]'
+            ? 'text-foreground font-medium'
+            : 'text-muted-foreground hover:text-foreground'
         }`}
       >
         All
@@ -27,8 +27,8 @@ export default function CategoryFilter({ categories, activeCategory }: CategoryF
           href={`/blog/category/${category.slug}`}
           className={`font-sans text-[13px] sm:text-[14px] transition-colors ${
             activeCategory === category.slug
-              ? 'text-[#171d2b] font-medium'
-              : 'text-[#171d2b]/50 hover:text-[#171d2b]'
+              ? 'text-foreground font-medium'
+              : 'text-muted-foreground hover:text-foreground'
           }`}
         >
           {category.name}

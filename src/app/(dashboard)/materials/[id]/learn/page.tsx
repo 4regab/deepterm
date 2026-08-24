@@ -381,16 +381,16 @@ export default function LearnPage() {
 
     if (isLoading) {
         return (
-            <div className="min-h-screen bg-[#f0f0ea] flex items-center justify-center">
-                <Loader2 size={32} className="animate-spin text-[#171d2b]/40" />
+            <div className="min-h-screen bg-background flex items-center justify-center">
+                <Loader2 size={32} className="animate-spin text-muted-foreground" />
             </div>
         );
     }
 
     if (sessionQueue.length === 0 && !sessionComplete) {
         return (
-            <div className="min-h-screen bg-[#f0f0ea] flex items-center justify-center">
-                <p className="text-[#171d2b]/50">No flashcards found</p>
+            <div className="min-h-screen bg-background flex items-center justify-center">
+                <p className="text-muted-foreground">No flashcards found</p>
             </div>
         );
     }
@@ -427,7 +427,7 @@ export default function LearnPage() {
     const backContent = settings.frontSide === 'definition' ? currentCard.term : currentCard.definition;
 
     return (
-        <div className="min-h-screen bg-[#f0f0ea] flex flex-col pb-32 relative">
+        <div className="min-h-screen bg-background flex flex-col pb-32 relative">
             <EncouragementToast message={toastMessage} isVisible={showToast} onClose={() => setShowToast(false)} />
             <ExitPopup
                 isOpen={showExitPopup}
@@ -446,28 +446,28 @@ export default function LearnPage() {
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
                     <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4 p-6">
                         <div className="flex items-center justify-between mb-6">
-                            <h2 className="font-sora font-bold text-xl text-[#171d2b]">Edit Card</h2>
+                            <h2 className="font-sans font-medium text-xl text-foreground">Edit Card</h2>
                             <button onClick={() => setShowEditModal(false)} className="p-2 hover:bg-gray-100 rounded-full">
                                 <X size={20} />
                             </button>
                         </div>
                         <div className="space-y-4">
                             <div>
-                                <label className="block text-sm font-medium text-[#171d2b]/70 mb-2">Term</label>
+                                <label className="block text-sm font-medium text-muted-foreground mb-2">Term</label>
                                 <input
                                     type="text"
                                     value={editTerm}
                                     onChange={(e) => setEditTerm(e.target.value)}
-                                    className="w-full p-3 border border-gray-200 rounded-xl focus:outline-none focus:border-[#171d2b]"
+                                    className="w-full p-3 border border-gray-200 rounded-xl focus:outline-none focus:border-primary"
                                 />
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-[#171d2b]/70 mb-2">Definition</label>
+                                <label className="block text-sm font-medium text-muted-foreground mb-2">Definition</label>
                                 <textarea
                                     value={editDefinition}
                                     onChange={(e) => setEditDefinition(e.target.value)}
                                     rows={4}
-                                    className="w-full p-3 border border-gray-200 rounded-xl focus:outline-none focus:border-[#171d2b] resize-none"
+                                    className="w-full p-3 border border-gray-200 rounded-xl focus:outline-none focus:border-primary resize-none"
                                 />
                             </div>
                         </div>
@@ -481,7 +481,7 @@ export default function LearnPage() {
                             <button
                                 onClick={handleSaveEdit}
                                 disabled={isSavingEdit || !editTerm.trim() || !editDefinition.trim()}
-                                className="flex-1 py-3 bg-[#171d2b] text-white rounded-xl font-medium hover:bg-[#2a3347] disabled:opacity-50"
+                                className="flex-1 py-3 bg-primary text-white rounded-xl font-medium hover:bg-[#2a3347] disabled:opacity-50"
                             >
                                 {isSavingEdit ? "Saving..." : "Save"}
                             </button>
@@ -496,14 +496,14 @@ export default function LearnPage() {
                     {/* Learn Mode button removed */}
                 </div>
 
-                <h1 className="font-sora font-bold text-[#171d2b] text-base sm:text-lg absolute left-1/2 transform -translate-x-1/2 truncate max-w-[40%]">
+                <h1 className="font-sans font-medium text-foreground text-base sm:text-lg absolute left-1/2 transform -translate-x-1/2 truncate max-w-[40%]">
                     {materialTitle}
                 </h1>
 
                 <div className="flex items-center gap-2 sm:gap-3">
                     <button
                         onClick={() => setShowSettings(true)}
-                        className="px-3 sm:px-4 py-2 bg-white border border-gray-200 rounded-full font-semibold text-[#171d2b] text-xs sm:text-sm hover:bg-gray-50 transition-colors shadow-sm"
+                        className="px-3 sm:px-4 py-2 bg-white border border-gray-200 rounded-full font-medium text-foreground text-xs sm:text-sm hover:bg-gray-50 transition-colors shadow-sm"
                     >
                         Options
                     </button>
@@ -511,7 +511,7 @@ export default function LearnPage() {
                         onClick={() => setShowExitPopup(true)}
                         className="p-2 hover:bg-gray-100 rounded-full transition-colors border border-gray-200 shadow-sm"
                     >
-                        <X size={20} className="text-[#171d2b]" />
+                        <X size={20} className="text-foreground" />
                     </button>
                 </div>
             </header>
@@ -529,14 +529,14 @@ export default function LearnPage() {
                         <span className="text-xs sm:text-sm font-medium text-gray-500">{promptLabelForFrontSide(settings.frontSide)}</span>
                         <div className="flex items-center gap-2">
                             {currentCard.stage === 'new' && (
-                                <span className="px-2 sm:px-3 py-1 bg-pink-100 text-pink-600 text-xs font-bold rounded-full flex items-center gap-1">
+                                <span className="px-2 sm:px-3 py-1 bg-pink-100 text-pink-600 text-xs font-medium rounded-full flex items-center gap-1">
                                     <div className="w-2 h-2 rounded-full border-2 border-pink-600" />
                                     New cards
                                 </span>
                             )}
                             <button
                                 onClick={openEditModal}
-                                className="p-2 hover:bg-gray-50 rounded-full text-gray-400 hover:text-[#171d2b]"
+                                className="p-2 hover:bg-gray-50 rounded-full text-gray-400 hover:text-foreground"
                             >
                                 <Edit3 size={18} />
                             </button>
@@ -544,7 +544,7 @@ export default function LearnPage() {
                     </div>
 
                     <div className="flex-1 flex items-center justify-start">
-                        <p className="text-base sm:text-xl font-sora font-medium text-[#171d2b] leading-relaxed">
+                        <p className="text-base sm:text-xl font-sans font-medium text-foreground leading-relaxed">
                             {frontContent}
                         </p>
                     </div>
@@ -556,11 +556,11 @@ export default function LearnPage() {
                     {answerState !== 'idle' && (
                         <div className="mb-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
                             {answerState === 'correct' ? (
-                                <h3 className="text-[#2D9F83] font-bold text-lg flex items-center gap-2">
+                                <h3 className="text-[#2D9F83] font-medium text-lg flex items-center gap-2">
                                     Nice work! That’s some impressive stuff! 🥳
                                 </h3>
                             ) : (
-                                <h3 className="text-[#FF6B6B] font-bold text-lg flex items-center gap-2">
+                                <h3 className="text-[#FF6B6B] font-medium text-lg flex items-center gap-2">
                                     No worries, you’re still learning.
                                 </h3>
                             )}
@@ -570,7 +570,7 @@ export default function LearnPage() {
                     {/* MCQ */}
                     {currentCard.questionType === 'mcq' && (
                         <>
-                            {answerState === 'idle' && <h3 className="text-[#171d2b] font-bold mb-4">Select the matching term</h3>}
+                            {answerState === 'idle' && <h3 className="text-foreground font-medium mb-4">Select the matching term</h3>}
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
                                 {currentCard.mcqOptions?.map((opt, i) => {
                                     const isCorrectOption = i === currentCard.correctOptionIndex;
@@ -603,10 +603,10 @@ export default function LearnPage() {
                                             disabled={answerState !== 'idle'}
                                             className={`group p-3 sm:p-4 border rounded-2xl transition-all text-left flex items-center gap-3 sm:gap-4 ${buttonStyle}`}
                                         >
-                                            <div className={`w-8 h-8 min-w-[32px] rounded-full font-bold flex items-center justify-center text-sm transition-colors ${numberStyle}`}>
+                                            <div className={`w-8 h-8 min-w-[32px] rounded-full font-medium flex items-center justify-center text-sm transition-colors ${numberStyle}`}>
                                                 {numberContent}
                                             </div>
-                                            <span className="font-medium text-[#171d2b] text-base sm:text-lg break-words">{opt}</span>
+                                            <span className="font-medium text-foreground text-base sm:text-lg break-words">{opt}</span>
                                         </button>
                                     );
                                 })}
@@ -619,21 +619,21 @@ export default function LearnPage() {
                         <>
                             {answerState === 'idle' && (
                                 <div className="mb-4">
-                                    <h3 className="text-[#171d2b] font-bold mb-2">Is this the correct term?</h3>
+                                    <h3 className="text-foreground font-medium mb-2">Is this the correct term?</h3>
                                     <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
                                         <span className="text-xs text-gray-500 block mb-1">Term</span>
-                                        <p className="text-lg font-semibold text-[#171d2b]">{currentCard.tfDisplayedAnswer}</p>
+                                        <p className="text-lg font-medium text-foreground">{currentCard.tfDisplayedAnswer}</p>
                                     </div>
                                 </div>
                             )}
                             {answerState !== 'idle' && (
                                 <div className="mb-4 bg-gray-50 border border-gray-200 rounded-xl p-4">
                                     <span className="text-xs text-gray-500 block mb-1">Displayed Term</span>
-                                    <p className="text-lg font-semibold text-[#171d2b]">{currentCard.tfDisplayedAnswer}</p>
+                                    <p className="text-lg font-medium text-foreground">{currentCard.tfDisplayedAnswer}</p>
                                     {!currentCard.tfIsCorrect && (
                                         <div className="mt-2 pt-2 border-t border-gray-200">
                                             <span className="text-xs text-gray-500 block mb-1">Correct Term</span>
-                                            <p className="text-lg font-semibold text-[#2D9F83]">{backContent}</p>
+                                            <p className="text-lg font-medium text-[#2D9F83]">{backContent}</p>
                                         </div>
                                     )}
                                 </div>
@@ -671,10 +671,10 @@ export default function LearnPage() {
                                             disabled={answerState !== 'idle'}
                                             className={`group p-4 sm:p-6 border rounded-2xl transition-all text-left flex items-center gap-4 ${buttonStyle}`}
                                         >
-                                            <div className={`w-8 h-8 rounded-full font-bold flex items-center justify-center text-sm transition-colors ${numberStyle}`}>
+                                            <div className={`w-8 h-8 rounded-full font-medium flex items-center justify-center text-sm transition-colors ${numberStyle}`}>
                                                 {numberContent}
                                             </div>
-                                            <span className="font-medium text-[#171d2b] text-base sm:text-lg">{val ? "True" : "False"}</span>
+                                            <span className="font-medium text-foreground text-base sm:text-lg">{val ? "True" : "False"}</span>
                                         </button>
                                     );
                                 })}
@@ -685,7 +685,7 @@ export default function LearnPage() {
                     {/* Written */}
                     {currentCard.questionType === 'written' && (
                         <>
-                            <h3 className="text-[#171d2b] font-bold mb-4">Answer to the best of your ability</h3>
+                            <h3 className="text-foreground font-medium mb-4">Answer to the best of your ability</h3>
                             {!writtenSubmitted ? (
                                 <div className="space-y-4">
                                     <input
@@ -694,20 +694,20 @@ export default function LearnPage() {
                                         onChange={(e) => setWrittenAnswer(e.target.value)}
                                         onKeyDown={(e) => e.key === 'Enter' && writtenAnswer.trim() && handleWrittenSubmit()}
                                         placeholder="Type your answer and press Enter"
-                                        className="w-full p-4 bg-white border border-gray-300 rounded-2xl focus:border-[#171d2b] focus:outline-none text-lg placeholder:text-gray-400"
+                                        className="w-full p-4 bg-white border border-gray-300 rounded-2xl focus:border-primary focus:outline-none text-lg placeholder:text-gray-400"
                                         autoFocus
                                     />
                                     <div className="flex gap-3 justify-end">
                                         <button
                                             onClick={() => submitAnswer(false)}
-                                            className="px-6 py-3 font-bold text-[#171d2b] hover:bg-gray-100 rounded-xl transition-colors border border-gray-200"
+                                            className="px-6 py-3 font-medium text-foreground hover:bg-gray-100 rounded-xl transition-colors border border-gray-200"
                                         >
                                             Skip
                                         </button>
                                         <button
                                             onClick={handleWrittenSubmit}
                                             disabled={!writtenAnswer.trim()}
-                                            className="px-8 py-3 bg-[#171d2b] text-white font-bold rounded-xl hover:bg-[#2a3347] disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                                            className="px-8 py-3 bg-primary text-white font-medium rounded-xl hover:bg-[#2a3347] disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                                         >
                                             Answer
                                         </button>
@@ -717,15 +717,15 @@ export default function LearnPage() {
                                 <div className="space-y-4">
                                     <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 mb-3">
                                         <span className="text-xs text-gray-500 block mb-1">Your Answer</span>
-                                        <p className="text-lg font-medium text-[#171d2b]">{writtenAnswer}</p>
+                                        <p className="text-lg font-medium text-foreground">{writtenAnswer}</p>
                                     </div>
                                     <div className={`p-6 rounded-2xl ${writtenCorrect ? 'bg-[#E6F8F3] border border-[#2D9F83]' : 'bg-[#FFF0F0] border border-[#FF6B6B]'}`}>
-                                        <p className={`font-semibold text-lg ${writtenCorrect ? 'text-[#2D9F83]' : 'text-[#FF6B6B]'}`}>
+                                        <p className={`font-medium text-lg ${writtenCorrect ? 'text-[#2D9F83]' : 'text-[#FF6B6B]'}`}>
                                             {writtenCorrect ? 'Correct!' : 'Incorrect'}
                                         </p>
                                         <div className="mt-3 pt-3 border-t border-current/10">
                                             <span className="text-xs opacity-70 block mb-1">Correct Answer</span>
-                                            <p className="font-bold text-lg">{backContent}</p>
+                                            <p className="font-medium text-lg">{backContent}</p>
                                         </div>
                                     </div>
                                 </div>
@@ -739,27 +739,27 @@ export default function LearnPage() {
                             {!isFlipped ? (
                                 <button
                                     onClick={() => setIsFlipped(true)}
-                                    className="px-8 py-3 rounded-full bg-white border border-gray-200 font-bold text-[#171d2b] hover:bg-gray-50 shadow-sm transition-all"
+                                    className="px-8 py-3 rounded-full bg-white border border-gray-200 font-medium text-foreground hover:bg-gray-50 shadow-sm transition-all"
                                 >
                                     Show Answer
                                 </button>
                             ) : (
                                 <div className="w-full bg-white rounded-3xl shadow-sm border border-gray-100 p-8 text-center mb-8 animate-in fade-in slide-in-from-bottom-4 duration-300">
                                     <span className="text-sm font-medium text-gray-500 block mb-4">Term</span>
-                                    <p className="text-xl font-sora font-medium text-[#171d2b] mb-8">{backContent}</p>
+                                    <p className="text-xl font-sans font-medium text-foreground mb-8">{backContent}</p>
 
                                     {answerState === 'idle' && (
                                         <div className="flex justify-center gap-4">
                                             <button
                                                 onClick={() => submitAnswer(false)}
-                                                className="px-8 py-3 rounded-xl border-2 border-red-100 text-red-600 font-bold hover:bg-red-50 transition-colors"
+                                                className="px-8 py-3 rounded-xl border-2 border-red-100 text-red-600 font-medium hover:bg-red-50 transition-colors"
                                             >
                                                 <X className="inline mr-2" size={18} />
                                                 Forgot
                                             </button>
                                             <button
                                                 onClick={() => submitAnswer(true)}
-                                                className="px-8 py-3 rounded-xl border-2 border-green-100 text-green-600 font-bold hover:bg-green-50 transition-colors"
+                                                className="px-8 py-3 rounded-xl border-2 border-green-100 text-green-600 font-medium hover:bg-green-50 transition-colors"
                                             >
                                                 <Check className="inline mr-2" size={18} />
                                                 Knew it
@@ -783,14 +783,14 @@ export default function LearnPage() {
                         className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-3 sm:p-4 shadow-[0_-4px_20px_rgba(0,0,0,0.05)] z-40"
                     >
                         <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-0 relative">
-                            <div className="hidden md:block text-[#171d2b]/60 font-medium">
+                            <div className="hidden md:block text-muted-foreground font-medium">
                                 Press any key to continue
                             </div>
 
                             <div className="flex flex-wrap items-center justify-center sm:justify-end gap-2 sm:gap-4 w-full sm:w-auto sm:ml-auto relative">
                                 <button
                                     onClick={handleOverride}
-                                    className="px-4 sm:px-6 py-2 sm:py-3 rounded-full border border-gray-200 font-bold text-[#171d2b] hover:bg-gray-50 transition-colors text-sm sm:text-base"
+                                    className="px-4 sm:px-6 py-2 sm:py-3 rounded-full border border-gray-200 font-medium text-foreground hover:bg-gray-50 transition-colors text-sm sm:text-base"
                                 >
                                     Override: I got it {answerState === 'correct' ? 'wrong' : 'right'}
                                 </button>
@@ -806,7 +806,7 @@ export default function LearnPage() {
                                     </div>
                                     <button
                                         onClick={handleNext}
-                                        className="px-6 sm:px-8 py-2 sm:py-3 rounded-full bg-[#2D9F83] text-white font-bold hover:bg-[#258a70] transition-colors flex items-center gap-2 relative z-10 text-sm sm:text-base"
+                                        className="px-6 sm:px-8 py-2 sm:py-3 rounded-full bg-[#2D9F83] text-white font-medium hover:bg-[#258a70] transition-colors flex items-center gap-2 relative z-10 text-sm sm:text-base"
                                     >
                                         Next
                                         <ArrowRight size={18} />

@@ -23,7 +23,7 @@ const MONTH_NAMES = [
 function CalendarSkeleton() {
     return (
         <div className="flex items-center justify-center py-12">
-            <div className="w-5 h-5 border-2 border-[#171d2b] border-t-transparent rounded-full animate-spin" />
+            <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
         </div>
     );
 }
@@ -46,20 +46,20 @@ function CalendarDayCell({ day }: CalendarDayCellProps) {
             <div
                 className={`
                     w-full h-14 flex items-center justify-center text-xs font-medium
-                    border-b border-r border-[#171d2b]/10
+                    border-b border-r border-border
                     transition-colors cursor-default
                     ${LEVEL_COLORS[day.level]}
                     ${isToday ? "ring-2 ring-[#c4875a] ring-inset" : ""}
-                    ${isCurrentMonth ? "text-[#171d2b]" : "text-[#171d2b]/30"}
-                    hover:bg-[#171d2b]/5
+                    ${isCurrentMonth ? "text-foreground" : "text-muted-foreground"}
+                    hover:bg-accent
                 `}
             >
                 {day.dayOfMonth}
             </div>
             {showTooltip && isCurrentMonth && day.minutesStudied > 0 && (
-                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-[#171d2b] text-white text-xs rounded-lg whitespace-nowrap z-20 shadow-lg">
+                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-primary text-white text-xs rounded-lg whitespace-nowrap z-20 shadow-lg">
                     <div className="font-medium">{day.minutesStudied} min studied</div>
-                    <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-[#171d2b]" />
+                    <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-[var(--ink)]" />
                 </div>
             )}
         </div>
@@ -93,33 +93,33 @@ export default function StudyCalendar() {
     };
 
     return (
-        <div className="bg-white rounded-xl border border-[#171d2b]/5 shadow-sm overflow-hidden flex flex-col h-full">
+        <div className="bg-white rounded-xl border border-border shadow-sm overflow-hidden flex flex-col h-full">
             {/* Header */}
-            <div className="bg-[#f5e6c8] px-3 py-2 border-b border-[#171d2b]/5">
+            <div className="bg-[#f5e6c8] px-3 py-2 border-b border-border">
                 <div className="flex items-center gap-2">
-                    <Calendar size={16} className="text-[#171d2b]/70" />
-                    <h2 className="font-serif-4 text-sm text-[#171d2b]">Study History</h2>
+                    <Calendar size={16} className="text-muted-foreground" />
+                    <h2 className="font-sans tracking-tight text-sm text-foreground">Study History</h2>
                 </div>
             </div>
 
             {/* Month navigation */}
-            <div className="flex items-center justify-between px-3 py-1.5 border-b border-[#171d2b]/10 bg-white">
+            <div className="flex items-center justify-between px-3 py-1.5 border-b border-border bg-white">
                 <button
                     onClick={handlePrevMonth}
-                    className="w-7 h-7 flex items-center justify-center border border-[#171d2b]/20 rounded hover:bg-[#171d2b]/5 transition-colors"
+                    className="w-7 h-7 flex items-center justify-center border border-border rounded hover:bg-accent transition-colors"
                     aria-label="Previous month"
                 >
-                    <ChevronLeft size={16} className="text-[#171d2b]" />
+                    <ChevronLeft size={16} className="text-foreground" />
                 </button>
-                <span className="font-serif text-sm text-[#171d2b] font-semibold">
+                <span className="font-sans tracking-tight text-sm text-foreground font-medium">
                     {MONTH_NAMES[currentMonth]} {currentYear}
                 </span>
                 <button
                     onClick={handleNextMonth}
-                    className="w-7 h-7 flex items-center justify-center border border-[#171d2b]/20 rounded hover:bg-[#171d2b]/5 transition-colors"
+                    className="w-7 h-7 flex items-center justify-center border border-border rounded hover:bg-accent transition-colors"
                     aria-label="Next month"
                 >
-                    <ChevronRight size={16} className="text-[#171d2b]" />
+                    <ChevronRight size={16} className="text-foreground" />
                 </button>
             </div>
 
@@ -132,7 +132,7 @@ export default function StudyCalendar() {
                         {DAY_HEADERS.map((day) => (
                             <div
                                 key={day}
-                                className="py-1.5 text-center text-[10px] text-[#171d2b]/70 font-semibold border-b border-r border-[#171d2b]/10 last:border-r-0"
+                                className="py-1.5 text-center text-[10px] text-muted-foreground font-medium border-b border-r border-border last:border-r-0"
                             >
                                 {day}
                             </div>
@@ -147,14 +147,14 @@ export default function StudyCalendar() {
                     </div>
 
                     {/* Legend */}
-                    <div className="flex justify-center items-center gap-2 py-2 border-t border-[#171d2b]/10">
-                        <span className="text-[10px] text-[#171d2b]/60">Less</span>
+                    <div className="flex justify-center items-center gap-2 py-2 border-t border-border">
+                        <span className="text-[10px] text-muted-foreground">Less</span>
                         <div className="flex gap-1">
                             {LEVEL_COLORS.map((color, i) => (
-                                <div key={i} className={`w-3 h-3 rounded-sm ${color} border border-[#171d2b]/10`} />
+                                <div key={i} className={`w-3 h-3 rounded-sm ${color} border border-border`} />
                             ))}
                         </div>
-                        <span className="text-[10px] text-[#171d2b]/60">More</span>
+                        <span className="text-[10px] text-muted-foreground">More</span>
                     </div>
                 </>
             )}

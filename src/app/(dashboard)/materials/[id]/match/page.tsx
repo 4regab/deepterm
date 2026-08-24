@@ -182,8 +182,8 @@ export default function MatchPage() {
 
     if (stage === "loading") {
         return (
-            <div className="min-h-screen bg-[#f0f0ea] flex items-center justify-center">
-                <Loader2 size={32} className="animate-spin text-[#171d2b]/40" />
+            <div className="min-h-screen bg-background flex items-center justify-center">
+                <Loader2 size={32} className="animate-spin text-muted-foreground" />
             </div>
         );
     }
@@ -216,15 +216,15 @@ export default function MatchPage() {
 
     if (cards.length === 0) {
         return (
-            <div className="min-h-screen bg-[#f0f0ea] flex items-center justify-center">
-                <p className="text-[#171d2b]/50">No flashcards found</p>
+            <div className="min-h-screen bg-background flex items-center justify-center">
+                <p className="text-muted-foreground">No flashcards found</p>
             </div>
         );
     }
 
     // Playing Screen
     return (
-        <div className="min-h-screen bg-[#f0f0ea] p-4 sm:p-6">
+        <div className="min-h-screen bg-background p-4 sm:p-6">
             <ExitPopup
                 isOpen={showExitPopup}
                 onClose={() => setShowExitPopup(false)}
@@ -238,14 +238,14 @@ export default function MatchPage() {
             <div className="max-w-5xl mx-auto">
                 {/* Header */}
                 <div className="flex items-center justify-between mb-6">
-                    <button onClick={() => setShowExitPopup(true)} className="p-2 hover:bg-[#171d2b]/5 rounded-lg transition-colors">
+                    <button onClick={() => setShowExitPopup(true)} className="p-2 hover:bg-accent rounded-lg transition-colors">
                         <X size={22} />
                     </button>
-                    <div className="flex items-center gap-3 bg-white px-5 py-2.5 rounded-xl shadow-sm border border-[#171d2b]/5">
-                        <Timer size={18} className="text-[#171d2b]/60" />
-                        <span className="font-mono text-lg font-bold text-[#171d2b] w-14 text-center">{formatTime(timeElapsed)}</span>
+                    <div className="flex items-center gap-3 bg-white px-5 py-2.5 rounded-xl shadow-sm border border-border">
+                        <Timer size={18} className="text-muted-foreground" />
+                        <span className="font-mono text-lg font-medium text-foreground w-14 text-center">{formatTime(timeElapsed)}</span>
                     </div>
-                    <div className="flex items-center gap-2 text-sm text-[#171d2b]/60">
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
                         <span>{matchCount}/{Math.min(flashcardData.length, 6)}</span>
                     </div>
                 </div>
@@ -269,8 +269,8 @@ export default function MatchPage() {
                                         ${isSelected
                                             ? isWrong
                                                 ? 'bg-red-50 border-2 border-red-300 text-red-700'
-                                                : 'bg-[#171d2b] text-white scale-[1.02] shadow-lg'
-                                            : 'bg-white text-[#171d2b] border border-[#171d2b]/5 hover:border-[#171d2b]/20 hover:shadow-md'
+                                                : 'bg-primary text-white scale-[1.02] shadow-lg'
+                                            : 'bg-white text-foreground border border-border hover:border-border hover:shadow-md'
                                         }`}
                                 >
                                     {card.content}
