@@ -19,6 +19,7 @@ export default function ShareModal({ isOpen, onClose, materialId, materialType, 
   const [customCode, setCustomCode] = useState("")
   const [codeError, setCodeError] = useState("")
   const [isEditing, setIsEditing] = useState(false)
+  const [expiresInDays, setExpiresInDays] = useState<"" | "7" | "30">("")
 
   const fetchShare = useCallback(async () => {
     setLoading(true)
@@ -44,9 +45,12 @@ export default function ShareModal({ isOpen, onClose, materialId, materialType, 
     setCodeError("")
     
     try {
-      const body: Record<string, string> = { materialType, materialId }
+      const body: Record<string, string | number> = { materialType, materialId }
       if (customCode.trim()) {
         body.customCode = customCode.trim().toLowerCase()
+      }
+      if (expiresInDays) {
+        body.expiresInDays = Number(expiresInDays)
       }
       
       const res = await fetch('/api/share', {
@@ -272,6 +276,21 @@ export default function ShareModal({ isOpen, onClose, materialId, materialType, 
                 <p className="text-xs text-muted-foreground mt-1">
                   8-64 characters, lowercase letters, numbers, and hyphens only
                 </p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-muted-foreground mb-2">
+                  Link expiry
+                </label>
+                <select
+                  value={expiresInDays}
+                  onChange={(e) => setExpiresInDays(e.target.value as "" | "7" | "30")}
+                  className="w-full px-3 py-2 border border-border rounded-lg text-sm focus:outline-none focus:border-primary bg-white"
+                >
+                  <option value="">Never</option>
+                  <option value="7">7 days</option>
+                  <option value="30">30 days</option>
+                </select>
               </div>
 
               <button

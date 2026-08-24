@@ -86,3 +86,72 @@ export async function checkAndIncrementAIUsage(): Promise<RateLimitResult> {
     authenticated: true
   }
 }
+
+export async function getRemainingAIGenerations(): Promise<RateLimitResult> {
+  const supabase = await createServerSupabaseClient()
+  const { data: { user } } = await supabase.auth.getUser()
+
+  if (!user) {
+    return { allowed: false, remaining: 0, resetAt: new Date(), authenticated: false }
+  }
+
+  const today = new Date().toISOString().split('T')[0]
+  const resetAt = new Date(today)
+  resetAt.setUTCDate(resetAt.getUTCDate() + 1)
+  resetAt.setUTCHours(0, 0, 0, 0)
+
+  const { data: unlimitedUser } = await supabase
+    .from('unlimited_users')
+    .select('user_id')
+    .eq('user_id', user.id)
+    .maybeSingle()
+
+  if (unlimitedUser) {
+    return {
+      allowed: true,
+      remaining: 999,
+      resetAt,
+      userId: user.id,
+      authenticated: true,
+    }
+  }
+
+  const { data, error } = await supabase
+    .from('ai_usage')
+    .select('generation_count, reset_date')
+    .eq('user_id', user.id)
+    .maybeSingle()
+
+  if (error) {
+    return {
+      allowed: false,
+      remaining: 0,
+      resetAt,
+      userId: user.id,
+      authenticated: true,
+      unavailable: true,
+    }
+  }
+
+  const used = data?.reset_date === today ? (data.generation_count ?? 0) : 0
+  const remaining = Math.max(0, DAILY_AI_LIMIT - used)
+
+  return {
+    allowed: remaining > 0,
+    remaining,
+    resetAt,
+    userId: user.id,
+    authenticated: true,
+  }
+}
+
+export async function refundAIGeneration(): Promise<boolean> {
+  const supabase = await createServerSupabaseClient()
+  const { data, error } = await supabase.rpc('refund_ai_usage')
+  if (error) {
+    console.error('Failed to refund AI usage:', error.message || error.code)
+    return false
+  }
+  return Boolean(data)
+}
+

@@ -86,6 +86,13 @@ export default async function RootLayout({
             `}
           </Script>
           {children}
+          <Script nonce={nonce} id="pwa-sw" strategy="afterInteractive">
+            {`
+              if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.register('/sw.js').catch(() => {});
+              }
+            `}
+          </Script>
         </PostHogProvider>
       </body>
     </html>

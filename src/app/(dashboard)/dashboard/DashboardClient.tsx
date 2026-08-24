@@ -1,10 +1,12 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import Link from "next/link";
 import { motion } from "framer-motion";
 import { Clock, Flame, Trophy } from "lucide-react";
 import { getRankTitle, calculateProgressPercent } from "@/utils/xp";
 import { useActivityStore } from "@/lib/stores";
+import { createClient } from "@/config/supabase/client";
 import dynamic from "next/dynamic";
 
 // Dynamic import for study calendar (client-side only)
@@ -222,6 +224,41 @@ export function DashboardHeader({ initialData }: DashboardHeaderProps) {
                 </div>
             </div>
         </motion.header>
+    );
+}
+
+export function DueTodayList() {
+    const [items, setItems] = useState<Array<{ id: string; term: string; set_id: string }>>([]);
+
+    useEffect(() => {
+        const supabase = createClient();
+        void supabase
+            .from("flashcards")
+            .select("id, front, set_id, due_at")
+            .lte("due_at", new Date().toISOString())
+            .neq("status", "mastered")
+            .order("due_at", { ascending: true })
+            .limit(8)
+            .then(({ data }) => {
+                if (data) setItems(data.map((item) => ({ id: item.id, term: item.front, set_id: item.set_id })));
+            });
+    }, []);
+
+    if (items.length === 0) return null;
+
+    return (
+        <section className="plate p-4 mb-6">
+            <h2 className="font-sans font-medium text-sm text-foreground mb-3">Due today</h2>
+            <ul className="space-y-2">
+                {items.map((item) => (
+                    <li key={item.id}>
+                        <Link href={`/materials/${item.set_id}/learn`} className="text-sm text-foreground hover:underline">
+                            {item.term}
+                        </Link>
+                    </li>
+                ))}
+            </ul>
+        </section>
     );
 }
 

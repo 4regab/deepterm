@@ -1,6 +1,6 @@
 import { Suspense, cache } from "react";
 import { RecentActivity } from "@/components/Dashboard";
-import { DashboardHeader, StudyCalendarWrapper } from "./DashboardClient";
+import { DashboardHeader, StudyCalendarWrapper, DueTodayList } from "./DashboardClient";
 import { getAuthenticatedClient } from "@/lib/auth/session";
 
 // Force dynamic rendering - this page uses cookies for auth
@@ -100,6 +100,8 @@ export default async function DashboardPage() {
                     initialData={dashboardData}
                 />
             </Suspense>
+
+            <DueTodayList />
 
             <div className="grid grid-cols-1 lg:grid-cols-10 gap-6">
                 <div className="lg:col-span-2">

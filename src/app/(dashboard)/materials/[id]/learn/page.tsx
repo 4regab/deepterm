@@ -13,7 +13,7 @@ import StudySettingsModal from "@/components/StudySettingsModal";
 import { getStudySettings, getQuestionTypeForStage, StudySettings, QuestionType } from "@/utils/studySettings";
 import { createClient } from "@/config/supabase/client";
 import { useXPStore } from "@/lib/stores";
-import { addXP, recordStudyActivity, batchUpdateFlashcardStatuses, XP_REWARDS, type FlashcardStatusUpdate } from "@/services/activity";
+import { addXP, recordStudyActivity, batchUpdateFlashcardStatuses, applyCardReview, XP_REWARDS, type FlashcardStatusUpdate } from "@/services/activity";
 import { expectedWrittenAnswer, promptLabelForFrontSide } from "@/utils/reviewerTerms";
 
 type LearnStage = 'new' | 'learning' | 'almost_done' | 'mastered';
@@ -237,6 +237,9 @@ export default function LearnPage() {
         const dbStatus = nextStage === 'almost_done' ? 'review' : nextStage;
         const newPendingUpdate: FlashcardStatusUpdate = { id: currentCard.id, status: dbStatus as 'new' | 'learning' | 'review' | 'mastered' };
         setPendingUpdates(prev => [...prev, newPendingUpdate]);
+        void applyCardReview(currentCard.id, correct).catch((error) => {
+            console.error("Failed to persist SM-2 review:", error);
+        });
 
         const isMasteredCard = currentCard.stage === 'mastered';
         setCards(prev => prev.map(c => c.id === currentCard.id

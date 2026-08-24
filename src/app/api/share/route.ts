@@ -12,6 +12,7 @@ const CreateShareSchema = z.object({
   materialType: ShareMaterialTypeSchema,
   materialId: z.string().uuid(),
   customCode: ShareCodeCreateSchema.optional(),
+  expiresInDays: z.coerce.number().pipe(z.union([z.literal(7), z.literal(30)])).optional(),
 })
 
 function generateSecureShareCode(length: number = DEFAULT_SHARE_CODE_LENGTH): string {
@@ -114,7 +115,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 })
   }
 
-  const { materialType, materialId, customCode } = parsed.data
+  const { materialType, materialId, customCode, expiresInDays } = parsed.data
 
   // Verify ownership
   const table = materialType === 'flashcard_set' ? 'flashcard_sets' : 'reviewers'
@@ -182,16 +183,28 @@ export async function POST(request: NextRequest) {
   }
 
   // Create share
-  const { data: share, error } = await supabase
+  const sharePayload: Record<string, unknown> = {
+    share_code: shareCode,
+    material_type: materialType,
+    material_id: materialId,
+    user_id: user.id,
+  }
+  if (expiresInDays) {
+    sharePayload.expires_at = new Date(Date.now() + expiresInDays * 24 * 60 * 60 * 1000).toISOString()
+  }
+
+  let { data: share, error } = await supabase
     .from('material_shares')
-    .insert({
-      share_code: shareCode,
-      material_type: materialType,
-      material_id: materialId,
-      user_id: user.id,
-    })
+    .insert(sharePayload)
     .select()
     .single()
+
+  if (error && sharePayload.expires_at) {
+    delete sharePayload.expires_at
+    const retry = await supabase.from('material_shares').insert(sharePayload).select().single()
+    share = retry.data
+    error = retry.error
+  }
 
   if (error) {
     console.error('Share creation failed:', error)

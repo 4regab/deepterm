@@ -1,19 +1,24 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import type { Schema } from "@google/genai";
 import { rotationOrder } from "@/utils/geminiRotation";
+import { raceAbort, throwIfAborted } from "@/utils/abort";
 
 // Re-export Type for use in API routes
 export { Type };
 export type { Schema };
 
-// Load API keys from numbered environment variables
-function loadApiKeys(): string[] {
+/** Loads GEMINI_API_KEY plus GEMINI_API_KEY_1…5, skipping duplicates. */
+export function loadApiKeys(env: NodeJS.ProcessEnv = process.env): string[] {
   const keys: string[] = [];
+  const seen = new Set<string>();
+  const add = (value: string | undefined) => {
+    if (!value || seen.has(value)) return;
+    seen.add(value);
+    keys.push(value);
+  };
+  add(env.GEMINI_API_KEY);
   for (let i = 1; i <= 5; i++) {
-    const key = process.env[`GEMINI_API_KEY_${i}`];
-    if (key) {
-      keys.push(key);
-    }
+    add(env[`GEMINI_API_KEY_${i}`]);
   }
   return keys;
 }
@@ -55,11 +60,13 @@ export interface GeminiRequestOptions {
     responseSchema?: Schema;
   };
   preferredKeyIndex?: number;
+  signal?: AbortSignal;
 }
 
 export interface GeminiFileUploadOptions {
   file: Blob;
   config: { mimeType: string; displayName: string };
+  signal?: AbortSignal;
 }
 
 export async function generateContentWithRotation(
@@ -70,16 +77,17 @@ export async function generateContentWithRotation(
   }
 
   let lastError: Error | null = null;
-  const { preferredKeyIndex, ...generateOptions } = options;
+  const { preferredKeyIndex, signal, ...generateOptions } = options;
   const keyOrder = rotationOrder(API_KEYS.length, preferredKeyIndex ?? 0);
 
   // First pass: try all keys, starting at the preferred index so file
   // uploads and generation share the same Gemini API key.
   for (const i of keyOrder) {
     try {
+      throwIfAborted(signal);
       console.log(`[GeminiClient] Attempting request with key ${i + 1}/${API_KEYS.length}`);
       const ai = new GoogleGenAI({ apiKey: API_KEYS[i] });
-      const response = await ai.models.generateContent(generateOptions);
+      const response = await raceAbort(ai.models.generateContent(generateOptions), signal);
       console.log(`[GeminiClient] Success with key ${i + 1}`);
       return { text: response.text || "", keyIndex: i };
     } catch (error) {
@@ -101,9 +109,10 @@ export async function generateContentWithRotation(
   // Second pass: retry all keys once more
   for (const i of keyOrder) {
     try {
+      throwIfAborted(signal);
       console.log(`[GeminiClient] Retry attempt with key ${i + 1}/${API_KEYS.length}`);
       const ai = new GoogleGenAI({ apiKey: API_KEYS[i] });
-      const response = await ai.models.generateContent(generateOptions);
+      const response = await raceAbort(ai.models.generateContent(generateOptions), signal);
       console.log(`[GeminiClient] Retry success with key ${i + 1}`);
       return { text: response.text || "", keyIndex: i };
     } catch (error) {
@@ -140,12 +149,14 @@ export async function uploadFileWithRotation(
   }
 
   let lastError: Error | null = null;
+  const { signal, ...uploadOptions } = options;
 
   for (let i = 0; i < API_KEYS.length; i++) {
     try {
+      throwIfAborted(signal);
       console.log(`[GeminiClient] File upload attempt with key ${i + 1}/${API_KEYS.length}`);
       const ai = new GoogleGenAI({ apiKey: API_KEYS[i] });
-      const uploadedFile = await ai.files.upload(options);
+      const uploadedFile = await raceAbort(ai.files.upload(uploadOptions), signal);
       console.log(`[GeminiClient] File upload success with key ${i + 1}`);
       return { uploadedFile, ai, keyIndex: i };
     } catch (error) {
@@ -164,3 +175,4 @@ export async function uploadFileWithRotation(
 export function getApiKeyCount(): number {
   return API_KEYS.length;
 }
+

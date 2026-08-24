@@ -1,22 +1,28 @@
 import { NextRequest, NextResponse } from "next/server";
 import { FileState } from "@google/genai";
-import { checkAndIncrementAIUsage } from "@/services/rateLimit";
+import { checkAndIncrementAIUsage, refundAIGeneration } from "@/services/rateLimit";
 import { generateContentWithRotation, uploadFileWithRotation, getApiKeyCount, Type } from "@/services/geminiClient";
 import { verifyTurnstileToken } from "@/services/turnstile";
-import { MAX_CARDS_FILE_SIZE, MAX_GENERATE_TEXT_LENGTH, resolveGenerateMimeType } from "@/utils/generateInput";
+import {
+  MAX_CARDS_FILE_SIZE,
+  MAX_GENERATE_TEXT_LENGTH,
+  extractDocxText,
+  isDocxMime,
+  isGeminiUploadMime,
+  resolveGenerateMimeType,
+} from "@/utils/generateInput";
+import { GeminiCardsResponseSchema } from "@/lib/schemas/geminiOutput";
+import { combineAbortSignals, GENERATION_TIMEOUT_MS, isAbortError, throwIfAborted } from "@/utils/abort";
 import { z } from "zod";
 import { forbiddenUnlessSameOrigin } from "@/lib/auth/assertSameOrigin";
 
-// File size limits (in bytes)
 const MAX_FILE_SIZE = MAX_CARDS_FILE_SIZE;
 const MAX_TEXT_LENGTH = MAX_GENERATE_TEXT_LENGTH;
 
-// Zod schema for input validation
 const GenerateCardsInputSchema = z.object({
   textContent: z.string().max(MAX_TEXT_LENGTH, `Text too long. Maximum length is ${MAX_TEXT_LENGTH} characters`).optional().nullable(),
 });
 
-// Structured output schema for flashcards - enforces non-empty term and definition
 const flashcardResponseSchema = {
   type: Type.ARRAY,
   items: {
@@ -56,11 +62,11 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: captcha.error }, { status: captcha.status });
   }
 
+  let billed = false;
   try {
     const file = formData.get("file") as File | null;
     const rawTextContent = formData.get("textContent");
 
-    // Validate text content with Zod
     const validatedInput = GenerateCardsInputSchema.safeParse({
       textContent: typeof rawTextContent === "string" ? rawTextContent : null,
     });
@@ -78,26 +84,21 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "No file or text content provided" }, { status: 400 });
     }
 
-    // File size validation
     if (file && file.size > MAX_FILE_SIZE) {
       return NextResponse.json({
         error: `File too large. Maximum size is ${MAX_FILE_SIZE / 1024 / 1024}MB`
       }, { status: 400 });
     }
 
-    // MIME type validation against whitelist
     const resolvedMimeType = file ? resolveGenerateMimeType(file) : null;
     if (file && !resolvedMimeType) {
-      return NextResponse.json({ error: "Unsupported file type. Only PDF files are allowed." }, { status: 400 });
+      return NextResponse.json({ error: "Unsupported file type. Upload a PDF, DOCX, PNG, JPEG, or WebP file." }, { status: 400 });
     }
 
-    // Consume quota only after the request is known to be valid
     const rateLimit = await checkAndIncrementAIUsage();
 
     if (!rateLimit.authenticated) {
-      return NextResponse.json({
-        error: "Not authenticated"
-      }, { status: 401 });
+      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
     }
 
     if (rateLimit.unavailable) {
@@ -114,12 +115,27 @@ export async function POST(request: NextRequest) {
       }, { status: 429 });
     }
 
+    billed = true;
+
+    const timeout = AbortSignal.timeout(GENERATION_TIMEOUT_MS);
+    const signal = combineAbortSignals(request.signal, timeout);
+    throwIfAborted(signal);
+
+    let effectiveText = textContent;
     let fileUri: string | null = null;
     let mimeType: string | null = null;
     let uploadKeyIndex = 0;
 
-    // Handle file upload to Gemini Files API
-    if (file) {
+    if (file && isDocxMime(resolvedMimeType!)) {
+      const arrayBuffer = await file.arrayBuffer();
+      throwIfAborted(signal);
+      const extracted = await extractDocxText(arrayBuffer);
+      if (!extracted) {
+        await refundAIGeneration();
+        return NextResponse.json({ error: "Could not read that DOCX file." }, { status: 400 });
+      }
+      effectiveText = extracted.slice(0, MAX_TEXT_LENGTH);
+    } else if (file && isGeminiUploadMime(resolvedMimeType!)) {
       const validMimeType = resolvedMimeType!;
       mimeType = validMimeType;
 
@@ -129,24 +145,30 @@ export async function POST(request: NextRequest) {
       const { uploadedFile, ai, keyIndex } = await uploadFileWithRotation({
         file: blob,
         config: { mimeType: validMimeType, displayName: file.name },
+        signal,
       });
       uploadKeyIndex = keyIndex;
 
-      // Wait for file processing
       let geminiFile = await ai.files.get({ name: uploadedFile.name! });
       while (geminiFile.state === FileState.PROCESSING) {
+        throwIfAborted(signal);
         await new Promise((resolve) => setTimeout(resolve, 1000));
         geminiFile = await ai.files.get({ name: uploadedFile.name! });
       }
 
       if (geminiFile.state === FileState.FAILED) {
+        await refundAIGeneration();
         return NextResponse.json({ error: "File processing failed" }, { status: 500 });
       }
 
       fileUri = geminiFile.uri!;
     }
 
-    // Build prompt for card generation
+    if (!fileUri && !effectiveText) {
+      await refundAIGeneration();
+      return NextResponse.json({ error: "No file or text content provided" }, { status: 400 });
+    }
+
     const systemPrompt = `You are an expert study material extractor. Your job is to extract EVERY SINGLE term and definition from the document - be EXHAUSTIVE.
 
 CRITICAL: EXTRACT EVERYTHING - DO NOT BE SELECTIVE
@@ -158,24 +180,10 @@ CRITICAL: EXTRACT EVERYTHING - DO NOT BE SELECTIVE
 6. Short definitions are OK - extract them anyway
 7. DO NOT skip content because it seems "minor" - extract EVERYTHING
 
-WHAT TO EXTRACT:
-- Main concepts with their definitions
-- Headers followed by explanatory text
-- Headers followed by bullet points (combine bullets into definition)
-- Algorithms and their descriptions
-- Data structures and their descriptions  
-- Processes and their steps
-- Types/categories and their explanations
-- Advantages/disadvantages lists
-- Applications and examples
-- Case studies and their solutions
-- ANY term that has text explaining what it is
-
 DEFINITION FORMAT:
 - Copy the definition VERBATIM from the source
 - For bullet lists: combine all bullets with proper punctuation
 - Include ALL details, examples, and explanations from the source
-- Short definitions are acceptable - do not skip them
 
 MANDATORY:
 - Extract AT LEAST 100+ terms from a long document
@@ -192,10 +200,10 @@ MANDATORY:
           { text: "Extract EVERY SINGLE term and definition from this document. Be EXHAUSTIVE - I want ALL content extracted, not just the main concepts. Include ALL headers with their explanations, ALL bullet point lists, ALL algorithms, ALL examples. Do not skip anything." },
         ],
       });
-    } else if (textContent) {
+    } else if (effectiveText) {
       contents.push({
         role: "user",
-        parts: [{ text: `Extract EVERY SINGLE term and definition from this text. Be EXHAUSTIVE - extract ALL content:\n\n${textContent}` }],
+        parts: [{ text: `Extract EVERY SINGLE term and definition from this text. Be EXHAUSTIVE - extract ALL content:\n\n${effectiveText}` }],
       });
     }
 
@@ -203,6 +211,7 @@ MANDATORY:
       model: "gemini-2.5-flash-lite",
       contents,
       preferredKeyIndex: uploadKeyIndex,
+      signal,
       config: {
         systemInstruction: systemPrompt,
         temperature: 0.2,
@@ -212,55 +221,38 @@ MANDATORY:
       },
     });
 
-    // Parse the structured JSON response (guaranteed to be valid JSON matching schema)
-    let rawCards;
+    let parsedJson: unknown;
     try {
-      rawCards = JSON.parse(responseText);
+      parsedJson = JSON.parse(responseText);
     } catch {
       console.error("[GenerateCards] Failed to parse structured response:", responseText.substring(0, 500));
+      await refundAIGeneration();
       return NextResponse.json({ error: "Failed to parse AI response" }, { status: 500 });
     }
 
-    // Validate and filter out cards with empty/missing definitions
-    const cards = rawCards.filter((card: { term?: string; definition?: string }) => {
-      const term = card.term?.trim();
-      const definition = card.definition?.trim();
-      
-      // Must have both non-empty term and definition
-      if (!term || !definition) {
-        console.warn(`[GenerateCards] Filtered out card with empty term or definition: term="${term}"`);
-        return false;
-      }
-      
-      // Definition should have some content (at least 3 characters)
-      if (definition.length < 3) {
-        console.warn(`[GenerateCards] Filtered out card with too short definition: term="${term}", def="${definition}"`);
-        return false;
-      }
-      
-      return true;
-    }).map((card: { term: string; definition: string }) => ({
-      term: card.term.trim(),
-      definition: card.definition.trim(),
-    }));
-
-    // Log if we filtered out any cards
-    if (rawCards.length !== cards.length) {
-      console.log(`[GenerateCards] Filtered ${rawCards.length - cards.length} cards with empty definitions. Remaining: ${cards.length}`);
+    const parsedCards = GeminiCardsResponseSchema.safeParse(parsedJson);
+    if (!parsedCards.success) {
+      await refundAIGeneration();
+      return NextResponse.json({ error: "AI returned invalid flashcard data. Please try again." }, { status: 500 });
     }
 
-    // Usage already incremented atomically in checkAndIncrementAIUsage
+    const cards = parsedCards.data.map((card) => ({
+      term: card.term,
+      definition: card.definition,
+    }));
 
     return NextResponse.json({
       cards,
       remaining: rateLimit.remaining
     });
   } catch (error) {
-    // Log full error server-side only
+    if (billed) {
+      await refundAIGeneration();
+    }
+    if (isAbortError(error)) {
+      return NextResponse.json({ error: "Generation timed out or was cancelled." }, { status: 499 });
+    }
     console.error("Generate cards error:", error instanceof Error ? error.message : String(error));
-    
-    // Return sanitized error to client - no internal details
     return NextResponse.json({ error: "Failed to generate cards. Please try again." }, { status: 500 });
   }
 }
-

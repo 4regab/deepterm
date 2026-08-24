@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -26,6 +26,8 @@ import { Confetti } from "@/components/EmotionalAssets";
 import { createClient } from "@/config/supabase/client";
 import CaptchaModal from "@/components/CaptchaModal";
 import { buildReviewerInsertPayloads } from "@/utils/reviewerBatch";
+import { asQueryData, mutateWithOptionalColumn } from "@/utils/optionalColumn";
+import { sanitizeFolder } from "@/utils/materialFolder";
 
 type CreateType = "material" | "reviewer";
 type InputMode = "manual" | "bulk" | "ai";
@@ -70,7 +72,7 @@ interface ApiCategory {
     terms?: ApiTerm[];
 }
 
-const ACCEPTED_FILE_TYPES = ".pdf";
+const ACCEPTED_FILE_TYPES = ".pdf,.docx,.png,.jpg,.jpeg,.webp";
 const MAX_FILE_SIZE = 20 * 1024 * 1024;
 
 function parseTextToCards(text: string): Card[] {
@@ -105,6 +107,7 @@ export default function CreatePage() {
 
     const [createType, setCreateType] = useState<CreateType>("material");
     const [title, setTitle] = useState("");
+    const [folder, setFolder] = useState("");
     const [error, setError] = useState<string | null>(null);
     const [isSaving, setIsSaving] = useState(false);
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -126,6 +129,23 @@ export default function CreatePage() {
     const [reviewerResults, setReviewerResults] = useState<Category[]>([]);
     const [expandedCategories, setExpandedCategories] = useState<string[]>([]);
     const [filterText, setFilterText] = useState("");
+    const [remainingGenerations, setRemainingGenerations] = useState<number | null>(null);
+
+    useEffect(() => {
+        let cancelled = false;
+        void fetch("/api/ai-usage", { credentials: "same-origin" })
+            .then(async (response) => {
+                if (!response.ok) return;
+                const data = await response.json() as { remaining?: number };
+                if (!cancelled && typeof data.remaining === "number") {
+                    setRemainingGenerations(data.remaining);
+                }
+            })
+            .catch(() => undefined);
+        return () => {
+            cancelled = true;
+        };
+    }, []);
 
     // Captcha handlers
     const handleCaptchaVerify = useCallback((token: string) => {
@@ -151,8 +171,8 @@ export default function CreatePage() {
             return;
         }
         const ext = file.name.toLowerCase().split(".").pop();
-        if (ext !== "pdf") {
-            setError("Only PDF files are supported. Please convert PPTX, DOCX, or other formats to PDF first.");
+        if (!ext || !["pdf", "docx", "png", "jpg", "jpeg", "webp"].includes(ext)) {
+            setError("Upload a PDF, DOCX, PNG, JPEG, or WebP file.");
             return;
         }
         setSelectedFile(file);
@@ -341,17 +361,23 @@ export default function CreatePage() {
 
             // Create flashcard set — strip HTML tags to prevent stored XSS
             const sanitizedTitle = title.replace(/<[^>]*>/g, '').trim();
-            const { data: flashcardSet, error: setError } = await supabase
-                .from("flashcard_sets")
-                .insert({
-                    user_id: user.id,
-                    title: sanitizedTitle,
-                    color: '#E0F2FE'
-                })
-                .select()
-                .single();
+            const sanitizedFolder = sanitizeFolder(folder);
+            const setPayload: Record<string, unknown> = {
+                user_id: user.id,
+                title: sanitizedTitle,
+                color: '#E0F2FE',
+            };
+            if (sanitizedFolder) setPayload.folder = sanitizedFolder;
+            const { data: flashcardSet, error: setError } = await mutateWithOptionalColumn(
+                async (payload) => asQueryData<{ id: string }>(
+                    await supabase.from("flashcard_sets").insert(payload as never).select("id").single(),
+                ),
+                setPayload,
+                "folder",
+            );
 
             if (setError) throw setError;
+            if (!flashcardSet) throw new Error("Failed to save material");
 
             // Create flashcards
             const flashcardsToInsert = validCards.map(c => ({
@@ -393,18 +419,24 @@ export default function CreatePage() {
 
             // Create reviewer — strip HTML tags to prevent stored XSS
             const sanitizedReviewerTitle = title.replace(/<[^>]*>/g, '').trim();
-            const { data: reviewer, error: reviewerError } = await supabase
-                .from("reviewers")
-                .insert({
-                    user_id: user.id,
-                    title: sanitizedReviewerTitle,
-                    source_content: selectedFile?.name || '',
-                    extraction_mode: extractionMode,
-                })
-                .select()
-                .single();
+            const sanitizedFolder = sanitizeFolder(folder);
+            const reviewerPayload: Record<string, unknown> = {
+                user_id: user.id,
+                title: sanitizedReviewerTitle,
+                source_content: selectedFile?.name || '',
+                extraction_mode: extractionMode,
+            };
+            if (sanitizedFolder) reviewerPayload.folder = sanitizedFolder;
+            const { data: reviewer, error: reviewerError } = await mutateWithOptionalColumn(
+                async (payload) => asQueryData<{ id: string }>(
+                    await supabase.from("reviewers").insert(payload as never).select("id").single(),
+                ),
+                reviewerPayload,
+                "folder",
+            );
 
             if (reviewerError) throw reviewerError;
+            if (!reviewer) throw new Error("Failed to save reviewer");
 
             const { categoryRows, termRows } = buildReviewerInsertPayloads({
                 reviewerId: reviewer.id,
@@ -554,6 +586,17 @@ export default function CreatePage() {
                         value={title}
                         onChange={(e) => setTitle(e.target.value)}
                         placeholder="e.g., Biology Chapter 1"
+                        className="w-full px-4 py-3 rounded-lg border border-border focus:border-primary/30 focus:outline-none text-foreground placeholder:text-muted-foreground text-left"
+                    />
+                    <label className="block text-sm font-medium text-muted-foreground mb-2 mt-4 text-left">
+                        Folder <span className="font-normal">(optional)</span>
+                    </label>
+                    <input
+                        type="text"
+                        value={folder}
+                        onChange={(e) => setFolder(e.target.value)}
+                        placeholder="e.g., Biology"
+                        maxLength={40}
                         className="w-full px-4 py-3 rounded-lg border border-border focus:border-primary/30 focus:outline-none text-foreground placeholder:text-muted-foreground text-left"
                     />
                 </div>
@@ -750,7 +793,10 @@ export default function CreatePage() {
                             <div className="text-left mb-4">
                                 <h2 className="font-sans font-medium text-foreground mb-1">AI Generate</h2>
                                 <p className="text-sm text-muted-foreground">
-                                    Upload a document and let AI extract terms automatically
+                                    Upload a PDF, Word doc, or image and let AI extract terms
+                                    {remainingGenerations !== null && (
+                                        <> · {remainingGenerations} generation{remainingGenerations === 1 ? "" : "s"} left today</>
+                                    )}
                                 </p>
                             </div>
 
@@ -769,9 +815,8 @@ export default function CreatePage() {
                                 >
                                     <FileText size={32} />
                                     <div className="text-center">
-                                        <p className="text-sm font-medium">Click to upload PDF</p>
-                                        <p className="text-xs text-muted-foreground mt-1">PDF only (max 20MB)</p>
-                                        <p className="text-xs text-muted-foreground mt-0.5">Convert PPTX/DOCX to PDF first</p>
+                                        <p className="text-sm font-medium">Click to upload a file</p>
+                                        <p className="text-xs text-muted-foreground mt-1">PDF, DOCX, PNG, JPEG, or WebP (max 20MB)</p>
                                     </div>
                                 </button>
                             ) : (

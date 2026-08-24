@@ -1,3 +1,4 @@
+import { cache } from 'react'
 import { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { headers } from 'next/headers'
@@ -13,7 +14,7 @@ interface PageProps {
   params: Promise<{ code: string }>
 }
 
-async function getSharedMaterial(
+async function loadSharedMaterialUncached(
   code: string,
   requestIdentity?: string,
   identityHash?: string,
@@ -49,12 +50,14 @@ async function getSharedMaterial(
   return parseSharedMaterial(data)
 }
 
+const loadSharedMaterial = cache(loadSharedMaterialUncached)
+
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { code } = await params
   const requestHeaders = await headers()
   const requestIdentity = getRequestIdentifier(requestHeaders)
   const identityHash = hashRequestIdentity(requestHeaders)
-  const data = await getSharedMaterial(code, requestIdentity, identityHash)
+  const data = await loadSharedMaterial(code, requestIdentity, identityHash)
 
   if (!data) {
     return {
@@ -101,7 +104,7 @@ export default async function SharePage({ params }: PageProps) {
   const requestHeaders = await headers()
   const requestIdentity = getRequestIdentifier(requestHeaders)
   const identityHash = hashRequestIdentity(requestHeaders)
-  const sharedData = await getSharedMaterial(code, requestIdentity, identityHash)
+  const sharedData = await loadSharedMaterial(code, requestIdentity, identityHash)
 
   if (!sharedData) {
     notFound()

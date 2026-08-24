@@ -2,6 +2,8 @@ import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import { createServerSupabaseClient } from "@/config/supabase/server";
 import MaterialDetailClient, { MaterialData, Term, ReviewerCategory } from "./MaterialDetailClient";
+import { asQueryData, selectWithOptionalColumn } from "@/utils/optionalColumn";
+import { sanitizeFolder } from "@/utils/materialFolder";
 
 interface PageProps {
     params: Promise<{ id: string }>;
@@ -14,12 +16,16 @@ type MaterialResult =
 async function getMaterial(id: string): Promise<MaterialResult | null> {
     const supabase = await createServerSupabaseClient();
 
-    // Try flashcard_sets first
-    const { data: flashcardSet } = await supabase
-        .from("flashcard_sets")
-        .select("id, title, updated_at")
-        .eq("id", id)
-        .single();
+    const { data: flashcardSet } = await selectWithOptionalColumn<{
+        id: string;
+        title: string;
+        updated_at: string;
+        folder?: string | null;
+    }>(
+        async () => asQueryData(await supabase.from("flashcard_sets").select("id, title, updated_at, folder").eq("id", id).single()),
+        async () => asQueryData(await supabase.from("flashcard_sets").select("id, title, updated_at").eq("id", id).single()),
+        "folder",
+    );
 
     if (flashcardSet) {
         const { data: flashcards } = await supabase
@@ -35,15 +41,26 @@ async function getMaterial(id: string): Promise<MaterialResult | null> {
             stage: (card.status || 'new') as Term['stage'],
         }));
 
-        return { type: 'flashcard', material: flashcardSet, terms };
+        const material: MaterialData = {
+            id: flashcardSet.id,
+            title: flashcardSet.title,
+            updated_at: flashcardSet.updated_at,
+            folder: sanitizeFolder(flashcardSet.folder),
+        };
+
+        return { type: 'flashcard', material, terms };
     }
 
-    // Try reviewers
-    const { data: reviewer } = await supabase
-        .from("reviewers")
-        .select("id, title, updated_at")
-        .eq("id", id)
-        .single();
+    const { data: reviewer } = await selectWithOptionalColumn<{
+        id: string;
+        title: string;
+        updated_at: string;
+        folder?: string | null;
+    }>(
+        async () => asQueryData(await supabase.from("reviewers").select("id, title, updated_at, folder").eq("id", id).single()),
+        async () => asQueryData(await supabase.from("reviewers").select("id, title, updated_at").eq("id", id).single()),
+        "folder",
+    );
 
     if (reviewer) {
         const { data: categories } = await supabase
@@ -63,7 +80,14 @@ async function getMaterial(id: string): Promise<MaterialResult | null> {
             })),
         }));
 
-        return { type: 'reviewer', material: reviewer, categories: reviewerCategories };
+        const material: MaterialData = {
+            id: reviewer.id,
+            title: reviewer.title,
+            updated_at: reviewer.updated_at,
+            folder: sanitizeFolder(reviewer.folder),
+        };
+
+        return { type: 'reviewer', material, categories: reviewerCategories };
     }
 
     return null;

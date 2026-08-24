@@ -34,6 +34,7 @@ const PROTECTED_ROUTES = [
   '/api/generate-cards',
   '/api/generate-reviewer',
   '/api/share',
+  '/api/ai-usage',
 ]
 
 // Public routes that bypass auth check entirely

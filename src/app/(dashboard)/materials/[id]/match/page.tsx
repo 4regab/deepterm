@@ -8,7 +8,7 @@ import SessionResultPage from "@/components/SessionResultPage";
 import ExitPopup from "@/components/ExitPopup";
 import { createClient } from "@/config/supabase/client";
 import { useXPStore } from "@/lib/stores";
-import { addXP, recordStudyActivity, updateFlashcardStatus, XP_REWARDS } from "@/services/activity";
+import { addXP, recordStudyActivity, applyCardReview, XP_REWARDS } from "@/services/activity";
 import { createGameCards } from "@/utils/matchGame";
 
 type CardStatus = 'new' | 'learning' | 'review' | 'mastered';
@@ -133,7 +133,9 @@ export default function MatchPage() {
                 if (matchedCard) {
                     const newStatus: CardStatus = matchedCard.status === 'new' ? 'learning' 
                         : matchedCard.status === 'learning' ? 'review' : 'mastered';
-                    updateFlashcardStatus(matchedCard.id, newStatus);
+                    void applyCardReview(matchedCard.id, true).catch((error) => {
+                        console.error("Failed to persist match review:", error);
+                    });
                     setFlashcardData(prev => prev.map(c => c.id === matchedCard.id ? { ...c, status: newStatus } : c));
                 }
 

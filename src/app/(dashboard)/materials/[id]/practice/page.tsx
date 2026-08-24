@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Loader2 } from "lucide-react";
@@ -10,7 +10,7 @@ import ExitPopup from "@/components/ExitPopup";
 import PracticeSettingsModal, { PracticeSettings } from "@/components/PracticeSettingsModal";
 import { createClient } from "@/config/supabase/client";
 import { useXPStore } from "@/lib/stores";
-import { addXP, recordStudyActivity, batchUpdateFlashcardStatuses, XP_REWARDS, type FlashcardStatusUpdate } from "@/services/activity";
+import { addXP, recordStudyActivity, batchUpdateFlashcardStatuses, applyCardReview, XP_REWARDS, type FlashcardStatusUpdate } from "@/services/activity";
 import { generateQuestionsFromCards, gradePracticeAnswer, type QuestionType } from "@/utils/practiceQuestions";
 
 type CardStatus = 'new' | 'learning' | 'review' | 'mastered';
@@ -144,6 +144,17 @@ export default function PracticePage() {
                     useXPStore.getState().fetchXPStats();
                 }
                 await recordStudyActivity({ quizzes: 1 });
+                const supabase = createClient();
+                await supabase.from("practice_sessions").insert({
+                    set_id: params.id,
+                    score: correct,
+                    total: questions.length,
+                    answers: questions.map((q) => ({
+                        id: q.id,
+                        correct: q.isCorrect,
+                        answer: q.userAnswer,
+                    })),
+                });
             };
             persistResults();
 
@@ -151,7 +162,7 @@ export default function PracticePage() {
         }
     }, [currentQuestionIndex, questions, pendingUpdates]);
 
-    const handleAnswer = async (answer: string) => {
+    const handleAnswer = useCallback(async (answer: string) => {
         const updated = [...questions];
         updated[currentQuestionIndex].userAnswer = answer;
         const current = updated[currentQuestionIndex];
@@ -167,8 +178,10 @@ export default function PracticePage() {
                 ? (card.status === 'new' ? 'learning' : card.status === 'learning' ? 'review' : 'mastered')
                 : 'learning';
 
-            // Track for batch update at session end
             setPendingUpdates(prev => [...prev, { id: card.id, status: newStatus }]);
+            void applyCardReview(card.id, isCorrect).catch((error) => {
+                console.error("Failed to persist SM-2 review:", error);
+            });
 
             // Update local state only
             const updatedCards = [...flashcardData];
@@ -210,7 +223,7 @@ export default function PracticePage() {
             };
             timerRef.current = setTimeout(tick, 1000);
         }
-    };
+    }, [currentQuestionIndex, questions, flashcardData, settings.answerFeedback, settings.autoNextAfterAnswer, settings.autoNextDuration, streak]);
 
     const startOver = () => {
         // Regenerate with current settings
@@ -237,10 +250,54 @@ export default function PracticePage() {
 
     const currentQuestion = questions[currentQuestionIndex];
 
-    // Keyboard shortcuts handler - disabled for now to avoid SSR issues
-    // TODO: Re-enable with proper useEffect if needed
+    useEffect(() => {
+        if (stage !== "take") return;
 
-    // Get XP stats from store
+        const onKey = (event: KeyboardEvent) => {
+            const target = event.target as HTMLElement | null;
+            if (target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA")) {
+                return;
+            }
+            if (!currentQuestion) return;
+
+            if (showAnswer && (event.key === "Enter" || event.key === " ")) {
+                event.preventDefault();
+                if (currentQuestionIndex < questions.length - 1) {
+                    setCurrentQuestionIndex((index) => index + 1);
+                    setShowAnswer(false);
+                }
+                return;
+            }
+
+            if (showAnswer) return;
+
+            if (currentQuestion.type === "multipleChoice" && currentQuestion.options) {
+                const optionIndex = event.key >= "1" && event.key <= "9"
+                    ? Number(event.key) - 1
+                    : event.key.toLowerCase().charCodeAt(0) - 97;
+                const option = currentQuestion.options[optionIndex];
+                if (option) {
+                    event.preventDefault();
+                    void handleAnswer(option);
+                }
+            }
+
+            if (currentQuestion.type === "trueFalse") {
+                if (event.key.toLowerCase() === "t" || event.key === "1") {
+                    event.preventDefault();
+                    void handleAnswer("true");
+                }
+                if (event.key.toLowerCase() === "f" || event.key === "2") {
+                    event.preventDefault();
+                    void handleAnswer("false");
+                }
+            }
+        };
+
+        window.addEventListener("keydown", onKey);
+        return () => window.removeEventListener("keydown", onKey);
+    }, [stage, showAnswer, currentQuestion, currentQuestionIndex, questions.length, handleAnswer]);
+
     const xpStats = useXPStore((state) => state.stats);
 
     // Results screen renders as full page

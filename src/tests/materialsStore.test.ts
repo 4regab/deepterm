@@ -14,6 +14,7 @@ describe('materialsStore', () => {
       items: [],
       searchQuery: '',
       activeFilter: 'All',
+      activeFolder: null,
       loading: false,
       error: null,
     })
@@ -24,6 +25,7 @@ describe('materialsStore', () => {
       items: [],
       searchQuery: '',
       activeFilter: 'All',
+      activeFolder: null,
       loading: false,
       error: null,
     })
@@ -212,6 +214,18 @@ describe('materialsStore', () => {
       useMaterialsStore.getState().setSearchQuery('xyz')
       const filtered = useMaterialsStore.getState().getFilteredItems()
       expect(filtered).toHaveLength(0)
+    })
+
+    it('should filter by folder when one is selected', () => {
+      useMaterialsStore.getState().setItems([
+        { id: '1', title: 'Bio', type: 'Flashcards', itemsCount: 2, lastAccessed: '2024-01-01', folder: 'Biology' },
+        { id: '2', title: 'Chem', type: 'Flashcards', itemsCount: 3, lastAccessed: '2024-01-02', folder: 'Chemistry' },
+        { id: '3', title: 'Loose', type: 'Reviewer', itemsCount: 1, lastAccessed: '2024-01-03' },
+      ])
+      useMaterialsStore.getState().setActiveFolder('Biology')
+      const filtered = useMaterialsStore.getState().getFilteredItems()
+      expect(filtered).toHaveLength(1)
+      expect(filtered[0].title).toBe('Bio')
     })
   })
 
