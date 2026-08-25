@@ -622,7 +622,7 @@ export function useCreateDraft() {
       const { data: { user }, error: authError } = await supabase.auth.getUser();
       if (authError || !user) throw new Error('Not authenticated. Please sign in again.');
 
-      const sanitizedTitle = cleanTitle.replace(/<[^>]*>/g, '').trim();
+      const sanitizedTitle = cleanTitle.replace(/[<>]/g, '').trim();
 
       if (targetType === 'material') {
         // Save Flashcards
