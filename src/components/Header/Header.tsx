@@ -24,17 +24,6 @@ async function handleGoogleLogin() {
     });
 }
 
-async function handleEmailLogin(email: string) {
-    const supabase = createClient();
-    const { error } = await supabase.auth.signInWithOtp({
-        email,
-        options: {
-            emailRedirectTo: `${window.location.origin}/auth/callback`,
-        },
-    });
-    if (error) throw error;
-}
-
 const LEARN_ITEMS = [
     { label: "Pomodoro", href: "/pomodoro" },
     { label: "Practice Test", href: "/materials" },
@@ -63,8 +52,6 @@ function SessionAwareHeader({ user, isLoading, className }: { user: User | null;
     const isScrolled = useScrolled(20);
     const [isResourcesOpen, setIsResourcesOpen] = useState(false);
     const [showCaptcha, setShowCaptcha] = useState(false);
-    const [email, setEmail] = useState("");
-    const [emailStatus, setEmailStatus] = useState<"idle" | "sending" | "sent" | "error">("idle");
     const sitekey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
 
     // Use selector pattern to subscribe only to needed values - prevents re-renders on unrelated store changes (Rule 5.4)
@@ -176,35 +163,6 @@ function SessionAwareHeader({ user, isLoading, className }: { user: User | null;
                     >
                         Log in
                     </button>
-                    <form
-                        className="hidden lg:flex items-center gap-2"
-                        onSubmit={async (event) => {
-                            event.preventDefault();
-                            if (!email.trim()) return;
-                            setEmailStatus("sending");
-                            try {
-                                await handleEmailLogin(email.trim());
-                                setEmailStatus("sent");
-                            } catch {
-                                setEmailStatus("error");
-                            }
-                        }}
-                    >
-                        <input
-                            type="email"
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            placeholder="Email magic link"
-                            className="h-[42px] rounded-[100px] px-4 border border-[#171d2b]/20 text-sm bg-white"
-                        />
-                        <button
-                            type="submit"
-                            disabled={emailStatus === "sending"}
-                            className="h-[42px] rounded-[100px] px-4 text-sm border border-[#171d2b]/20 hover:bg-[#171d2b]/5"
-                        >
-                            {emailStatus === "sent" ? "Sent" : emailStatus === "error" ? "Retry" : "Send link"}
-                        </button>
-                    </form>
                     </div>
                 )}
             </nav>

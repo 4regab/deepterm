@@ -4,35 +4,65 @@ import * as React from "react";
 import Link from "next/link";
 import { cn } from "@/lib/cn";
 
-type Variant = "primary" | "secondary" | "ghost" | "destructive" | "outline";
+/**
+ * `destructive` and `outline` are the pre-redesign names. They still compile
+ * and still render, mapped onto `danger` and `secondary`.
+ * @deprecated destructive → danger, outline → secondary
+ */
+type LegacyVariant = "destructive" | "outline";
+
+type Variant =
+  | "primary"
+  | "secondary"
+  | "ghost"
+  | "danger"
+  | "danger-ghost"
+  | "link"
+  | LegacyVariant;
+
+/** `xs` predates the scale. It maps to a 28px button; prefer `sm`. */
 type Size = "lg" | "md" | "sm" | "xs";
 
 const BASE =
-  "inline-flex cursor-pointer items-center justify-center gap-2 whitespace-nowrap font-medium font-sora " +
-  "transition-[transform,background-color,color,border-color,box-shadow] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] " +
-  "focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none " +
-  "disabled:pointer-events-none disabled:opacity-50 " +
-  "active:translate-y-px active:scale-[0.96]";
+  "pressable relative inline-flex cursor-pointer items-center justify-center gap-2 whitespace-nowrap " +
+  "rounded-sm transition-[background-color,color,border-color,box-shadow,transform] " +
+  "duration-[var(--dur-fast)] ease-[var(--ease-out)] " +
+  "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus)] " +
+  "disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50";
 
 const VARIANTS: Record<Variant, string> = {
   primary:
-    "bg-primary text-primary-foreground shadow-[inset_0_1px_0_rgba(255,255,255,0.18),inset_0_-1px_0_rgba(0,0,0,0.18)] " +
-    "hover:bg-[#2a3347]",
+    "bg-brand text-on-solid hover:bg-brand-hover active:bg-brand-active",
   secondary:
-    "border border-transparent bg-secondary text-secondary-foreground " +
-    "hover:bg-[color-mix(in_srgb,var(--secondary)_92%,var(--ink))]",
-  ghost: "text-muted-foreground hover:text-foreground hover:bg-accent",
-  destructive: "bg-destructive text-white hover:bg-destructive/90",
+    "border border-default bg-surface text-ink hover:bg-surface-hover active:bg-surface-sunken",
+  ghost: "text-secondary hover:bg-surface-hover hover:text-ink",
+  danger: "bg-danger text-on-solid hover:bg-danger-text active:bg-danger-text",
+  "danger-ghost": "text-danger-text hover:bg-danger-subtle",
+  link: "text-brand-text underline-offset-4 hover:underline",
+  // Legacy aliases — identical output, kept so existing call sites compile.
+  destructive: "bg-danger text-on-solid hover:bg-danger-text active:bg-danger-text",
   outline:
-    "border border-border bg-transparent text-foreground hover:bg-accent",
+    "border border-default bg-surface text-ink hover:bg-surface-hover active:bg-surface-sunken",
 };
 
 const SIZES: Record<Size, string> = {
-  lg: "h-12 rounded-full px-8 text-base",
-  md: "h-11 rounded-full px-6 text-sm",
-  sm: "h-9 rounded-full px-4 text-sm",
-  xs: "h-8 rounded-full px-3 text-xs",
+  lg: "h-[46px] px-6 text-base font-semibold",
+  md: "h-[38px] px-4 text-[15px] font-medium",
+  sm: "h-8 px-3 text-[13px] font-medium",
+  xs: "h-7 px-2.5 text-xs font-medium",
 };
+
+/** `link` has no box of its own — it sits on the text baseline. */
+const LINK_SIZES: Record<Size, string> = {
+  lg: "h-auto p-0 text-base font-semibold",
+  md: "h-auto p-0 text-[15px] font-medium",
+  sm: "h-auto p-0 text-[13px] font-medium",
+  xs: "h-auto p-0 text-xs font-medium",
+};
+
+function sizeClasses(variant: Variant, size: Size) {
+  return variant === "link" ? LINK_SIZES[size] : SIZES[size];
+}
 
 export function Spinner({ className }: { className?: string }) {
   return (
@@ -66,20 +96,25 @@ export function Button({
 }: ButtonProps) {
   return (
     <button
-      className={cn(BASE, VARIANTS[variant], SIZES[size], className)}
+      className={cn(BASE, VARIANTS[variant], sizeClasses(variant, size), className)}
       disabled={loading || disabled}
       aria-disabled={loading || undefined}
+      aria-busy={loading || undefined}
       type={type ?? "button"}
       {...props}
     >
-      {loading ? <Spinner /> : null}
-      {children}
+      {/* The label keeps its box while loading so the button never resizes. */}
+      <span className={cn("contents", loading && "invisible")}>{children}</span>
+      {loading ? (
+        <span className="absolute inset-0 grid place-items-center">
+          <Spinner />
+        </span>
+      ) : null}
     </button>
   );
 }
 
-export interface ButtonLinkProps
-  extends React.ComponentProps<typeof Link> {
+export interface ButtonLinkProps extends React.ComponentProps<typeof Link> {
   variant?: Variant;
   size?: Size;
   className?: string;
@@ -94,10 +129,49 @@ export function ButtonLink({
 }: ButtonLinkProps) {
   return (
     <Link
-      className={cn(BASE, VARIANTS[variant], SIZES[size], className)}
+      className={cn(BASE, VARIANTS[variant], sizeClasses(variant, size), className)}
       {...props}
     >
       {children}
     </Link>
+  );
+}
+
+const ICON_SIZES = {
+  sm: "size-7",
+  md: "size-8",
+  lg: "size-[38px]",
+} as const;
+
+export interface IconButtonProps
+  extends Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, "aria-label"> {
+  /** Required: an icon-only control is invisible to screen readers without it. */
+  "aria-label": string;
+  variant?: Extract<Variant, "primary" | "secondary" | "ghost" | "danger-ghost">;
+  size?: keyof typeof ICON_SIZES;
+}
+
+export function IconButton({
+  className,
+  variant = "ghost",
+  size = "md",
+  type,
+  children,
+  ...props
+}: IconButtonProps) {
+  return (
+    <button
+      className={cn(
+        BASE,
+        VARIANTS[variant],
+        ICON_SIZES[size],
+        "shrink-0 rounded-xs p-0",
+        className
+      )}
+      type={type ?? "button"}
+      {...props}
+    >
+      {children}
+    </button>
   );
 }

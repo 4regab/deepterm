@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { headers } from "next/headers";
-import { Space_Grotesk, Sora, Source_Serif_4 } from "next/font/google";
+import { Geist, Source_Serif_4 } from "next/font/google";
 import Script from "next/script";
 import "@/styles/globals.css";
 import {
@@ -13,18 +13,14 @@ import {
 import { PostHogProvider } from "@/components/PostHogProvider";
 import { SkipLink } from "@/components/ui";
 
-const spaceGrotesk = Space_Grotesk({
+/** Every piece of UI chrome. Exposed to CSS as --font-ui. */
+const geist = Geist({
   subsets: ["latin"],
-  variable: "--font-space-grotesk",
+  variable: "--font-geist",
   display: "swap",
 });
 
-const sora = Sora({
-  subsets: ["latin"],
-  variable: "--font-sora",
-  display: "swap",
-});
-
+/** Long-form reading only — article bodies, reviewer prose. --font-reading. */
 const sourceSerif4 = Source_Serif_4({
   subsets: ["latin"],
   variable: "--font-source-serif",
@@ -47,10 +43,13 @@ export default async function RootLayout({
   return (
     <html
       lang="en"
-      className={`${spaceGrotesk.variable} ${sora.variable} ${sourceSerif4.variable}`}
+      className={`${geist.variable} ${sourceSerif4.variable}`}
       suppressHydrationWarning
     >
       <head>
+        {/* Declared here so a later dark-mode flip is a token change, not a
+            layout.tsx change. Update to "light dark" when dark mode ships. */}
+        <meta name="color-scheme" content="light" />
         {/* JSON-LD Structured Data */}
         <script
           nonce={nonce}

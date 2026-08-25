@@ -2,92 +2,76 @@
 
 import { Clock, Flame, Trophy } from "lucide-react";
 import { useActivityStore } from "@/lib/stores";
+import { StatTileSkeleton } from "@/components/ui/Skeleton";
+import { Card, CardHeader, CardBody } from "@/components/ui/Card";
 
 interface StatCardProps {
-    label: string;
-    value: string | number;
-    icon: React.ReactNode;
-    bgColor: string;
-    iconColor: string;
-    loading?: boolean;
+  label: string;
+  value: string | number;
+  icon: React.ReactNode;
+  iconToneClass: string;
+  loading?: boolean;
 }
 
-function StatCardSkeleton({ bgColor }: { bgColor: string }) {
-    return (
-        <div className={`${bgColor} rounded-xl p-4 animate-pulse`}>
-            <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-white/30" />
-                <div className="flex-1">
-                    <div className="h-3 bg-white/30 rounded w-20 mb-2" />
-                    <div className="h-6 bg-white/30 rounded w-12" />
-                </div>
-            </div>
-        </div>
-    );
-}
+function StatCard({ label, value, icon, iconToneClass, loading }: StatCardProps) {
+  if (loading) {
+    return <StatTileSkeleton />;
+  }
 
-function StatCard({ label, value, icon, bgColor, iconColor, loading }: StatCardProps) {
-    if (loading) {
-        return <StatCardSkeleton bgColor={bgColor} />;
-    }
-
-    return (
-        <div className={`${bgColor} rounded-xl p-4 transition-all hover:shadow-md border border-border`}>
-            <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center">
-                    <span className={iconColor}>{icon}</span>
-                </div>
-                <div>
-                    <p className="font-sans text-[12px] text-muted-foreground mb-0.5">{label}</p>
-                    <p className="font-sans font-medium text-[20px] text-foreground">{value}</p>
-                </div>
-            </div>
+  return (
+    <Card variant="flat" padding="md" className="flex flex-col justify-between">
+      <CardHeader className="pb-2">
+        <span className="caption text-muted font-medium">{label}</span>
+        <div className={`grid size-8 place-items-center rounded-sm ${iconToneClass}`}>
+          {icon}
         </div>
-    );
+      </CardHeader>
+      <CardBody>
+        <p className="title-lg font-semibold tabular text-ink">{value}</p>
+      </CardBody>
+    </Card>
+  );
 }
 
 export default function StatsBar() {
-    const { stats, activity, loading } = useActivityStore();
+  const { stats, activity, loading } = useActivityStore();
 
-    // Get today's date in YYYY-MM-DD format (local timezone)
-    const today = new Date();
-    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
-    
-    // Find today's activity from the activity array (daily data)
-    const todayActivity = activity.find(a => a.activity_date === todayStr);
-    const todayMinutes = todayActivity?.minutes_studied ?? 0;
-    
-    const currentStreak = stats?.current_streak ?? 0;
-    const bestStreak = stats?.longest_streak ?? 0;
+  // Get today's date in YYYY-MM-DD format (local timezone)
+  const today = new Date();
+  const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
 
-    return (
-        <div className="mb-8">
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <StatCard
-                    label="Today's Study"
-                    value={`${todayMinutes} min`}
-                    icon={<Clock size={20} />}
-                    bgColor="bg-[#f5f0e0]"
-                    iconColor="text-muted-foreground"
-                    loading={loading}
-                />
-                <StatCard
-                    label="Current Streak"
-                    value={`${currentStreak} days`}
-                    icon={<Flame size={20} />}
-                    bgColor="bg-[#e8e4d8]"
-                    iconColor="text-muted-foreground"
-                    loading={loading}
-                />
-                <StatCard
-                    label="Best Streak"
-                    value={`${bestStreak} days`}
-                    icon={<Trophy size={20} />}
-                    bgColor="bg-[#e0dcd0]"
-                    iconColor="text-muted-foreground"
-                    loading={loading}
-                />
-            </div>
-        </div>
-    );
+  // Find today's activity from the activity array (daily data)
+  const todayActivity = activity.find((a) => a.activity_date === todayStr);
+  const todayMinutes = todayActivity?.minutes_studied ?? 0;
+
+  const currentStreak = stats?.current_streak ?? 0;
+  const bestStreak = stats?.longest_streak ?? 0;
+
+  return (
+    <div className="mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <StatCard
+          label="Today's Study"
+          value={`${todayMinutes} min`}
+          icon={<Clock size={16} aria-hidden="true" />}
+          iconToneClass="bg-brand-subtle text-brand-text"
+          loading={loading}
+        />
+        <StatCard
+          label="Current Streak"
+          value={`${currentStreak} days`}
+          icon={<Flame size={16} aria-hidden="true" />}
+          iconToneClass="bg-warn-subtle text-warn-text"
+          loading={loading}
+        />
+        <StatCard
+          label="Best Streak"
+          value={`${bestStreak} days`}
+          icon={<Trophy size={16} aria-hidden="true" />}
+          iconToneClass="bg-cards-subtle text-cards-text"
+          loading={loading}
+        />
+      </div>
+    </div>
+  );
 }

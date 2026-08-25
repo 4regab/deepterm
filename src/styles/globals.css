@@ -2,66 +2,234 @@
 @plugin "@tailwindcss/typography";
 
 /*
- * DeepTerm tokens, adapted from OA Design's "derive, don't pick" system.
- * Identity stays DeepTerm: warm paper stage, navy ink, serif display.
- * Neutrals are --ink mixed into transparency at stated percentages.
+ * DeepTerm design tokens — phase 1 foundation.
+ *
+ * Every token here is SEMANTIC (a role, never a literal or a scale position),
+ * so a later dark mode is a CSS-only change: re-declare this block under
+ * [data-theme="dark"] and nothing in TSX moves. Dark mode is deliberately not
+ * implemented yet.
+ *
+ * Contrast ratios in comments are measured against --surface (#FFFFFF) unless
+ * stated otherwise. WCAG 1.4.3 needs 4.5:1 for body text and 3:1 for large
+ * text; WCAG 1.4.11 needs 3:1 for UI component boundaries.
  */
 
 :root {
-  --ink: #171d2b;
+  color-scheme: light;
 
-  --background: #f0f0ea;
-  --card: #ffffff;
-  --popover: #ffffff;
-  --foreground: var(--ink);
-  --card-foreground: var(--ink);
+  /* ---- Canvas and surfaces ------------------------------------------- */
+  --canvas: #f5f6f8;            /* page floor; cards sit on top of this */
+  --surface: #ffffff;           /* resting card / menu / input fill */
+  --surface-sunken: #eef0f4;    /* wells, tracks, segmented-control troughs */
+  --surface-hover: #f1f3f7;     /* hover wash on transparent controls */
+  --surface-inverse: #171d2b;   /* tooltips, inverted chips */
 
-  --border: color-mix(in srgb, var(--ink) 12%, transparent);
-  --input: color-mix(in srgb, var(--ink) 14%, transparent);
-  --accent: color-mix(in srgb, var(--ink) 5%, transparent);
-  --accent-foreground: var(--ink);
-  --muted: color-mix(in srgb, var(--ink) 5%, transparent);
-  --muted-foreground: color-mix(in srgb, var(--ink) 60%, #6d6d6d);
+  /* ---- Borders -------------------------------------------------------- */
+  --border-subtle: #edeff3;     /* 1.11:1 — decorative dividers only */
+  --border: #dfe3ea;            /* 1.24:1 — card and container edges */
+  --border-input: #8c95a8;      /* 3.01:1 on white — meets WCAG 1.4.11 */
+  --border-strong: #171d2b;     /* 15.9:1 — selected / high-emphasis edge */
 
-  --primary: #171d2b;
-  --primary-foreground: #fefeff;
-  --ring: #3ba6f1;
+  /* ---- Text ----------------------------------------------------------- */
+  --text: #10141f;              /* 18.5:1 */
+  --text-secondary: #4a5264;    /* 7.74:1 */
+  --text-muted: #5e6779;        /* 5.69:1 on surface, 5.27:1 on canvas */
+  --text-disabled: #9aa1b0;     /* 2.66:1 — disabled only, exempt from 1.4.3 */
+  --text-on-solid: #ffffff;     /* text on brand / semantic solid fills */
 
-  --secondary: color-mix(in srgb, var(--ink) 8%, #f0f0ea);
-  --secondary-foreground: var(--ink);
+  /* ---- Brand ---------------------------------------------------------- */
+  --brand: #4f46e5;             /* white on it: 6.32:1 */
+  --brand-hover: #4338ca;       /* white on it: 8.02:1 */
+  --brand-active: #3730a3;      /* white on it: 9.83:1 */
+  --brand-subtle: #eef0fe;      /* 1.06:1 — tint fill, never carries text */
+  --brand-text: #3730a3;        /* 9.83:1 — brand-coloured text and icons */
+  --focus: #4f46e5;             /* 3.24:1 against canvas — focus ring only */
 
-  --destructive: oklch(0.637 0.237 25.331);
-  --destructive-foreground: oklch(0.505 0.213 27.518);
-  --success: oklch(0.596 0.145 163.225);
-  --success-foreground: oklch(0.508 0.118 165.612);
-  --warning: oklch(0.769 0.188 70.08);
-  --warning-foreground: oklch(0.555 0.163 48.998);
-  --info: oklch(0.623 0.214 259.815);
-  --info-foreground: oklch(0.488 0.243 264.376);
+  /* ---- Content types --------------------------------------------------
+   * One hue per artifact the user creates. Solid = icon tint / left rail,
+   * subtle = chip fill, text = label on the subtle fill.
+   */
+  --type-cards: #0e7490;        /* Flashcards. white on it: 4.86:1 */
+  --type-cards-subtle: #e5f3f7; /* cards-text on it: 6.79:1 */
+  --type-cards-text: #155e75;   /* 7.24:1 */
 
-  --radius: 0.625rem;
-  --radius-sm: calc(var(--radius) * 0.6);
-  --radius-md: calc(var(--radius) * 0.8);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) * 1.4);
-  --radius-2xl: calc(var(--radius) * 1.8);
-  --radius-3xl: calc(var(--radius) * 2.2);
-  --radius-4xl: calc(var(--radius) * 2.6);
+  --type-reviewer: #b45309;        /* Reviewer. white on it: 4.52:1 */
+  --type-reviewer-subtle: #fdf2e3; /* reviewer-text on it: 6.99:1 */
+  --type-reviewer-text: #92400e;   /* 7.55:1 */
 
-  --shadow-resting: 0 1px 2px rgba(0, 0, 0, 0.06);
-  --shadow-floating: 0 1px 2px rgba(0, 0, 0, 0.08), 0 8px 24px rgba(0, 0, 0, 0.08);
+  --type-practice: #6d28d9;        /* Practice. white on it: 7.53:1 */
+  --type-practice-subtle: #f2ebfe; /* practice-text on it: 8.09:1 */
+  --type-practice-text: #5b21b6;   /* 9.24:1 */
 
-  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
-  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
-  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+  /* ---- Semantic feedback ---------------------------------------------- */
+  --success: #047857;           /* white on it: 4.83:1 */
+  --success-subtle: #e6f4ef;    /* success-text on it: 7.32:1 */
+  --success-text: #065f46;      /* 7.03:1 */
+
+  --warn: #b45309;              /* white on it: 4.52:1 */
+  --warn-subtle: #fdf2e3;       /* warn-text on it: 6.99:1 */
+  --warn-text: #92400e;         /* 7.55:1 */
+
+  --danger: #b91c1c;            /* white on it: 5.94:1 */
+  --danger-subtle: #fdecec;     /* danger-text on it: 6.90:1 */
+  --danger-text: #991b1b;       /* 7.60:1 */
+
+  /*
+   * COLLISION RULE — --warn and --type-reviewer are the same hex (#B45309),
+   * and so are their subtle/text pairs. That is intentional: amber is the only
+   * honest "caution" colour and the only honest "study notes" colour in this
+   * palette. They are kept apart by SHAPE, not by hue:
+   *
+   *   warning  → full-width banner or toast, always with an AlertTriangle icon
+   *   reviewer → chip, 3px left rail, or icon tint, always with a BookOpen icon
+   *
+   * They must never render inside the same 200px region. If a reviewer card
+   * ever needs a warning, the warning goes in a banner above the list, not
+   * inside the card.
+   */
+
+  /* ---- Spacing (4px base) --------------------------------------------- */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+  --space-20: 80px;
+
+  /* ---- Radii -----------------------------------------------------------
+   * These override Tailwind's default --radius-* scale, so `rounded-md` and
+   * friends resolve to the design system instead of Tailwind's defaults.
+   */
+  --radius-xs: 6px;   /* icon buttons, badges, tight chips */
+  --radius-sm: 8px;   /* buttons, inputs, chips */
+  --radius-md: 12px;  /* menus, popovers */
+  --radius-lg: 16px;  /* cards, dialogs */
+  --radius-full: 9999px;
+
+  /* Legacy radii. `rounded-xl/2xl/3xl` still have ~40 callers in page files
+     that phase 1 may not touch, so they are aliased onto --radius-lg rather
+     than deleted; the pages converge on 16px without being edited. */
+  --radius: var(--radius-lg);
+  --radius-xl: var(--radius-lg);
+  --radius-2xl: var(--radius-lg);
+  --radius-3xl: var(--radius-lg);
+  --radius-4xl: var(--radius-lg);
+
+  /* ---- Elevation -------------------------------------------------------
+   * A resting card is elev-0: it is defined by a 1px border and a white fill
+   * against the canvas, not by a shadow. Shadow means "this floats above the
+   * page" — hover, menus, dialogs.
+   */
+  --elev-0: none;
+  --elev-1: 0 1px 2px rgba(16, 20, 31, 0.06);
+  --elev-2: 0 4px 12px rgba(16, 20, 31, 0.08), 0 1px 2px rgba(16, 20, 31, 0.04);
+  --elev-3: 0 16px 40px rgba(16, 20, 31, 0.14), 0 2px 8px rgba(16, 20, 31, 0.06);
+
+  /* ---- Motion ---------------------------------------------------------- */
+  --dur-instant: 80ms;
+  --dur-fast: 140ms;
+  --dur-base: 200ms;
+  --dur-slow: 280ms;
+
+  --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --ease-in: cubic-bezier(0.4, 0, 1, 1);
+  --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-spring: cubic-bezier(0.34, 1.4, 0.64, 1);
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1); /* legacy: .header-pill */
+
+  /* ---- Legacy aliases --------------------------------------------------
+   * Kept because page files still reference them and phase 1 does not edit
+   * pages. Each one is remapped onto a new token, never a stale literal.
+   */
+  --ink: var(--text);                       /* accent-[var(--ink)], border-t-[var(--ink)] */
+  --background: var(--canvas);
+  --card: var(--surface);
+  --popover: var(--surface);
+  --foreground: var(--text);
+  --card-foreground: var(--text);
+  --accent: var(--surface-sunken);
+  --accent-foreground: var(--text);
+  --muted: var(--surface-sunken);
+  --muted-foreground: var(--text-muted);
+  --primary: var(--brand);
+  --primary-foreground: var(--text-on-solid);
+  --secondary: var(--surface-sunken);
+  --secondary-foreground: var(--text);
+  --input: var(--border-input);
+  --ring: var(--focus);
+
+  --destructive: var(--danger);
+  --destructive-foreground: var(--danger-text);
+  --success-foreground: var(--success-text);
+  --warning: var(--warn);
+  --warning-foreground: var(--warn-text);
+  --info: var(--brand);
+  --info-foreground: var(--brand-text);
+
+  --shadow-resting: var(--elev-1);
+  --shadow-floating: var(--elev-2);
+
+  /* ---- Typography stacks ----------------------------------------------- */
+  --font-ui: var(--font-geist), ui-sans-serif, system-ui, sans-serif;
+  --font-reading: var(--font-source-serif), "Source Serif 4", ui-serif, serif;
 }
 
 @theme inline {
-  --font-sans: var(--font-space-grotesk), ui-sans-serif, system-ui, sans-serif;
-  --font-serif: var(--font-source-serif), "Source Serif 4", ui-serif, serif;
-  --font-sora: var(--font-sora), sans-serif;
+  /* Fonts. --font-sans/-serif/-sora are legacy aliases; Sora and Space Grotesk
+     no longer load, so `font-sora` now renders the UI face. */
+  --font-sans: var(--font-ui);
+  --font-serif: var(--font-reading);
+  --font-sora: var(--font-ui);
 
+  /* Canvas and surfaces */
+  --color-canvas: var(--canvas);
+  --color-surface: var(--surface);
+  --color-surface-sunken: var(--surface-sunken);
+  --color-surface-hover: var(--surface-hover);
+  --color-surface-inverse: var(--surface-inverse);
+
+  /* Text roles that do not collide with a legacy surface name.
+     `ink` is the primary text colour: `text-ink` in new code, and the legacy
+     name page files already use. */
   --color-ink: var(--ink);
+  --color-on-solid: var(--text-on-solid);
+
+  /* Brand */
+  --color-brand: var(--brand);
+  --color-brand-hover: var(--brand-hover);
+  --color-brand-active: var(--brand-active);
+  --color-brand-subtle: var(--brand-subtle);
+  --color-brand-text: var(--brand-text);
+  --color-focus: var(--focus);
+
+  /* Content types */
+  --color-cards: var(--type-cards);
+  --color-cards-subtle: var(--type-cards-subtle);
+  --color-cards-text: var(--type-cards-text);
+  --color-reviewer: var(--type-reviewer);
+  --color-reviewer-subtle: var(--type-reviewer-subtle);
+  --color-reviewer-text: var(--type-reviewer-text);
+  --color-practice: var(--type-practice);
+  --color-practice-subtle: var(--type-practice-subtle);
+  --color-practice-text: var(--type-practice-text);
+
+  /* Semantic feedback */
+  --color-success: var(--success);
+  --color-success-subtle: var(--success-subtle);
+  --color-success-text: var(--success-text);
+  --color-warn: var(--warn);
+  --color-warn-subtle: var(--warn-subtle);
+  --color-warn-text: var(--warn-text);
+  --color-danger: var(--danger);
+  --color-danger-subtle: var(--danger-subtle);
+  --color-danger-text: var(--danger-text);
+
+  /* Legacy color utilities kept alive for page files. */
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -71,21 +239,64 @@
   --color-input: var(--input);
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
-  --color-muted: var(--muted);
   --color-muted-foreground: var(--muted-foreground);
   --color-primary: var(--primary);
   --color-primary-foreground: var(--primary-foreground);
   --color-ring: var(--ring);
-  --color-secondary: var(--secondary);
   --color-secondary-foreground: var(--secondary-foreground);
   --color-destructive: var(--destructive);
   --color-destructive-foreground: var(--destructive-foreground);
-  --color-success: var(--success);
   --color-success-foreground: var(--success-foreground);
   --color-warning: var(--warning);
   --color-warning-foreground: var(--warning-foreground);
   --color-info: var(--info);
   --color-info-foreground: var(--info-foreground);
+}
+
+/*
+ * `muted` and `secondary` are the two names where the legacy meaning (a faint
+ * SURFACE) and the new meaning (a text role) collide. A single --color-* entry
+ * would have to pick one and silently break the other, so each side gets its
+ * own utility instead. Variants (hover:, md:, …) work on these; opacity
+ * modifiers like `bg-muted/50` do not — nothing in the app uses those.
+ */
+@utility bg-muted {
+  background-color: var(--surface-sunken);
+}
+@utility text-muted {
+  color: var(--text-muted);
+}
+@utility border-muted {
+  border-color: var(--surface-sunken);
+}
+@utility bg-secondary {
+  background-color: var(--surface-sunken);
+}
+@utility text-secondary {
+  color: var(--text-secondary);
+}
+
+/* Border roles. Registering these as theme colours would spell them
+   `border-border-subtle`, so they are explicit utilities instead. `border`
+   (the legacy card edge) stays a theme colour, so `border-border` still works. */
+@utility border-subtle {
+  border-color: var(--border-subtle);
+}
+@utility border-default {
+  border-color: var(--border);
+}
+@utility border-strong {
+  border-color: var(--border-strong);
+}
+@utility text-disabled {
+  color: var(--text-disabled);
+}
+
+@utility font-ui {
+  font-family: var(--font-ui);
+}
+@utility font-reading {
+  font-family: var(--font-reading);
 }
 
 html {
@@ -95,22 +306,22 @@ html {
 }
 
 body {
-  background-color: var(--background);
-  color: var(--foreground);
+  background-color: var(--canvas);
+  color: var(--text);
   overflow-x: clip;
-  font-family: var(--font-sans);
+  font-family: var(--font-ui);
 }
 
 .source-serif-4 {
-  font-family: var(--font-source-serif), "Source Serif 4", serif;
+  font-family: var(--font-reading);
   font-optical-sizing: auto;
   font-weight: 400;
   font-style: normal;
 }
 
 ::selection {
-  background: color-mix(in srgb, var(--ink) 18%, transparent);
-  color: var(--foreground);
+  background: var(--brand-subtle);
+  color: var(--brand-text);
 }
 
 h1,
@@ -125,8 +336,38 @@ dd {
   text-wrap: pretty;
 }
 
+/* Ensure truncate utilities strictly override text-wrap: pretty and prevent wrapping */
+.truncate,
+[class*="truncate"] {
+  white-space: nowrap !important;
+  text-wrap: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+.line-clamp-1 {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 1;
+  overflow: hidden;
+}
+
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+}
+
+.line-clamp-3 {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  overflow: hidden;
+}
+
 :focus-visible {
-  outline: 2px solid var(--ring);
+  outline: 2px solid var(--focus);
   outline-offset: 2px;
 }
 
@@ -140,38 +381,7 @@ dd {
   }
 }
 
-.skip-link {
-  position: absolute;
-  inset-inline-start: 1rem;
-  top: 0;
-  z-index: 100;
-  transform: translateY(-120%);
-  border-radius: 9999px;
-  background: var(--primary);
-  color: var(--primary-foreground);
-  padding: 0.5rem 1rem;
-  font-size: 0.875rem;
-  font-weight: 500;
-}
-
-.skip-link:focus {
-  transform: translateY(0.75rem);
-}
-
-.pressable {
-  transition: transform 150ms var(--ease-out);
-}
-
-.pressable:active {
-  transform: translateY(1px) scale(0.96);
-}
-
-@media (hover: hover) and (pointer: fine) {
-  .hover-lift:hover {
-    transform: translateY(-1px);
-  }
-}
-
+/* iOS zooms any input under 16px on focus. Keep 16px on small screens only. */
 input,
 textarea,
 select {
@@ -186,46 +396,129 @@ select {
   }
 }
 
+/*
+ * Type scale. In @layer components so a one-off Tailwind utility
+ * (`text-sm`, `font-semibold`) still wins over the ramp.
+ */
+@layer components {
+  .display-lg {
+    font-size: 40px;
+    line-height: 44px;
+    font-weight: 600;
+    letter-spacing: -0.022em;
+  }
+
+  .display {
+    font-size: 32px;
+    line-height: 38px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+  }
+
+  .title-lg {
+    font-size: 24px;
+    line-height: 30px;
+    font-weight: 600;
+    letter-spacing: -0.015em;
+  }
+
+  .title {
+    font-size: 20px;
+    line-height: 28px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+
+  .subtitle {
+    font-size: 16px;
+    line-height: 24px;
+    font-weight: 600;
+    letter-spacing: -0.005em;
+  }
+
+  .body {
+    font-size: 15px;
+    line-height: 22px;
+    font-weight: 400;
+  }
+
+  .body-strong {
+    font-size: 15px;
+    line-height: 22px;
+    font-weight: 500;
+  }
+
+  .body-sm {
+    font-size: 13px;
+    line-height: 18px;
+    font-weight: 400;
+  }
+
+  .label {
+    font-size: 13px;
+    line-height: 16px;
+    font-weight: 500;
+  }
+
+  .caption {
+    font-size: 12px;
+    line-height: 16px;
+    font-weight: 500;
+    letter-spacing: 0.005em;
+  }
+
+  .overline {
+    font-size: 11px;
+    line-height: 14px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+}
+
+/* Stats, counters, timers and any number that must not jitter while it ticks. */
 .tabular {
   font-variant-numeric: tabular-nums;
 }
 
-.squircle {
-  border-radius: 26px;
-  --card-clip-radius: 14px;
-  --card-clip-handle: 2.25px;
-  clip-path: shape(
-    from var(--card-clip-radius) 0px,
-    line to calc(100% - var(--card-clip-radius)) 0px,
-    curve to 100% var(--card-clip-radius)
-      with calc(100% - var(--card-clip-handle)) 0px / 100% var(--card-clip-handle),
-    line to 100% calc(100% - var(--card-clip-radius)),
-    curve to calc(100% - var(--card-clip-radius)) 100%
-      with 100% calc(100% - var(--card-clip-handle)) / calc(100% - var(--card-clip-handle)) 100%,
-    line to var(--card-clip-radius) 100%,
-    curve to 0px calc(100% - var(--card-clip-radius))
-      with var(--card-clip-handle) 100% / 0px calc(100% - var(--card-clip-handle)),
-    line to 0px var(--card-clip-radius),
-    curve to var(--card-clip-radius) 0px
-      with 0px var(--card-clip-handle) / var(--card-clip-handle) 0px,
-    close
-  );
-  corner-shape: squircle;
+.skip-link {
+  position: absolute;
+  inset-inline-start: 1rem;
+  top: 0;
+  z-index: 100;
+  transform: translateY(-120%);
+  border-radius: var(--radius-sm);
+  background: var(--brand);
+  color: var(--text-on-solid);
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 500;
 }
 
-@media (min-width: 640px) {
-  .squircle {
-    border-radius: 40px;
-    --card-clip-radius: 20px;
-    --card-clip-handle: 3px;
+.skip-link:focus {
+  transform: translateY(0.75rem);
+}
+
+.pressable {
+  transition: transform var(--dur-fast) var(--ease-out);
+}
+
+.pressable:active {
+  transform: translateY(1px) scale(0.96);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .hover-lift:hover {
+    transform: translateY(-1px);
   }
 }
 
+/* Legacy card recipe. Now a resting card: border + fill, no shadow. */
 .plate {
-  background: var(--card);
+  background: var(--surface);
   border: 1px solid var(--border);
-  box-shadow: var(--shadow-resting);
-  border-radius: 1.25rem;
+  box-shadow: var(--elev-0);
+  border-radius: var(--radius-lg);
 }
 
 .header-pill {
@@ -240,13 +533,10 @@ select {
 }
 
 .header-pill[data-scrolled="true"] {
-  background-color: color-mix(in srgb, var(--background) 80%, transparent);
-  border-color: color-mix(in srgb, var(--ink) 8%, transparent);
+  background-color: color-mix(in srgb, var(--canvas) 80%, transparent);
+  border-color: var(--border);
   backdrop-filter: blur(16px) saturate(125%);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.35),
-    inset 0 -1px 0 rgba(255, 255, 255, 0.12),
-    var(--shadow-floating);
+  box-shadow: var(--elev-2);
 }
 
 @keyframes oa-skeleton {
@@ -258,9 +548,9 @@ select {
 .skeleton-bar {
   background-image: linear-gradient(
     90deg,
-    color-mix(in srgb, var(--ink) 8%, transparent) 0%,
-    color-mix(in srgb, var(--ink) 14%, transparent) 50%,
-    color-mix(in srgb, var(--ink) 8%, transparent) 100%
+    var(--surface-sunken) 0%,
+    var(--border) 50%,
+    var(--surface-sunken) 100%
   );
   background-size: 200% 100%;
   animation: oa-skeleton 1.4s linear infinite;
@@ -278,7 +568,7 @@ select {
 }
 
 .oa-arrive {
-  animation: oa-arrive 0.3s var(--ease-out);
+  animation: oa-arrive var(--dur-slow) var(--ease-out);
   filter: blur(0);
 }
 
@@ -313,8 +603,8 @@ select {
   opacity: 0;
   translate: 0 14px;
   transition:
-    opacity 0.7s ease-out,
-    translate 0.7s ease-out;
+    opacity 0.7s var(--ease-out),
+    translate 0.7s var(--ease-out);
   transition-delay: var(--reveal-delay, 0s);
 }
 
@@ -326,7 +616,7 @@ select {
 .faq-panel {
   display: grid;
   grid-template-rows: 0fr;
-  transition: grid-template-rows 200ms var(--ease-out);
+  transition: grid-template-rows var(--dur-base) var(--ease-out);
 }
 
 .faq-panel[data-open="true"] {
@@ -334,6 +624,13 @@ select {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  :root {
+    --dur-instant: 0ms;
+    --dur-fast: 0ms;
+    --dur-base: 0ms;
+    --dur-slow: 0ms;
+  }
+
   .reveal {
     opacity: 1;
     translate: 0 0;
@@ -349,11 +646,20 @@ select {
     transform: none;
   }
 
+  .hover-lift:hover {
+    transform: none;
+  }
+
   .header-pill {
     transition: none;
   }
 
   .faq-panel {
     transition: none;
+  }
+
+  .ds-thumb,
+  .ds-collapse {
+    transition: none !important;
   }
 }

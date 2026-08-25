@@ -17,8 +17,8 @@ export function Toast({
     <div
       role="status"
       className={cn(
-        "flex items-center gap-2 rounded-full border border-border bg-card py-1.5 pl-3 pr-4 text-xs font-medium",
-        "shadow-[var(--shadow-floating)]",
+        "caption flex items-center gap-2 rounded-sm border border-default bg-surface py-1.5 pl-3 pr-4",
+        "shadow-[var(--elev-2)]",
         className
       )}
       style={{
@@ -32,7 +32,7 @@ export function Toast({
         aria-hidden="true"
         className={cn(
           "size-2 rounded-full",
-          kind === "success" ? "bg-success-foreground" : "bg-destructive"
+          kind === "success" ? "bg-success" : "bg-danger"
         )}
       />
       {children}

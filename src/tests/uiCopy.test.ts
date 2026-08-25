@@ -33,12 +33,18 @@ describe("interface copy and quality floor", () => {
     expect(css).toContain("prefers-reduced-motion");
   });
 
-  it("derives neutrals from a single ink token", () => {
+  it("routes every legacy colour token through the new palette", () => {
     const css = read("styles/globals.css");
-    expect(css).toContain("--ink: #171d2b");
-    expect(css).toContain("color-mix(in srgb, var(--ink) 12%, transparent)");
-    expect(css).toContain("--primary: #171d2b");
-    expect(css).toContain("--background: #f0f0ea");
+    // Pages still ship bg-background / bg-card / bg-primary. They must resolve
+    // to the new tokens, never to a leftover literal.
+    expect(css).toContain("--background: var(--canvas)");
+    expect(css).toContain("--card: var(--surface)");
+    expect(css).toContain("--foreground: var(--text)");
+    expect(css).toContain("--muted-foreground: var(--text-muted)");
+    expect(css).toContain("--primary: var(--brand)");
+    expect(css).toContain("--input: var(--border-input)");
+    expect(css).toContain("--ring: var(--focus)");
+    expect(css).not.toContain("#f0f0ea");
   });
 
   it("keeps Source Serif on the landing hero", () => {

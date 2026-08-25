@@ -45,6 +45,9 @@ const nextConfig: NextConfig = {
   // This reduces bundle size by ~1MB and improves cold start by 200-800ms
   experimental: {
     optimizePackageImports: ['lucide-react', 'framer-motion'],
+    // Run the React Compiler natively in Turbopack. The Node babel-loader worker
+    // dies mid-compile on Windows (WSAECONNRESET) and takes /dashboard down with it.
+    turbopackRustReactCompiler: true,
   },
   images: {
     remotePatterns: [
