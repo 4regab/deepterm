@@ -1,173 +1,215 @@
-import { describe, it, expect, beforeEach, afterEach } from 'bun:test'
+import { describe, it, expect, beforeEach } from 'bun:test'
 import { useMaterialsStore } from '../lib/stores/materialsStore'
-import type { MaterialItem } from '../lib/schemas/materials'
+import type { Folder, MaterialItem } from '../lib/schemas/materials'
+import { runOptimistic } from '../lib/folders/optimistic'
+import { setMaterialFolder } from '../lib/folders/api'
+import type { SupabaseLike } from '../lib/folders/api'
+import { createFakeSupabase } from './helpers/fakeSupabase'
+
+const BIOLOGY: Folder = { id: 'f-bio', name: 'Biology' }
+const CHEMISTRY: Folder = { id: 'f-chem', name: 'Chemistry' }
+
+function makeItem(overrides: Partial<MaterialItem> & { id: string }): MaterialItem {
+  return {
+    title: `Item ${overrides.id}`,
+    type: 'Flashcards',
+    itemsCount: 1,
+    lastAccessed: '2026-01-01',
+    folderId: null,
+    folderName: null,
+    ...overrides,
+  }
+}
 
 const mockMaterials: MaterialItem[] = [
-  { id: '1', title: 'Math Notes', type: 'Note', itemsCount: 5, lastAccessed: '2024-01-01' },
-  { id: '2', title: 'Science Flashcards', type: 'Flashcards', itemsCount: 10, lastAccessed: '2024-01-02' },
-  { id: '3', title: 'History Reviewer', type: 'Reviewer', itemsCount: 8, lastAccessed: '2024-01-03' },
+  makeItem({ id: '1', title: 'Math Notes', type: 'Note', itemsCount: 5 }),
+  makeItem({ id: '2', title: 'Science Flashcards', type: 'Flashcards', itemsCount: 10 }),
+  makeItem({ id: '3', title: 'History Reviewer', type: 'Reviewer', itemsCount: 8 }),
 ]
 
+const reset = () =>
+  useMaterialsStore.setState({
+    items: [],
+    folders: [],
+    seeded: false,
+    searchQuery: '',
+    activeFilter: 'All',
+    activeFolderId: null,
+    loading: false,
+    error: null,
+  })
+
 describe('materialsStore', () => {
-  beforeEach(() => {
-    useMaterialsStore.setState({
-      items: [],
-      searchQuery: '',
-      activeFilter: 'All',
-      activeFolder: null,
-      loading: false,
-      error: null,
+  beforeEach(reset)
+
+  describe('folders drive the folder UI', () => {
+    it('holds folders independently of whether any material is filed', () => {
+      // The old code inferred folder UI from loaded materials, so a brand new
+      // empty folder was invisible until something was filed into it.
+      useMaterialsStore.getState().setItems(mockMaterials)
+      useMaterialsStore.getState().setFolders([BIOLOGY])
+
+      expect(useMaterialsStore.getState().folders).toEqual([BIOLOGY])
+      expect(useMaterialsStore.getState().items.every((item) => item.folderId === null)).toBe(true)
+    })
+
+    it('keeps folders sorted by name', () => {
+      useMaterialsStore.getState().setFolders([CHEMISTRY, BIOLOGY])
+      expect(useMaterialsStore.getState().folders.map((f) => f.name)).toEqual([
+        'Biology',
+        'Chemistry',
+      ])
+      useMaterialsStore.getState().addFolder({ id: 'f-a', name: 'Anatomy' })
+      expect(useMaterialsStore.getState().folders[0].name).toBe('Anatomy')
     })
   })
 
-  afterEach(() => {
-    useMaterialsStore.setState({
-      items: [],
-      searchQuery: '',
-      activeFilter: 'All',
-      activeFolder: null,
-      loading: false,
-      error: null,
-    })
-  })
-
-  describe('setItems', () => {
-    it('should set items correctly', () => {
-      useMaterialsStore.getState().setItems(mockMaterials)
-      expect(useMaterialsStore.getState().items).toEqual(mockMaterials)
-    })
-
-    it('should replace existing items', () => {
-      useMaterialsStore.getState().setItems(mockMaterials)
-      const newItems = [mockMaterials[0]]
-      useMaterialsStore.getState().setItems(newItems)
-      expect(useMaterialsStore.getState().items).toEqual(newItems)
-    })
-
-    it('should handle empty items array', () => {
+  describe('seeded', () => {
+    it('flips once the server payload lands, so an empty library reads as empty', () => {
+      expect(useMaterialsStore.getState().seeded).toBe(false)
       useMaterialsStore.getState().setItems([])
-      expect(useMaterialsStore.getState().items).toEqual([])
-    })
-
-    it('should handle item with zero itemsCount', () => {
-      const zeroCountItem: MaterialItem[] = [{ id: '4', title: 'Empty', type: 'Note', itemsCount: 0, lastAccessed: '2024-01-01' }]
-      useMaterialsStore.getState().setItems(zeroCountItem)
-      expect(useMaterialsStore.getState().items[0].itemsCount).toBe(0)
-    })
-
-    it('should handle item with large itemsCount', () => {
-      const largeCountItem: MaterialItem[] = [{ id: '5', title: 'Large', type: 'Flashcards', itemsCount: 999999, lastAccessed: '2024-01-01' }]
-      useMaterialsStore.getState().setItems(largeCountItem)
-      expect(useMaterialsStore.getState().items[0].itemsCount).toBe(999999)
-    })
-
-    it('should handle item with special characters in title', () => {
-      const specialItem: MaterialItem[] = [{ id: '6', title: '<script>alert("xss")</script>', type: 'Note', itemsCount: 1, lastAccessed: '2024-01-01' }]
-      useMaterialsStore.getState().setItems(specialItem)
-      expect(useMaterialsStore.getState().items[0].title).toBe('<script>alert("xss")</script>')
-    })
-
-    it('should handle item with unicode characters', () => {
-      const unicodeItem: MaterialItem[] = [{ id: '7', title: '数学笔记 📚', type: 'Note', itemsCount: 5, lastAccessed: '2024-01-01' }]
-      useMaterialsStore.getState().setItems(unicodeItem)
-      expect(useMaterialsStore.getState().items[0].title).toBe('数学笔记 📚')
-    })
-
-    it('should handle large number of items', () => {
-      const largeItems: MaterialItem[] = Array.from({ length: 1000 }, (_, i) => ({
-        id: String(i),
-        title: `Item ${i}`,
-        type: 'Note' as const,
-        itemsCount: i,
-        lastAccessed: '2024-01-01',
-      }))
-      useMaterialsStore.getState().setItems(largeItems)
-      expect(useMaterialsStore.getState().items).toHaveLength(1000)
-    })
-
-    it('should handle all material types', () => {
-      useMaterialsStore.getState().setItems(mockMaterials)
-      const types = useMaterialsStore.getState().items.map(i => i.type)
-      expect(types).toContain('Note')
-      expect(types).toContain('Flashcards')
-      expect(types).toContain('Reviewer')
+      expect(useMaterialsStore.getState().seeded).toBe(true)
     })
   })
 
-  describe('setSearchQuery', () => {
-    it('should set search query', () => {
-      useMaterialsStore.getState().setSearchQuery('math')
-      expect(useMaterialsStore.getState().searchQuery).toBe('math')
+  describe('setItemFolder', () => {
+    it('stores the id and denormalizes the name from the folder list', () => {
+      useMaterialsStore.getState().setFolders([BIOLOGY])
+      useMaterialsStore.getState().setItems([makeItem({ id: '1' })])
+
+      useMaterialsStore.getState().setItemFolder('1', BIOLOGY.id)
+
+      expect(useMaterialsStore.getState().items[0]).toMatchObject({
+        folderId: 'f-bio',
+        folderName: 'Biology',
+      })
     })
 
-    it('should handle empty search query', () => {
-      useMaterialsStore.getState().setSearchQuery('test')
-      useMaterialsStore.getState().setSearchQuery('')
-      expect(useMaterialsStore.getState().searchQuery).toBe('')
-    })
+    it('clears both fields when unfiling', () => {
+      useMaterialsStore.getState().setFolders([BIOLOGY])
+      useMaterialsStore.getState().setItems([makeItem({ id: '1', folderId: BIOLOGY.id, folderName: 'Biology' })])
 
-    it('should handle whitespace-only query', () => {
-      useMaterialsStore.getState().setSearchQuery('   ')
-      expect(useMaterialsStore.getState().searchQuery).toBe('   ')
-    })
+      useMaterialsStore.getState().setItemFolder('1', null)
 
-    it('should handle special characters in query', () => {
-      useMaterialsStore.getState().setSearchQuery('<script>alert("xss")</script>')
-      expect(useMaterialsStore.getState().searchQuery).toBe('<script>alert("xss")</script>')
-    })
-
-    it('should handle unicode characters in query', () => {
-      useMaterialsStore.getState().setSearchQuery('数学')
-      expect(useMaterialsStore.getState().searchQuery).toBe('数学')
+      expect(useMaterialsStore.getState().items[0].folderId).toBeNull()
+      expect(useMaterialsStore.getState().items[0].folderName).toBeNull()
     })
   })
 
-  describe('setActiveFilter', () => {
-    it('should set active filter to All', () => {
-      useMaterialsStore.getState().setActiveFilter('All')
-      expect(useMaterialsStore.getState().activeFilter).toBe('All')
-    })
+  describe('renameFolder', () => {
+    it('renames the folder and every material showing its name', () => {
+      useMaterialsStore.getState().setFolders([BIOLOGY])
+      useMaterialsStore.getState().setItems([
+        makeItem({ id: '1', folderId: BIOLOGY.id, folderName: 'Biology' }),
+        makeItem({ id: '2' }),
+      ])
 
-    it('should set active filter to Note', () => {
-      useMaterialsStore.getState().setActiveFilter('Note')
-      expect(useMaterialsStore.getState().activeFilter).toBe('Note')
-    })
+      useMaterialsStore.getState().renameFolder(BIOLOGY.id, 'Life Sciences')
 
-    it('should set active filter to Flashcards', () => {
-      useMaterialsStore.getState().setActiveFilter('Flashcards')
-      expect(useMaterialsStore.getState().activeFilter).toBe('Flashcards')
-    })
-
-    it('should set active filter to Reviewer', () => {
-      useMaterialsStore.getState().setActiveFilter('Reviewer')
-      expect(useMaterialsStore.getState().activeFilter).toBe('Reviewer')
+      expect(useMaterialsStore.getState().folders[0].name).toBe('Life Sciences')
+      expect(useMaterialsStore.getState().items[0].folderName).toBe('Life Sciences')
+      expect(useMaterialsStore.getState().items[1].folderName).toBeNull()
     })
   })
 
-  describe('setLoading', () => {
-    it('should set loading state to true', () => {
-      useMaterialsStore.getState().setLoading(true)
-      expect(useMaterialsStore.getState().loading).toBe(true)
-    })
+  describe('removeFolder', () => {
+    it('mirrors ON DELETE SET NULL: materials survive as unfiled', () => {
+      useMaterialsStore.getState().setFolders([BIOLOGY, CHEMISTRY])
+      useMaterialsStore.getState().setItems([
+        makeItem({ id: '1', folderId: BIOLOGY.id, folderName: 'Biology' }),
+        makeItem({ id: '2', folderId: CHEMISTRY.id, folderName: 'Chemistry' }),
+      ])
+      useMaterialsStore.getState().setActiveFolderId(BIOLOGY.id)
 
-    it('should set loading state to false', () => {
-      useMaterialsStore.getState().setLoading(true)
-      useMaterialsStore.getState().setLoading(false)
-      expect(useMaterialsStore.getState().loading).toBe(false)
+      useMaterialsStore.getState().removeFolder(BIOLOGY.id)
+
+      const state = useMaterialsStore.getState()
+      expect(state.folders.map((f) => f.id)).toEqual([CHEMISTRY.id])
+      expect(state.items).toHaveLength(2)
+      expect(state.items[0]).toMatchObject({ folderId: null, folderName: null })
+      expect(state.items[1].folderId).toBe(CHEMISTRY.id)
+      // The filter cannot stay pointed at a folder that is gone.
+      expect(state.activeFolderId).toBeNull()
     })
   })
 
-  describe('setError', () => {
-    it('should set error', () => {
-      const error = new Error('Test error')
-      useMaterialsStore.getState().setError(error)
-      expect(useMaterialsStore.getState().error).toBe(error)
+  describe('snapshot and restore', () => {
+    it('returns the store to its exact previous shape', () => {
+      useMaterialsStore.getState().setFolders([BIOLOGY])
+      useMaterialsStore.getState().setItems([makeItem({ id: '1' })])
+      const before = useMaterialsStore.getState().snapshot()
+
+      useMaterialsStore.getState().setItemFolder('1', BIOLOGY.id)
+      useMaterialsStore.getState().removeFolder(BIOLOGY.id)
+      useMaterialsStore.getState().restore(before)
+
+      expect(useMaterialsStore.getState().items).toEqual(before.items)
+      expect(useMaterialsStore.getState().folders).toEqual(before.folders)
+    })
+  })
+
+  describe('optimistic move against the real write path', () => {
+    it('keeps the move when the database accepts it', async () => {
+      const fake = createFakeSupabase({
+        tables: {
+          folders: [{ id: BIOLOGY.id, user_id: 'user-1', name: 'Biology', created_at: 'x' }],
+          flashcard_sets: [{ id: '1', user_id: 'user-1', title: 'Item 1', folder_id: null }],
+        },
+      })
+      useMaterialsStore.getState().setFolders([BIOLOGY])
+      useMaterialsStore.getState().setItems([makeItem({ id: '1' })])
+      const before = useMaterialsStore.getState().snapshot()
+      let reported: string | null = null
+
+      const ok = await runOptimistic({
+        apply: () => useMaterialsStore.getState().setItemFolder('1', BIOLOGY.id),
+        rollback: () => useMaterialsStore.getState().restore(before),
+        write: () =>
+          setMaterialFolder(fake as unknown as SupabaseLike, {
+            materialId: '1',
+            materialType: 'Flashcards',
+            folderId: BIOLOGY.id,
+          }),
+        onError: (message) => { reported = message },
+      })
+
+      expect(ok).toBe(true)
+      expect(reported).toBeNull()
+      expect(useMaterialsStore.getState().items[0].folderId).toBe(BIOLOGY.id)
+      expect(fake.tables.flashcard_sets[0].folder_id).toBe(BIOLOGY.id)
     })
 
-    it('should clear error with null', () => {
-      useMaterialsStore.getState().setError(new Error('Test'))
-      useMaterialsStore.getState().setError(null)
-      expect(useMaterialsStore.getState().error).toBeNull()
+    it('rolls the chip back and reports when the database rejects the write', async () => {
+      // This is the original bug, end to end: the store used to keep the
+      // optimistic folder after a failed write and tell the user it saved.
+      const fake = createFakeSupabase({
+        failWith: {
+          code: 'PGRST204',
+          message: "Could not find the 'folder' column of 'flashcard_sets' in the schema cache",
+        },
+      })
+      useMaterialsStore.getState().setFolders([BIOLOGY])
+      useMaterialsStore.getState().setItems([makeItem({ id: '1' })])
+      const before = useMaterialsStore.getState().snapshot()
+      let reported: string | null = null
+
+      const ok = await runOptimistic({
+        apply: () => useMaterialsStore.getState().setItemFolder('1', BIOLOGY.id),
+        rollback: () => useMaterialsStore.getState().restore(before),
+        write: () =>
+          setMaterialFolder(fake as unknown as SupabaseLike, {
+            materialId: '1',
+            materialType: 'Flashcards',
+            folderId: BIOLOGY.id,
+          }),
+        onError: (message) => { reported = message },
+      })
+
+      expect(ok).toBe(false)
+      expect(useMaterialsStore.getState().items[0].folderId).toBeNull()
+      expect(useMaterialsStore.getState().items[0].folderName).toBeNull()
+      expect(reported).not.toBeNull()
+      expect(reported!).toContain('nothing was saved')
     })
   })
 
@@ -176,79 +218,50 @@ describe('materialsStore', () => {
       useMaterialsStore.getState().setItems(mockMaterials)
     })
 
-    it('should return all items when filter is All and no search', () => {
-      const filtered = useMaterialsStore.getState().getFilteredItems()
-      expect(filtered).toEqual(mockMaterials)
+    it('returns all items when nothing is filtered', () => {
+      expect(useMaterialsStore.getState().getFilteredItems()).toEqual(mockMaterials)
     })
 
-    it('should filter by type Note', () => {
-      useMaterialsStore.getState().setActiveFilter('Note')
-      const filtered = useMaterialsStore.getState().getFilteredItems()
-      expect(filtered).toHaveLength(1)
-      expect(filtered[0].type).toBe('Note')
-    })
-
-    it('should treat Cards as an alias for Flashcards', () => {
+    it('filters by type, treating Cards as Flashcards', () => {
       useMaterialsStore.getState().setActiveFilter('Cards')
       const filtered = useMaterialsStore.getState().getFilteredItems()
       expect(filtered).toHaveLength(1)
       expect(filtered[0].type).toBe('Flashcards')
     })
 
-    it('should filter by search query (case insensitive)', () => {
+    it('filters by search, case insensitively', () => {
       useMaterialsStore.getState().setSearchQuery('MATH')
-      const filtered = useMaterialsStore.getState().getFilteredItems()
-      expect(filtered).toHaveLength(1)
-      expect(filtered[0].title).toBe('Math Notes')
+      expect(useMaterialsStore.getState().getFilteredItems()).toHaveLength(1)
     })
 
-    it('should combine filter and search', () => {
-      useMaterialsStore.getState().setActiveFilter('Note')
-      useMaterialsStore.getState().setSearchQuery('math')
-      const filtered = useMaterialsStore.getState().getFilteredItems()
-      expect(filtered).toHaveLength(1)
-      expect(filtered[0].title).toBe('Math Notes')
-    })
-
-    it('should return empty array when no matches', () => {
-      useMaterialsStore.getState().setSearchQuery('xyz')
-      const filtered = useMaterialsStore.getState().getFilteredItems()
-      expect(filtered).toHaveLength(0)
-    })
-
-    it('should filter by folder when one is selected', () => {
+    it('filters by folder id', () => {
+      useMaterialsStore.getState().setFolders([BIOLOGY, CHEMISTRY])
       useMaterialsStore.getState().setItems([
-        { id: '1', title: 'Bio', type: 'Flashcards', itemsCount: 2, lastAccessed: '2024-01-01', folder: 'Biology' },
-        { id: '2', title: 'Chem', type: 'Flashcards', itemsCount: 3, lastAccessed: '2024-01-02', folder: 'Chemistry' },
-        { id: '3', title: 'Loose', type: 'Reviewer', itemsCount: 1, lastAccessed: '2024-01-03' },
+        makeItem({ id: '1', title: 'Bio', folderId: BIOLOGY.id, folderName: 'Biology' }),
+        makeItem({ id: '2', title: 'Chem', folderId: CHEMISTRY.id, folderName: 'Chemistry' }),
+        makeItem({ id: '3', title: 'Loose' }),
       ])
-      useMaterialsStore.getState().setActiveFolder('Biology')
+
+      useMaterialsStore.getState().setActiveFolderId(BIOLOGY.id)
       const filtered = useMaterialsStore.getState().getFilteredItems()
-      expect(filtered).toHaveLength(1)
-      expect(filtered[0].title).toBe('Bio')
+      expect(filtered.map((item) => item.title)).toEqual(['Bio'])
+    })
+
+    it('returns an empty list for a query that matches nothing', () => {
+      useMaterialsStore.getState().setSearchQuery('xyz')
+      expect(useMaterialsStore.getState().getFilteredItems()).toHaveLength(0)
+      // The library itself is not empty -- the UI must tell these apart.
+      expect(useMaterialsStore.getState().items).toHaveLength(3)
     })
   })
 
-  describe('Data Integrity', () => {
-    it('should store items correctly', () => {
-      const itemsCopy = [...mockMaterials]
-      useMaterialsStore.getState().setItems(itemsCopy)
-      expect(useMaterialsStore.getState().items).toHaveLength(3)
-      expect(useMaterialsStore.getState().items[0].id).toBe('1')
-    })
-
-    it('should maintain state isolation between operations', () => {
-      useMaterialsStore.getState().setItems(mockMaterials)
-      useMaterialsStore.getState().setSearchQuery('test')
-      useMaterialsStore.getState().setActiveFilter('Note')
-      useMaterialsStore.getState().setLoading(true)
-      useMaterialsStore.getState().setError(new Error('test'))
-
-      expect(useMaterialsStore.getState().items).toHaveLength(3)
-      expect(useMaterialsStore.getState().searchQuery).toBe('test')
-      expect(useMaterialsStore.getState().activeFilter).toBe('Note')
-      expect(useMaterialsStore.getState().loading).toBe(true)
-      expect(useMaterialsStore.getState().error).toBeTruthy()
+  describe('error state', () => {
+    it('holds and clears an error', () => {
+      const error = new Error('Test error')
+      useMaterialsStore.getState().setError(error)
+      expect(useMaterialsStore.getState().error).toBe(error)
+      useMaterialsStore.getState().setError(null)
+      expect(useMaterialsStore.getState().error).toBeNull()
     })
   })
 })

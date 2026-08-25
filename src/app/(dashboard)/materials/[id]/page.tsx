@@ -2,30 +2,43 @@ import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import { createServerSupabaseClient } from "@/config/supabase/server";
 import MaterialDetailClient, { MaterialData, Term, ReviewerCategory } from "./MaterialDetailClient";
-import { asQueryData, selectWithOptionalColumn } from "@/utils/optionalColumn";
-import { sanitizeFolder } from "@/utils/materialFolder";
+import type { Folder } from "@/lib/schemas/materials";
+import { MATERIAL_SELECT, toFolderList } from "@/lib/materials/queries";
 
 interface PageProps {
     params: Promise<{ id: string }>;
 }
 
-type MaterialResult = 
-    | { type: 'flashcard'; material: MaterialData; terms: Term[] }
-    | { type: 'reviewer'; material: MaterialData; categories: ReviewerCategory[] };
+interface MaterialDetailRow {
+    id: string;
+    title: string;
+    updated_at: string;
+    folder_id: string | null;
+    folder?: { id: string; name: string } | null;
+}
+
+type MaterialResult =
+    | { type: 'flashcard'; material: MaterialData; terms: Term[]; folders: Folder[] }
+    | { type: 'reviewer'; material: MaterialData; categories: ReviewerCategory[]; folders: Folder[] };
+
+async function getFolders(): Promise<Folder[]> {
+    const supabase = await createServerSupabaseClient();
+    const { data } = await supabase
+        .from("folders")
+        .select(MATERIAL_SELECT.folders)
+        .order("name", { ascending: true });
+    return toFolderList((data ?? []) as unknown as Array<{ id: string; name: string; created_at?: string | null }>);
+}
 
 async function getMaterial(id: string): Promise<MaterialResult | null> {
     const supabase = await createServerSupabaseClient();
 
-    const { data: flashcardSet } = await selectWithOptionalColumn<{
-        id: string;
-        title: string;
-        updated_at: string;
-        folder?: string | null;
-    }>(
-        async () => asQueryData(await supabase.from("flashcard_sets").select("id, title, updated_at, folder").eq("id", id).single()),
-        async () => asQueryData(await supabase.from("flashcard_sets").select("id, title, updated_at").eq("id", id).single()),
-        "folder",
-    );
+    const { data: flashcardSetData } = await supabase
+        .from("flashcard_sets")
+        .select(MATERIAL_SELECT.flashcardSetDetail)
+        .eq("id", id)
+        .single();
+    const flashcardSet = flashcardSetData as unknown as MaterialDetailRow | null;
 
     if (flashcardSet) {
         const { data: flashcards } = await supabase
@@ -45,22 +58,19 @@ async function getMaterial(id: string): Promise<MaterialResult | null> {
             id: flashcardSet.id,
             title: flashcardSet.title,
             updated_at: flashcardSet.updated_at,
-            folder: sanitizeFolder(flashcardSet.folder),
+            folderId: flashcardSet.folder_id ?? null,
+            folderName: flashcardSet.folder?.name ?? null,
         };
 
-        return { type: 'flashcard', material, terms };
+        return { type: 'flashcard', material, terms, folders: await getFolders() };
     }
 
-    const { data: reviewer } = await selectWithOptionalColumn<{
-        id: string;
-        title: string;
-        updated_at: string;
-        folder?: string | null;
-    }>(
-        async () => asQueryData(await supabase.from("reviewers").select("id, title, updated_at, folder").eq("id", id).single()),
-        async () => asQueryData(await supabase.from("reviewers").select("id, title, updated_at").eq("id", id).single()),
-        "folder",
-    );
+    const { data: reviewerData } = await supabase
+        .from("reviewers")
+        .select(MATERIAL_SELECT.reviewerDetail)
+        .eq("id", id)
+        .single();
+    const reviewer = reviewerData as unknown as MaterialDetailRow | null;
 
     if (reviewer) {
         const { data: categories } = await supabase
@@ -84,10 +94,11 @@ async function getMaterial(id: string): Promise<MaterialResult | null> {
             id: reviewer.id,
             title: reviewer.title,
             updated_at: reviewer.updated_at,
-            folder: sanitizeFolder(reviewer.folder),
+            folderId: reviewer.folder_id ?? null,
+            folderName: reviewer.folder?.name ?? null,
         };
 
-        return { type: 'reviewer', material, categories: reviewerCategories };
+        return { type: 'reviewer', material, categories: reviewerCategories, folders: await getFolders() };
     }
 
     return null;
@@ -116,12 +127,14 @@ export default async function MaterialPage({ params }: PageProps) {
                     materialType="flashcard"
                     material={data.material} 
                     initialTerms={data.terms} 
+                    folders={data.folders}
                 />
             ) : (
                 <MaterialDetailClient 
                     materialType="reviewer"
                     material={data.material} 
                     initialCategories={data.categories} 
+                    folders={data.folders}
                 />
             )}
         </Suspense>

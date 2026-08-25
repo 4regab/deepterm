@@ -1,144 +1,100 @@
 import { Suspense, cache } from "react";
 import { createServerSupabaseClient } from "@/config/supabase/server";
 import MaterialsClient from "./MaterialsClient";
-import type { MaterialItem } from "@/lib/schemas/materials";
-import { asQueryData, selectWithOptionalColumn } from "@/utils/optionalColumn";
-import { sanitizeFolder } from "@/utils/materialFolder";
+import type { Folder, MaterialItem } from "@/lib/schemas/materials";
+import { getSession } from "@/lib/auth/session";
+import {
+    MATERIAL_SELECT,
+    sortMaterialsByRecency,
+    toFlashcardSetItem,
+    toFolderList,
+    toReviewerItem,
+    type FlashcardSetRow,
+    type ReviewerRow,
+} from "@/lib/materials/queries";
+import { describeDbError } from "@/utils/dbError";
+import { MaterialRowSkeleton } from "@/components/ui/Skeleton";
 
-function formatTimeAgo(date: Date): string {
-    const now = new Date();
-    const diffMs = now.getTime() - date.getTime();
-    const diffSecs = Math.floor(diffMs / 1000);
-    const diffMins = Math.floor(diffSecs / 60);
-    const diffHours = Math.floor(diffMins / 60);
-    const diffDays = Math.floor(diffHours / 24);
-    const diffWeeks = Math.floor(diffDays / 7);
-
-    if (diffSecs < 60) return `${diffSecs}s ago`;
-    if (diffMins < 60) return `${diffMins}m ago`;
-    if (diffHours < 24) return `${diffHours}h ago`;
-    if (diffDays < 7) return `${diffDays}d ago`;
-    return `${diffWeeks}w ago`;
-}
-
-interface FlashcardCount {
-    count: number;
-}
-
-interface ReviewerCategory {
-    reviewer_terms?: { count: number }[];
-}
-
-interface FlashcardSetRow {
-    id: string;
-    title: string;
-    created_at: string;
-    updated_at: string | null;
-    folder?: string | null;
-    flashcards?: FlashcardCount[];
-}
-
-interface ReviewerRow {
-    id: string;
-    title: string;
-    created_at: string;
-    updated_at: string | null;
-    folder?: string | null;
-    reviewer_categories?: ReviewerCategory[];
+interface MaterialsPayload {
+    materials: MaterialItem[];
+    folders: Folder[];
+    userId: string | null;
+    loadError: string | null;
 }
 
 // Cached server-side data fetch for materials
 // React's cache() deduplicates calls within the same request lifecycle
-const getMaterials = cache(async (): Promise<MaterialItem[]> => {
+const getMaterials = cache(async (): Promise<MaterialsPayload> => {
     const supabase = await createServerSupabaseClient();
+    const { userId } = await getSession();
 
-    const [flashcardSetsResult, reviewersResult] = await Promise.all([
-        selectWithOptionalColumn<FlashcardSetRow[]>(
-            async () => asQueryData(await supabase
-                .from("flashcard_sets")
-                .select(`id, title, created_at, updated_at, folder, flashcards(count)`)
-                .order("updated_at", { ascending: false })),
-            async () => asQueryData(await supabase
-                .from("flashcard_sets")
-                .select(`id, title, created_at, updated_at, flashcards(count)`)
-                .order("updated_at", { ascending: false })),
-            "folder",
-        ),
-        selectWithOptionalColumn<ReviewerRow[]>(
-            async () => asQueryData(await supabase
-                .from("reviewers")
-                .select(`id, title, created_at, updated_at, folder, reviewer_categories(reviewer_terms(count))`)
-                .order("updated_at", { ascending: false })),
-            async () => asQueryData(await supabase
-                .from("reviewers")
-                .select(`id, title, created_at, updated_at, reviewer_categories(reviewer_terms(count))`)
-                .order("updated_at", { ascending: false })),
-            "folder",
-        ),
+    const [flashcardSetsResult, reviewersResult, foldersResult] = await Promise.all([
+        supabase
+            .from("flashcard_sets")
+            .select(MATERIAL_SELECT.flashcardSets)
+            .order("updated_at", { ascending: false }),
+        supabase
+            .from("reviewers")
+            .select(MATERIAL_SELECT.reviewers)
+            .order("updated_at", { ascending: false }),
+        supabase
+            .from("folders")
+            .select(MATERIAL_SELECT.folders)
+            .order("name", { ascending: true }),
     ]);
 
-    const materials: MaterialItem[] = [];
-
-    // Add flashcard sets
-    if (flashcardSetsResult.data) {
-        flashcardSetsResult.data.forEach((set) => {
-            const dateStr = set.updated_at || set.created_at;
-            materials.push({
-                id: set.id,
-                title: set.title,
-                type: "Flashcards",
-                itemsCount: set.flashcards?.[0]?.count || 0,
-                lastAccessed: formatTimeAgo(new Date(dateStr)),
-                sortDate: dateStr,
-                folder: sanitizeFolder(set.folder),
-            });
-        });
+    // A failed read used to fall back to an empty list, which looks exactly
+    // like an empty library. Surface it instead.
+    const firstError =
+        flashcardSetsResult.error ?? reviewersResult.error ?? foldersResult.error;
+    if (firstError) {
+        return {
+            materials: [],
+            folders: [],
+            userId,
+            loadError: describeDbError(firstError, "Could not load your library."),
+        };
     }
 
-    // Add reviewers
-    if (reviewersResult.data) {
-        reviewersResult.data.forEach((reviewer) => {
-            const totalTerms = reviewer.reviewer_categories?.reduce((acc: number, cat: ReviewerCategory) => {
-                return acc + (cat.reviewer_terms?.[0]?.count || 0);
-            }, 0) || 0;
+    const flashcardRows = (flashcardSetsResult.data ?? []) as unknown as FlashcardSetRow[];
+    const reviewerRows = (reviewersResult.data ?? []) as unknown as ReviewerRow[];
+    const folderRows = (foldersResult.data ?? []) as unknown as Array<{
+        id: string;
+        name: string;
+        created_at?: string | null;
+    }>;
 
-            const dateStr = reviewer.updated_at || reviewer.created_at;
-            materials.push({
-                id: reviewer.id,
-                title: reviewer.title,
-                type: "Reviewer",
-                itemsCount: totalTerms,
-                lastAccessed: formatTimeAgo(new Date(dateStr)),
-                sortDate: dateStr,
-                folder: sanitizeFolder(reviewer.folder),
-            });
-        });
-    }
+    const materials = sortMaterialsByRecency([
+        ...flashcardRows.map((row) => toFlashcardSetItem(row)),
+        ...reviewerRows.map((row) => toReviewerItem(row)),
+    ]);
 
-    // Sort by most recent
-    materials.sort((a, b) => new Date(b.sortDate || 0).getTime() - new Date(a.sortDate || 0).getTime());
-
-    return materials;
+    return { materials, folders: toFolderList(folderRows), userId, loadError: null };
 });
 
 function LoadingFallback() {
     return (
-        <div className="flex items-center justify-center py-20">
-            <div className="w-8 h-8 border-2 border-border border-t-[var(--ink)] rounded-full animate-spin" />
+        <div className="space-y-3 pt-6">
+            <MaterialRowSkeleton />
+            <MaterialRowSkeleton />
+            <MaterialRowSkeleton />
+            <MaterialRowSkeleton />
         </div>
     );
 }
 
 export default async function MaterialsPage() {
-    const materials = await getMaterials();
+    const { materials, folders, userId, loadError } = await getMaterials();
 
     return (
-        <div>
-            <div className="mb-8">
-                <h1 className="text-4xl font-sans font-medium text-foreground mb-2">Materials</h1>
-            </div>
+        <div className="w-full">
             <Suspense fallback={<LoadingFallback />}>
-                <MaterialsClient initialItems={materials} />
+                <MaterialsClient
+                    initialItems={materials}
+                    initialFolders={folders}
+                    userId={userId}
+                    loadError={loadError}
+                />
             </Suspense>
         </div>
     );

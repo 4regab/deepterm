@@ -6,7 +6,7 @@
 create schema if not exists private;
 
 -- ---------------------------------------------------------------------------
--- Columns: SRS, folders, share expiry
+-- Columns: SRS, share expiry
 -- ---------------------------------------------------------------------------
 alter table public.flashcards
   add column if not exists ease_factor numeric not null default 2.5,
@@ -17,11 +17,9 @@ alter table public.flashcards
 create index if not exists flashcards_user_due_at_idx
   on public.flashcards (user_id, due_at);
 
-alter table public.flashcard_sets
-  add column if not exists folder text;
-
-alter table public.reviewers
-  add column if not exists folder text;
+-- Folders: NOT a flat text column. This block was never applied and must not
+-- be. The deployed model is relational -- see 005_folders.sql
+-- (public.folders + flashcard_sets.folder_id / reviewers.folder_id).
 
 alter table public.material_shares
   add column if not exists expires_at timestamptz;

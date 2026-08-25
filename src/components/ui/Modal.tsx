@@ -5,6 +5,12 @@ import { useEffect, useId, useRef, type ReactNode } from "react";
 import { cn } from "@/lib/cn";
 import { FADE_IN, FADE_OUT, POP, POP_EXIT } from "@/lib/motion";
 
+/**
+ * Pre-Radix modal. Five bespoke call sites still mount this, so it stays.
+ * New code should use `Dialog`, which gets focus trapping, scroll locking and
+ * the bottom-sheet breakpoint from Radix instead of hand-rolling them here.
+ * @deprecated prefer `Dialog`
+ */
 export function Modal({
   open,
   onClose,
@@ -80,7 +86,7 @@ export function Modal({
             aria-label="Close"
             type="button"
             onClick={onClose}
-            className="absolute inset-0 cursor-default bg-black/30"
+            className="absolute inset-0 cursor-default bg-[rgb(16_20_31/.45)] backdrop-blur-[2px]"
           />
           <motion.div
             ref={panelRef}
@@ -99,13 +105,13 @@ export function Modal({
                 : { opacity: 0, scale: 0.96, y: 8, transition: POP_EXIT }
             }
             className={cn(
-              "relative w-full max-w-md rounded-3xl border border-border bg-card p-5",
-              "shadow-[var(--shadow-floating)]",
+              "relative w-full max-w-md rounded-lg border border-default bg-surface p-5",
+              "shadow-[var(--elev-3)]",
               className
             )}
           >
             {title ? (
-              <h2 id={titleId} className="font-sans text-base font-medium text-foreground mb-3">
+              <h2 id={titleId} className="subtitle mb-3 text-ink">
                 {title}
               </h2>
             ) : null}

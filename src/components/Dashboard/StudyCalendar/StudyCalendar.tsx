@@ -1,181 +1,211 @@
 "use client";
 
-import { ChevronLeft, ChevronRight, Calendar } from "lucide-react";
 import { useState } from "react";
+import { ChevronLeft, ChevronRight, Calendar as CalendarIcon } from "lucide-react";
 import { useActivityStore } from "@/lib/stores";
 import { generateMonthGrid, type CalendarDay } from "@/utils/calendar";
+import { CalendarSkeleton } from "@/components/ui/Skeleton";
+import { IconButton } from "@/components/ui";
+import { cn } from "@/lib/cn";
 
-// Warm amber/orange gradient for activity levels (brand consistent)
-const LEVEL_COLORS = [
-    "bg-[#f5f5f0]",
-    "bg-[#f5e6c8]",
-    "bg-[#e8c896]",
-    "bg-[#d4a574]",
-    "bg-[#c4875a]",
+const LEVEL_STYLES = [
+  "bg-surface-sunken text-secondary",
+  "bg-brand-subtle text-brand-text font-medium",
+  "bg-[#c7d2fe] text-[#3730a3] font-semibold",
+  "bg-[#818cf8] text-white font-semibold",
+  "bg-brand text-on-solid font-semibold",
 ] as const;
 
 const DAY_HEADERS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const MONTH_NAMES = [
-    "January", "February", "March", "April", "May", "June",
-    "July", "August", "September", "October", "November", "December"
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
 ];
 
-function CalendarSkeleton() {
-    return (
-        <div className="flex items-center justify-center py-12">
-            <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-        </div>
-    );
-}
-
 interface CalendarDayCellProps {
-    day: CalendarDay;
-    selected: boolean;
-    onSelect: (day: CalendarDay) => void;
+  day: CalendarDay;
+  selected: boolean;
+  onSelect: (day: CalendarDay) => void;
 }
 
 function CalendarDayCell({ day, selected, onSelect }: CalendarDayCellProps) {
-    const [showTooltip, setShowTooltip] = useState(false);
-    const isToday = day.isToday;
-    const isCurrentMonth = day.isCurrentMonth;
-    
-    return (
-        <button
-            type="button"
-            className="relative flex items-center justify-center"
-            onMouseEnter={() => setShowTooltip(true)}
-            onMouseLeave={() => setShowTooltip(false)}
-            onClick={() => onSelect(day)}
-            disabled={!isCurrentMonth}
+  const [showTooltip, setShowTooltip] = useState(false);
+  const isToday = day.isToday;
+  const isCurrentMonth = day.isCurrentMonth;
+
+  return (
+    <div className="relative aspect-square">
+      <button
+        type="button"
+        className={cn(
+          "size-full flex flex-col items-center justify-center rounded-xs text-xs transition-all",
+          "focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[var(--focus)]",
+          !isCurrentMonth && "opacity-25 pointer-events-none",
+          isCurrentMonth && LEVEL_STYLES[day.level],
+          isCurrentMonth && "cursor-pointer hover:scale-105 active:scale-95",
+          selected && "ring-2 ring-ink ring-offset-1 ring-offset-surface",
+          isToday && !selected && "ring-2 ring-brand ring-offset-1 ring-offset-surface"
+        )}
+        onMouseEnter={() => setShowTooltip(true)}
+        onMouseLeave={() => setShowTooltip(false)}
+        onClick={() => isCurrentMonth && onSelect(day)}
+        disabled={!isCurrentMonth}
+        aria-label={`${day.date.toLocaleDateString()}: ${day.minutesStudied} minutes studied`}
+      >
+        <span>{day.dayOfMonth}</span>
+        {isToday && (
+          <span className="size-1 rounded-full bg-current mt-0.5" aria-hidden="true" />
+        )}
+      </button>
+
+      {showTooltip && isCurrentMonth && (
+        <div
+          role="tooltip"
+          className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2.5 py-1.5 bg-surface-inverse text-on-solid text-xs rounded-xs whitespace-nowrap z-30 shadow-[var(--elev-2)] pointer-events-none"
         >
-            <div
-                className={`
-                    w-full h-14 flex items-center justify-center text-xs font-medium
-                    border-b border-r border-border
-                    transition-colors cursor-default
-                    ${LEVEL_COLORS[day.level]}
-                    ${selected ? "ring-2 ring-primary ring-inset" : ""}
-                    ${isToday && !selected ? "ring-2 ring-[#c4875a] ring-inset" : ""}
-                    ${isCurrentMonth ? "text-foreground" : "text-muted-foreground"}
-                    hover:bg-accent
-                `}
-            >
-                {day.dayOfMonth}
-            </div>
-            {showTooltip && isCurrentMonth && day.minutesStudied > 0 && (
-                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-primary text-white text-xs rounded-lg whitespace-nowrap z-20 shadow-lg">
-                    <div className="font-medium">{day.minutesStudied} min studied</div>
-                    <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-[var(--ink)]" />
-                </div>
-            )}
-        </button>
-    );
+          <div className="font-medium">
+            {day.minutesStudied > 0 ? `${day.minutesStudied}m studied` : "No activity"}
+          </div>
+          <div className="caption text-muted text-[10px]">
+            {day.date.toLocaleDateString(undefined, { month: "short", day: "numeric" })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }
 
 export default function StudyCalendar() {
-    const { activity, loading } = useActivityStore();
-    const today = new Date();
-    const [currentYear, setCurrentYear] = useState(today.getFullYear());
-    const [currentMonth, setCurrentMonth] = useState(today.getMonth());
-    const [selectedDay, setSelectedDay] = useState<CalendarDay | null>(null);
+  const { activity, loading } = useActivityStore();
+  const today = new Date();
+  const [currentYear, setCurrentYear] = useState(today.getFullYear());
+  const [currentMonth, setCurrentMonth] = useState(today.getMonth());
+  const [selectedDay, setSelectedDay] = useState<CalendarDay | null>(null);
 
-    const grid = generateMonthGrid(currentYear, currentMonth, activity);
+  const grid = generateMonthGrid(currentYear, currentMonth, activity);
 
-    const handlePrevMonth = () => {
-        if (currentMonth === 0) {
-            setCurrentMonth(11);
-            setCurrentYear(currentYear - 1);
-        } else {
-            setCurrentMonth(currentMonth - 1);
-        }
-    };
+  const handlePrevMonth = () => {
+    if (currentMonth === 0) {
+      setCurrentMonth(11);
+      setCurrentYear(currentYear - 1);
+    } else {
+      setCurrentMonth(currentMonth - 1);
+    }
+  };
 
-    const handleNextMonth = () => {
-        if (currentMonth === 11) {
-            setCurrentMonth(0);
-            setCurrentYear(currentYear + 1);
-        } else {
-            setCurrentMonth(currentMonth + 1);
-        }
-    };
+  const handleNextMonth = () => {
+    if (currentMonth === 11) {
+      setCurrentMonth(0);
+      setCurrentYear(currentYear + 1);
+    } else {
+      setCurrentMonth(currentMonth + 1);
+    }
+  };
 
-    return (
-        <div className="bg-white rounded-xl border border-border shadow-sm overflow-hidden flex flex-col h-full">
-            {/* Header */}
-            <div className="bg-[#f5e6c8] px-3 py-2 border-b border-border">
-                <div className="flex items-center gap-2">
-                    <Calendar size={16} className="text-muted-foreground" />
-                    <h2 className="font-sans tracking-tight text-sm text-foreground">Study History</h2>
-                </div>
-            </div>
+  if (loading) {
+    return <CalendarSkeleton weeks={6} />;
+  }
 
-            {/* Month navigation */}
-            <div className="flex items-center justify-between px-3 py-1.5 border-b border-border bg-white">
-                <button
-                    onClick={handlePrevMonth}
-                    className="w-7 h-7 flex items-center justify-center border border-border rounded hover:bg-accent transition-colors"
-                    aria-label="Previous month"
-                >
-                    <ChevronLeft size={16} className="text-foreground" />
-                </button>
-                <span className="font-sans tracking-tight text-sm text-foreground font-medium">
-                    {MONTH_NAMES[currentMonth]} {currentYear}
-                </span>
-                <button
-                    onClick={handleNextMonth}
-                    className="w-7 h-7 flex items-center justify-center border border-border rounded hover:bg-accent transition-colors"
-                    aria-label="Next month"
-                >
-                    <ChevronRight size={16} className="text-foreground" />
-                </button>
-            </div>
-
-            {loading ? (
-                <CalendarSkeleton />
-            ) : (
-                <>
-                    {/* Day of week headers */}
-                    <div className="grid grid-cols-7 bg-[#f5f0e0]">
-                        {DAY_HEADERS.map((day) => (
-                            <div
-                                key={day}
-                                className="py-1.5 text-center text-[10px] text-muted-foreground font-medium border-b border-r border-border last:border-r-0"
-                            >
-                                {day}
-                            </div>
-                        ))}
-                    </div>
-
-                    {/* Calendar grid */}
-                    <div className="grid grid-cols-7 flex-1">
-                        {grid.flat().map((day, index) => (
-                            <CalendarDayCell
-                                key={index}
-                                day={day}
-                                selected={selectedDay?.date.getTime() === day.date.getTime()}
-                                onSelect={setSelectedDay}
-                            />
-                        ))}
-                    </div>
-
-                    {selectedDay && selectedDay.isCurrentMonth && (
-                        <p className="px-3 py-2 text-xs text-muted-foreground border-t border-border">
-                            {selectedDay.date.toLocaleDateString()}: {selectedDay.minutesStudied} min studied
-                        </p>
-                    )}
-
-                    {/* Legend */}
-                    <div className="flex justify-center items-center gap-2 py-2 border-t border-border">
-                        <span className="text-[10px] text-muted-foreground">Less</span>
-                        <div className="flex gap-1">
-                            {LEVEL_COLORS.map((color, i) => (
-                                <div key={i} className={`w-3 h-3 rounded-sm ${color} border border-border`} />
-                            ))}
-                        </div>
-                        <span className="text-[10px] text-muted-foreground">More</span>
-                    </div>
-                </>
-            )}
+  return (
+    <div className="rounded-lg border border-default bg-surface shadow-[var(--elev-0)] overflow-hidden flex flex-col h-full">
+      {/* Card Header & Month Navigation */}
+      <div className="flex items-center justify-between border-b border-subtle px-4 py-3 bg-surface">
+        <div className="flex items-center gap-2">
+          <CalendarIcon size={18} className="text-secondary" aria-hidden="true" />
+          <h3 className="subtitle font-semibold text-ink">Study History</h3>
         </div>
-    );
+
+        <div className="flex items-center gap-2">
+          <IconButton
+            variant="ghost"
+            size="sm"
+            onClick={handlePrevMonth}
+            aria-label="Previous month"
+          >
+            <ChevronLeft size={16} aria-hidden="true" />
+          </IconButton>
+          <span className="body-sm font-semibold text-ink min-w-[120px] text-center">
+            {MONTH_NAMES[currentMonth]} {currentYear}
+          </span>
+          <IconButton
+            variant="ghost"
+            size="sm"
+            onClick={handleNextMonth}
+            aria-label="Next month"
+          >
+            <ChevronRight size={16} aria-hidden="true" />
+          </IconButton>
+        </div>
+      </div>
+
+      {/* Grid Content */}
+      <div className="p-4 flex-1 flex flex-col justify-between space-y-4">
+        {/* Weekday headers */}
+        <div className="grid grid-cols-7 gap-1.5 text-center">
+          {DAY_HEADERS.map((day) => (
+            <div key={day} className="caption text-muted font-medium py-1">
+              {day}
+            </div>
+          ))}
+        </div>
+
+        {/* 42-day Calendar Grid */}
+        <div className="grid grid-cols-7 gap-1.5">
+          {grid.flat().map((day, index) => (
+            <CalendarDayCell
+              key={index}
+              day={day}
+              selected={selectedDay?.date.getTime() === day.date.getTime()}
+              onSelect={setSelectedDay}
+            />
+          ))}
+        </div>
+
+        {/* Selected day summary or helper */}
+        <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-subtle text-xs">
+          <div>
+            {selectedDay && selectedDay.isCurrentMonth ? (
+              <span className="body-sm text-secondary">
+                <strong className="text-ink font-semibold">
+                  {selectedDay.date.toLocaleDateString(undefined, {
+                    month: "short",
+                    day: "numeric",
+                    year: "numeric",
+                  })}
+                </strong>
+                : {selectedDay.minutesStudied} min studied
+              </span>
+            ) : (
+              <span className="caption text-muted">Click any day to see study time</span>
+            )}
+          </div>
+
+          {/* Activity Intensity Legend */}
+          <div className="flex items-center gap-1.5">
+            <span className="caption text-muted">Less</span>
+            <div className="flex items-center gap-1">
+              {LEVEL_STYLES.map((style, i) => (
+                <div
+                  key={i}
+                  className={cn("size-3 rounded-xs", style)}
+                  aria-hidden="true"
+                />
+              ))}
+            </div>
+            <span className="caption text-muted">More</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 }

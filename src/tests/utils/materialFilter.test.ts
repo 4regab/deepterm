@@ -8,6 +8,8 @@ const flashcards: MaterialItem = {
   type: 'Flashcards',
   itemsCount: 10,
   lastAccessed: '2024-01-01',
+  folderId: null,
+  folderName: null,
 }
 
 const reviewer: MaterialItem = {
@@ -16,6 +18,8 @@ const reviewer: MaterialItem = {
   type: 'Reviewer',
   itemsCount: 8,
   lastAccessed: '2024-01-02',
+  folderId: null,
+  folderName: null,
 }
 
 describe('materialFilter', () => {
