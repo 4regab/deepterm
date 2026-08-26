@@ -8,6 +8,11 @@
 -- and verified against pg_constraint / pg_indexes / pg_policies. Do not re-run
 -- it blindly.
 --
+-- Follow-up: 007_folders_normalize_security_definer.sql makes
+-- private.folders_normalize() SECURITY DEFINER. The original invoker trigger
+-- cannot call private.sanitize_folder_name() because authenticated has no
+-- USAGE on schema private.
+--
 -- Supersedes the `add column if not exists folder text` lines that 004 once
 -- carried. That flat text column was never applied and must not be added: the
 -- deployed model is relational (public.folders + folder_id FKs).
@@ -85,6 +90,8 @@ grant select, insert, update, delete on table public.folders to authenticated;
 
 -- Normalizes the name and pins user_id to auth.uid() server-side, so the
 -- client never gets to choose an owner. Runs BEFORE the RLS WITH CHECK.
+-- Live copy is SECURITY DEFINER (see 007). Kept invoker here so this file
+-- matches the original 20260825024810 migration text.
 create or replace function private.folders_normalize()
 returns trigger
 language plpgsql

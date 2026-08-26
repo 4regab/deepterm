@@ -32,18 +32,32 @@ if (API_KEYS.length === 0) {
 
 console.log(`[GeminiClient] Loaded ${API_KEYS.length} API key(s)`);
 
+function errorMessage(error: unknown): string {
+  if (error instanceof Error) return error.message;
+  return String(error);
+}
+
 function isRateLimitError(error: unknown): boolean {
-  if (error instanceof Error) {
-    const message = error.message.toLowerCase();
-    return (
-      message.includes("429") ||
-      message.includes("quota") ||
-      message.includes("rate limit") ||
-      message.includes("resource exhausted") ||
-      message.includes("too many requests")
-    );
-  }
-  return false;
+  const message = errorMessage(error).toLowerCase();
+  return (
+    message.includes("429") ||
+    message.includes("quota") ||
+    message.includes("rate limit") ||
+    message.includes("resource exhausted") ||
+    message.includes("resource_exhausted") ||
+    message.includes("too many requests")
+  );
+}
+
+/** Continue the key ring for quota and dead keys; fail fast on prompt/model errors. */
+export function isRotatableKeyError(error: unknown): boolean {
+  if (isRateLimitError(error)) return true;
+  const message = errorMessage(error).toLowerCase();
+  return (
+    message.includes("api key not valid") ||
+    message.includes("api_key_invalid") ||
+    message.includes("invalid api key")
+  );
 }
 
 export interface GeminiRequestOptions {
@@ -94,11 +108,9 @@ export async function generateContentWithRotation(
       lastError = error instanceof Error ? error : new Error(String(error));
       console.log(`[GeminiClient] Key ${i + 1} failed: ${lastError.message}`);
 
-      if (!isRateLimitError(error)) {
-        // Non-rate-limit error, throw immediately
+      if (!isRotatableKeyError(error)) {
         throw lastError;
       }
-      // Rate limit error, continue to next key
     }
   }
 
@@ -119,7 +131,7 @@ export async function generateContentWithRotation(
       lastError = error instanceof Error ? error : new Error(String(error));
       console.log(`[GeminiClient] Retry key ${i + 1} failed: ${lastError.message}`);
 
-      if (!isRateLimitError(error)) {
+      if (!isRotatableKeyError(error)) {
         throw lastError;
       }
     }
@@ -163,7 +175,7 @@ export async function uploadFileWithRotation(
       lastError = error instanceof Error ? error : new Error(String(error));
       console.log(`[GeminiClient] File upload key ${i + 1} failed: ${lastError.message}`);
 
-      if (!isRateLimitError(error)) {
+      if (!isRotatableKeyError(error)) {
         throw lastError;
       }
     }
