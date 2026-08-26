@@ -41,6 +41,9 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   reactCompiler: true,
+  // Keep the repo AGENTS.md as the source of truth. Next 16's `next dev`
+  // otherwise appends a generated agent-rules block on every boot.
+  agentRules: false,
   // Optimize barrel file imports - transforms lucide-react imports to direct imports at build time
   // This reduces bundle size by ~1MB and improves cold start by 200-800ms
   experimental: {

@@ -21,6 +21,20 @@ export const LIVE_COLUMNS: Record<string, string[]> = {
     'updated_at',
     'folder_id',
   ],
+  flashcards: [
+    'id',
+    'set_id',
+    'user_id',
+    'front',
+    'back',
+    'status',
+    'last_reviewed',
+    'created_at',
+    'ease_factor',
+    'interval_days',
+    'repetitions',
+    'due_at',
+  ],
   reviewers: [
     'id',
     'user_id',
@@ -31,13 +45,27 @@ export const LIVE_COLUMNS: Record<string, string[]> = {
     'updated_at',
     'folder_id',
   ],
+  reviewer_categories: ['id', 'reviewer_id', 'user_id', 'name', 'color', 'created_at'],
+  reviewer_terms: [
+    'id',
+    'category_id',
+    'user_id',
+    'term',
+    'definition',
+    'examples',
+    'keywords',
+    'created_at',
+  ],
 }
 
 /** Embeddable relations, i.e. tables reachable by a foreign key. */
 const LIVE_RELATIONS: Record<string, string[]> = {
   folders: [],
   flashcard_sets: ['folders', 'flashcards'],
+  flashcards: [],
   reviewers: ['folders', 'reviewer_categories'],
+  reviewer_categories: ['reviewer_terms'],
+  reviewer_terms: [],
 }
 
 export interface FakeError {
@@ -233,6 +261,10 @@ class FakeBuilder implements PromiseLike<Result> {
   single() {
     this.wantSingle = true
     return this
+  }
+
+  maybeSingle() {
+    return this.single()
   }
 
   then<TResult1 = Result, TResult2 = never>(

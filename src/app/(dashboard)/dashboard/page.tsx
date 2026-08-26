@@ -79,6 +79,19 @@ const getDashboardData = cache(async () => {
       .limit(100),
   ]);
 
+  if (dashboardResult.error) {
+    console.error("[dashboard] get_dashboard_data failed:", dashboardResult.error.message);
+  }
+  if (flashcardSetsResult.error) {
+    console.error("[dashboard] flashcard sets failed:", flashcardSetsResult.error.message);
+  }
+  if (reviewersResult.error) {
+    console.error("[dashboard] reviewers failed:", reviewersResult.error.message);
+  }
+  if (dueCardsResult.error) {
+    console.error("[dashboard] due cards failed:", dueCardsResult.error.message);
+  }
+
   const dashboardData = (dashboardResult.data as DashboardData | null) ?? null;
 
   const rawFlashcardSets = (flashcardSetsResult.data ?? []) as unknown as FlashcardSetWithCardsRow[];

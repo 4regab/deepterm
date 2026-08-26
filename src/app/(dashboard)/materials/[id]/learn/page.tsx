@@ -15,6 +15,7 @@ import { createClient } from "@/config/supabase/client";
 import { useXPStore } from "@/lib/stores";
 import { addXP, recordStudyActivity, batchUpdateFlashcardStatuses, applyCardReview, XP_REWARDS, type FlashcardStatusUpdate } from "@/services/activity";
 import { expectedWrittenAnswer, promptLabelForFrontSide } from "@/utils/reviewerTerms";
+import { loadStudyDeck, type StudyCardSource } from "@/lib/materials/studyCards";
 
 type LearnStage = 'new' | 'learning' | 'almost_done' | 'mastered';
 
@@ -83,35 +84,23 @@ export default function LearnPage() {
     const [settings, setSettings] = useState<StudySettings>(() => getStudySettings());
     const [cards, setCards] = useState<LearnCard[]>([]);
     const [sessionQueue, setSessionQueue] = useState<SessionCard[]>([]);
+    const [deckSource, setDeckSource] = useState<StudyCardSource>("flashcard");
 
     const fetchCards = useCallback(async () => {
         // Fetch XP stats for display
         useXPStore.getState().fetchXPStats();
 
         const supabase = createClient();
-        const [{ data }, { data: setRow }] = await Promise.all([
-            supabase
-                .from("flashcards")
-                .select("id, front, back, status")
-                .eq("set_id", params.id)
-                .order("created_at"),
-            supabase
-                .from("flashcard_sets")
-                .select("title")
-                .eq("id", params.id)
-                .maybeSingle(),
-        ]);
+        const deck = await loadStudyDeck(supabase, String(params.id));
 
-        if (setRow?.title) {
-            setMaterialTitle(setRow.title);
-        }
-
-        if (data && data.length > 0) {
-            const loadedCards: LearnCard[] = data.map(c => ({
-                id: c.id,
-                term: c.front,
-                definition: c.back,
-                stage: (c.status === 'review' ? 'almost_done' : c.status || 'new') as LearnStage,
+        if (deck) {
+            setMaterialTitle(deck.title);
+            setDeckSource(deck.source);
+            const loadedCards: LearnCard[] = deck.cards.map((card) => ({
+                id: card.id,
+                term: card.term,
+                definition: card.definition,
+                stage: (card.status === "review" ? "almost_done" : card.status || "new") as LearnStage,
             }));
             setCards(loadedCards);
             setSessionQueue(buildSessionQueue(loadedCards, getStudySettings()));
@@ -162,10 +151,17 @@ export default function LearnPage() {
         const currentCard = sessionQueue[currentIndex];
 
         const supabase = createClient();
-        await supabase
-            .from("flashcards")
-            .update({ front: editTerm.trim(), back: editDefinition.trim() })
-            .eq("id", currentCard.id);
+        if (deckSource === "reviewer") {
+            await supabase
+                .from("reviewer_terms")
+                .update({ term: editTerm.trim(), definition: editDefinition.trim() })
+                .eq("id", currentCard.id);
+        } else {
+            await supabase
+                .from("flashcards")
+                .update({ front: editTerm.trim(), back: editDefinition.trim() })
+                .eq("id", currentCard.id);
+        }
 
         // Update local state - cards, sessionQueue
         setCards(prev => prev.map(c =>
@@ -236,10 +232,12 @@ export default function LearnPage() {
         // Track status update locally (no network request yet - batched at session end)
         const dbStatus = nextStage === 'almost_done' ? 'review' : nextStage;
         const newPendingUpdate: FlashcardStatusUpdate = { id: currentCard.id, status: dbStatus as 'new' | 'learning' | 'review' | 'mastered' };
-        setPendingUpdates(prev => [...prev, newPendingUpdate]);
-        void applyCardReview(currentCard.id, correct).catch((error) => {
-            console.error("Failed to persist SM-2 review:", error);
-        });
+        if (deckSource === "flashcard") {
+            setPendingUpdates(prev => [...prev, newPendingUpdate]);
+            void applyCardReview(currentCard.id, correct).catch((error) => {
+                console.error("Failed to persist SM-2 review:", error);
+            });
+        }
 
         const isMasteredCard = currentCard.stage === 'mastered';
         setCards(prev => prev.map(c => c.id === currentCard.id
@@ -267,7 +265,7 @@ export default function LearnPage() {
         } else {
             // Session complete - batch update all flashcard statuses and persist XP/activity
             const allUpdates = [...pendingUpdates, newPendingUpdate];
-            if (allUpdates.length > 0) {
+            if (deckSource === "flashcard" && allUpdates.length > 0) {
                 await batchUpdateFlashcardStatuses(allUpdates);
             }
 
@@ -280,7 +278,7 @@ export default function LearnPage() {
             await recordStudyActivity({ flashcards: sessionQueue.length, minutes: minutesStudied });
             setSessionComplete(true);
         }
-    }, [currentIndex, pendingResult, sessionQueue, sessionStats.xpGained, sessionStats.startTime, pendingUpdates]);
+    }, [currentIndex, pendingResult, sessionQueue, sessionStats.xpGained, sessionStats.startTime, pendingUpdates, deckSource]);
 
     // Auto-next effect - triggers handleNext after configured duration
     useSyncExternalStore(
@@ -392,8 +390,15 @@ export default function LearnPage() {
 
     if (sessionQueue.length === 0 && !sessionComplete) {
         return (
-            <div className="min-h-screen bg-background flex items-center justify-center">
-                <p className="text-muted-foreground">No flashcards found</p>
+            <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-3">
+                <p className="text-muted-foreground">No study cards found</p>
+                <button
+                    type="button"
+                    onClick={() => router.back()}
+                    className="text-sm text-brand hover:underline"
+                >
+                    Go back
+                </button>
             </div>
         );
     }

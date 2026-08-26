@@ -2,6 +2,10 @@
 -- Notes for live DB (do not replay 001–003). Helpers live in private;
 -- search_path = ''; GRANT EXECUTE only to authenticated (never PUBLIC).
 -- Apply in the Supabase SQL editor after review.
+--
+-- STATUS: Do not replay this file as a whole. SRS columns, practice_sessions,
+-- and refund_ai_usage were applied separately as 006. increment_stat / add_xp /
+-- record_study_activity already exist live with auth.uid() checks.
 
 create schema if not exists private;
 

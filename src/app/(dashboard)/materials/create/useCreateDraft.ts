@@ -426,6 +426,9 @@ export function useCreateDraft() {
         }
 
         const data = await response.json();
+        if (typeof data.remaining === 'number') {
+          setRemainingGenerations(data.remaining);
+        }
         const rawCards = (data.cards || []) as Array<{ term: string; definition: string }>;
         const newCards: FlashcardDraftItem[] = rawCards.map((c) => ({
           id: generateItemId(),
@@ -461,6 +464,9 @@ export function useCreateDraft() {
         }
 
         const data = await response.json();
+        if (typeof data.remaining === 'number') {
+          setRemainingGenerations(data.remaining);
+        }
         if (data.title && !title.trim()) {
           setTitle(data.title);
         }

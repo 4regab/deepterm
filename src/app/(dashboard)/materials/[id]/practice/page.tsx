@@ -12,6 +12,7 @@ import { createClient } from "@/config/supabase/client";
 import { useXPStore } from "@/lib/stores";
 import { addXP, recordStudyActivity, batchUpdateFlashcardStatuses, applyCardReview, XP_REWARDS, type FlashcardStatusUpdate } from "@/services/activity";
 import { generateQuestionsFromCards, gradePracticeAnswer, type QuestionType } from "@/utils/practiceQuestions";
+import { loadStudyDeck, type StudyCardSource } from "@/lib/materials/studyCards";
 
 type CardStatus = 'new' | 'learning' | 'review' | 'mastered';
 
@@ -57,6 +58,7 @@ export default function PracticePage() {
     const router = useRouter();
     const params = useParams();
     const [flashcardData, setFlashcardData] = useState<FlashcardData[]>([]);
+    const [deckSource, setDeckSource] = useState<StudyCardSource>("flashcard");
     const [stage, setStage] = useState<Stage>("loading");
     const [questions, setQuestions] = useState<Question[]>([]);
     const [settings, setSettings] = useState<PracticeSettings>(DEFAULT_PRACTICE_SETTINGS);
@@ -68,15 +70,17 @@ export default function PracticePage() {
         useXPStore.getState().fetchXPStats();
 
         const supabase = createClient();
-        const { data } = await supabase
-            .from("flashcards")
-            .select("id, front, back, status")
-            .eq("set_id", params.id)
-            .order("created_at");
+        const deck = await loadStudyDeck(supabase, String(params.id));
 
-        if (data && data.length > 0) {
-            const cards = data.map(c => ({ id: c.id, term: c.front, definition: c.back, status: (c.status || 'new') as CardStatus }));
+        if (deck && deck.cards.length > 0) {
+            const cards = deck.cards.map((card) => ({
+                id: card.id,
+                term: card.term,
+                definition: card.definition,
+                status: card.status as CardStatus,
+            }));
             setFlashcardData(cards);
+            setDeckSource(deck.source);
             // Show config screen first
             setStage("config");
             setShowSettings(true);
@@ -134,8 +138,7 @@ export default function PracticePage() {
             setFinalXpEarned(xpEarned);
 
             const persistResults = async () => {
-                // Batch update all flashcard statuses in one request
-                if (pendingUpdates.length > 0) {
+                if (deckSource === "flashcard" && pendingUpdates.length > 0) {
                     await batchUpdateFlashcardStatuses(pendingUpdates);
                 }
 
@@ -144,23 +147,29 @@ export default function PracticePage() {
                     useXPStore.getState().fetchXPStats();
                 }
                 await recordStudyActivity({ quizzes: 1 });
-                const supabase = createClient();
-                await supabase.from("practice_sessions").insert({
-                    set_id: params.id,
-                    score: correct,
-                    total: questions.length,
-                    answers: questions.map((q) => ({
-                        id: q.id,
-                        correct: q.isCorrect,
-                        answer: q.userAnswer,
-                    })),
-                });
+                if (deckSource === "flashcard") {
+                    const supabase = createClient();
+                    const { data: { user } } = await supabase.auth.getUser();
+                    if (user) {
+                        await supabase.from("practice_sessions").insert({
+                            user_id: user.id,
+                            set_id: params.id,
+                            score: correct,
+                            total: questions.length,
+                            answers: questions.map((q) => ({
+                                id: q.id,
+                                correct: q.isCorrect,
+                                answer: q.userAnswer,
+                            })),
+                        });
+                    }
+                }
             };
             persistResults();
 
             setStage("results");
         }
-    }, [currentQuestionIndex, questions, pendingUpdates]);
+    }, [currentQuestionIndex, questions, pendingUpdates, deckSource, params.id]);
 
     const handleAnswer = useCallback(async (answer: string) => {
         const updated = [...questions];
@@ -179,9 +188,11 @@ export default function PracticePage() {
                 : 'learning';
 
             setPendingUpdates(prev => [...prev, { id: card.id, status: newStatus }]);
-            void applyCardReview(card.id, isCorrect).catch((error) => {
-                console.error("Failed to persist SM-2 review:", error);
-            });
+            if (deckSource === "flashcard") {
+                void applyCardReview(card.id, isCorrect).catch((error) => {
+                    console.error("Failed to persist SM-2 review:", error);
+                });
+            }
 
             // Update local state only
             const updatedCards = [...flashcardData];
@@ -223,7 +234,7 @@ export default function PracticePage() {
             };
             timerRef.current = setTimeout(tick, 1000);
         }
-    }, [currentQuestionIndex, questions, flashcardData, settings.answerFeedback, settings.autoNextAfterAnswer, settings.autoNextDuration, streak]);
+    }, [currentQuestionIndex, questions, flashcardData, settings.answerFeedback, settings.autoNextAfterAnswer, settings.autoNextDuration, streak, deckSource]);
 
     const startOver = () => {
         // Regenerate with current settings
@@ -338,6 +349,21 @@ export default function PracticePage() {
         return (
             <div className="min-h-screen bg-background flex items-center justify-center">
                 <Loader2 size={32} className="animate-spin text-muted-foreground" />
+            </div>
+        );
+    }
+
+    if (flashcardData.length === 0) {
+        return (
+            <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-3">
+                <p className="text-muted-foreground">No study cards found</p>
+                <button
+                    type="button"
+                    onClick={() => router.back()}
+                    className="text-sm text-brand hover:underline"
+                >
+                    Go back
+                </button>
             </div>
         );
     }
@@ -651,8 +677,7 @@ export default function PracticePage() {
                                         setFinalXpEarned(xpEarned);
 
                                         const persistResults = async () => {
-                                            // Batch update all flashcard statuses in one request
-                                            if (pendingUpdates.length > 0) {
+                                            if (deckSource === "flashcard" && pendingUpdates.length > 0) {
                                                 await batchUpdateFlashcardStatuses(pendingUpdates);
                                             }
 

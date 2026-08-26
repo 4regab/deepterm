@@ -12,6 +12,7 @@ import { getStudySettings, StudySettings } from "@/utils/studySettings";
 import { createClient } from "@/config/supabase/client";
 import { logFlashcardReview, batchUpdateFlashcardStatuses, addXP, XP_REWARDS, type FlashcardStatusUpdate } from "@/services/activity";
 import { useXPStore } from "@/lib/stores";
+import { loadStudyDeck } from "@/lib/materials/studyCards";
 
 interface Flashcard {
     id: string;
@@ -50,18 +51,14 @@ export default function FlashcardsPage() {
         useXPStore.getState().fetchXPStats();
 
         const supabase = createClient();
-        const { data } = await supabase
-            .from("flashcards")
-            .select("id, front, back, status")
-            .eq("set_id", params.id)
-            .order("created_at");
+        const deck = await loadStudyDeck(supabase, String(params.id));
 
-        if (data && data.length > 0) {
-            const cards: Flashcard[] = data.map(c => ({
-                id: c.id,
-                term: c.front,
-                definition: c.back,
-                status: (c.status || 'new') as Flashcard['status'],
+        if (deck && deck.cards.length > 0) {
+            const cards: Flashcard[] = deck.cards.map((card) => ({
+                id: card.id,
+                term: card.term,
+                definition: card.definition,
+                status: card.status,
             }));
             setAllCards(cards);
             setStudySession(createInitialSession(cards, getStudySettings()));
@@ -88,8 +85,15 @@ export default function FlashcardsPage() {
 
     if (!studySession || studySession.cards.length === 0) {
         return (
-            <div className="min-h-screen bg-background flex items-center justify-center">
-                <p className="text-muted-foreground">No flashcards found</p>
+            <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-3">
+                <p className="text-muted-foreground">No study cards found</p>
+                <button
+                    type="button"
+                    onClick={() => router.back()}
+                    className="text-sm text-brand hover:underline"
+                >
+                    Go back
+                </button>
             </div>
         );
     }
