@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { headers } from "next/headers";
 import { Geist, Source_Serif_4 } from "next/font/google";
 import Script from "next/script";
+import { Analytics } from "@vercel/analytics/next";
 import "@/styles/globals.css";
 import {
   defaultMetadata,
@@ -93,6 +94,7 @@ export default async function RootLayout({
             `}
           </Script>
         </PostHogProvider>
+        <Analytics />
       </body>
     </html>
   );
