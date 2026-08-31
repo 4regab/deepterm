@@ -56,13 +56,6 @@ export async function POST(request: NextRequest) {
     })
   }
 
-  if (copyRpcError?.message?.includes('RATE_LIMITED')) {
-    return NextResponse.json(
-      { error: 'Too many share copy attempts. Please try again shortly.' },
-      { status: 429, headers: { 'Retry-After': String(rateLimit.retryAfterSeconds) } },
-    )
-  }
-
   // Fallback path when the transactional RPC is unavailable
   const { data: sharedData, error: fetchError } = await supabase
     .rpc('get_shared_material', { p_share_code: shareCode, p_identifier_hash: identityHash })
