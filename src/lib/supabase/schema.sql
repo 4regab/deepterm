@@ -1003,6 +1003,7 @@ as $$
     where material_type = 'flashcard_set' 
     and material_id = set_id 
     and is_active = true
+    and (expires_at is null or expires_at > now())
   );
 $$;
 
@@ -1019,6 +1020,7 @@ as $$
     where material_type = 'reviewer' 
     and material_id = reviewer_id 
     and is_active = true
+    and (expires_at is null or expires_at > now())
   );
 $$;
 
@@ -1067,7 +1069,9 @@ begin
 
   select * into v_share
   from public.material_shares
-  where share_code = p_share_code and is_active = true;
+  where share_code = p_share_code
+    and is_active = true
+    and (expires_at is null or expires_at > now());
 
   if not found then
     insert into public.share_lookup_log (identifier_hash, share_code, found)

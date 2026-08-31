@@ -4,7 +4,7 @@ import Link from 'next/link'
 import Header from '@/components/Header'
 import Footer from '@/components/Footer'
 import { getPublishedPosts, getCategoryBySlug, getCategoriesWithCounts } from '@/lib/blog'
-import { createMetadata, siteConfig, generateBreadcrumbJsonLd } from '@/lib/seo'
+import { createMetadata, siteConfig, generateBreadcrumbJsonLd, serializeJsonLd } from '@/lib/seo'
 import CategoryFilter from '../../components/CategoryFilter'
 
 interface PageProps {
@@ -70,7 +70,7 @@ export default async function CategoryPage({ params, searchParams }: PageProps) 
     <>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
+        dangerouslySetInnerHTML={{ __html: serializeJsonLd(breadcrumbJsonLd) }}
       />
 
       <div className="bg-background min-h-screen">

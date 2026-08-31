@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerSupabaseClient } from '@/config/supabase/server'
 import { ShareCodeSchema } from '@/lib/schemas/sharing'
-import { checkShareRateLimit, getRequestIdentifier } from '@/services/shareRateLimit'
+import { consumeShareRateLimit } from '@/services/shareRateLimit'
 import { hashRequestIdentity } from '@/lib/auth/requestIdentity'
 import { buildReviewerInsertPayloads } from '@/utils/reviewerBatch'
 import { z } from 'zod'
@@ -23,8 +23,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const requestIdentity = `${user.id}:${getRequestIdentifier(request.headers)}`
-  const rateLimit = checkShareRateLimit('copy', requestIdentity)
+  const identityHash = hashRequestIdentity(request.headers)
+  const rateLimit = await consumeShareRateLimit(supabase, 'copy', identityHash)
   if (!rateLimit.allowed) {
     return NextResponse.json(
       { error: 'Too many share copy attempts. Please try again shortly.' },
@@ -47,6 +47,7 @@ export async function POST(request: NextRequest) {
 
   const { data: copied, error: copyRpcError } = await supabase.rpc('copy_shared_material', {
     p_share_code: shareCode,
+    p_identifier_hash: identityHash,
   })
   if (!copyRpcError && copied) {
     return NextResponse.json({
@@ -55,8 +56,7 @@ export async function POST(request: NextRequest) {
     })
   }
 
-  // Get shared material data using the RPC function
-  const identityHash = hashRequestIdentity(request.headers)
+  // Fallback path when the transactional RPC is unavailable
   const { data: sharedData, error: fetchError } = await supabase
     .rpc('get_shared_material', { p_share_code: shareCode, p_identifier_hash: identityHash })
 

@@ -41,6 +41,7 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   reactCompiler: true,
+  poweredByHeader: false,
   // Keep the repo AGENTS.md as the source of truth. Next 16's `next dev`
   // otherwise appends a generated agent-rules block on every boot.
   agentRules: false,

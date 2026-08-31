@@ -33,6 +33,18 @@ describe('auth callback redirects', () => {
     expect(sanitizeRedirectPath('/materials')).toBe('/materials')
   })
 
+  it('blocks backslash and encoded-backslash open redirects', () => {
+    expect(sanitizeRedirectPath('/\\evil.com')).toBe('/dashboard')
+    expect(sanitizeRedirectPath('/%5Cevil.com')).toBe('/dashboard')
+    expect(sanitizeRedirectPath('/%5cevil.com')).toBe('/dashboard')
+  })
+
+  it('rejects paths outside the app allowlist', () => {
+    expect(sanitizeRedirectPath('/evil')).toBe('/dashboard')
+    expect(sanitizeRedirectPath('/admin')).toBe('/dashboard')
+    expect(sanitizeRedirectPath('/materials/../evil')).toBe('/dashboard')
+  })
+
   it('sends visitors home when no OAuth code is present', () => {
     expect(resolveAuthCallbackPath({ hasCode: false, returnTo: '/dashboard' })).toBe('/')
     expect(resolveAuthCallbackPath({ hasCode: false })).toBe('/')

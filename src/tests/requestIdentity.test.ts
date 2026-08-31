@@ -16,6 +16,23 @@ const PEPPER = 'test-pepper-v1'
 
 type HeaderSource = Pick<Headers, 'get'>
 
+function resolveRequestHashPepper(env: Record<string, string | undefined>): string {
+  const pepper = env.REQUEST_HASH_PEPPER?.trim()
+  if (pepper && pepper.length >= 16) {
+    return pepper
+  }
+  const production =
+    env.NODE_ENV === 'production' || env.VERCEL_ENV === 'production'
+  if (production) {
+    throw new Error(
+      'REQUEST_HASH_PEPPER must be set to an independent secret (≥16 chars)',
+    )
+  }
+  return pepper && pepper.length > 0
+    ? pepper
+    : 'deepterm-dev-pepper-change-in-prod'
+}
+
 function extractClientIp(headers: HeaderSource): string {
   const forwardedFor = headers.get('x-forwarded-for')?.split(',')[0]?.trim()
   const realIp = headers.get('x-real-ip')?.trim()
@@ -90,5 +107,38 @@ describe('requestIdentity', () => {
     const hashed = hashValue(raw)
     expect(hashed).not.toBe(raw)
     expect(hashed).not.toContain(raw)
+  })
+
+  it('resolveRequestHashPepper prefers REQUEST_HASH_PEPPER and never CRON_SECRET', () => {
+    expect(
+      resolveRequestHashPepper({
+        NODE_ENV: 'development',
+        REQUEST_HASH_PEPPER: 'production-grade-pepper-value',
+        CRON_SECRET: 'should-not-be-used-as-pepper',
+      }),
+    ).toBe('production-grade-pepper-value')
+
+    expect(
+      resolveRequestHashPepper({
+        NODE_ENV: 'development',
+        CRON_SECRET: 'cron-only-secret-value',
+      }),
+    ).toBe('deepterm-dev-pepper-change-in-prod')
+  })
+
+  it('resolveRequestHashPepper fails closed in production without a strong pepper', () => {
+    expect(() =>
+      resolveRequestHashPepper({
+        NODE_ENV: 'production',
+        CRON_SECRET: 'cron-only-secret-value',
+      }),
+    ).toThrow(/REQUEST_HASH_PEPPER/)
+
+    expect(() =>
+      resolveRequestHashPepper({
+        NODE_ENV: 'production',
+        REQUEST_HASH_PEPPER: 'too-short',
+      }),
+    ).toThrow(/REQUEST_HASH_PEPPER/)
   })
 })

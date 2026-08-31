@@ -42,6 +42,7 @@ mock.module('@/lib/auth/requestIdentity', () => ({
   hashValue: (v: string) => `h:${v}`,
   extractClientIp: () => '1.2.3.4',
   extractUserAgent: () => 'curl/8',
+  resolveRequestHashPepper: () => 'test-pepper-at-least-16',
 }))
 
 // Import AFTER mocks are registered.

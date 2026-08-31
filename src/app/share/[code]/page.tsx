@@ -6,7 +6,7 @@ import { createClient } from '@supabase/supabase-js'
 import SharePreviewClient from './SharePreviewClient'
 import { siteConfig } from '@/lib/seo'
 import { ShareCodeSchema } from '@/lib/schemas/sharing'
-import { checkShareRateLimit, getRequestIdentifier } from '@/services/shareRateLimit'
+import { consumeShareRateLimit } from '@/services/shareRateLimit'
 import { hashRequestIdentity } from '@/lib/auth/requestIdentity'
 import { buildSharePageMeta, parseSharedMaterial } from '@/utils/shareMetadata'
 
@@ -16,7 +16,6 @@ interface PageProps {
 
 async function loadSharedMaterialUncached(
   code: string,
-  requestIdentity?: string,
   identityHash?: string,
 ) {
   const parsedCode = ShareCodeSchema.safeParse(code)
@@ -24,20 +23,20 @@ async function loadSharedMaterialUncached(
     return null
   }
 
-  if (requestIdentity) {
-    const rateLimit = checkShareRateLimit('lookup', requestIdentity)
-    if (!rateLimit.allowed) {
-      return null
-    }
-  }
-
   const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!
   )
 
-  // F-005: pass a peppered, non-reversible identity hash so the DB-level
-  // rate limit inside get_shared_material() can throttle abuse.
+  if (identityHash) {
+    const rateLimit = await consumeShareRateLimit(supabase, 'lookup', identityHash)
+    if (!rateLimit.allowed) {
+      return null
+    }
+  }
+
+  // Pass a peppered identity hash so the DB-level rate limit inside
+  // get_shared_material() can throttle abuse, and expires_at is enforced.
   const { data, error } = await supabase.rpc('get_shared_material', {
     p_share_code: parsedCode.data,
     p_identifier_hash: identityHash ?? null,
@@ -55,9 +54,8 @@ const loadSharedMaterial = cache(loadSharedMaterialUncached)
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { code } = await params
   const requestHeaders = await headers()
-  const requestIdentity = getRequestIdentifier(requestHeaders)
   const identityHash = hashRequestIdentity(requestHeaders)
-  const data = await loadSharedMaterial(code, requestIdentity, identityHash)
+  const data = await loadSharedMaterial(code, identityHash)
 
   if (!data) {
     return {
@@ -102,9 +100,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 export default async function SharePage({ params }: PageProps) {
   const { code } = await params
   const requestHeaders = await headers()
-  const requestIdentity = getRequestIdentifier(requestHeaders)
   const identityHash = hashRequestIdentity(requestHeaders)
-  const sharedData = await loadSharedMaterial(code, requestIdentity, identityHash)
+  const sharedData = await loadSharedMaterial(code, identityHash)
 
   if (!sharedData) {
     notFound()

@@ -21,9 +21,24 @@ describe("verifyTurnstileToken", () => {
     globalThis.fetch = originalFetch;
   });
 
-  it("skips verification when secret is not configured", async () => {
-    const result = await verifyTurnstileToken(null, requestWithIp(), { secret: undefined });
+  it("skips verification in non-production when secret is not configured", async () => {
+    const result = await verifyTurnstileToken(null, requestWithIp(), {
+      secret: undefined,
+      failClosedWithoutSecret: false,
+    });
     expect(result).toEqual({ ok: true });
+  });
+
+  it("fails closed in production when secret is not configured", async () => {
+    const result = await verifyTurnstileToken(null, requestWithIp(), {
+      secret: undefined,
+      failClosedWithoutSecret: true,
+    });
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.status).toBe(403);
+      expect(result.error).toBe("Captcha verification required");
+    }
   });
 
   it("rejects missing tokens when secret is configured", async () => {
