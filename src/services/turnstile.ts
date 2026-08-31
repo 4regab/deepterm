@@ -23,12 +23,22 @@ function allowedHostnames(): string[] {
 export type TurnstileConfig = {
   secret?: string;
   hostnames?: string[];
+  /** When true, missing secret fails closed (production default). */
+  failClosedWithoutSecret?: boolean;
 };
+
+function isProductionRuntime(): boolean {
+  return (
+    process.env.NODE_ENV === "production" ||
+    process.env.VERCEL_ENV === "production"
+  );
+}
 
 function readConfig(): TurnstileConfig {
   return {
     secret: process.env.TURNSTILE_SECRET,
     hostnames: allowedHostnames(),
+    failClosedWithoutSecret: isProductionRuntime(),
   };
 }
 
@@ -39,6 +49,13 @@ export async function verifyTurnstileToken(
 ): Promise<TurnstileVerifyResult> {
   const secret = config.secret;
   if (!secret) {
+    const failClosed =
+      config.failClosedWithoutSecret ?? isProductionRuntime();
+    if (failClosed) {
+      console.error("TURNSTILE_SECRET is not configured; rejecting captcha check");
+      return { ok: false, status: 403, error: "Captcha verification required" };
+    }
+    // Local/dev convenience only — captcha intentionally skipped when unset.
     return { ok: true };
   }
 
@@ -82,4 +99,3 @@ export async function verifyTurnstileToken(
     return { ok: false, status: 403, error: "Captcha verification failed" };
   }
 }
-

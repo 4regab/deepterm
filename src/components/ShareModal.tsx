@@ -62,7 +62,7 @@ export default function ShareModal({ isOpen, onClose, materialId, materialType, 
       const data = await res.json()
       
       if (res.status === 409) {
-        setCodeError("This code is already taken")
+        setCodeError("Unable to use that code. Try a different one.")
         return
       }
       
@@ -114,7 +114,7 @@ export default function ShareModal({ isOpen, onClose, materialId, materialType, 
       const data = await res.json()
       
       if (res.status === 409) {
-        setCodeError("This code is already taken")
+        setCodeError("Unable to use that code. Try a different one.")
         return
       }
       

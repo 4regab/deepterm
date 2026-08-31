@@ -1,5 +1,3 @@
-type HeaderSource = Pick<Headers, 'get'>
-
 type ShareRateLimitBucket = 'lookup' | 'copy'
 
 interface RateLimitBucketConfig {
@@ -7,20 +5,18 @@ interface RateLimitBucketConfig {
   windowMs: number
 }
 
-interface RateLimitEntry {
-  count: number
-  resetAt: number
-}
-
-interface ShareRateLimitResult {
+export interface ShareRateLimitResult {
   allowed: boolean
   remaining: number
   retryAfterSeconds: number
 }
 
-interface ShareRateLimitStore {
-  lookup: Map<string, RateLimitEntry>
-  copy: Map<string, RateLimitEntry>
+/** Minimal client surface so callers can pass browser or server Supabase clients. */
+export type ShareRateLimitRpcClient = {
+  rpc: (
+    fn: string,
+    args: Record<string, unknown>,
+  ) => PromiseLike<{ data: unknown; error: { message?: string } | null }>
 }
 
 const RATE_LIMITS: Record<ShareRateLimitBucket, RateLimitBucketConfig> = {
@@ -28,80 +24,77 @@ const RATE_LIMITS: Record<ShareRateLimitBucket, RateLimitBucketConfig> = {
   copy: { maxRequests: 20, windowMs: 60_000 },
 }
 
-declare global {
-  var __deeptermShareRateLimitStore: ShareRateLimitStore | undefined
+type RateLimitRow = {
+  allowed: boolean
+  remaining: integerLike
+  retry_after_seconds: integerLike
 }
 
-function getStore(): ShareRateLimitStore {
-  if (!globalThis.__deeptermShareRateLimitStore) {
-    globalThis.__deeptermShareRateLimitStore = {
-      lookup: new Map<string, RateLimitEntry>(),
-      copy: new Map<string, RateLimitEntry>(),
-    }
+type integerLike = number | string | null | undefined
+
+function asInt(value: integerLike, fallback: number): number {
+  const n = typeof value === 'number' ? value : Number(value)
+  return Number.isFinite(n) ? Math.trunc(n) : fallback
+}
+
+function parseRateLimitRows(data: unknown): RateLimitRow | null {
+  if (Array.isArray(data) && data.length > 0) {
+    return data[0] as RateLimitRow
   }
-  return globalThis.__deeptermShareRateLimitStore
-}
-
-function cleanupExpiredEntries(bucket: Map<string, RateLimitEntry>, now: number): void {
-  if (bucket.size < 2000) {
-    return
+  if (data && typeof data === 'object' && 'allowed' in data) {
+    return data as RateLimitRow
   }
-
-  for (const [key, entry] of bucket) {
-    if (entry.resetAt <= now) {
-      bucket.delete(key)
-    }
-  }
+  return null
 }
 
-export function getRequestIdentifier(headers: HeaderSource): string {
-  const forwardedFor = headers.get('x-forwarded-for')?.split(',')[0]?.trim()
-  const realIp = headers.get('x-real-ip')?.trim()
-  const userAgent = headers.get('user-agent')?.trim() ?? 'unknown-agent'
-  const ip = forwardedFor || realIp || 'unknown-ip'
-
-  return `${ip}|${userAgent.slice(0, 120)}`
-}
-
-export function checkShareRateLimit(
+/**
+ * Durable share rate limit via SECURITY DEFINER RPC `consume_share_rate_limit`.
+ * Fail closed on RPC errors so serverless isolates cannot bypass throttling.
+ */
+export async function consumeShareRateLimit(
+  supabase: ShareRateLimitRpcClient,
   bucketName: ShareRateLimitBucket,
-  identifier: string
-): ShareRateLimitResult {
-  const now = Date.now()
+  identifierHash: string,
+): Promise<ShareRateLimitResult> {
   const config = RATE_LIMITS[bucketName]
-  const bucket = getStore()[bucketName]
-  const key = `${bucketName}:${identifier}`
+  const windowSeconds = Math.ceil(config.windowMs / 1000)
 
-  cleanupExpiredEntries(bucket, now)
-
-  const existing = bucket.get(key)
-  if (!existing || existing.resetAt <= now) {
-    bucket.set(key, {
-      count: 1,
-      resetAt: now + config.windowMs,
-    })
-
-    return {
-      allowed: true,
-      remaining: config.maxRequests - 1,
-      retryAfterSeconds: Math.ceil(config.windowMs / 1000),
-    }
-  }
-
-  if (existing.count >= config.maxRequests) {
+  if (!identifierHash || identifierHash.length < 8) {
     return {
       allowed: false,
       remaining: 0,
-      retryAfterSeconds: Math.max(1, Math.ceil((existing.resetAt - now) / 1000)),
+      retryAfterSeconds: windowSeconds,
     }
   }
 
-  existing.count += 1
-  bucket.set(key, existing)
+  const { data, error } = await supabase.rpc('consume_share_rate_limit', {
+    p_bucket: bucketName,
+    p_identifier_hash: identifierHash,
+    p_max: config.maxRequests,
+    p_window_seconds: windowSeconds,
+  })
+
+  if (error) {
+    console.error('consume_share_rate_limit failed:', error.message ?? error)
+    return {
+      allowed: false,
+      remaining: 0,
+      retryAfterSeconds: windowSeconds,
+    }
+  }
+
+  const row = parseRateLimitRows(data)
+  if (!row) {
+    return {
+      allowed: false,
+      remaining: 0,
+      retryAfterSeconds: windowSeconds,
+    }
+  }
 
   return {
-    allowed: true,
-    remaining: Math.max(0, config.maxRequests - existing.count),
-    retryAfterSeconds: Math.max(1, Math.ceil((existing.resetAt - now) / 1000)),
+    allowed: Boolean(row.allowed),
+    remaining: Math.max(0, asInt(row.remaining, 0)),
+    retryAfterSeconds: Math.max(1, asInt(row.retry_after_seconds, windowSeconds)),
   }
 }

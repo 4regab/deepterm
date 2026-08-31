@@ -5,7 +5,7 @@ import Image from 'next/image'
 import Header from '@/components/Header'
 import Footer from '@/components/Footer'
 import { getPostBySlug, getRelatedPosts, getAdjacentPosts } from '@/lib/blog'
-import { siteConfig, generateArticleJsonLd, generateBreadcrumbJsonLd } from '@/lib/seo'
+import { siteConfig, generateArticleJsonLd, generateBreadcrumbJsonLd, serializeJsonLd } from '@/lib/seo'
 import BlogPostCard from '../components/BlogPostCard'
 import BlogPostClient from './BlogPostClient'
 
@@ -93,11 +93,11 @@ export default async function BlogPostPage({ params }: PageProps) {
     <>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(articleJsonLd).replace(/</g, '\\u003c') }}
+        dangerouslySetInnerHTML={{ __html: serializeJsonLd(articleJsonLd) }}
       />
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd).replace(/</g, '\\u003c') }}
+        dangerouslySetInnerHTML={{ __html: serializeJsonLd(breadcrumbJsonLd) }}
       />
 
       <div className="bg-background min-h-screen">

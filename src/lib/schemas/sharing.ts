@@ -29,6 +29,7 @@ export const MaterialShareSchema = z.object({
   material_id: z.string().uuid(),
   user_id: z.string().uuid(),
   is_active: z.boolean(),
+  expires_at: z.string().nullable().optional(),
   created_at: z.string(),
   updated_at: z.string(),
 })

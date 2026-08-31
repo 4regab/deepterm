@@ -171,7 +171,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (codeExists) {
-      return NextResponse.json({ error: 'Share code already taken' }, { status: 409 })
+      return NextResponse.json({ error: 'Unable to reserve share code' }, { status: 409 })
     }
   } else {
     try {
@@ -261,7 +261,7 @@ export async function PATCH(request: NextRequest) {
     }
 
     if (codeExists) {
-      return NextResponse.json({ error: 'Share code already taken' }, { status: 409 })
+      return NextResponse.json({ error: 'Unable to reserve share code' }, { status: 409 })
     }
 
     updates.share_code = newCode

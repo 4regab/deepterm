@@ -10,12 +10,13 @@ export async function POST(request: NextRequest) {
   const cronSecret = process.env.CRON_SECRET
   const isDev = process.env.NODE_ENV === 'development'
 
-  // In production, CRON_SECRET is required
+  // Outside development, require a matching Bearer secret. Never disclose
+  // whether CRON_SECRET is missing vs wrong (FIND-001).
   if (!isDev) {
-    if (!cronSecret) {
-      return NextResponse.json({ error: 'CRON_SECRET not configured' }, { status: 500 })
-    }
-    if (authHeader !== `Bearer ${cronSecret}`) {
+    if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
+      if (!cronSecret) {
+        console.error('CRON_SECRET not configured')
+      }
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
   }
