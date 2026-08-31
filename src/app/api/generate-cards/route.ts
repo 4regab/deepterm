@@ -14,7 +14,6 @@ import {
 import { GeminiCardsResponseSchema } from "@/lib/schemas/geminiOutput";
 import {
   combineAbortSignals,
-  GENERATION_MAX_DURATION_SECONDS,
   GENERATION_TIMEOUT_MS,
   isAbortError,
   throwIfAborted,
@@ -22,7 +21,7 @@ import {
 import { z } from "zod";
 import { forbiddenUnlessSameOrigin } from "@/lib/auth/assertSameOrigin";
 
-export const maxDuration = GENERATION_MAX_DURATION_SECONDS;
+export const maxDuration = 90;
 
 const MAX_FILE_SIZE = MAX_CARDS_FILE_SIZE;
 const MAX_TEXT_LENGTH = MAX_GENERATE_TEXT_LENGTH;
