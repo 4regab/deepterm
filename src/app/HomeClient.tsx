@@ -52,6 +52,14 @@ export default function HomeClient() {
     checkUser();
   }, []);
 
+  useEffect(() => {
+    const previous = document.body.style.backgroundColor;
+    document.body.style.backgroundColor = "#f0f0ea";
+    return () => {
+      document.body.style.backgroundColor = previous;
+    };
+  }, []);
+
   const handleLoginClick = () => {
     if (sitekey) {
       setShowCaptcha(true);
@@ -101,15 +109,15 @@ export default function HomeClient() {
 
             {/* Main Hero Content */}
             <div className="relative z-10 text-center max-w-[900px] lg:max-w-[1100px] mx-auto px-2 sm:px-0">
-              <p className="font-sora text-[28px] sm:text-[36px] lg:text-[44px] tracking-tight text-[#171d2b] mb-3 sm:mb-4">
+              <p className="font-sora text-[40px] sm:text-[56px] lg:text-[72px] xl:text-[84px] leading-none tracking-tight text-[#171d2b] mb-4 sm:mb-5">
                 deepterm
               </p>
 
               <h1 className="relative mb-4 sm:mb-5 font-serif text-[#171d2b]">
-                <span className="block text-[40px] sm:text-[56px] lg:text-[76px] xl:text-[96px] leading-[1.1] tracking-tight font-normal">
+                <span className="block text-[32px] sm:text-[44px] lg:text-[56px] xl:text-[68px] leading-[1.15] tracking-tight font-normal">
                   Study smarter
                 </span>
-                <span className="inline-block text-[36px] sm:text-[64px] lg:text-[88px] xl:text-[112px] leading-[1.15] tracking-tight font-normal italic">
+                <span className="inline-block text-[30px] sm:text-[48px] lg:text-[64px] xl:text-[76px] leading-[1.2] tracking-tight font-normal italic">
                   {" "}not harder
                 </span>
               </h1>

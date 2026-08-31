@@ -253,10 +253,10 @@ export default function FeaturesShowcase() {
       </section>
 
       {/* Desktop: Horizontal scroll layout with GSAP */}
-      <section ref={containerRef} id="features-desktop" className="hidden lg:flex relative min-h-[600px] h-[80vh] max-h-[900px] items-stretch overflow-hidden scroll-mt-24">
+      <section ref={containerRef} id="features-desktop" className="hidden lg:flex relative min-h-[640px] h-[85vh] max-h-[960px] items-stretch overflow-hidden scroll-mt-24">
         <div
           ref={desktopTitleRef}
-          className="w-[320px] xl:w-[380px] flex-shrink-0 pl-8 xl:pl-16 pr-6 z-20 relative bg-[#f0f0ea] self-stretch flex flex-col justify-center shadow-[8px_0_24px_-12px_rgba(23,29,43,0.12)]"
+          className="w-[300px] xl:w-[360px] flex-shrink-0 pl-8 xl:pl-16 pr-6 z-20 relative bg-[#f0f0ea] self-stretch flex flex-col justify-center"
         >
           <h2 className="font-serif text-4xl xl:text-5xl leading-[1.1] mb-4 text-[#171d2b]">
             What you&apos;ll unlock with<br />
@@ -272,17 +272,15 @@ export default function FeaturesShowcase() {
         </div>
 
         <div className="flex-1 h-full flex items-center overflow-hidden">
-          <div ref={scrollContainerRef} className="flex gap-8 py-12 pl-4 pr-16">
+          <div ref={scrollContainerRef} className="flex gap-8 py-10 pl-6 pr-16 items-center">
             {features.map((feature) => (
-              <div key={feature.id} className="feature-card w-[640px] xl:w-[700px] flex-shrink-0">
-                <div className="flex flex-col gap-4">
-                  <div className="flex-shrink-0 py-2">
-                    <h3 className="font-sans font-bold text-2xl text-[#171d2b]">{feature.title}</h3>
-                  </div>
-                  <div className="w-full aspect-[16/10] rounded-lg overflow-hidden border relative bg-[#f8f8f4] border-[#171d2b]/10">
+              <div key={feature.id} className="feature-card w-[560px] xl:w-[620px] flex-shrink-0">
+                <div className="flex flex-col gap-3">
+                  <h3 className="font-sans font-bold text-xl xl:text-2xl text-[#171d2b]">{feature.title}</h3>
+                  <div className="w-full aspect-[16/10] max-h-[360px] rounded-lg overflow-hidden border relative bg-[#f8f8f4] border-[#171d2b]/10">
                     {feature.visual}
                   </div>
-                  <p className="font-sans text-base leading-relaxed max-w-2xl text-[#171d2b]/75">{feature.description}</p>
+                  <p className="font-sans text-[15px] leading-relaxed max-w-xl text-[#171d2b]/75">{feature.description}</p>
                 </div>
               </div>
             ))}
