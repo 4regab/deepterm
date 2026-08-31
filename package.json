@@ -55,7 +55,7 @@
     "minimatch@9": "9.0.9",
     "postcss": {
       ".": "^8.5.12",
-      "nanoid": "3.3.11"
+      "nanoid": "3.3.18"
     },
     "micromatch": {
       "picomatch": "2.3.2"

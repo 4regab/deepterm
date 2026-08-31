@@ -277,7 +277,7 @@ export default function CreateMaterialPage() {
                 variant="primary"
                 size="lg"
                 disabled={
-                  (sourceMethod === 'file' && !selectedFile && !fileSummary) ||
+                  (sourceMethod === 'file' && !selectedFile) ||
                   (sourceMethod === 'text' && !pastedText.trim()) ||
                   !title.trim()
                 }

@@ -159,7 +159,7 @@ export function StepSource({
                 Drag and drop your document here, or <span className="text-brand underline underline-offset-4">browse</span>
               </p>
               <p className="caption text-muted">
-                PDF, DOCX, PNG, JPG, or WebP &middot; Up to 20MB &middot; Or paste file from clipboard
+                PDF, DOCX, PNG, JPG, or WebP &middot; Up to 4MB &middot; Or paste file from clipboard
               </p>
             </div>
           </div>

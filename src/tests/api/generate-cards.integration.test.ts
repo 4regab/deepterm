@@ -234,8 +234,8 @@ describe('POST /api/generate-cards', () => {
     })
 
     it('should return 400 for files exceeding size limit', async () => {
-      // Create a file larger than 20MB
-      const largeContent = new Uint8Array(21 * 1024 * 1024) // 21MB
+      // Create a file larger than the generate upload ceiling (Vercel body limit headroom)
+      const largeContent = new Uint8Array(5 * 1024 * 1024) // 5MB
       const largeFile = new File([largeContent], 'large.pdf', { type: 'application/pdf' })
       
       const request = createFormDataRequest({ file: largeFile })

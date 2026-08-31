@@ -12,9 +12,17 @@ import {
   resolveGenerateMimeType,
 } from "@/utils/generateInput";
 import { GeminiCardsResponseSchema } from "@/lib/schemas/geminiOutput";
-import { combineAbortSignals, GENERATION_TIMEOUT_MS, isAbortError, throwIfAborted } from "@/utils/abort";
+import {
+  combineAbortSignals,
+  GENERATION_MAX_DURATION_SECONDS,
+  GENERATION_TIMEOUT_MS,
+  isAbortError,
+  throwIfAborted,
+} from "@/utils/abort";
 import { z } from "zod";
 import { forbiddenUnlessSameOrigin } from "@/lib/auth/assertSameOrigin";
+
+export const maxDuration = GENERATION_MAX_DURATION_SECONDS;
 
 const MAX_FILE_SIZE = MAX_CARDS_FILE_SIZE;
 const MAX_TEXT_LENGTH = MAX_GENERATE_TEXT_LENGTH;
@@ -220,6 +228,11 @@ MANDATORY:
         responseSchema: flashcardResponseSchema,
       },
     });
+
+    if (!responseText.trim()) {
+      await refundAIGeneration();
+      return NextResponse.json({ error: "AI returned empty response. Please try again." }, { status: 500 });
+    }
 
     let parsedJson: unknown;
     try {
