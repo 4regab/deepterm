@@ -6,6 +6,13 @@ import { createClient } from '@/config/supabase/client';
 import { fetchFolders, createFolder, type SupabaseLike } from '@/lib/folders/api';
 import type { Folder } from '@/lib/schemas/materials';
 import { buildReviewerInsertPayloads } from '@/utils/reviewerBatch';
+import {
+  MAX_GENERATE_UPLOAD_BYTES,
+  maxUploadMegabytesLabel,
+  missingUploadFileMessage,
+  requiresLiveFileForGenerate,
+} from '@/utils/generateInput';
+import { CLIENT_GENERATION_TIMEOUT_MS } from '@/utils/abort';
 import { generateItemId } from './parseBulkText';
 import type {
   WizardStep,
@@ -20,7 +27,8 @@ import type {
 const DRAFT_STORAGE_KEY = 'deepterm_create_draft_v1';
 export const ACCEPTED_FILE_EXTENSIONS = ['pdf', 'docx', 'png', 'jpg', 'jpeg', 'webp'];
 export const ACCEPTED_FILE_TYPES_ATTR = '.pdf,.docx,.png,.jpg,.jpeg,.webp';
-export const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20MB
+export const MAX_FILE_SIZE = MAX_GENERATE_UPLOAD_BYTES;
+export const MAX_FILE_SIZE_LABEL = maxUploadMegabytesLabel(MAX_FILE_SIZE);
 
 interface ApiCategory {
   name: string;
@@ -114,12 +122,8 @@ export function useCreateDraft() {
       if (saved) {
         const parsed = JSON.parse(saved) as StoredDraft;
         if (parsed) {
-          if (parsed.wizardStep) setWizardStep(parsed.wizardStep);
           if (parsed.sourceMethod) setSourceMethod(parsed.sourceMethod);
           if (parsed.pastedText) setPastedText(parsed.pastedText);
-          if (parsed.fileName && parsed.fileSize) {
-            setFileSummary({ name: parsed.fileName, size: parsed.fileSize, type: 'file' });
-          }
           if (parsed.targetType) setTargetType(parsed.targetType);
           if (parsed.extractionMode) setExtractionMode(parsed.extractionMode);
           if (parsed.title) setTitle(parsed.title);
@@ -129,6 +133,29 @@ export function useCreateDraft() {
             setReviewerCategories(parsed.reviewerCategories);
           }
           if (parsed.generatedFrom) setGeneratedFrom(parsed.generatedFrom);
+
+          const restoredHasContent =
+            Boolean(parsed.generatedFrom) ||
+            Boolean(parsed.cards?.some((c) => c.term.trim() || c.definition.trim())) ||
+            Boolean(parsed.reviewerCategories && parsed.reviewerCategories.length > 0);
+
+          // File blobs cannot survive sessionStorage. Keep the name for display only
+          // after a successful generate; otherwise force a fresh upload.
+          if (parsed.fileName && parsed.fileSize && restoredHasContent) {
+            setFileSummary({ name: parsed.fileName, size: parsed.fileSize, type: 'file' });
+          }
+
+          if (parsed.wizardStep) {
+            if (
+              parsed.sourceMethod === 'file' &&
+              !restoredHasContent &&
+              parsed.wizardStep === 'configure'
+            ) {
+              setWizardStep('source');
+            } else {
+              setWizardStep(parsed.wizardStep);
+            }
+          }
         }
       }
     } catch {
@@ -202,7 +229,9 @@ export function useCreateDraft() {
   const handleFileSelect = (file: File) => {
     setError(null);
     if (file.size > MAX_FILE_SIZE) {
-      setError(`File size exceeds 20MB limit (${(file.size / 1024 / 1024).toFixed(1)}MB)`);
+      setError(
+        `File size exceeds ${MAX_FILE_SIZE_LABEL} limit (${(file.size / 1024 / 1024).toFixed(1)}MB). Larger files cannot be sent through the generate API.`,
+      );
       return false;
     }
 
@@ -254,7 +283,7 @@ export function useCreateDraft() {
 
   // Step 1 -> Step 2 validation
   const canContinueToConfigure = () => {
-    if (sourceMethod === 'file') return Boolean(selectedFile || fileSummary);
+    if (sourceMethod === 'file') return Boolean(selectedFile);
     if (sourceMethod === 'text') return Boolean(pastedText.trim().length > 0);
     if (sourceMethod === 'manual') return true;
     return false;
@@ -372,13 +401,21 @@ export function useCreateDraft() {
       return;
     }
 
-    if (sourceMethod === 'file' && !selectedFile && !fileSummary) {
-      setError('Please select a file to generate from.');
+    if (sourceMethod === 'file' && requiresLiveFileForGenerate(selectedFile)) {
+      setError(missingUploadFileMessage());
+      setWizardStep('source');
       return;
     }
 
     if (sourceMethod === 'text' && !pastedText.trim()) {
       setError('Please paste text to generate from.');
+      return;
+    }
+
+    if (sourceMethod === 'file' && selectedFile && selectedFile.size > MAX_FILE_SIZE) {
+      setError(
+        `File size exceeds ${MAX_FILE_SIZE_LABEL} limit (${(selectedFile.size / 1024 / 1024).toFixed(1)}MB).`,
+      );
       return;
     }
 
@@ -389,7 +426,7 @@ export function useCreateDraft() {
     abortControllerRef.current = controller;
     const timeoutId = setTimeout(() => {
       controller.abort();
-    }, 90000); // 90 second timeout
+    }, CLIENT_GENERATION_TIMEOUT_MS);
 
     try {
       const supabase = createClient();
@@ -399,7 +436,10 @@ export function useCreateDraft() {
       }
 
       const formData = new FormData();
-      if (sourceMethod === 'file' && selectedFile) {
+      if (sourceMethod === 'file') {
+        if (!selectedFile) {
+          throw new Error(missingUploadFileMessage());
+        }
         formData.append('file', selectedFile);
       } else if (sourceMethod === 'text') {
         formData.append('textContent', pastedText);

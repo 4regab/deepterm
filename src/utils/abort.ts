@@ -1,4 +1,11 @@
+/** Declared Vercel maxDuration for generate routes (seconds). */
+export const GENERATION_MAX_DURATION_SECONDS = 90
+
+/** Server-side AbortSignal budget; must stay under maxDuration. */
 export const GENERATION_TIMEOUT_MS = 85_000
+
+/** Browser fetch abort; slightly above server budget, within maxDuration. */
+export const CLIENT_GENERATION_TIMEOUT_MS = 90_000
 
 export function isAbortError(error: unknown): boolean {
   if (error instanceof DOMException && error.name === 'AbortError') return true

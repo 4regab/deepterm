@@ -34,5 +34,6 @@ describe('generateInput', () => {
     expect(isGenerateFileTooLarge(MAX_CARDS_FILE_SIZE, MAX_CARDS_FILE_SIZE)).toBe(false)
     expect(MAX_GENERATE_TEXT_LENGTH).toBe(100000)
     expect(isDocxMime(DOCX_MIME_TYPE)).toBe(true)
+    expect(MAX_CARDS_FILE_SIZE).toBe(4 * 1024 * 1024)
   })
 })

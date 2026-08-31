@@ -16,9 +16,37 @@ export const GEMINI_UPLOAD_MIME_TYPES = [
   'image/webp',
 ] as const
 
-export const MAX_CARDS_FILE_SIZE = 20 * 1024 * 1024
-export const MAX_REVIEWER_FILE_SIZE = 10 * 1024 * 1024
+/** Hard Vercel Function request/response body ceiling (FUNCTION_PAYLOAD_TOO_LARGE). */
+export const VERCEL_FUNCTION_BODY_LIMIT_BYTES = 4.5 * 1024 * 1024
+
+/**
+ * Safe multipart upload ceiling for /api/generate-*.
+ * Leave headroom under 4.5MB for FormData boundaries and Turnstile fields.
+ */
+export const MAX_GENERATE_UPLOAD_BYTES = 4 * 1024 * 1024
+
+export const MAX_CARDS_FILE_SIZE = MAX_GENERATE_UPLOAD_BYTES
+export const MAX_REVIEWER_FILE_SIZE = MAX_GENERATE_UPLOAD_BYTES
 export const MAX_GENERATE_TEXT_LENGTH = 100000
+
+export type GenerateTargetType = 'material' | 'reviewer'
+
+export function maxUploadBytesForTarget(target: GenerateTargetType): number {
+  void target
+  return MAX_GENERATE_UPLOAD_BYTES
+}
+
+export function maxUploadMegabytesLabel(bytes: number = MAX_GENERATE_UPLOAD_BYTES): string {
+  return `${Math.round(bytes / (1024 * 1024))}MB`
+}
+
+export function requiresLiveFileForGenerate(selectedFile: File | null): boolean {
+  return selectedFile == null
+}
+
+export function missingUploadFileMessage(): string {
+  return 'Your document is no longer available in this browser session. Please re-select the file to generate.'
+}
 
 const EXTENSION_MIME: Record<string, string> = {
   pdf: 'application/pdf',

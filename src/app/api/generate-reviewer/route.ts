@@ -12,8 +12,15 @@ import {
   resolveGenerateMimeType,
 } from "@/utils/generateInput";
 import { GeminiReviewerResponseSchema } from "@/lib/schemas/geminiOutput";
-import { combineAbortSignals, GENERATION_TIMEOUT_MS, isAbortError, throwIfAborted } from "@/utils/abort";
+import {
+  combineAbortSignals,
+  GENERATION_TIMEOUT_MS,
+  isAbortError,
+  throwIfAborted,
+} from "@/utils/abort";
 import { forbiddenUnlessSameOrigin } from "@/lib/auth/assertSameOrigin";
+
+export const maxDuration = 90;
 
 const MAX_FILE_SIZE = MAX_REVIEWER_FILE_SIZE;
 const MAX_TEXT_LENGTH = MAX_GENERATE_TEXT_LENGTH;
