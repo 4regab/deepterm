@@ -51,6 +51,7 @@ describe("interface copy and quality floor", () => {
     const home = read("app/HomeClient.tsx");
     expect(home).toContain("font-serif");
     expect(home).toContain("Study smarter");
+    expect(home).toContain("deepterm");
     expect(home).toContain("bg-[#f0f0ea]");
     expect(home).toContain("bg-[#171d2b]");
   });

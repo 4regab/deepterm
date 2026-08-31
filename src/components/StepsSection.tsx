@@ -5,6 +5,7 @@ import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useGSAP } from "@gsap/react";
 import { FileText, Brain, Gamepad2 } from "lucide-react";
+import { prefersReducedMotion } from "@/lib/motion";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -22,8 +23,8 @@ export default function StepsSection() {
   }, []);
 
   useGSAP(() => {
-    if (!headerRef.current) return;
-    
+    if (!headerRef.current || prefersReducedMotion()) return;
+
     gsap.fromTo(headerRef.current,
       { opacity: 0, y: 50 },
       {
@@ -44,7 +45,7 @@ export default function StepsSection() {
   const mobileWrapperRef = useRef<HTMLDivElement>(null);
 
   useGSAP(() => {
-    if (!isMobile) return;
+    if (!isMobile || prefersReducedMotion()) return;
 
     const scrollContainer = mobileScrollContainerRef.current;
     const wrapper = mobileWrapperRef.current;
@@ -53,10 +54,11 @@ export default function StepsSection() {
     const getScrollAmount = () => {
       const containerWidth = wrapper.clientWidth || window.innerWidth;
       const totalScroll = scrollContainer.scrollWidth - containerWidth;
-      return -totalScroll;
+      return -Math.max(0, totalScroll);
     };
 
     const scrollAmount = Math.abs(getScrollAmount());
+    if (scrollAmount === 0) return;
 
     const tween = gsap.to(scrollContainer, {
       x: getScrollAmount,
@@ -82,10 +84,10 @@ export default function StepsSection() {
   }, { scope: sectionRef, dependencies: [isMobile] });
 
   useGSAP(() => {
-    if (isMobile || !desktopCardsRef.current) return;
-    
+    if (isMobile || !desktopCardsRef.current || prefersReducedMotion()) return;
+
     const desktopCards = desktopCardsRef.current.querySelectorAll('.step-card-desktop');
-    
+
     gsap.fromTo(desktopCards,
       { opacity: 0, y: 40 },
       {
@@ -108,7 +110,7 @@ export default function StepsSection() {
     {
       number: "01",
       title: "Upload or Paste",
-      description: "Drop your study materials - PDFs, documents, or paste text directly. No account required to start.",
+      description: "Drop your study materials — PDFs, DOCX, images, or paste text directly. Free Google sign-in to get started.",
       bgClass: "bg-[#171d2b]",
       numberClass: "text-white/20",
       visual: (
@@ -118,7 +120,7 @@ export default function StepsSection() {
               <FileText className="w-7 h-7 text-white" />
             </div>
             <p className="text-sm font-medium mb-1 text-white/90">Drop files here</p>
-            <p className="text-xs text-white/50">PDF, DOCX, or paste text</p>
+            <p className="text-xs text-white/55">PDF, DOCX, images, or paste text</p>
           </div>
           <div className="mt-4 flex items-center gap-3 p-3 rounded-lg bg-white/10">
             <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-white/20">
@@ -206,12 +208,12 @@ export default function StepsSection() {
   ];
 
   return (
-    <section ref={sectionRef} className="relative z-10 px-4 sm:px-6 lg:px-8 py-12 sm:py-16 lg:py-24">
+    <section ref={sectionRef} id="how-it-works" className="relative z-10 px-4 sm:px-6 lg:px-8 py-12 sm:py-16 lg:py-24 scroll-mt-24">
       <div ref={headerRef} className="text-center mb-10 sm:mb-12 lg:mb-16">
         <h2 className="font-serif text-[28px] sm:text-[36px] lg:text-[44px] leading-[1.1] mb-3 sm:mb-4 text-[#171d2b]">
           Get Started in Minutes
         </h2>
-        <p className="font-sans text-[14px] sm:text-[16px] max-w-[500px] mx-auto text-[#171d2b]/60">
+        <p className="font-sans text-[14px] sm:text-[16px] max-w-[500px] mx-auto text-[#171d2b]/75">
           Three steps to your perfect study materials. It&apos;s really that easy.
         </p>
       </div>

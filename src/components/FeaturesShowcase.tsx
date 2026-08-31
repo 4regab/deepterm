@@ -9,12 +9,14 @@ import {
   GripVertical,
   Edit2,
   Trash2,
-  Calendar
+  Calendar,
+  ChevronRight,
 } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useGSAP } from "@gsap/react";
+import { prefersReducedMotion } from "@/lib/motion";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -38,7 +40,7 @@ export default function FeaturesShowcase() {
   }, []);
 
   useGSAP(() => {
-    if (isMobile) return;
+    if (isMobile || prefersReducedMotion()) return;
 
     const scrollContainer = scrollContainerRef.current;
     const container = containerRef.current;
@@ -47,11 +49,12 @@ export default function FeaturesShowcase() {
     const getScrollAmount = () => {
       const containerWidth = scrollContainer.parentElement?.clientWidth || window.innerWidth;
       const totalScroll = scrollContainer.scrollWidth - containerWidth;
-      return -totalScroll;
+      return -Math.max(0, totalScroll);
     };
 
     const scrollAmount = Math.abs(getScrollAmount());
-    
+    if (scrollAmount === 0) return;
+
     const tween = gsap.to(scrollContainer, {
       x: getScrollAmount,
       ease: "none",
@@ -81,7 +84,7 @@ export default function FeaturesShowcase() {
       }
     };
     window.addEventListener("resize", handleResize);
-    
+
     return () => {
       window.removeEventListener("resize", handleResize);
       tween.scrollTrigger?.kill();
@@ -130,14 +133,13 @@ export default function FeaturesShowcase() {
 
   const mobileSectionRef = useRef<HTMLElement>(null);
   const mobileHeaderRef = useRef<HTMLDivElement>(null);
-  const mobileCardsRef = useRef<HTMLDivElement>(null);
   const desktopTitleRef = useRef<HTMLDivElement>(null);
 
   useGSAP(() => {
-    if (!isMobile) return;
-    
+    if (!isMobile || prefersReducedMotion()) return;
+
     if (mobileHeaderRef.current) {
-      gsap.fromTo(mobileHeaderRef.current, 
+      gsap.fromTo(mobileHeaderRef.current,
         { opacity: 0, y: 50 },
         {
           opacity: 1,
@@ -152,30 +154,11 @@ export default function FeaturesShowcase() {
         }
       );
     }
-
-    if (mobileCardsRef.current) {
-      const cards = mobileCardsRef.current.querySelectorAll('.feature-card');
-      gsap.fromTo(cards, 
-        { opacity: 0, y: 40 },
-        {
-          opacity: 1,
-          y: 0,
-          duration: 0.6,
-          stagger: 0.15,
-          ease: "power2.out",
-          scrollTrigger: {
-            trigger: mobileCardsRef.current,
-            start: "top 85%",
-            toggleActions: "play none none none",
-          }
-        }
-      );
-    }
   }, { dependencies: [isMobile] });
 
   useGSAP(() => {
-    if (isMobile || !desktopTitleRef.current) return;
-    
+    if (isMobile || !desktopTitleRef.current || prefersReducedMotion()) return;
+
     gsap.fromTo(desktopTitleRef.current,
       { opacity: 0, x: -40 },
       {
@@ -196,7 +179,7 @@ export default function FeaturesShowcase() {
   const mobileWrapperRef = useRef<HTMLDivElement>(null);
 
   useGSAP(() => {
-    if (!isMobile) return;
+    if (!isMobile || prefersReducedMotion()) return;
 
     const scrollContainer = mobileScrollContainerRef.current;
     const wrapper = mobileWrapperRef.current;
@@ -205,10 +188,11 @@ export default function FeaturesShowcase() {
     const getScrollAmount = () => {
       const containerWidth = wrapper.clientWidth || window.innerWidth;
       const totalScroll = scrollContainer.scrollWidth - containerWidth;
-      return -totalScroll;
+      return -Math.max(0, totalScroll);
     };
 
     const scrollAmount = Math.abs(getScrollAmount());
+    if (scrollAmount === 0) return;
 
     const tween = gsap.to(scrollContainer, {
       x: getScrollAmount,
@@ -236,27 +220,31 @@ export default function FeaturesShowcase() {
   return (
     <>
       {/* Mobile/Tablet: Horizontal scroll layout */}
-      <section ref={mobileSectionRef} className="lg:hidden relative">
-        <div ref={mobileHeaderRef} className="text-center pt-4 pb-6 sm:pt-6 sm:pb-8 px-4 sm:px-6">
-          <h2 className="font-serif text-3xl sm:text-4xl md:text-5xl leading-[1.1] mb-4 text-[#171d2b]">
+      <section ref={mobileSectionRef} id="features" className="lg:hidden relative scroll-mt-24">
+        <div ref={mobileHeaderRef} className="text-center pt-4 pb-4 sm:pt-6 sm:pb-6 px-4 sm:px-6">
+          <h2 className="font-serif text-3xl sm:text-4xl md:text-5xl leading-[1.1] mb-3 text-[#171d2b]">
             What you&apos;ll unlock <br />
-            <span className="text-[#171d2b]" style={{ fontStyle: 'italic' }}>with Deepterm</span>
+            <span className="italic">with DeepTerm</span>
           </h2>
-          <p className="font-sans text-base sm:text-lg max-w-md mx-auto text-[#171d2b]/60">
+          <p className="font-sans text-base sm:text-lg max-w-md mx-auto text-[#171d2b]/75">
             A complete ecosystem of tools designed to transform your study workflow from chaotic to structured.
+          </p>
+          <p className="mt-3 inline-flex items-center gap-1 font-sans text-xs sm:text-sm text-[#171d2b]/55">
+            Scroll to explore
+            <ChevronRight className="w-3.5 h-3.5" aria-hidden="true" />
           </p>
         </div>
 
         <div ref={mobileWrapperRef} className="min-h-[520px] sm:min-h-[550px] flex items-center overflow-hidden">
-          <div ref={mobileScrollContainerRef} className="flex gap-4 sm:gap-6 pl-4 sm:pl-6 pr-4 sm:pr-6">
+          <div ref={mobileScrollContainerRef} className="flex gap-4 sm:gap-6 pl-4 sm:pl-6 pr-8 sm:pr-10">
             {features.map((feature) => (
-              <div key={feature.id} className="feature-card w-[88vw] sm:w-[75vw] md:w-[65vw] max-w-[520px] flex-shrink-0">
+              <div key={feature.id} className="feature-card w-[85vw] sm:w-[72vw] md:w-[62vw] max-w-[520px] flex-shrink-0">
                 <div className="flex flex-col gap-3">
                   <h3 className="font-sans font-bold text-lg sm:text-xl text-[#171d2b]">{feature.title}</h3>
-                  <div className="w-full aspect-[4/3] sm:aspect-[16/10] rounded-lg overflow-hidden border relative bg-gray-50 border-gray-200">
+                  <div className="w-full aspect-[4/3] sm:aspect-[16/10] rounded-lg overflow-hidden border relative bg-[#f8f8f4] border-[#171d2b]/10">
                     {feature.visual}
                   </div>
-                  <p className="font-sans text-sm leading-relaxed text-gray-600">{feature.description}</p>
+                  <p className="font-sans text-sm leading-relaxed text-[#171d2b]/75">{feature.description}</p>
                 </div>
               </div>
             ))}
@@ -265,29 +253,36 @@ export default function FeaturesShowcase() {
       </section>
 
       {/* Desktop: Horizontal scroll layout with GSAP */}
-      <section ref={containerRef} className="hidden lg:flex relative min-h-[600px] h-[80vh] max-h-[900px] items-center overflow-hidden">
-        <div ref={desktopTitleRef} className="w-[320px] xl:w-[380px] flex-shrink-0 pl-8 xl:pl-16 pr-4 z-10">
+      <section ref={containerRef} id="features-desktop" className="hidden lg:flex relative min-h-[600px] h-[80vh] max-h-[900px] items-stretch overflow-hidden scroll-mt-24">
+        <div
+          ref={desktopTitleRef}
+          className="w-[320px] xl:w-[380px] flex-shrink-0 pl-8 xl:pl-16 pr-6 z-20 relative bg-[#f0f0ea] self-stretch flex flex-col justify-center shadow-[8px_0_24px_-12px_rgba(23,29,43,0.12)]"
+        >
           <h2 className="font-serif text-4xl xl:text-5xl leading-[1.1] mb-4 text-[#171d2b]">
             What you&apos;ll unlock with<br />
-            <span className="text-[#171d2b]" style={{ fontStyle: 'italic' }}>Deepterm</span>
+            <span className="italic">DeepTerm</span>
           </h2>
-          <p className="font-sans text-base xl:text-lg max-w-sm text-[#171d2b]/60">
+          <p className="font-sans text-base xl:text-lg max-w-sm text-[#171d2b]/75">
             A complete ecosystem of tools designed to transform your study workflow from chaotic to structured.
+          </p>
+          <p className="mt-5 inline-flex items-center gap-1 font-sans text-sm text-[#171d2b]/55">
+            Keep scrolling
+            <ChevronRight className="w-4 h-4" aria-hidden="true" />
           </p>
         </div>
 
         <div className="flex-1 h-full flex items-center overflow-hidden">
-          <div ref={scrollContainerRef} className="flex gap-8 py-12">
+          <div ref={scrollContainerRef} className="flex gap-8 py-12 pl-4 pr-16">
             {features.map((feature) => (
-              <div key={feature.id} className="feature-card w-[700px] flex-shrink-0">
+              <div key={feature.id} className="feature-card w-[640px] xl:w-[700px] flex-shrink-0">
                 <div className="flex flex-col gap-4">
                   <div className="flex-shrink-0 py-2">
                     <h3 className="font-sans font-bold text-2xl text-[#171d2b]">{feature.title}</h3>
                   </div>
-                  <div className="w-full aspect-[16/10] rounded-lg overflow-hidden border relative bg-gray-50 border-gray-200">
+                  <div className="w-full aspect-[16/10] rounded-lg overflow-hidden border relative bg-[#f8f8f4] border-[#171d2b]/10">
                     {feature.visual}
                   </div>
-                  <p className="font-sans text-base leading-relaxed max-w-2xl text-gray-600">{feature.description}</p>
+                  <p className="font-sans text-base leading-relaxed max-w-2xl text-[#171d2b]/75">{feature.description}</p>
                 </div>
               </div>
             ))}
@@ -624,7 +619,7 @@ function CalendarVisual() {
           <button className="w-6 h-6 flex items-center justify-center border border-[#171d2b]/20 rounded hover:bg-[#171d2b]/5">
             <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
           </button>
-          <span className="font-serif text-xs text-[#171d2b] font-semibold">December 2025</span>
+          <span className="font-serif text-xs text-[#171d2b] font-semibold">August 2026</span>
           <button className="w-6 h-6 flex items-center justify-center border border-[#171d2b]/20 rounded hover:bg-[#171d2b]/5">
             <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
           </button>

@@ -70,7 +70,7 @@ const homeFaqs = [
   {
     question: "How does DeepTerm work?",
     answer:
-      "DeepTerm uses Google's Gemini AI to analyze your uploaded PDFs or pasted text. It identifies key concepts, definitions, and important terms, then automatically generates flashcards and reviewer notes tailored to your content.",
+      "DeepTerm uses Google's Gemini AI to analyze your uploaded PDFs, DOCX files, images, or pasted text. It identifies key concepts, definitions, and important terms, then automatically generates flashcards and reviewer notes tailored to your content.",
   },
   {
     question: "Is DeepTerm free to use?",
@@ -80,7 +80,7 @@ const homeFaqs = [
   {
     question: "What file formats does DeepTerm support?",
     answer:
-      "DeepTerm supports PDF files and plain text. You can either upload a PDF document or paste text directly into the editor. We're working on adding support for more formats like DOCX and images.",
+      "DeepTerm supports PDF, DOCX, PNG, JPEG, and WebP files, plus plain text you paste into the editor. Upload a document or paste notes directly — whichever is fastest for you.",
   },
   {
     question: "How does the gamification system work?",

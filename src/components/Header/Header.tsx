@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { imgLogo } from "@/config/assets";
@@ -38,12 +38,11 @@ const RESOURCES_ITEMS = [
     { label: "About", href: "/about" },
 ] as const;
 
-// Module-level style constants to avoid object recreation on every render (Rule 6.3)
 const GLASS_STYLES_SCROLLED = {
-    backgroundColor: "rgba(240, 240, 234, 0.8)",
-    borderColor: "rgba(23, 29, 43, 0.05)",
+    backgroundColor: "rgba(240, 240, 234, 0.88)",
+    borderColor: "rgba(23, 29, 43, 0.08)",
     backdropFilter: "blur(12px)",
-    boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
+    boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.08)",
 } as const;
 
 const GLASS_STYLES_DEFAULT = {} as const;
@@ -53,8 +52,8 @@ function SessionAwareHeader({ user, isLoading, className }: { user: User | null;
     const [isResourcesOpen, setIsResourcesOpen] = useState(false);
     const [showCaptcha, setShowCaptcha] = useState(false);
     const sitekey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
+    const menuPanelRef = useRef<HTMLDivElement>(null);
 
-    // Use selector pattern to subscribe only to needed values - prevents re-renders on unrelated store changes (Rule 5.4)
     const isMenuOpen = useUIStore((state) => state.sidebarMobileOpen);
     const isLearnOpen = useUIStore((state) => state.profileMenuOpen);
     const setIsMenuOpen = useUIStore((state) => state.setSidebarMobileOpen);
@@ -73,197 +72,247 @@ function SessionAwareHeader({ user, isLoading, className }: { user: User | null;
         handleGoogleLogin();
     };
 
-    const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
+    const closeMenu = useCallback(() => {
+        setIsMenuOpen(false);
+        setIsLearnOpen(false);
+        setIsResourcesOpen(false);
+    }, [setIsMenuOpen, setIsLearnOpen]);
+
+    const toggleMenu = () => {
+        if (isMenuOpen) closeMenu();
+        else setIsMenuOpen(true);
+    };
     const toggleLearn = () => setIsLearnOpen(!isLearnOpen);
     const toggleResources = () => setIsResourcesOpen(!isResourcesOpen);
 
-    // Use hoisted style constants instead of recreating objects (Rule 6.3)
+    useEffect(() => {
+        if (!isMenuOpen) return;
+        const onKey = (e: KeyboardEvent) => {
+            if (e.key === "Escape") closeMenu();
+        };
+        document.addEventListener("keydown", onKey);
+        return () => document.removeEventListener("keydown", onKey);
+    }, [isMenuOpen, closeMenu]);
+
     const glassStyles = isScrolled ? GLASS_STYLES_SCROLLED : GLASS_STYLES_DEFAULT;
 
     return (
-        <header
-            style={glassStyles}
-            className={`relative flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 transition-all duration-300 rounded-full mx-3 sm:mx-4 mt-3 border border-transparent bg-transparent ${className || ''}`}
-        >
-            {/* Logo */}
-            <Link href="/" className="flex items-center hover:opacity-70 transition-opacity">
-                <div className="w-[40px] h-[40px] sm:w-[45px] sm:h-[45px] flex items-center justify-center">
-                    <div className="rotate-[292deg]">
-                        <Image alt="Deepterm Logo" className="w-[32px] h-[32px] sm:w-[38px] sm:h-[38px]" src={imgLogo} width={38} height={38} />
-                    </div>
-                </div>
-                <span className="font-sora text-[#171d2b] text-[20px] sm:text-[24px]">deepterm</span>
-            </Link>
-
-            {/* Desktop Navigation */}
-            <nav className="hidden md:flex items-center gap-6">
-                <div className="flex items-center gap-4">
-                    {/* Learn Dropdown */}
-                    <div className="relative group">
-                        <button className="font-sans text-[#171d2b] text-[18px] hover:opacity-70 transition-opacity flex items-center gap-1">
-                            Learn
-                            <svg className="w-4 h-4 transition-transform group-hover:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                            </svg>
-                        </button>
-                        <div className="absolute top-full left-0 pt-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all">
-                            <div className="bg-[#f0f0ea] border border-[#171d2b]/10 rounded-lg shadow-lg py-2 min-w-[160px]">
-                                {LEARN_ITEMS.map((item) => (
-                                    <a
-                                        key={`${item.href}-${item.label}`}
-                                        href={item.href}
-                                        className="block px-4 py-2 font-sans text-[#171d2b] text-[16px] hover:bg-[#171d2b]/5 transition-colors"
-                                    >
-                                        {item.label}
-                                    </a>
-                                ))}
-                            </div>
-                        </div>
-                    </div>
-
-                    <span className="w-[1px] h-[16px] bg-[#171d2b] opacity-50" />
-
-                    {/* Resources Dropdown */}
-                    <div className="relative group">
-                        <button className="font-sans text-[#171d2b] text-[18px] hover:opacity-70 transition-opacity flex items-center gap-1">
-                            Resources
-                            <svg className="w-4 h-4 transition-transform group-hover:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                            </svg>
-                        </button>
-                        <div className="absolute top-full left-0 pt-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all">
-                            <div className="bg-[#f0f0ea] border border-[#171d2b]/10 rounded-lg shadow-lg py-2 min-w-[160px]">
-                                {RESOURCES_ITEMS.map((item) => (
-                                    <a
-                                        key={`${item.href}-${item.label}`}
-                                        href={item.href}
-                                        className="block px-4 py-2 font-sans text-[#171d2b] text-[16px] hover:bg-[#171d2b]/5 transition-colors"
-                                    >
-                                        {item.label}
-                                    </a>
-                                ))}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                {isLoading ? (
-                    <div className="bg-[#171d2b]/10 h-[42px] rounded-[100px] px-6 w-[100px] animate-pulse" />
-                ) : user ? (
-                    <Link
-                        href="/dashboard"
-                        className="bg-[#171d2b] h-[42px] rounded-[100px] px-6 text-[#fefeff] font-sora text-[16px] hover:bg-[#2a3347] transition-colors flex items-center justify-center"
-                    >
-                        Dashboard
-                    </Link>
-                ) : (
-                    <div className="flex items-center gap-2">
-                    <button
-                        onClick={handleLoginClick}
-                        className="bg-[#171d2b] h-[42px] rounded-[100px] px-6 text-[#fefeff] font-sora text-[16px] hover:bg-[#2a3347] transition-colors flex items-center justify-center"
-                    >
-                        Log in
-                    </button>
-                    </div>
-                )}
-            </nav>
-
-            {/* Mobile Menu Button */}
-            <button
-                className="md:hidden flex flex-col justify-center items-center w-10 h-10 gap-1.5"
-                onClick={toggleMenu}
-                aria-label="Toggle menu"
-            >
-                <span className={`block w-6 h-0.5 bg-[#171d2b] transition-transform ${isMenuOpen ? "rotate-45 translate-y-2" : ""}`} />
-                <span className={`block w-6 h-0.5 bg-[#171d2b] transition-opacity ${isMenuOpen ? "opacity-0" : ""}`} />
-                <span className={`block w-6 h-0.5 bg-[#171d2b] transition-transform ${isMenuOpen ? "-rotate-45 -translate-y-2" : ""}`} />
-            </button>
-
-            {/* Mobile Menu */}
+        <>
             {isMenuOpen && (
-                <div className="absolute top-full left-0 right-0 bg-[#f0f0ea] border-t border-[#171d2b]/10 md:hidden shadow-lg rounded-b-2xl">
-                    <nav className="flex flex-col p-4 gap-2">
-                        {/* Mobile Learn Accordion */}
-                        <div>
-                            <button
-                                onClick={toggleLearn}
-                                className="w-full font-sans text-[#171d2b] text-[18px] py-2 hover:opacity-70 transition-opacity flex items-center justify-between"
-                            >
-                                Learn
-                                <svg className={`w-4 h-4 transition-transform ${isLearnOpen ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                                </svg>
-                            </button>
-                            {isLearnOpen && (
-                                <div className="pl-4 flex flex-col gap-1">
-                                    {LEARN_ITEMS.map((item) => (
-                                        <a
-                                            key={`mobile-${item.href}-${item.label}`}
-                                            href={item.href}
-                                            className="font-sans text-[#171d2b] text-[16px] py-2 hover:opacity-70 transition-opacity"
-                                        >
-                                            {item.label}
-                                        </a>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
-
-                        {/* Mobile Resources Accordion */}
-                        <div>
-                            <button
-                                onClick={toggleResources}
-                                className="w-full font-sans text-[#171d2b] text-[18px] py-2 hover:opacity-70 transition-opacity flex items-center justify-between"
-                            >
-                                Resources
-                                <svg className={`w-4 h-4 transition-transform ${isResourcesOpen ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                                </svg>
-                            </button>
-                            {isResourcesOpen && (
-                                <div className="pl-4 flex flex-col gap-1">
-                                    {RESOURCES_ITEMS.map((item) => (
-                                        <a
-                                            key={`mobile-${item.href}-${item.label}`}
-                                            href={item.href}
-                                            className="font-sans text-[#171d2b] text-[16px] py-2 hover:opacity-70 transition-opacity"
-                                        >
-                                            {item.label}
-                                        </a>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
-
-                        <div className="mt-2">
-                            {isLoading ? (
-                                <div className="bg-[#171d2b]/10 h-[42px] rounded-[100px] px-6 w-full animate-pulse" />
-                            ) : user ? (
-                                <Link
-                                    href="/dashboard"
-                                    className="bg-[#171d2b] h-[42px] rounded-[100px] px-6 text-[#fefeff] font-sora text-[16px] hover:bg-[#2a3347] transition-colors flex items-center justify-center w-full"
-                                >
-                                    Dashboard
-                                </Link>
-                            ) : (
-                                <button
-                                    onClick={handleLoginClick}
-                                    className="bg-[#171d2b] h-[42px] rounded-[100px] px-6 text-[#fefeff] font-sora text-[16px] hover:bg-[#2a3347] transition-colors flex items-center justify-center w-full"
-                                >
-                                    Log in
-                                </button>
-                            )}
-                        </div>
-                    </nav>
-                </div>
+                <button
+                    type="button"
+                    aria-label="Close menu"
+                    className="fixed inset-0 z-40 bg-[#171d2b]/25 backdrop-blur-[2px] md:hidden"
+                    onClick={closeMenu}
+                />
             )}
 
-            {/* Captcha Modal */}
-            <CaptchaModal
-                isOpen={showCaptcha}
-                onClose={() => setShowCaptcha(false)}
-                onVerify={handleCaptchaVerify}
-            />
-        </header>
+            <header
+                style={glassStyles}
+                className={`relative z-50 flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 transition-all duration-300 rounded-full mx-3 sm:mx-4 mt-3 border border-transparent bg-transparent ${className || ''}`}
+            >
+                {/* Logo */}
+                <Link href="/" className="flex items-center hover:opacity-70 transition-opacity" onClick={closeMenu}>
+                    <div className="w-[40px] h-[40px] sm:w-[45px] sm:h-[45px] flex items-center justify-center">
+                        <div className="rotate-[292deg]">
+                            <Image alt="DeepTerm Logo" className="w-[32px] h-[32px] sm:w-[38px] sm:h-[38px]" src={imgLogo} width={38} height={38} />
+                        </div>
+                    </div>
+                    <span className="font-sora text-[#171d2b] text-[20px] sm:text-[24px]">deepterm</span>
+                </Link>
+
+                {/* Desktop Navigation */}
+                <nav className="hidden md:flex items-center gap-6" aria-label="Primary">
+                    <div className="flex items-center gap-4">
+                        {/* Learn Dropdown */}
+                        <div className="relative group">
+                            <button
+                                type="button"
+                                className="font-sans text-[#171d2b] text-[18px] hover:opacity-70 transition-opacity flex items-center gap-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#171d2b] rounded-sm"
+                                aria-haspopup="true"
+                            >
+                                Learn
+                                <svg className="w-4 h-4 transition-transform group-hover:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                </svg>
+                            </button>
+                            <div className="absolute top-full left-0 pt-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible group-focus-within:opacity-100 group-focus-within:visible transition-all">
+                                <div className="bg-[#f0f0ea] border border-[#171d2b]/10 rounded-lg shadow-lg py-2 min-w-[160px]">
+                                    {LEARN_ITEMS.map((item) => (
+                                        <Link
+                                            key={`${item.href}-${item.label}`}
+                                            href={item.href}
+                                            className="block px-4 py-2 font-sans text-[#171d2b] text-[16px] hover:bg-[#171d2b]/5 transition-colors"
+                                        >
+                                            {item.label}
+                                        </Link>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+
+                        <span className="w-[1px] h-[16px] bg-[#171d2b]/40" aria-hidden="true" />
+
+                        {/* Resources Dropdown */}
+                        <div className="relative group">
+                            <button
+                                type="button"
+                                className="font-sans text-[#171d2b] text-[18px] hover:opacity-70 transition-opacity flex items-center gap-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#171d2b] rounded-sm"
+                                aria-haspopup="true"
+                            >
+                                Resources
+                                <svg className="w-4 h-4 transition-transform group-hover:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                </svg>
+                            </button>
+                            <div className="absolute top-full left-0 pt-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible group-focus-within:opacity-100 group-focus-within:visible transition-all">
+                                <div className="bg-[#f0f0ea] border border-[#171d2b]/10 rounded-lg shadow-lg py-2 min-w-[160px]">
+                                    {RESOURCES_ITEMS.map((item) => (
+                                        <Link
+                                            key={`${item.href}-${item.label}`}
+                                            href={item.href}
+                                            className="block px-4 py-2 font-sans text-[#171d2b] text-[16px] hover:bg-[#171d2b]/5 transition-colors"
+                                        >
+                                            {item.label}
+                                        </Link>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {isLoading ? (
+                        <div className="bg-[#171d2b]/10 h-[42px] rounded-[100px] px-6 w-[100px] animate-pulse" aria-hidden="true" />
+                    ) : user ? (
+                        <Link
+                            href="/dashboard"
+                            className="bg-[#171d2b] h-[42px] rounded-[100px] px-6 text-[#fefeff] font-sora text-[16px] hover:bg-[#2a3347] transition-colors flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#171d2b] focus-visible:ring-offset-2"
+                        >
+                            Dashboard
+                        </Link>
+                    ) : (
+                        <button
+                            type="button"
+                            onClick={handleLoginClick}
+                            className="bg-[#171d2b] h-[42px] rounded-[100px] px-6 text-[#fefeff] font-sora text-[16px] hover:bg-[#2a3347] transition-colors flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#171d2b] focus-visible:ring-offset-2"
+                        >
+                            Log in
+                        </button>
+                    )}
+                </nav>
+
+                {/* Mobile Menu Button */}
+                <button
+                    type="button"
+                    className="md:hidden flex flex-col justify-center items-center w-10 h-10 gap-1.5 relative z-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#171d2b] rounded-md"
+                    onClick={toggleMenu}
+                    aria-label={isMenuOpen ? "Close menu" : "Open menu"}
+                    aria-expanded={isMenuOpen}
+                    aria-controls="mobile-nav-panel"
+                >
+                    <span className={`block w-6 h-0.5 bg-[#171d2b] transition-transform origin-center ${isMenuOpen ? "rotate-45 translate-y-[7px]" : ""}`} />
+                    <span className={`block w-6 h-0.5 bg-[#171d2b] transition-opacity ${isMenuOpen ? "opacity-0" : ""}`} />
+                    <span className={`block w-6 h-0.5 bg-[#171d2b] transition-transform origin-center ${isMenuOpen ? "-rotate-45 -translate-y-[7px]" : ""}`} />
+                </button>
+
+                {/* Mobile Menu */}
+                {isMenuOpen && (
+                    <div
+                        id="mobile-nav-panel"
+                        ref={menuPanelRef}
+                        className="absolute top-[calc(100%+8px)] left-0 right-0 bg-[#f0f0ea] border border-[#171d2b]/10 md:hidden shadow-xl rounded-2xl z-50"
+                    >
+                        <nav className="flex flex-col p-4 gap-1" aria-label="Mobile">
+                            <div>
+                                <button
+                                    type="button"
+                                    onClick={toggleLearn}
+                                    aria-expanded={isLearnOpen}
+                                    className="w-full font-sans text-[#171d2b] text-[18px] py-2.5 hover:opacity-70 transition-opacity flex items-center justify-between"
+                                >
+                                    Learn
+                                    <svg className={`w-4 h-4 transition-transform ${isLearnOpen ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                    </svg>
+                                </button>
+                                {isLearnOpen && (
+                                    <div className="pl-3 flex flex-col gap-0.5 pb-1">
+                                        {LEARN_ITEMS.map((item) => (
+                                            <Link
+                                                key={`mobile-${item.href}-${item.label}`}
+                                                href={item.href}
+                                                onClick={closeMenu}
+                                                className="font-sans text-[#171d2b]/85 text-[16px] py-2 hover:opacity-70 transition-opacity"
+                                            >
+                                                {item.label}
+                                            </Link>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+
+                            <div>
+                                <button
+                                    type="button"
+                                    onClick={toggleResources}
+                                    aria-expanded={isResourcesOpen}
+                                    className="w-full font-sans text-[#171d2b] text-[18px] py-2.5 hover:opacity-70 transition-opacity flex items-center justify-between"
+                                >
+                                    Resources
+                                    <svg className={`w-4 h-4 transition-transform ${isResourcesOpen ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                    </svg>
+                                </button>
+                                {isResourcesOpen && (
+                                    <div className="pl-3 flex flex-col gap-0.5 pb-1">
+                                        {RESOURCES_ITEMS.map((item) => (
+                                            <Link
+                                                key={`mobile-${item.href}-${item.label}`}
+                                                href={item.href}
+                                                onClick={closeMenu}
+                                                className="font-sans text-[#171d2b]/85 text-[16px] py-2 hover:opacity-70 transition-opacity"
+                                            >
+                                                {item.label}
+                                            </Link>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="mt-3 pt-3 border-t border-[#171d2b]/10">
+                                {isLoading ? (
+                                    <div className="bg-[#171d2b]/10 h-[42px] rounded-[100px] px-6 w-full animate-pulse" aria-hidden="true" />
+                                ) : user ? (
+                                    <Link
+                                        href="/dashboard"
+                                        onClick={closeMenu}
+                                        className="bg-[#171d2b] h-[42px] rounded-[100px] px-6 text-[#fefeff] font-sora text-[16px] hover:bg-[#2a3347] transition-colors flex items-center justify-center w-full"
+                                    >
+                                        Dashboard
+                                    </Link>
+                                ) : (
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            closeMenu();
+                                            handleLoginClick();
+                                        }}
+                                        className="bg-[#171d2b] h-[42px] rounded-[100px] px-6 text-[#fefeff] font-sora text-[16px] hover:bg-[#2a3347] transition-colors flex items-center justify-center w-full"
+                                    >
+                                        Log in
+                                    </button>
+                                )}
+                            </div>
+                        </nav>
+                    </div>
+                )}
+
+                <CaptchaModal
+                    isOpen={showCaptcha}
+                    onClose={() => setShowCaptcha(false)}
+                    onVerify={handleCaptchaVerify}
+                />
+            </header>
+        </>
     );
 }
 
