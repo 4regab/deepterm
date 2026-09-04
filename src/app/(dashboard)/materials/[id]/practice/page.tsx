@@ -11,6 +11,7 @@ import PracticeSettingsModal, { PracticeSettings } from "@/components/PracticeSe
 import { createClient } from "@/config/supabase/client";
 import { useXPStore } from "@/lib/stores";
 import { addXP, recordStudyActivity, batchUpdateFlashcardStatuses, applyCardReview, XP_REWARDS, type FlashcardStatusUpdate } from "@/services/activity";
+import { useAchievementsStore } from "@/lib/stores/achievementsStore";
 import { generateQuestionsFromCards, gradePracticeAnswer, type QuestionType } from "@/utils/practiceQuestions";
 import { loadStudyDeck, type StudyCardSource } from "@/lib/materials/studyCards";
 
@@ -147,6 +148,7 @@ export default function PracticePage() {
                     useXPStore.getState().fetchXPStats();
                 }
                 await recordStudyActivity({ quizzes: 1 });
+                void useAchievementsStore.getState().fetchAchievements();
                 if (deckSource === "flashcard") {
                     const supabase = createClient();
                     const { data: { user } } = await supabase.auth.getUser();
@@ -686,6 +688,7 @@ export default function PracticePage() {
                                                 useXPStore.getState().fetchXPStats();
                                             }
                                             await recordStudyActivity({ quizzes: 1 });
+                                            void useAchievementsStore.getState().fetchAchievements();
                                         };
                                         persistResults();
 

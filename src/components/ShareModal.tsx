@@ -200,7 +200,7 @@ export default function ShareModal({ isOpen, onClose, materialId, materialType, 
                         setCustomCode(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))
                         setCodeError("")
                       }}
-                      placeholder="my-custom-code"
+                      placeholder="my-study-deck-01"
                       className="flex-1 px-3 py-2 border border-border rounded-lg text-sm focus:outline-none focus:border-primary"
                     />
                     <button
@@ -219,7 +219,7 @@ export default function ShareModal({ isOpen, onClose, materialId, materialType, 
                   </div>
                   {codeError && <p className="text-red-500 text-xs mt-1">{codeError}</p>}
                   <p className="text-xs text-muted-foreground mt-1">
-                    8-64 characters, lowercase letters, numbers, and hyphens only
+                    12-64 characters, lowercase letters, numbers, and hyphens only
                   </p>
                 </div>
               ) : (
@@ -274,7 +274,7 @@ export default function ShareModal({ isOpen, onClose, materialId, materialType, 
                 />
                 {codeError && <p className="text-red-500 text-xs mt-1">{codeError}</p>}
                 <p className="text-xs text-muted-foreground mt-1">
-                  8-64 characters, lowercase letters, numbers, and hyphens only
+                  12-64 characters, lowercase letters, numbers, and hyphens only
                 </p>
               </div>
 

@@ -61,6 +61,12 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  async redirects() {
+    return [
+      // Legacy/bookmark path — Google sign-in lives on home
+      { source: '/login', destination: '/', permanent: false },
+    ]
+  },
   async rewrites() {
     return [
       // Proxy PostHog requests to avoid ad blockers

@@ -1,4 +1,5 @@
 import { createClient } from "@/config/supabase/client";
+import { useAchievementsStore } from "@/lib/stores/achievementsStore";
 import { splitIntoChunks } from "@/utils/chunks";
 import { qualityFromCorrect, reviewSM2 } from "@/utils/sm2";
 
@@ -30,6 +31,11 @@ const VALID_STAT_NAMES = [
 ] as const;
 
 type ValidStatName = typeof VALID_STAT_NAMES[number];
+
+function refreshAchievementsQuietly() {
+    void useAchievementsStore.getState().fetchAchievements().catch(() => {});
+}
+
 
 /**
  * Get local date string in YYYY-MM-DD format for activity tracking
@@ -69,6 +75,9 @@ export async function recordStudyActivity(options: {
         p_pomodoros: safePomodoros,
         p_activity_date: localDate
     });
+    if (!error) {
+        refreshAchievementsQuietly();
+    }
     return { error };
 }
 
@@ -153,6 +162,9 @@ export async function incrementStat(statName: string, amount: number = 1) {
             lastError = error;
             break;
         }
+    }
+    if (!lastError) {
+        refreshAchievementsQuietly();
     }
     return { error: lastError };
 }

@@ -109,6 +109,7 @@ export async function POST(request: NextRequest) {
   }
 
   let billed = false;
+  let refundUserId: string | undefined;
   try {
     const file = formData.get("file") as File | null;
     const textContent = formData.get("textContent") as string | null;
@@ -139,6 +140,7 @@ export async function POST(request: NextRequest) {
     }
 
     const rateLimit = await checkAndIncrementAIUsage();
+    refundUserId = rateLimit.userId;
 
     if (!rateLimit.authenticated) {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
@@ -172,7 +174,7 @@ export async function POST(request: NextRequest) {
       throwIfAborted(signal);
       const extracted = await extractDocxText(arrayBuffer);
       if (!extracted) {
-        await refundAIGeneration();
+        await refundAIGeneration(rateLimit.userId);
         return NextResponse.json({ error: "Could not read that DOCX file." }, { status: 400 });
       }
       effectiveText = extracted.slice(0, MAX_TEXT_LENGTH);
@@ -198,7 +200,7 @@ export async function POST(request: NextRequest) {
       }
 
       if (geminiFile.state === FileState.FAILED) {
-        await refundAIGeneration();
+        await refundAIGeneration(rateLimit.userId);
         return NextResponse.json({ error: "File processing failed" }, { status: 500 });
       }
 
@@ -206,7 +208,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (!fileUri && !effectiveText) {
-      await refundAIGeneration();
+      await refundAIGeneration(rateLimit.userId);
       return NextResponse.json({ error: "No file or text content provided" }, { status: 400 });
     }
 
@@ -279,7 +281,7 @@ COLOR OPTIONS for categories: #E0F2FE, #DCFCE7, #FEF3C7, #FCE7F3, #E0E7FF, #F3E8
     });
 
     if (!responseText.trim()) {
-      await refundAIGeneration();
+      await refundAIGeneration(rateLimit.userId);
       return NextResponse.json({ error: "AI returned empty response. Please try again." }, { status: 500 });
     }
 
@@ -288,13 +290,13 @@ COLOR OPTIONS for categories: #E0F2FE, #DCFCE7, #FEF3C7, #FCE7F3, #E0E7FF, #F3E8
       parsedJson = JSON.parse(responseText);
     } catch {
       console.error("[GenerateReviewer] Failed to parse structured response:", responseText.substring(0, 500));
-      await refundAIGeneration();
+      await refundAIGeneration(rateLimit.userId);
       return NextResponse.json({ error: "Failed to parse AI response. Please try again." }, { status: 500 });
     }
 
     const parsed = GeminiReviewerResponseSchema.safeParse(parsedJson);
     if (!parsed.success) {
-      await refundAIGeneration();
+      await refundAIGeneration(rateLimit.userId);
       return NextResponse.json({ error: "AI returned invalid reviewer data. Please try again." }, { status: 500 });
     }
 
@@ -309,7 +311,7 @@ COLOR OPTIONS for categories: #E0F2FE, #DCFCE7, #FEF3C7, #FCE7F3, #E0E7FF, #F3E8
     });
   } catch (error) {
     if (billed) {
-      await refundAIGeneration();
+      await refundAIGeneration(refundUserId);
     }
     if (isAbortError(error)) {
       return NextResponse.json({ error: "Generation timed out or was cancelled." }, { status: 499 });

@@ -5,8 +5,23 @@ const ShareCodeBaseSchema = z
   .max(64, 'Share code must be at most 64 characters')
   .regex(/^[a-z0-9-]+$/, 'Only lowercase letters, numbers, and hyphens allowed')
 
+/** Reject obviously weak custom codes (still allow auto 16-char CSPRNG codes). */
+function isWeakShareCode(code: string): boolean {
+  if (/^-|-$|--/.test(code)) return true
+  if (/^(.)\1+$/.test(code)) return true // all same char
+  if (/^(?:abc|abcd|abcdef|qwerty|password|share|test|admin|123456|012345)/.test(code)) return true
+  if (/^\d+$/.test(code)) return true // digits only
+  const unique = new Set(code.replace(/-/g, '')).size
+  if (unique < 4) return true
+  return false
+}
+
 export const ShareCodeSchema = ShareCodeBaseSchema.min(3, 'Share code must be at least 3 characters')
-export const ShareCodeCreateSchema = ShareCodeBaseSchema.min(8, 'Share code must be at least 8 characters')
+export const ShareCodeCreateSchema = ShareCodeBaseSchema
+  .min(12, 'Share code must be at least 12 characters')
+  .refine((code) => !isWeakShareCode(code), {
+    message: 'Share code is too weak — avoid repeated, sequential, or common patterns',
+  })
 
 export const ShareMaterialTypeSchema = z.enum(['flashcard_set', 'reviewer'])
 export type ShareMaterialType = z.infer<typeof ShareMaterialTypeSchema>
