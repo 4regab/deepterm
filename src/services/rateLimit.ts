@@ -145,13 +145,31 @@ export async function getRemainingAIGenerations(): Promise<RateLimitResult> {
   }
 }
 
-export async function refundAIGeneration(): Promise<boolean> {
-  const supabase = await createServerSupabaseClient()
-  const { data, error } = await supabase.rpc('refund_ai_usage')
-  if (error) {
-    console.error('Failed to refund AI usage:', error.message || error.code)
+/**
+ * Refund one AI generation for a user after a failed generate.
+ * Uses SUPABASE_SECRET_KEY / service role only — public.refund_ai_usage()
+ * is revoked from authenticated/anon (see migration 009).
+ */
+export async function refundAIGeneration(userId?: string): Promise<boolean> {
+  if (!userId) {
+    console.error('Failed to refund AI usage: missing userId')
     return false
   }
-  return Boolean(data)
+
+  try {
+    const { createServiceSupabaseClient } = await import('@/config/supabase/service')
+    const supabase = createServiceSupabaseClient()
+    const { data, error } = await supabase.rpc('refund_ai_usage_for', {
+      p_user_id: userId,
+    })
+    if (error) {
+      console.error('Failed to refund AI usage:', error.message || error.code)
+      return false
+    }
+    return Boolean(data)
+  } catch (err) {
+    console.error('Failed to refund AI usage:', err instanceof Error ? err.message : err)
+    return false
+  }
 }
 

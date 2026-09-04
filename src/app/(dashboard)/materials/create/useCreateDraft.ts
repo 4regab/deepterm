@@ -14,6 +14,7 @@ import {
 } from '@/utils/generateInput';
 import { CLIENT_GENERATION_TIMEOUT_MS } from '@/utils/abort';
 import { generateItemId } from './parseBulkText';
+import { incrementStat } from '@/services/activity';
 import type {
   WizardStep,
   SourceMethod,
@@ -709,11 +710,8 @@ export function useCreateDraft() {
           throw cardsError;
         }
 
-        // Increment stats
-        void supabase.rpc('increment_stat', {
-          p_stat_name: 'flashcard_sets_created',
-          p_amount: 1,
-        });
+        // Increment stats (also runs achievement unlock via RPC)
+        await incrementStat('flashcard_sets_created', 1);
 
         clearPersistedDraft();
         setToastMessage({ kind: 'success', text: 'Material saved successfully!' });
@@ -781,10 +779,7 @@ export function useCreateDraft() {
         }
 
         // Increment stats
-        void supabase.rpc('increment_stat', {
-          p_stat_name: 'reviewers_created',
-          p_amount: 1,
-        });
+        await incrementStat('reviewers_created', 1);
 
         clearPersistedDraft();
         setToastMessage({ kind: 'success', text: 'Reviewer saved successfully!' });

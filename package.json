@@ -65,7 +65,10 @@
     },
     "glob": {
       "minimatch": "9.0.9"
-    }
+    },
+    "browserslist": "4.28.7",
+    "@humanfs/node": "0.16.8",
+    "fflate": "0.8.3"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.3.3",

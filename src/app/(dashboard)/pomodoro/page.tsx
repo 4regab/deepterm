@@ -531,7 +531,7 @@ export default function PomodoroPage() {
                       : "bg-white text-foreground hover:bg-white/90 shadow-lg"
                   }`}
                 >
-                  {isRunning ? "Pause" : "Start"}
+                  {isRunning ? "Pause" : timeLeft < currentDuration * 60 ? "Resume" : "Start"}
                 </button>
                 <button
                   onClick={handleResetTimer}

@@ -33,7 +33,15 @@ describe('share API schemas', () => {
     }).success).toBe(false)
     expect(SharePatchSchema.safeParse({
       shareId: VALID_UUID,
-      newCode: 'custom-code',
+      newCode: 'custom-code', // too short (<12)
+    }).success).toBe(false)
+    expect(SharePatchSchema.safeParse({
+      shareId: VALID_UUID,
+      newCode: 'aaaaaaaaaaaa', // weak repeated
+    }).success).toBe(false)
+    expect(SharePatchSchema.safeParse({
+      shareId: VALID_UUID,
+      newCode: 'my-study-deck-01',
     }).success).toBe(true)
   })
 })
