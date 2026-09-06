@@ -1,19 +1,10 @@
-export function shuffleArray<T>(items: T[], random: () => number = Math.random): T[] {
-  const copy = [...items]
-  for (let i = copy.length - 1; i > 0; i--) {
-    const j = Math.floor(random() * (i + 1))
-    const current = copy[i]
-    copy[i] = copy[j]
-    copy[j] = current
-  }
-  return copy
-}
+import { fisherYatesShuffle } from './shuffle'
 
 export function selectMatchPairs<T>(data: T[], pairCount = 6, random: () => number = Math.random): T[] {
   if (data.length <= pairCount) {
-    return shuffleArray(data, random)
+    return fisherYatesShuffle(data, random)
   }
-  return shuffleArray(data, random).slice(0, pairCount)
+  return fisherYatesShuffle(data, random).slice(0, pairCount)
 }
 
 export interface MatchCardInput {
@@ -51,5 +42,5 @@ export function createGameCards(data: MatchCardInput[], pairCount = 6, random: (
     })
   })
 
-  return shuffleArray(gameCards, random)
+  return fisherYatesShuffle(gameCards, random)
 }
