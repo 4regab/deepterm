@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'bun:test'
-import { createGameCards, selectMatchPairs, shuffleArray } from '@/utils/matchGame'
+import { createGameCards, selectMatchPairs } from '@/utils/matchGame'
+import { fisherYatesShuffle } from '@/utils/shuffle'
 
 describe('matchGame', () => {
   it('does not always pick the first N cards from a larger set', () => {
@@ -46,7 +47,7 @@ describe('matchGame', () => {
 
   it('shuffles without mutating the original array', () => {
     const original = [1, 2, 3, 4]
-    const shuffled = shuffleArray(original, () => 0.9)
+    const shuffled = fisherYatesShuffle(original, () => 0.9)
     expect(original).toEqual([1, 2, 3, 4])
     expect(shuffled).toHaveLength(4)
   })
