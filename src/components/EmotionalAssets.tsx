@@ -138,45 +138,7 @@ export const FloatingOrb = ({ state = "idle" }: { state?: "idle" | "thinking" | 
 };
 
 // --- Success Checkmark Explosion ---
-export const SuccessCheck = () => {
-    return (
-        <div className="relative w-20 h-20 flex items-center justify-center">
-            <motion.div
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                transition={{ type: "spring", stiffness: 200, damping: 15 }}
-                className="w-16 h-16 bg-green-500 rounded-full flex items-center justify-center shadow-lg z-10"
-            >
-                <motion.svg
-                    width="32"
-                    height="32"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="white"
-                    strokeWidth="3"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    initial={{ pathLength: 0, opacity: 0 }}
-                    animate={{ pathLength: 1, opacity: 1 }}
-                    transition={{ delay: 0.2, duration: 0.5 }}
-                >
-                    <polyline points="20 6 9 17 4 12" />
-                </motion.svg>
-            </motion.div>
-
-            {/* Ripple rings */}
-            {[0, 1, 2].map((i) => (
-                <motion.div
-                    key={i}
-                    className="absolute inset-0 border-2 border-green-500 rounded-full"
-                    initial={{ scale: 0.8, opacity: 1 }}
-                    animate={{ scale: 2, opacity: 0 }}
-                    transition={{ duration: 1, delay: i * 0.2, repeat: Infinity }}
-                />
-            ))}
-        </div>
-    );
-};
+// REMOVED: SuccessCheck is unused and obsolete.
 
 // --- Encouragement Toast ---
 export const EncouragementToast = ({ message, isVisible, onClose }: { message: string, isVisible: boolean, onClose: () => void }) => {

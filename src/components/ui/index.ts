@@ -78,7 +78,6 @@ export {
   MaterialCardSkeleton,
   MaterialRowSkeleton,
   SkeletonBar,
-  SkeletonLine,
   StatTileSkeleton,
 } from "./Skeleton";
 export { Reveal } from "./Reveal";

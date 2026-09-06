@@ -10,20 +10,6 @@ export function SkeletonBar({ className }: { className?: string }) {
   );
 }
 
-export function SkeletonLine({
-  slot = "h-6",
-  bar = "h-3 w-2/3",
-}: {
-  slot?: string;
-  bar?: string;
-}) {
-  return (
-    <span className={cn("flex items-center", slot)}>
-      <SkeletonBar className={cn("max-w-full", bar)} />
-    </span>
-  );
-}
-
 export function Arrive({
   children,
   className,

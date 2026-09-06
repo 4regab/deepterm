@@ -109,30 +109,7 @@ function getGreeting(): string {
   return "Good night";
 }
 
-export function DashboardHeader({ initialData }: { initialData?: DashboardData | null }) {
-  const greeting = getGreeting();
-  const firstName = initialData?.profile?.full_name?.split(" ")[0] || "there";
 
-  return (
-    <div className="flex flex-wrap items-end justify-between gap-4">
-      <div>
-        <h1 className="display-lg tracking-tight text-ink">
-          {greeting}, {firstName}
-        </h1>
-        <p className="body text-muted mt-1">Pick up where you left off.</p>
-      </div>
-
-      <ButtonLink href="/materials/create" size="sm" variant="primary" className="gap-1.5">
-        <Plus size={16} aria-hidden="true" />
-        <span>Create Material</span>
-      </ButtonLink>
-    </div>
-  );
-}
-
-export function DueTodayList() {
-  return null;
-}
 
 export default function DashboardClient({
   initialData,

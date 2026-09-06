@@ -3,7 +3,7 @@ import { useXPStore } from '../lib/stores/xpStore'
 import { useProfileStore } from '../lib/stores/profileStore'
 import { getRankTitle, calculateProgressPercent } from '../utils/xp'
 
-describe('DashboardHeader Component Logic', () => {
+describe('Dashboard XP Display Logic', () => {
   beforeEach(() => {
     useXPStore.setState({
       stats: null,
