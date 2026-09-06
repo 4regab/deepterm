@@ -88,6 +88,22 @@ describe('PomodoroStore', () => {
       usePomodoroStore.getState().setSettings({ workDuration: 120 })
       expect(usePomodoroStore.getState().settings.workDuration).toBe(120)
     })
+
+    it('should handle empty settings object', () => {
+      usePomodoroStore.getState().setSettings({})
+      const { settings } = usePomodoroStore.getState()
+      expect(settings).toEqual(initialState.settings)
+    })
+
+    it('should handle zero duration', () => {
+      usePomodoroStore.getState().setSettings({ workDuration: 0 })
+      expect(usePomodoroStore.getState().settings.workDuration).toBe(0)
+    })
+
+    it('should handle negative duration', () => {
+      usePomodoroStore.getState().setSettings({ workDuration: -5 })
+      expect(usePomodoroStore.getState().settings.workDuration).toBe(-5)
+    })
   })
 
   describe('Timer State', () => {
@@ -99,6 +115,21 @@ describe('PomodoroStore', () => {
     it('should handle zero timeLeft', () => {
       usePomodoroStore.getState().setTimeLeft(0)
       expect(usePomodoroStore.getState().timeLeft).toBe(0)
+    })
+
+    it('should handle negative time', () => {
+      usePomodoroStore.getState().setTimeLeft(-100)
+      expect(usePomodoroStore.getState().timeLeft).toBe(-100)
+    })
+
+    it('should handle very large time values', () => {
+      usePomodoroStore.getState().setTimeLeft(Number.MAX_SAFE_INTEGER)
+      expect(usePomodoroStore.getState().timeLeft).toBe(Number.MAX_SAFE_INTEGER)
+    })
+
+    it('should handle decimal time values', () => {
+      usePomodoroStore.getState().setTimeLeft(100.5)
+      expect(usePomodoroStore.getState().timeLeft).toBe(100.5)
     })
 
     it('should toggle running state', () => {
@@ -201,6 +232,34 @@ describe('PomodoroStore', () => {
         
         expect(tasks[0].reminder).toBeUndefined()
       })
+
+      it('should add task with empty string', () => {
+        usePomodoroStore.getState().addTask('')
+        const { tasks } = usePomodoroStore.getState()
+        expect(tasks).toHaveLength(1)
+        expect(tasks[0].text).toBe('')
+      })
+
+      it('should add task with whitespace only', () => {
+        usePomodoroStore.getState().addTask('   ')
+        expect(usePomodoroStore.getState().tasks[0].text).toBe('   ')
+      })
+
+      it('should add task with special characters', () => {
+        usePomodoroStore.getState().addTask('<script>alert("xss")</script>')
+        expect(usePomodoroStore.getState().tasks[0].text).toBe('<script>alert("xss")</script>')
+      })
+
+      it('should add task with unicode characters', () => {
+        usePomodoroStore.getState().addTask('任务 🎯 タスク')
+        expect(usePomodoroStore.getState().tasks[0].text).toBe('任务 🎯 タスク')
+      })
+
+      it('should add task with very long text', () => {
+        const longText = 'a'.repeat(10000)
+        usePomodoroStore.getState().addTask(longText)
+        expect(usePomodoroStore.getState().tasks[0].text).toBe(longText)
+      })
     })
 
     describe('READ - tasks array', () => {
@@ -259,6 +318,20 @@ describe('PomodoroStore', () => {
         expect(usePomodoroStore.getState().tasks[0].completed).toBe(true)
         expect(usePomodoroStore.getState().tasks[1].completed).toBe(false)
       })
+
+      it('should handle toggling non-existent task ID gracefully', () => {
+        usePomodoroStore.getState().addTask('Test task')
+        const tasksBefore = [...usePomodoroStore.getState().tasks]
+        usePomodoroStore.getState().toggleTask('non-existent-id')
+        expect(usePomodoroStore.getState().tasks).toEqual(tasksBefore)
+      })
+
+      it('should handle toggling with empty string ID', () => {
+        usePomodoroStore.getState().addTask('Test task')
+        const tasksBefore = [...usePomodoroStore.getState().tasks]
+        usePomodoroStore.getState().toggleTask('')
+        expect(usePomodoroStore.getState().tasks).toEqual(tasksBefore)
+      })
     })
 
     describe('DELETE - removeTask', () => {
@@ -274,12 +347,14 @@ describe('PomodoroStore', () => {
       it('should only remove specified task', () => {
         usePomodoroStore.getState().addTask('Task 1')
         usePomodoroStore.getState().addTask('Task 2')
-        const task1Id = usePomodoroStore.getState().tasks[0].id
+        usePomodoroStore.getState().addTask('Task 3')
+        const task2Id = usePomodoroStore.getState().tasks[1].id
         
-        usePomodoroStore.getState().removeTask(task1Id)
+        usePomodoroStore.getState().removeTask(task2Id)
         
-        expect(usePomodoroStore.getState().tasks).toHaveLength(1)
-        expect(usePomodoroStore.getState().tasks[0].text).toBe('Task 2')
+        const tasks = usePomodoroStore.getState().tasks
+        expect(tasks).toHaveLength(2)
+        expect(tasks.map(t => t.text)).toEqual(['Task 1', 'Task 3'])
       })
 
       it('should handle removing non-existent task gracefully', () => {
@@ -287,6 +362,17 @@ describe('PomodoroStore', () => {
         
         usePomodoroStore.getState().removeTask('non-existent-id')
         
+        expect(usePomodoroStore.getState().tasks).toHaveLength(1)
+      })
+
+      it('should handle removing from empty task list', () => {
+        usePomodoroStore.getState().removeTask('any-id')
+        expect(usePomodoroStore.getState().tasks).toHaveLength(0)
+      })
+
+      it('should handle removing with empty string ID', () => {
+        usePomodoroStore.getState().addTask('Test task')
+        usePomodoroStore.getState().removeTask('')
         expect(usePomodoroStore.getState().tasks).toHaveLength(1)
       })
     })
@@ -338,6 +424,11 @@ describe('PomodoroStore', () => {
       expect(usePomodoroStore.getState().showToast).toBe(true)
     })
 
+    it('should handle empty toast message', () => {
+      usePomodoroStore.getState().setToastMessage('')
+      expect(usePomodoroStore.getState().toastMessage).toBe('')
+    })
+
     it('should manage confetti state', () => {
       usePomodoroStore.getState().setShowConfetti(true)
       expect(usePomodoroStore.getState().showConfetti).toBe(true)
@@ -365,6 +456,19 @@ describe('PomodoroStore', () => {
       usePomodoroStore.getState().resetTimer()
       
       expect(usePomodoroStore.getState().timeLeft).toBe(5 * 60)
+    })
+
+    it('should use custom settings when resetting', () => {
+      usePomodoroStore.getState().setSettings({ workDuration: 50 })
+      usePomodoroStore.getState().setTimeLeft(100)
+      usePomodoroStore.getState().resetTimer()
+      expect(usePomodoroStore.getState().timeLeft).toBe(50 * 60)
+    })
+
+    it('should not affect tasks on reset', () => {
+      usePomodoroStore.getState().addTask('Test task')
+      usePomodoroStore.getState().resetTimer()
+      expect(usePomodoroStore.getState().tasks).toHaveLength(1)
     })
   })
 
@@ -410,6 +514,12 @@ describe('PomodoroStore', () => {
         usePomodoroStore.getState().setTimeLeft(i)
       }
       expect(usePomodoroStore.getState().timeLeft).toBe(99)
+    })
+
+    it('should not mutate original state object', () => {
+      const originalSettings = { ...usePomodoroStore.getState().settings }
+      usePomodoroStore.getState().setSettings({ workDuration: 99 })
+      expect(originalSettings.workDuration).toBe(25)
     })
   })
 })
