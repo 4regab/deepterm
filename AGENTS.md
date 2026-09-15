@@ -13,14 +13,14 @@ Stack: Next.js 16 App Router, React 19, TypeScript, Bun, Tailwind 4, Zustand, Zo
 ## Commands
 
 ```bash
-bun install
-bun run dev              # bun --bun next dev
-bun run build
-bun run lint
-bun test                 # bun:test, files under src/tests/
-bun test --watch
-bunx tsc --noEmit
-bun audit                # must be clean before opening a PR
+pnpm install --frozen-lockfile
+pnpm dev                  # bun --bun next dev
+pnpm build
+pnpm lint
+pnpm test                 # bun:test, files under src/tests/
+pnpm test:watch
+pnpm exec tsc --noEmit
+pnpm audit                # must be clean before opening a PR
 ```
 
 No `middleware.ts`. Next 16 entry is `src/proxy.ts`.
@@ -121,7 +121,7 @@ Bun test + `src/tests/setup.ts`. Prefer factories there.
 - No `Co-authored-by`, Cursor, or “made with” trailers.
 - Don’t commit unless asked. Don’t force-push `main`.
 - Messages: `feat(security): …`, `fix(auth): …`.
-- Before opening a PR, run `bun audit` and fix every finding (0 vulnerabilities). Nested holes go in `package.json` `overrides`. Use npm nested objects (`"postcss": { ".": "…", "nanoid": "…" }`), never `parent>child` keys — Vercel may run `npm install`. Do not open or update a PR with a dirty audit.
+- Before opening a PR, run `pnpm audit` and fix every finding (0 vulnerabilities). Nested holes go in `package.json` under `pnpm.overrides`; use `parent>child` selectors for parent-specific pins. Vercel installs with `pnpm install --frozen-lockfile`. Do not open or update a PR with a dirty audit.
 
 ## Don’t
 

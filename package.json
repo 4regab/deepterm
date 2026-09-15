@@ -2,14 +2,14 @@
   "name": "deepterm",
   "version": "0.1.0",
   "private": true,
+  "packageManager": "pnpm@10.28.1",
   "scripts": {
     "dev": "bun --bun next dev",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
     "test": "bun test",
-    "test:watch": "bun test --watch",
-    "audit": "bun audit"
+    "test:watch": "bun test --watch"
   },
   "dependencies": {
     "@google/genai": "^2.18.0",
@@ -42,42 +42,38 @@
     "zod": "^4.4.3",
     "zustand": "^5.0.15"
   },
-  "overrides": {
-    "dompurify": "3.4.14",
-    "protobufjs": "7.6.5",
-    "@protobufjs/utf8": "1.1.2",
-    "@babel/core": "7.29.7",
-    "browserslist": "4.28.9",
-    "baseline-browser-mapping": "2.11.23",
-    "ws": "8.21.3",
-    "flatted": "3.4.4",
-    "nanoid": "5.1.16",
-    "sharp": "0.35.4",
-    "js-yaml": "4.3.2",
-    "@humanfs/node": "0.16.8",
-    "fflate": "0.8.3",
-    "brace-expansion": "1.1.18",
-    "picomatch": "4.0.7",
-    "minimatch@9": "9.0.9",
-    "postcss": {
-      ".": "8.5.28",
-      "nanoid": "3.3.19"
+  "pnpm": {
+    "overrides": {
+      "dompurify": "3.4.14",
+      "protobufjs": "7.6.5",
+      "@protobufjs/utf8": "1.1.2",
+      "@babel/core": "7.29.7",
+      "browserslist": "4.28.9",
+      "baseline-browser-mapping": "2.11.23",
+      "ws": "8.21.3",
+      "flatted": "3.4.4",
+      "nanoid": "5.1.16",
+      "sharp": "0.35.4",
+      "js-yaml": "4.3.2",
+      "@humanfs/node": "0.16.8",
+      "fflate": "0.8.3",
+      "brace-expansion": "1.1.18",
+      "picomatch": "4.0.7",
+      "minimatch@9": "9.0.9",
+      "postcss": "8.5.28",
+      "postcss>nanoid": "3.3.19",
+      "posthog-js>fflate": "0.4.9",
+      "three-stdlib>fflate": "0.6.11",
+      "micromatch>picomatch": "2.3.2",
+      "@typescript-eslint/typescript-estree>minimatch": "9.0.9",
+      "glob>minimatch": "9.0.9"
     },
-    "posthog-js": {
-      "fflate": "0.4.9"
-    },
-    "three-stdlib": {
-      "fflate": "0.6.11"
-    },
-    "micromatch": {
-      "picomatch": "2.3.2"
-    },
-    "@typescript-eslint/typescript-estree": {
-      "minimatch": "9.0.9"
-    },
-    "glob": {
-      "minimatch": "9.0.9"
-    }
+    "ignoredBuiltDependencies": [
+      "@google/genai",
+      "core-js",
+      "protobufjs",
+      "unrs-resolver"
+    ]
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.3.3",
