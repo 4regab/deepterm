@@ -33,7 +33,7 @@
     "lucide-react": "^1.33.0",
     "mammoth": "^1.12.1",
     "marked": "^18.0.10",
-    "next": "^16.3.2",
+    "next": "^16.3.5",
     "posthog-js": "^1.418.10",
     "react": "19.2.8",
     "react-dom": "19.2.8",
@@ -47,15 +47,27 @@
     "protobufjs": "7.6.5",
     "@protobufjs/utf8": "1.1.2",
     "@babel/core": "7.29.7",
+    "browserslist": "4.28.9",
+    "baseline-browser-mapping": "2.11.23",
     "ws": "8.21.3",
     "flatted": "3.4.4",
     "nanoid": "5.1.16",
+    "sharp": "0.35.4",
+    "js-yaml": "4.3.2",
+    "@humanfs/node": "0.16.8",
+    "fflate": "0.8.3",
     "brace-expansion": "1.1.18",
     "picomatch": "4.0.7",
     "minimatch@9": "9.0.9",
     "postcss": {
-      ".": "^8.5.12",
-      "nanoid": "3.3.18"
+      ".": "8.5.28",
+      "nanoid": "3.3.19"
+    },
+    "posthog-js": {
+      "fflate": "0.4.9"
+    },
+    "three-stdlib": {
+      "fflate": "0.6.11"
     },
     "micromatch": {
       "picomatch": "2.3.2"
@@ -75,9 +87,9 @@
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.5",
     "babel-plugin-react-compiler": "1.0.0",
-    "baseline-browser-mapping": "^2.11.18",
+    "baseline-browser-mapping": "2.11.23",
     "eslint": "^9.39.5",
-    "eslint-config-next": "16.3.2",
+    "eslint-config-next": "16.3.5",
     "fast-check": "^4.9.0",
     "supabase": "2.115.0",
     "tailwindcss": "^4.3.3",
