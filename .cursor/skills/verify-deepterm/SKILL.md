@@ -12,8 +12,8 @@ Project-local control skill for agents. Read cold: this is how you launch, docto
 ```bash
 cd /workspace
 test -f .env.local || echo "missing .env.local (Supabase + Gemini + optional Turnstile)"
-bun install
-bun run dev
+pnpm install --frozen-lockfile
+pnpm dev
 ```
 
 Ready when stdout shows `Local: http://localhost:3000` (or the next free port). Default port **3000**.
@@ -70,7 +70,7 @@ Proof standards: real user path when authenticated; otherwise the integration te
 
 ## Cleanup
 
-Stop only the `bun run dev` / `next` process you started. Leave evidence files in place. Do not delete `/opt/cursor/artifacts/verify-deepterm/*` proofs.
+Stop only the `pnpm dev` / `next` process you started. Leave evidence files in place. Do not delete `/opt/cursor/artifacts/verify-deepterm/*` proofs.
 
 ## Helpers
 

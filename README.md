@@ -75,7 +75,8 @@ Stop grinding through notes the hard way. DeepTerm uses AI to turn your PDFs and
 - **React 19.2.0** - Latest React with concurrent features
 - **React Compiler** - Automatic memoization via babel-plugin-react-compiler
 - **TypeScript 5** - Type-safe development
-- **Bun** - Fast JavaScript runtime, bundler, and package manager
+- **Bun** - Fast JavaScript runtime and test runner
+- **pnpm** - Fast, disk-efficient dependency manager
 
 ### Styling & Animation
 - **Tailwind CSS 4** - Utility-first CSS framework
@@ -318,15 +319,21 @@ CRON_SECRET=your_cron_secret
 
 ### Installation
 
+Prerequisites: Node.js 20 or newer with Corepack, plus Bun for the development runtime and test runner.
+
 ```bash
-# Install Bun (if not already installed)
+# Install Bun (the dev runtime and test runner) if needed
 curl -fsSL https://bun.sh/install | bash
 
+# Enable the pnpm version pinned in package.json
+corepack enable
+corepack install
+
 # Install dependencies
-bun install
+pnpm install --frozen-lockfile
 
 # Start development server
-bun run dev
+pnpm dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) to view the application.
@@ -335,12 +342,12 @@ Open [http://localhost:3000](http://localhost:3000) to view the application.
 
 | Command | Description |
 |---------|-------------|
-| `bun run dev` | Start development server |
-| `bun run build` | Build for production |
-| `bun run start` | Start production server |
-| `bun run lint` | Run ESLint |
-| `bun test` | Run tests |
-| `bun test --watch` | Run tests in watch mode |
+| `pnpm dev` | Start development server |
+| `pnpm build` | Build for production |
+| `pnpm start` | Start production server |
+| `pnpm lint` | Run ESLint |
+| `pnpm test` | Run tests with Bun |
+| `pnpm test:watch` | Run tests in watch mode with Bun |
 
 ## Testing
 
@@ -367,13 +374,13 @@ src/tests/
 
 ```bash
 # Run all tests
-bun test
+pnpm test
 
 # Run specific test file
-bun test src/tests/stores/pomodoroStore.test.ts
+pnpm test src/tests/stores/pomodoroStore.test.ts
 
 # Run tests in watch mode
-bun test --watch
+pnpm test:watch
 ```
 
 ### Test Utilities
@@ -444,5 +451,5 @@ This runs the blog generation endpoint twice daily at 8 AM and 8 PM UTC.
 1. Fork the repository
 2. Create a feature branch
 3. Make your changes
-4. Run tests: `bun test`, `bun run build`, `bun run lint`
+4. Run checks: `pnpm test`, `pnpm build`, `pnpm lint`
 5. Submit a pull request

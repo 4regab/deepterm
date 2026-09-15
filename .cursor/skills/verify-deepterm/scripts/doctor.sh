@@ -5,7 +5,7 @@ cd "$ROOT"
 
 code="$(curl -s -o /dev/null -w "%{http_code}" http://localhost:3000/ || true)"
 if [[ "$code" != "200" ]]; then
-  echo "doctor: home not ready (HTTP $code). Start with: bun run dev"
+  echo "doctor: home not ready (HTTP $code). Start with: pnpm dev"
   exit 1
 fi
 
