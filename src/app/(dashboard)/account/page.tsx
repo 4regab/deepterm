@@ -114,9 +114,10 @@ export default function AccountPage() {
         setSaving(true);
         setMessage(null);
 
-        // Sanitize: strip HTML tags to prevent stored XSS
-        const sanitizedName = formData.full_name.replace(/<[^>]*>/g, '').trim();
-        if (!sanitizedName) {
+        // Reject markup instead of stripping it: a single-pass tag strip is
+        // incomplete (`<<b>x>` survives), and React escapes on render anyway.
+        const sanitizedName = formData.full_name.trim();
+        if (!sanitizedName || /[<>]/.test(sanitizedName)) {
             setMessage({ type: "error", text: "Enter a name using plain text." });
             setSaving(false);
             return;

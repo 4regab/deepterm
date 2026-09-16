@@ -49,10 +49,8 @@ export function sanitizeRedirectPath(raw: string | null): string {
     return '/dashboard'
   }
 
-  if (/[a-z]+:/i.test(decoded.replace(/^\//, ''))) {
-    return '/dashboard'
-  }
-
+  // Scheme handlers (`javascript:`, `data:`) cannot survive SAFE_PATH_RE, which
+  // forbids ':' outright, so no separate scheme regex is needed here.
   const pathOnly = decoded.split(/[?#]/, 1)[0] ?? decoded
   if (!SAFE_PATH_RE.test(pathOnly) || !isAllowedAppPath(pathOnly)) {
     return '/dashboard'
