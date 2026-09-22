@@ -141,18 +141,6 @@ export async function generateContentWithRotation(
   throw new Error("All API keys exhausted after retry. Please try again later.");
 }
 
-export async function createGeminiClientForFileUpload(): Promise<{
-  ai: GoogleGenAI;
-  keyIndex: number;
-}> {
-  // For file uploads, we need to return the client instance
-  // Start with first key, caller should handle rotation if needed
-  if (API_KEYS.length === 0) {
-    throw new Error("No Gemini API keys configured");
-  }
-  return { ai: new GoogleGenAI({ apiKey: API_KEYS[0] }), keyIndex: 0 };
-}
-
 export async function uploadFileWithRotation(
   options: GeminiFileUploadOptions
 ): Promise<{ uploadedFile: Awaited<ReturnType<GoogleGenAI["files"]["upload"]>>; ai: GoogleGenAI; keyIndex: number }> {
