@@ -21,7 +21,6 @@ interface XPState {
 
 interface XPActions {
   fetchXPStats: (force?: boolean) => Promise<void>
-  addXP: (amount: number) => Promise<{ leveledUp: boolean }>
   setStats: (stats: XPStats) => void
   invalidateCache: () => void
 }
@@ -91,53 +90,6 @@ export const useXPStore = create<XPStore>()((set, get) => ({
       }
     } catch (error) {
       set({ error: error as Error, loading: false, stats: DEFAULT_STATS })
-    }
-  },
-
-  addXP: async (amount: number) => {
-    // Client-side bounds checking (defense in depth - server also validates)
-    if (typeof amount !== 'number' || !Number.isFinite(amount)) {
-      console.error('Invalid XP amount:', amount)
-      return { leveledUp: false }
-    }
-    const safeAmount = Math.max(1, Math.min(Math.floor(amount), 1000))
-
-    try {
-      const supabase = createClient()
-
-      // Auth guard: require authenticated user (SECURITY FIX)
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) {
-        console.warn('Cannot add XP: No authenticated user')
-        return { leveledUp: false }
-      }
-
-      const { data, error } = await supabase.rpc('add_xp', { p_amount: safeAmount })
-
-      if (error) throw error
-
-      if (data && data.length > 0) {
-        const row = data[0]
-        const leveledUp = row.leveled_up || false
-
-        set({
-          stats: {
-            totalXp: row.new_total_xp,
-            currentLevel: row.new_level,
-            xpInLevel: row.xp_in_level,
-            xpForNext: row.xp_for_next,
-          },
-          lastLevelUp: leveledUp,
-          lastFetched: Date.now(),
-        })
-
-        return { leveledUp }
-      }
-
-      return { leveledUp: false }
-    } catch (error) {
-      console.error('Failed to add XP:', error)
-      return { leveledUp: false }
     }
   },
 

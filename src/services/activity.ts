@@ -201,57 +201,6 @@ export async function logPomodoroSession(phase: "work" | "shortBreak" | "longBre
     };
 }
 
-/**
- * OPTIMIZED: Log a quiz attempt using batched RPC.
- */
-export async function logQuizAttempt(quizId: string, score: number, totalQuestions: number, answers: Record<string, string>) {
-    const supabase = createClient();
-    const percentage = Math.round((score / totalQuestions) * 100);
-    const localDate = getLocalDateString();
-
-    // Get current user for inserting quiz attempt
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-        console.error("Cannot log quiz attempt: No authenticated user");
-        return { error: new Error("No authenticated user") };
-    }
-
-    // Insert the quiz attempt (still need this for detailed records)
-    const { error: insertError } = await supabase.from("quiz_attempts").insert({
-        user_id: user.id,
-        quiz_id: quizId,
-        score,
-        total_questions: totalQuestions,
-        percentage,
-        answers
-    });
-
-    if (insertError) {
-        console.error("Failed to insert quiz_attempt:", insertError);
-        return { error: insertError };
-    }
-
-    // Use batched RPC for activity tracking + XP
-    const { data, error } = await supabase.rpc("log_completed_activity", {
-        p_activity_type: "quiz",
-        p_data: {
-            percentage,
-            local_date: localDate
-        }
-    });
-
-    if (error) {
-        console.error("Failed to log quiz activity:", error);
-    }
-
-    return {
-        error: null,
-        xpAwarded: data?.xp_awarded,
-        leveledUp: data?.leveled_up
-    };
-}
-
-
 export async function logFlashcardReview(count: number, minutes?: number) {
     return recordStudyActivity({ flashcards: count, minutes });
 }
